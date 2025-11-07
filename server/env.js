@@ -18,6 +18,7 @@ const {
     CLIENT_URL,
     SERVER_URL,
     UPLOADS_DIR,
+    BREVO_API_KEY,
 } = process.env;
 
 export {
@@ -38,4 +39,5 @@ export {
     CLIENT_URL,
     SERVER_URL,
     UPLOADS_DIR,
+    BREVO_API_KEY,
 };

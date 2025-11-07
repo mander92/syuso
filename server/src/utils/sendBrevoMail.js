@@ -2,7 +2,7 @@
 import brevo from '@getbrevo/brevo';
 import { BREVO_API_KEY, SMTP_EMAIL } from '../../env.js';
 
-const sendMail = (name, email, emailSubject, emailBody) => {
+const sendMail = async (name, email, emailSubject, emailBody) => {
 
 
     try {
@@ -30,13 +30,17 @@ const sendMail = (name, email, emailSubject, emailBody) => {
             email: SMTP_EMAIL || "operativa@syuso.es"
         }
 
-        apiInstance.sendTransacEmail(sendSmtpEmail);
+        await apiInstance.sendTransacEmail(sendSmtpEmail);
 
         console.log("============================================= mail enviado ==========================================");
+        return true;
+
     } catch (e) {
 
         //console.log(e)
         console.log("======================================== mail  NOOOOOO enviado ======================================");
+        console.error(e);
+        return false;
 
     }
 }
