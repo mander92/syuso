@@ -3,3 +3,4 @@ uploads
 avatar_img
 .env
 *.local
+.vscode
