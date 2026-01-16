@@ -2,7 +2,7 @@ import './Consulting.css';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import Button from '../../components/button/button';
+import Button from '../../components/button/Button';
 import { sendConsultingRequestService } from '../../services/requestsService';
 
 const Consulting = () => {

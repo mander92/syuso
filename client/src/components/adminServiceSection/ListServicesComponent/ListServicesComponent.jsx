@@ -23,9 +23,12 @@ const ListServicesComponent = () => {
             });
             const searchParamsToString = searchParams.toString();
             try {
-                const data =
+                const payload =
                     await fetchAllTypeOfServicesServices(searchParamsToString);
-                setData(data);
+                const list = Array.isArray(payload)
+                    ? payload
+                    : payload?.data ?? [];
+                setData(list);
             } catch (error) {
                 toast.error(error.message, {
                     id: 'error',
@@ -36,8 +39,9 @@ const ListServicesComponent = () => {
         getTypeOfServices();
     }, [city, type]);
 
-    const citiesNoRepeated = [...new Set(data.map((item) => item.city))].sort();
-    const typeNoRepeated = [...new Set(data.map((item) => item.type))].sort();
+    const list = Array.isArray(data) ? data : [];
+    const citiesNoRepeated = [...new Set(list.map((item) => item.city))].sort();
+    const typeNoRepeated = [...new Set(list.map((item) => item.type))].sort();
 
     return (
         <>
@@ -82,7 +86,7 @@ const ListServicesComponent = () => {
                 </select>                <button onClick={resetFilters}>Limpiar Filtros</button>
             </form>
             <ul className='cards'>
-                {data.map((item) => {
+                {list.map((item) => {
                     return (
                         <li id={item.id} key={item.id}>
                             <h3>{item.type}</h3>

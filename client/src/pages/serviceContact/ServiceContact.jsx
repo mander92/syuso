@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Navigate, NavLink, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
-import Button from '../../components/button/button';
+import Button from '../../components/button/Button';
 import { sendConsultingRequestService } from '../../services/requestsService';
 import '../consulting/Consulting.css';
 

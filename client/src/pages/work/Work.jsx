@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import './Work.css';
-import Button from '../../components/button/button';
+import Button from '../../components/button/Button';
 import { sendJobApplicationService } from '../../services/jobService';
 
 const Work = () => {

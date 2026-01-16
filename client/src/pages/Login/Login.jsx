@@ -3,7 +3,7 @@ import { fetchLoginUserServices } from '../../services/userService';
 import { Navigate, useNavigate, NavLink } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext.jsx';
 import useUser from '../../hooks/useUser.js';
-import Button from '../../components/button/button';
+import Button from '../../components/button/Button';
 import './Login.css';
 import toast from 'react-hot-toast';
 
