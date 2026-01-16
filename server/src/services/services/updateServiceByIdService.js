@@ -8,67 +8,99 @@ const updateServiceByIdService = async (
     city,
     comments,
     startDateTime,
-    hours
+    hours,
+    numberOfPeople,
+    role
 ) => {
     const pool = await getPool();
 
-    const [status] = await pool.query(
+    const [serviceInfo] = await pool.query(
         `
-        SELECT id, status FROM services WHERE id = ?
+        SELECT s.id, s.status, s.startDateTime, s.hours, s.numberOfPeople, s.comments,
+               s.addressId, s.typeOfServicesId,
+               a.address, a.postCode, a.city
+        FROM services s
+        INNER JOIN addresses a ON a.id = s.addressId
+        WHERE s.id = ?
         `,
         [serviceId]
     );
 
-    if (!status.length || status[0].status !== 'pending')
-        generateErrorUtil('El servicio ya no se puede modificar, ya ha sido procesado', 409);
+    if (!serviceInfo.length) {
+        generateErrorUtil('Servicio no encontrado', 404);
+    }
 
-    const [addressId] = await pool.query(
-        `
-        SELECT addressId FROM services WHERE id = ?
-        `,
-        [serviceId]
-    );
+    if (
+        serviceInfo[0].status !== 'pending' &&
+        role !== 'admin' &&
+        role !== 'sudo'
+    ) {
+        generateErrorUtil(
+            'El servicio ya no se puede modificar, ya ha sido procesado',
+            409
+        );
+    }
+
+    const current = serviceInfo[0];
+
+    const resolvedAddress =
+        address && address.trim() !== '' ? address.trim() : current.address;
+    const resolvedPostCode =
+        postCode && postCode.trim() !== '' ? postCode.trim() : current.postCode;
+    const resolvedCity =
+        city && city.trim() !== '' ? city.trim() : current.city;
+    const resolvedComments =
+        comments && comments.trim() !== '' ? comments.trim() : current.comments;
+
+    const resolvedHours =
+        hours !== undefined && hours !== null && hours !== ''
+            ? Number(hours)
+            : Number(current.hours);
+    const resolvedNumberOfPeople =
+        numberOfPeople !== undefined &&
+        numberOfPeople !== null &&
+        numberOfPeople !== ''
+            ? Number(numberOfPeople)
+            : Number(current.numberOfPeople);
 
     await pool.query(
         `
         UPDATE addresses SET address = ?, postCode = ?, city = ?
         WHERE id = ?
         `,
-        [address, postCode, city, addressId[0].addressId]
+        [resolvedAddress, resolvedPostCode, resolvedCity, current.addressId]
     );
 
-    const [typeId] = await pool.query(
-        `
-        SELECT typeOfServicesId FROM services WHERE id = ?
-        `,
-        [serviceId]
-    );
+    const updates = [
+        'comments = ?',
+        'hours = ?',
+        'numberOfPeople = ?',
+    ];
+    const values = [
+        resolvedComments,
+        resolvedHours,
+        resolvedNumberOfPeople,
+    ];
 
-    const [price] = await pool.query(
-        `
-        SELECT price FROM typeOfServices WHERE id = ?
-        `,
-        [typeId[0].typeOfServicesId]
-    );
+    if (startDateTime && startDateTime !== '') {
+        updates.push("startDateTime = STR_TO_DATE(?, '%Y-%m-%dT%H:%i:%sZ')");
+        values.push(startDateTime);
+    }
 
-    const resultPrice = price[0].price * hours;
+    values.push(serviceId);
 
     await pool.query(
         `
-        UPDATE services 
-        SET 
-            comments = ?, 
-            startDateTime = STR_TO_DATE(?, '%Y-%m-%dT%H:%i:%sZ'),
-            hours = ?, 
-            totalPrice = ?
+        UPDATE services
+        SET ${updates.join(', ')}
         WHERE id = ?
         `,
-        [comments, startDateTime, hours, resultPrice, serviceId]
+        values
     );
 
     const [data] = await pool.query(
         `
-        SELECT s.startDateTime, s.hours, s.totalPrice, a.address, a.city, a.postCode
+        SELECT s.startDateTime, s.hours, s.numberOfPeople, a.address, a.city, a.postCode
         FROM services s
         INNER JOIN addresses a
         ON a.id = s.addressId
@@ -76,7 +108,6 @@ const updateServiceByIdService = async (
         `,
         [serviceId]
     );
-
 
     return data[0];
 };

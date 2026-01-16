@@ -1,0 +1,149 @@
+.dashboard-wrapper {
+    width: 100%;
+    padding: 1.5rem;
+    box-sizing: border-box;
+}
+
+.dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Layout dos columnas en escritorio */
+@media (min-width: 900px) {
+    .dashboard-container {
+        flex-direction: row;
+        align-items: flex-start;
+    }
+}
+
+/* SIDEBAR */
+.dashboard-sidebar {
+    background-color: #111827;
+    color: #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 1.5rem 1.25rem;
+    box-sizing: border-box;
+    min-width: 240px;
+}
+
+@media (min-width: 900px) {
+    .dashboard-sidebar {
+        width: 260px;
+    }
+}
+
+/* Caja usuario arriba */
+.dashboard-userbox {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #1f2937;
+}
+
+.dashboard-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #22c55e, #0ea5e9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #f9fafb;
+    font-size: 1rem;
+}
+
+.dashboard-userinfo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.dashboard-username {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #f9fafb;
+}
+
+.dashboard-userrole {
+    font-size: 0.8rem;
+    color: #9ca3af;
+}
+
+/* Navegación lateral */
+.dashboard-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.dashboard-navitem {
+    width: 100%;
+    text-align: left;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #e5e7eb;
+    font-size: 0.9rem;
+    padding: 0.55rem 0.7rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease,
+        transform 0.08s ease;
+}
+
+.dashboard-navitem:hover {
+    background-color: #1f2937;
+    transform: translateX(2px);
+}
+
+.dashboard-navitem--active {
+    background-color: #f9fafb;
+    color: #111827;
+}
+
+/* CONTENIDO PRINCIPAL */
+.dashboard-main {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Placeholder de secciones futuras */
+.dash-section-placeholder {
+    background-color: #ffffff;
+    border-radius: 0.75rem;
+    padding: 1.5rem 1.75rem;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    box-sizing: border-box;
+}
+
+.dash-section-placeholder h2 {
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+    color: #111827;
+}
+
+.dash-section-placeholder p {
+    font-size: 0.9rem;
+    color: #4b5563;
+}
+
+/* Estado sin usuario */
+.dashboard-empty {
+    max-width: 600px;
+    margin: 0 auto;
+    background-color: #fff7ed;
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    border: 1px solid #fed7aa;
+    color: #7c2d12;
+    font-size: 0.95rem;
+}

@@ -6,7 +6,6 @@ const insertTypeOfServiceService = async (
     type,
     description,
     city,
-    price,
     imageName
 ) => {
     const pool = await getPool();
@@ -26,16 +25,16 @@ const insertTypeOfServiceService = async (
     if (imageName) {
         await pool.query(
             `
-        INSERT INTO typeOfServices (id, type, description, city, price, image) VALUES (?,?,?,?,?,?)
+        INSERT INTO typeOfServices (id, type, description, city, image) VALUES (?,?,?,?,?)
         `,
-            [id, type, description, city, price, imageName]
+            [id, type, description, city, imageName]
         );
     } else {
         await pool.query(
             `
-        INSERT INTO typeOfServices (id, type, description, city, price) VALUES (?,?,?,?,?)
+        INSERT INTO typeOfServices (id, type, description, city) VALUES (?,?,?,?)
         `,
-            [id, type, description, city, price]
+            [id, type, description, city]
         );
     }
 

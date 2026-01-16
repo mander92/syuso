@@ -1,30 +1,43 @@
-import Joi from 'joi';
-
 import getPool from '../db/getPool.js';
 import generateErrorUtil from '../utils/generateErrorUtil.js';
 
 const userExists = async (req, res, next) => {
     try {
-        const schema = Joi.object().keys({
-            userId: Joi.string().length(36).required(),
-        });
+        const { userId } = req.params;
 
-        const validation = schema.validate(req.params);
-
-        if (validation.error) generateErrorUtil(validation.error.message, 401);
+        if (!userId) {
+            generateErrorUtil('Falta el parámetro userId', 400);
+        }
 
         const pool = await getPool();
 
-        const userId = req.params.userId || req.userLogged.id;
-
-        const [user] = await pool.query(
+        // ❌ NO filtramos por active aquí
+        const [users] = await pool.query(
             `
-            SELECT id, deletedAt FROM users WHERE id = ? AND deletedAt IS NULL
+                SELECT 
+                    id,
+                    email,
+                    firstName,
+                    lastName,
+                    dni,
+                    phone,
+                    city,
+                    job,
+                    role,
+                    avatar,
+                    active
+                FROM users
+                WHERE id = ?
             `,
             [userId]
         );
 
-        if (!user.length) generateErrorUtil('Usuario no encontrado', 400);
+        if (users.length === 0) {
+            generateErrorUtil('Usuario no encontrado', 404);
+        }
+
+        // Guardamos el usuario en la request por si hace falta después
+        req.user = users[0];
 
         next();
     } catch (error) {

@@ -1,0 +1,162 @@
+/* Contenedor general de la página de perfil */
+.profile-page {
+    width: 100%;
+    padding: 1.5rem;
+    box-sizing: border-box;
+}
+
+/* Layout principal: dos columnas en escritorio, una en móvil */
+.profile-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+@media (min-width: 900px) {
+    .profile-layout {
+        flex-direction: row;
+        align-items: flex-start;
+    }
+
+    .profile-card--main {
+        flex: 2;
+    }
+
+    .profile-side {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+}
+
+/* Tarjetas generales */
+.profile-card {
+    background-color: #ffffff;
+    border-radius: 0.75rem;
+    padding: 1.5rem 1.75rem;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    box-sizing: border-box;
+}
+
+/* Variante de peligro (eliminar cuenta) */
+.profile-card--danger {
+    border: 1px solid #fee2e2;
+    background-color: #fef2f2;
+}
+
+/* Fieldset / legend */
+.profile-fieldset {
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+
+.profile-legend {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #111827;
+}
+
+.profile-legend--danger {
+    color: #b91c1c;
+}
+
+/* Campos */
+.profile-field {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0.9rem;
+}
+
+.profile-label {
+    font-size: 0.9rem;
+    color: #4b5563;
+    margin-bottom: 0.35rem;
+}
+
+.profile-input {
+    border-radius: 0.5rem;
+    border: 1px solid #d1d5db;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.95rem;
+    outline: none;
+    transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease,
+        background-color 0.15s ease;
+    font-family: inherit;
+    background-color: #ffffff;
+}
+
+.profile-input::placeholder {
+    color: #9ca3af;
+}
+
+.profile-input:focus {
+    border-color: #111827;
+    box-shadow: 0 0 0 1px #11182711;
+    background-color: #f9fafb;
+}
+
+/* Inputs deshabilitados */
+.profile-input--disabled {
+    background-color: #f3f4f6;
+    color: #6b7280;
+    cursor: not-allowed;
+}
+
+/* Acciones (botones centrados) */
+.profile-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1rem;
+}
+
+/* Botón primario */
+.profile-button {
+    padding: 0.55rem 1.3rem;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    background-color: #111827;
+    color: #ffffff;
+    transition:
+        background-color 0.15s ease,
+        transform 0.1s ease,
+        box-shadow 0.15s ease;
+}
+
+.profile-button:hover {
+    background-color: #020617;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.25);
+    transform: translateY(-1px);
+}
+
+.profile-button:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+/* Botón peligro */
+.profile-button--danger {
+    background-color: #b91c1c;
+}
+
+.profile-button--danger:hover {
+    background-color: #991b1b;
+    box-shadow: 0 8px 18px rgba(185, 28, 28, 0.35);
+}
+
+/* Texto de aviso en tarjeta de peligro */
+.profile-danger-text {
+    font-size: 0.9rem;
+    color: #991b1b;
+    margin-top: 0.25rem;
+}

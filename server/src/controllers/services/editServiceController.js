@@ -1,6 +1,7 @@
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import updateServiceByIdService from '../../services/services/updateServiceByIdService.js';
 import Joi from 'joi';
+import ensureServiceDelegationAccessService from '../../services/delegations/ensureServiceDelegationAccessService.js';
 
 const editServiceController = async (req, res, next) => {
     try {
@@ -18,9 +19,19 @@ const editServiceController = async (req, res, next) => {
         if (validation.error) generateErrorUtil(validation.error.message, 401);*/
 
         const { serviceId } = req.params;
+        const { id: userId, role } = req.userLogged;
 
-        const { address, postCode, city, comments, startDateTime, hours } =
-            req.body;
+        const {
+            address,
+            postCode,
+            city,
+            comments,
+            startDateTime,
+            hours,
+            numberOfPeople,
+        } = req.body;
+
+        await ensureServiceDelegationAccessService(serviceId, userId, role);
 
         const data = await updateServiceByIdService(
             serviceId,
@@ -29,7 +40,9 @@ const editServiceController = async (req, res, next) => {
             city,
             comments,
             startDateTime,
-            hours
+            hours,
+            numberOfPeople,
+            role
         );
 
         res.send({

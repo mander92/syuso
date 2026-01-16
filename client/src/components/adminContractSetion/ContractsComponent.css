@@ -1,0 +1,433 @@
+/* === CONTENEDOR GENERAL === */
+
+.contracts-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    width: 100%;
+}
+
+/* === CABECERA (TÍTULO + FILTROS) === */
+
+.contracts-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    justify-content: space-between;
+}
+
+@media (min-width: 900px) {
+    .contracts-header {
+        flex-direction: row;
+        align-items: flex-end;
+    }
+}
+
+.contracts-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0;
+}
+
+.contracts-subtitle {
+    font-size: 0.92rem;
+    color: #64748b;
+    margin: 0.3rem 0 0 0;
+}
+
+/* === FILTROS === */
+
+.contracts-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-end;
+}
+
+.contracts-filter {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.85rem;
+    color: #475569;
+}
+
+.contracts-filter label {
+    margin-bottom: 0.25rem;
+}
+
+.contracts-filter select {
+    border-radius: 0.55rem;
+    border: 1px solid #e2e8f0;
+    padding: 0.45rem 0.7rem;
+    font-size: 0.9rem;
+    outline: none;
+    min-width: 180px;
+    background-color: #ffffff;
+    transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease,
+        background-color 0.15s ease;
+}
+
+.contracts-filter select:focus {
+    border-color: #0f172a;
+    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.08);
+    background-color: #f8fafc;
+}
+
+.contracts-filter-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* === BOTONES === */
+
+.contracts-btn {
+    border-radius: 999px;
+    border: none;
+    padding: 0.4rem 1rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    background-color: #0f172a;
+    color: #ffffff;
+    transition:
+        background-color 0.15s ease,
+        transform 0.08s ease,
+        box-shadow 0.15s ease;
+    white-space: nowrap;
+}
+
+.contracts-btn:hover {
+    background-color: #020617;
+    box-shadow: 0 5px 14px rgba(15, 23, 42, 0.35);
+    transform: translateY(-1px);
+}
+
+.contracts-btn:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+.contracts-btn--ghost {
+    background-color: #f3f4f6;
+    color: #0f172a;
+}
+
+.contracts-btn--ghost:hover {
+    background-color: #e5e7eb;
+    box-shadow: none;
+}
+
+.contracts-btn--danger {
+    background-color: #b91c1c;
+}
+
+.contracts-btn--danger:hover {
+    background-color: #991b1b;
+    box-shadow: 0 5px 14px rgba(185, 28, 28, 0.35);
+}
+
+/* === LEYENDA DE COLORES === */
+
+.contracts-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0.6rem 0.8rem;
+    border-radius: 0.75rem;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+}
+
+.contracts-legend-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #111827;
+    border: 1px solid transparent;
+}
+
+/* Colores por estado (similar a los que tenías en inline styles) */
+.contracts-legend-badge--pending {
+    background-color: lightsalmon;
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+.contracts-legend-badge--accepted {
+    background-color: orange;
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+.contracts-legend-badge--confirmed {
+    background-color: lightgreen;
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+.contracts-legend-badge--completed {
+    background-color: green;
+    color: #f9fafb;
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+.contracts-legend-badge--rejected {
+    background-color: lightcoral;
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+.contracts-legend-badge--canceled {
+    background-color: red;
+    color: #f9fafb;
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+/* === CONTENEDOR DEL CALENDARIO === */
+
+.contracts-calendar-card {
+    background: linear-gradient(135deg, #f9fafb, #eef2ff);
+    border-radius: 1rem;
+    padding: 1.2rem 1.3rem;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
+    box-sizing: border-box;
+    border: 1px solid #e5e7eb;
+    width: 100%;
+    min-height: 650px;
+    overflow: hidden; /* Evitamos scroll lateral si el calendario ocupa mucho */
+}
+
+.contracts-calendar-search {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 0.9rem;
+    color: #475569;
+    font-size: 0.85rem;
+}
+
+.contracts-calendar-search input {
+    border-radius: 0.55rem;
+    border: 1px solid #e2e8f0;
+    padding: 0.45rem 0.7rem;
+    font-size: 0.9rem;
+    outline: none;
+    background-color: #ffffff;
+    transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease,
+        background-color 0.15s ease;
+}
+
+.contracts-calendar-search input:focus {
+    border-color: #0f172a;
+    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.08);
+    background-color: #f8fafc;
+}
+
+.calendar {
+    height: 650px;
+}
+
+.contracts-loading {
+    font-size: 0.95rem;
+    color: #475569;
+    padding: 0.5rem 0.25rem;
+}
+
+/* === SERVICIOS EN CURSO === */
+
+.contracts-active {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 24px;
+}
+
+.contracts-active-header h2 {
+    margin: 0;
+    color: #0f172a;
+}
+
+.contracts-active-header p {
+    margin: 6px 0 0;
+    color: #64748b;
+}
+
+.contracts-active-filters {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 12px;
+}
+
+.contracts-active-filters input,
+.contracts-active-filters select {
+    border-radius: 0.55rem;
+    border: 1px solid #e2e8f0;
+    padding: 0.45rem 0.7rem;
+    font-size: 0.9rem;
+    background-color: #ffffff;
+    min-width: 200px;
+}
+
+.contracts-active-list {
+    display: grid;
+    gap: 16px;
+}
+
+.contracts-active-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.contracts-active-card-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+
+.contracts-active-card h3 {
+    margin: 0 0 6px;
+    color: #0f172a;
+}
+
+.contracts-active-card p {
+    margin: 4px 0;
+    color: #475569;
+}
+
+.contracts-active-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.contracts-upload {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    padding: 8px 12px;
+    background: #0f172a;
+    color: #fff;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.contracts-upload input {
+    display: none;
+}
+
+.contracts-schedule-preview a {
+    color: #1d4ed8;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.contracts-active-employees {
+    display: grid;
+    gap: 8px;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 12px;
+}
+
+.contracts-active-employee {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    color: #475569;
+}
+
+.contracts-active-person {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.contracts-active-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+    display: inline-block;
+}
+
+
+/* === CUADRANTES SUBIDOS === */
+
+.contracts-schedules {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 12px;
+}
+
+.contracts-schedules-header h2 {
+    margin: 0;
+    color: #0f172a;
+}
+
+.contracts-schedules-header p {
+    margin: 6px 0 0;
+    color: #64748b;
+}
+
+.contracts-schedules-list {
+    display: grid;
+    gap: 16px;
+}
+
+.contracts-schedules-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.contracts-schedules-card h3 {
+    margin: 0 0 6px;
+    color: #0f172a;
+}
+
+.contracts-schedules-card p {
+    margin: 0;
+    color: #475569;
+}
+
+.contracts-schedules-card a {
+    color: #1d4ed8;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+/* Pequeños ajustes responsivos */
+
+@media (max-width: 768px) {
+    .contracts-filter select {
+        min-width: 150px;
+    }
+
+    .contracts-filter-actions {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+}

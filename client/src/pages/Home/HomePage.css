@@ -1,0 +1,402 @@
+/* Asegúrate de tener estas variables en un CSS global (o repítelas si hace falta) */
+:root {
+    --color-primary: #00153b;
+    --color-primary-medium: #1a4788;
+    --color-primary-soft: #06214f;
+
+    --color-bg: #f5f7fa;
+    --color-surface: #ffffff;
+
+    --color-text: #00153b;
+    --color-text-muted: #4b5563;
+
+    --color-border: #d1d5db;
+    --color-border-soft: #e5e7eb;
+}
+
+.home {
+    display: flex;
+    flex-direction: column;
+    gap: 4rem;
+}
+
+/* ---------- HERO ---------- */
+
+.hero {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2.5fr);
+    gap: 3rem;
+    align-items: center;
+    padding: 2rem 0 1rem;
+}
+
+.hero-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.hero-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(26, 71, 136, 0.1);
+    color: var(--color-primary-medium);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.hero h1 {
+    font-size: 2.4rem;
+    line-height: 1.2;
+    color: var(--color-primary);
+    margin: 0;
+}
+
+.hero h1 span {
+    display: block;
+}
+
+.hero-subtitle {
+    margin: 0;
+    color: var(--color-text-muted);
+    max-width: 580px;
+    line-height: 1.6;
+    font-size: 1rem;
+}
+
+.hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+}
+
+.hero-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.8rem;
+    margin-top: 0.5rem;
+}
+
+.hero-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+}
+
+.hero-stat strong {
+    font-size: 1.4rem;
+    color: var(--color-primary);
+}
+
+/* Panel derecho del hero */
+
+.hero-panel {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.hero-card {
+    background: radial-gradient(circle at top left, #1a4788 0, #00153b 55%);
+    color: #ffffff;
+    padding: 1.8rem 1.6rem;
+    border-radius: 1.2rem;
+    box-shadow: 0 18px 35px rgba(0, 21, 59, 0.35);
+    max-width: 420px;
+}
+
+.hero-card h3 {
+    margin-top: 0;
+    margin-bottom: 0.8rem;
+}
+
+.hero-card p {
+    margin: 0 0 0.8rem;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.hero-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.hero-card ul li {
+    position: relative;
+    padding-left: 1.1rem;
+    margin-bottom: 0.35rem;
+}
+
+.hero-card ul li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.45rem;
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: #ffffff;
+}
+
+/* ---------- BOTONES GENERALES ---------- */
+
+.btn {
+    border-radius: 999px;
+    border: 1.5px solid transparent;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.1s ease,
+        box-shadow 0.2s ease;
+}
+
+.btn-primary {
+    background: var(--color-primary);
+    color: #ffffff;
+    border-color: var(--color-primary);
+    box-shadow: 0 10px 20px rgba(0, 21, 59, 0.35);
+}
+
+.btn-primary:hover {
+    background: var(--color-primary-medium);
+    border-color: var(--color-primary-medium);
+    transform: translateY(-1px);
+    box-shadow: 0 14px 25px rgba(0, 21, 59, 0.45);
+}
+
+.btn-outline {
+    background: #ffffff;
+    color: var(--color-primary);
+    border-color: var(--color-border-soft);
+}
+
+.btn-outline:hover {
+    border-color: var(--color-primary-medium);
+    background: rgba(26, 71, 136, 0.06);
+    transform: translateY(-1px);
+}
+
+.btn-full {
+    width: 100%;
+    justify-content: center;
+}
+
+/* ---------- SECCIONES GENERALES ---------- */
+
+.home-section {
+    padding: 0.5rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.section-header {
+    max-width: 620px;
+}
+
+.section-header h2 {
+    margin-bottom: 0.5rem;
+    color: var(--color-primary);
+}
+
+.section-header p {
+    margin: 0;
+    color: var(--color-text-muted);
+}
+
+/* ---------- SERVICIOS ---------- */
+
+.home-services {
+    margin-top: 1rem;
+}
+
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 1.5rem;
+}
+
+.service-card {
+    background: var(--color-surface);
+    border-radius: 1rem;
+    padding: 1.4rem 1.3rem 1.3rem;
+    border: 1px solid var(--color-border-soft);
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+    display: flex;
+    flex-direction: column;
+}
+
+.service-card h3 {
+    margin-top: 0;
+    margin-bottom: 0.4rem;
+    color: var(--color-primary-soft);
+}
+
+.service-card p {
+    margin: 0 0 0.8rem;
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+}
+
+.service-card ul {
+    margin: 0;
+    padding-left: 1.1rem;
+    font-size: 0.9rem;
+    color: var(--color-primary-soft);
+}
+
+.service-card-actions {
+    margin-top: auto;
+    display: flex;
+    justify-content: center;
+    padding-top: 1rem;
+}
+
+/* ---------- POR QUÉ SYUSO ---------- */
+
+.home-why {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2.5fr);
+    gap: 2.5rem;
+    align-items: stretch;
+}
+
+.why-title {
+    margin-bottom: 1rem;
+}
+
+.why-text p {
+    color: var(--color-text-muted);
+}
+
+.why-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 1rem;
+    margin-top: 1.4rem;
+}
+
+.why-item {
+    padding: 1rem 1rem;
+    border-radius: 0.9rem;
+    background: #f3f5fb;
+    border: 1px solid rgba(0, 21, 59, 0.06);
+}
+
+.why-item h4 {
+    margin: 0 0 0.35rem;
+    color: var(--color-primary-soft);
+    font-size: 0.95rem;
+}
+
+.why-item p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+}
+
+/* Panel derecho */
+
+.why-panel {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.why-card {
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(135deg, #00153b 0%, #1a4788 85%);
+    color: #ffffff;
+    padding: 1.8rem 1.6rem;
+    border-radius: 1.2rem;
+    box-shadow: 0 18px 35px rgba(0, 21, 59, 0.4);
+    max-width: 420px;
+}
+
+.why-card h3 {
+    margin-top: 0;
+    margin-bottom: 0.7rem;
+}
+
+.why-card p {
+    margin: 2rem 0 1.2rem;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    flex-grow: 1;
+}
+
+/* ---------- CTA FINAL ---------- */
+
+.home-cta {
+    margin-top: 0.5rem;
+    padding: 1.5rem 1.8rem;
+    border-radius: 1.2rem;
+    background: linear-gradient(135deg, #00153b 0%, #1a4788 65%);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    color: #ffffff;
+    box-shadow: 0 16px 35px rgba(0, 21, 59, 0.45);
+}
+
+.home-cta-content h2 {
+    margin: 0 0 0.5rem;
+}
+
+.home-cta-content p {
+    margin: 0;
+    font-size: 0.95rem;
+    opacity: 0.9;
+}
+
+.home-cta-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+/* ---------- RESPONSIVE ---------- */
+
+@media (max-width: 960px) {
+    .hero,
+    .home-why {
+        grid-template-columns: 1fr;
+    }
+
+    .hero-panel,
+    .why-panel {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 768px) {
+    .hero h1 {
+        font-size: 2rem;
+    }
+
+    .home-cta {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .home-cta-actions {
+        width: 100%;
+    }
+
+    .btn-full {
+        width: 100%;
+    }
+}

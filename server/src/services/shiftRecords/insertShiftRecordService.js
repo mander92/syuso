@@ -4,26 +4,41 @@ import getPool from '../../db/getPool.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 
 
-const insertShiftRecordService = async (serviceId, employeeId) => {
+const insertShiftRecordService = async (
+    serviceId,
+    employeeId,
+    clockIn,
+    clockOut
+) => {
     const pool = await getPool();
 
     const [created] = await pool.query(
         `
-        SELECT serviceId FROM shiftRecords WHERE serviceId = ? 
+        SELECT id FROM shiftRecords WHERE serviceId = ? AND employeeId = ? 
         `,
-        [serviceId]
+        [serviceId, employeeId]
     );
 
     if (created.length) generateErrorUtil('El turno ya está asignado', 401);
 
     const id = uuid();
 
-    await pool.query(
-        `
-        INSERT INTO shiftRecords(id, employeeId, serviceId) VALUES(?,?,?)
-        `,
-        [id, employeeId, serviceId]
-    );
+    if (clockIn) {
+        await pool.query(
+            `
+            INSERT INTO shiftRecords(id, employeeId, serviceId, clockIn, clockOut)
+            VALUES(?, ?, ?, STR_TO_DATE(?, '%Y-%m-%d %H:%i:%s'), STR_TO_DATE(?, '%Y-%m-%d %H:%i:%s'))
+            `,
+            [id, employeeId, serviceId, clockIn, clockOut]
+        );
+    } else {
+        await pool.query(
+            `
+            INSERT INTO shiftRecords(id, employeeId, serviceId) VALUES(?,?,?)
+            `,
+            [id, employeeId, serviceId]
+        );
+    }
 
 };
 

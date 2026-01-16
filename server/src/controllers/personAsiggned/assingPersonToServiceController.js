@@ -1,18 +1,21 @@
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import newAssingPersonToServiceService from '../../services/personAssigned/newAssingPersonToServiceService.js';
+import ensureServiceDelegationAccessService from '../../services/delegations/ensureServiceDelegationAccessService.js';
 
 const assingPersonToServiceController = async (req, res, next) => {
     try {
-        const role = req.userLogged.role;
+        const { role, id: userId } = req.userLogged;
         const { employeeId } = req.body;
         const { serviceId } = req.params;
 
-        if (role !== 'admin') {
+        if (role !== 'admin' && role !== 'sudo') {
             generateErrorUtil(
-                'Solo un administrador tiene permisos para relizar esta operación',
+                'Solo un administrador tiene permisos para relizar esta operacion',
                 402
             );
         }
+
+        await ensureServiceDelegationAccessService(serviceId, userId, role);
 
         const data = await newAssingPersonToServiceService(
             employeeId,

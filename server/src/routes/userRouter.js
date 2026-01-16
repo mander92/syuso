@@ -56,7 +56,7 @@ router.post(
     editUserAvatarController
 );
 
-router.patch('/users/password/:useId', changeUserPasswordController);
+router.patch('/users/password', changeUserPasswordController);
 
 router.put('/user/:userId', authUser, userExists, editUserController);
 

@@ -8,7 +8,7 @@ import generateErrorUtil from './generateErrorUtil.js';
 
 export const savePictureUtil = async (img, width, height) => {
     try {
-        const uploadDir = path.join(process.cwd(), `/${UPLOADS_DIR}`);
+        const uploadDir = path.join(process.cwd(), UPLOADS_DIR);
 
         try {
             await fs.access(uploadDir);
@@ -16,7 +16,13 @@ export const savePictureUtil = async (img, width, height) => {
             await fs.mkdir(uploadDir);
         }
 
-        const sharpImg = sharp(img.data);
+        const input = img?.tempFilePath ? img.tempFilePath : img?.data;
+
+        if (!input) {
+            generateErrorUtil('No se ha recibido la imagen', 400);
+        }
+
+        const sharpImg = sharp(input);
 
         sharpImg.resize({ width, height });
 
@@ -34,8 +40,7 @@ export const savePictureUtil = async (img, width, height) => {
 
 export const deletePictureUtil = async (imgName) => {
     try {
-        console.log(imgName)
-        const imagePath = path.join(process.cwd(), `/${UPLOADS_DIR}`, imgName);
+        const imagePath = path.join(process.cwd(), UPLOADS_DIR, imgName);
 
         try {
             const result = await fs.access(imagePath);

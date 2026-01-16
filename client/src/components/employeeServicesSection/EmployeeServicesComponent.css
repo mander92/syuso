@@ -1,0 +1,136 @@
+.employee-services {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.employee-services-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    justify-content: space-between;
+}
+
+@media (min-width: 900px) {
+    .employee-services-header {
+        flex-direction: row;
+        align-items: flex-end;
+    }
+}
+
+.employee-services-header h1 {
+    font-size: 1.5rem;
+    margin: 0;
+    color: #0f172a;
+}
+
+.employee-services-header p {
+    color: #64748b;
+    margin: 0.35rem 0 0;
+}
+
+.employee-services-filters {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.employee-services-filter {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.85rem;
+    color: #475569;
+}
+
+.employee-services-filter select {
+    border-radius: 0.55rem;
+    border: 1px solid #e2e8f0;
+    padding: 0.45rem 0.7rem;
+    font-size: 0.9rem;
+    min-width: 160px;
+}
+
+.employee-services-list {
+    display: grid;
+    gap: 16px;
+}
+
+.employee-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+.employee-card-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.employee-card h3 {
+    margin-bottom: 8px;
+    color: #0f172a;
+}
+
+.employee-card p {
+    color: #475569;
+    margin-top: 4px;
+}
+
+.employee-card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    justify-content: center;
+}
+
+.employee-btn {
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #fff;
+}
+
+.employee-btn:not(.employee-btn--start):not(.employee-btn--end):not(.employee-btn--finish) {
+    background: #166534;
+}
+
+.employee-btn:not(.employee-btn--start):not(.employee-btn--end):not(.employee-btn--finish):hover {
+    background: #14532d;
+}
+
+.employee-btn--start {
+    background: #16a34a;
+}
+
+.employee-btn--end {
+    background: #94a3b8;
+}
+
+.employee-btn--finish {
+    background: #dc2626;
+}
+
+.employee-btn[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.employee-services-loading {
+    color: #64748b;
+}
+
+.employee-card-schedule a {
+    color: #1d4ed8;
+    font-weight: 600;
+    text-decoration: none;
+}

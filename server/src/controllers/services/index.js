@@ -6,7 +6,9 @@ import listClientServiceController from './listClientServiceController.js';
 import listEmployeeServiceController from './listEmployeeServiceController.js';
 import editServiceController from './editServiceController.js';
 import validateServiceController from './validateServiceController.js';
-import editRatingServiceByIdController from './editRatingServiceByIdController.js';
+import listInProgressServicesController from './listInProgressServicesController.js';
+import updateServiceScheduleImageController from './updateServiceScheduleImageController.js';
+import updateServiceStatusController from './updateServiceStatusController.js';
 
 export {
   listAdminServicesController,
@@ -17,5 +19,7 @@ export {
   listEmployeeServiceController,
   editServiceController,
   validateServiceController,
-  editRatingServiceByIdController,
+  listInProgressServicesController,
+  updateServiceScheduleImageController,
+  updateServiceStatusController,
 };

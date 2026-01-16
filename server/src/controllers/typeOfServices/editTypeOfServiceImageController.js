@@ -1,10 +1,15 @@
 import { deletePictureUtil, savePictureUtil } from '../../utils/photoUtil.js';
+import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import selectTypeOfServiceByIdService from '../../services/typeOfServices/selectTypeOfServiceByIdService.js';
 import updateTypeOfServiceImageService from '../../services/typeOfServices/updateTypeOfServiceImageService.js';
 
 const editTypeOfserviceImageController = async (req, res, next) => {
     try {
         const { typeOfServiceId } = req.params;
+
+        if (!req.files || !req.files.image) {
+            generateErrorUtil('Debes seleccionar una imagen', 400);
+        }
 
         const type = await selectTypeOfServiceByIdService(typeOfServiceId);
 

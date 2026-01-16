@@ -1,0 +1,78 @@
+.shift-detail-page {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 28px 18px 48px;
+}
+
+.shift-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.shift-detail-header h1 {
+    margin-bottom: 4px;
+    font-size: 1.5rem;
+    color: #0f172a;
+}
+
+.shift-detail-header p {
+    color: #64748b;
+}
+
+.shift-detail-back {
+    text-decoration: none;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: #0f172a;
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+.shift-detail-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 18px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    display: grid;
+    gap: 10px;
+}
+
+.shift-detail-card label {
+    font-size: 0.85rem;
+    color: #475569;
+}
+
+.shift-detail-card input {
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    font-size: 0.95rem;
+}
+
+.shift-detail-card button {
+    border: none;
+    border-radius: 8px;
+    padding: 8px 12px;
+    background: #0f172a;
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.shift-detail-card button[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.shift-detail-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.shift-detail-delete {
+    background: #dc2626;
+}

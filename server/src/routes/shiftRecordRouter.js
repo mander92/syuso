@@ -5,14 +5,19 @@ import isAdmin from '../middleware/isAdmin.js';
 import isEmployee from '../middleware/isEmployee.js';
 import serviceExists from '../middleware/serviceExists.js';
 import shiftRecordExists from '../middleware/shiftRecordExists.js';
+import createWorkReportController from '../controllers/workReports/createWorkReportController.js';
+import saveWorkReportDraftController from '../controllers/workReports/saveWorkReportDraftController.js';
+import selectWorkReportDraftController from '../controllers/workReports/selectWorkReportDraftController.js';
 
 import {
     newShiftRecordController,
     listShiftRecordsController,
+    listEmployeeShiftRecordsController,
     editShiftRecordController,
     detailShiftRecordController,
     startShiftRecordsController,
     endShiftRecordsController,
+    deleteShiftRecordController,
 } from '../controllers/shiftRecords/index.js';
 
 const router = express.Router();
@@ -25,6 +30,13 @@ router.post(
 );
 
 router.get('/shiftRecords', authUser, isAdmin, listShiftRecordsController);
+
+router.get(
+    '/shiftRecords/employee',
+    authUser,
+    isEmployee,
+    listEmployeeShiftRecordsController
+);
 
 router.get(
     '/shiftRecords/:shiftRecordId',
@@ -57,6 +69,38 @@ router.patch(
     isEmployee,
     shiftRecordExists,
     endShiftRecordsController
+);
+
+router.post(
+    '/shiftRecords/:shiftRecordId/report',
+    authUser,
+    isEmployee,
+    shiftRecordExists,
+    createWorkReportController
+);
+
+router.get(
+    '/shiftRecords/:shiftRecordId/report/draft',
+    authUser,
+    isEmployee,
+    shiftRecordExists,
+    selectWorkReportDraftController
+);
+
+router.post(
+    '/shiftRecords/:shiftRecordId/report/draft',
+    authUser,
+    isEmployee,
+    shiftRecordExists,
+    saveWorkReportDraftController
+);
+
+router.delete(
+    '/shiftRecords/:shiftRecordId',
+    authUser,
+    isAdmin,
+    shiftRecordExists,
+    deleteShiftRecordController
 );
 
 export default router;

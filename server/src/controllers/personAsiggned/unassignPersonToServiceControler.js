@@ -1,29 +1,30 @@
-import generateErrorUtil from "../../utils/generateErrorUtil.js";
-import deletePersonFormService from "../../services/personAssigned/deletePersonFormService.js";
+import generateErrorUtil from '../../utils/generateErrorUtil.js';
+import deletePersonFormService from '../../services/personAssigned/deletePersonFormService.js';
+import ensureServiceDelegationAccessService from '../../services/delegations/ensureServiceDelegationAccessService.js';
 
 const unassignPersonToServiceControler = async (req, res, next) => {
     try {
-        const role = req.userLogged.role;
+        const { role, id: userId } = req.userLogged;
         const { serviceId, employeeId } = req.body;
 
-        if (role !== 'admin') {
-            generateErrorUtil('No tienes permiso para realizar esta acción')
+        if (role !== 'admin' && role !== 'sudo') {
+            generateErrorUtil('No tienes permiso para realizar esta accion');
         }
 
         if (!serviceId || !employeeId) {
-            generateErrorUtil('Faltan datos para realizar esta operación')
+            generateErrorUtil('Faltan datos para realizar esta operacion');
         }
 
-        const data = await deletePersonFormService(serviceId, employeeId)
+        await ensureServiceDelegationAccessService(serviceId, userId, role);
 
+        const data = await deletePersonFormService(serviceId, employeeId);
 
         res.send({
             status: 'ok',
-            data
-        })
-
+            data,
+        });
     } catch (error) {
-        next(error)
+        next(error);
     }
 };
 

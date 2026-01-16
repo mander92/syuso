@@ -1,0 +1,166 @@
+/* =========================================
+   FORMULARIO DE FILTROS
+   ========================================= */
+
+.form-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin: 1rem auto 1.5rem;
+    justify-content: center;
+    width: 100%;
+}
+
+.form-filters select {
+    border-radius: 0.55rem;
+    border: 1px solid #e2e8f0;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.92rem;
+    background-color: #ffffff;
+    min-width: 160px;
+    cursor: pointer;
+    transition:
+        border-color 0.18s ease,
+        box-shadow 0.18s ease,
+        background-color 0.15s ease;
+}
+
+.form-filters select:focus {
+    border-color: #0f172a;
+    box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.15);
+}
+
+.form-filters button {
+    padding: 0.55rem 1rem;
+    border-radius: 0.55rem;
+    border: none;
+    background-color: #0f172a;
+    color: white;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition:
+        background-color 0.18s ease,
+        transform 0.1s ease,
+        box-shadow 0.18s ease;
+    white-space: nowrap;
+}
+
+.form-filters button:hover {
+    background-color: #020617;
+    box-shadow: 0 6px 15px rgba(15, 23, 42, 0.25);
+    transform: translateY(-1px);
+}
+
+.form-filters button:active {
+    transform: scale(0.98);
+    box-shadow: none;
+}
+
+/* =========================================
+   LISTA DE CARDS
+   ========================================= */
+
+.cards {
+    list-style: none;
+    padding: 0;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.2rem;
+    width: 100%;
+}
+
+/* =========================================
+   CARD INDIVIDUAL
+   ========================================= */
+
+.cards li {
+    background: #ffffff;
+    border-radius: 0.9rem;
+    padding: 1.2rem;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    transition:
+        transform 0.15s ease,
+        box-shadow 0.18s ease;
+}
+
+.cards li:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+}
+
+/* Título del servicio */
+.cards li h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+/* Descripción */
+.cards li p {
+    margin: 0;
+    font-size: 0.92rem;
+    color: #475569;
+}
+
+/* Ciudad */
+.cards li .font-extrabold {
+    font-weight: 700;
+    color: #1e293b;
+    margin-top: 0.3rem;
+}
+
+/* Precio */
+.cards li p:last-of-type {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+/* =========================================
+   ENLACES DENTRO DE LA CARD
+   ========================================= */
+
+.cards li a {
+    margin-top: 0.35rem;
+    text-decoration: none;
+    color: #0f172a;
+    font-weight: 500;
+    padding: 0.45rem 0.75rem;
+    border-radius: 0.55rem;
+    border: 1px solid #cbd5e1;
+    display: inline-block;
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
+}
+
+.cards li a:hover {
+    background-color: #0f172a;
+    color: white;
+    border-color: #0f172a;
+}
+
+/* =========================================
+   RESPONSIVE
+   ========================================= */
+
+@media (max-width: 480px) {
+    .cards {
+        grid-template-columns: 1fr;
+    }
+
+    .form-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .form-filters button {
+        width: 100%;
+    }
+}

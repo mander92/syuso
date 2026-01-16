@@ -1,0 +1,127 @@
+.work-wrapper {
+    background: var(--color-bg);
+    min-height: calc(100vh - 80px);
+    padding: 3rem 1.6rem 4rem;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: center;
+}
+
+.work-layout {
+    max-width: 1100px;
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: 2.5rem;
+    align-items: flex-start;
+}
+
+/* Lado texto */
+.work-info h1 {
+    margin: 0;
+    font-size: 2rem;
+    color: var(--color-text);
+}
+
+.work-subtitle {
+    margin: 0.6rem 0 1.4rem;
+    font-size: 0.98rem;
+    color: var(--color-text-muted);
+}
+
+.work-list {
+    margin: 0 0 1.2rem 1.2rem;
+    padding: 0;
+    font-size: 0.95rem;
+    color: var(--color-text);
+}
+
+.work-note {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+}
+
+/* Formulario */
+.work-form-section {
+    display: flex;
+    justify-content: center;
+}
+
+.work-form {
+    width: 100%;
+    max-width: 480px;
+    background: var(--color-surface);
+    border-radius: 18px;
+    padding: 2rem 2.1rem;
+    box-shadow: 0 18px 40px rgba(0, 21, 59, 0.16);
+    border: 1px solid var(--color-border-soft);
+    box-sizing: border-box;
+}
+
+.work-form h2 {
+    margin: 0 0 1.1rem;
+    font-size: 1.4rem;
+    color: var(--color-text);
+}
+
+.work-form .form-group {
+    margin-bottom: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.work-form .form-group label {
+    font-size: 0.9rem;
+    color: var(--color-text);
+    font-weight: 500;
+}
+
+.work-form .form-group input,
+.work-form .form-group textarea {
+    padding: 0.55rem 0.8rem;
+    border-radius: 10px;
+    border: 1px solid var(--color-border);
+    font-size: 0.95rem;
+    color: var(--color-text);
+    background: #ffffff;
+    outline: none;
+}
+
+.work-form .form-group input:focus,
+.work-form .form-group textarea:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(26, 71, 136, 0.12);
+}
+
+.work-form textarea {
+    resize: vertical;
+}
+
+.work-form-actions {
+    margin-top: 1.4rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.8rem;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .work-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .work-wrapper {
+        padding: 2.5rem 1rem 3rem;
+    }
+
+    .work-form {
+        padding: 1.6rem 1.4rem;
+    }
+
+    .work-form-actions {
+        flex-direction: column-reverse;
+    }
+}

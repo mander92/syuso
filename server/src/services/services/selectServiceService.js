@@ -1,10 +1,10 @@
 import getPool from '../../db/getPool.js';
 
-const selectServiceService = async (status, type) => {
+const selectServiceService = async (status, type, delegationNames = []) => {
     const pool = await getPool();
 
     let sqlQuery = `
-    SELECT s.id AS serviceId, s.name, s.status, t.type, t.city AS province, s.startDateTime, a.city, a.address, a.postCode
+    SELECT s.id AS serviceId, s.name, s.status, t.type, t.city AS province, s.startDateTime, s.endDateTime, s.hours, s.scheduleImage, a.city, a.address, a.postCode
     FROM addresses a
     INNER JOIN services s
     ON a.id = s.addressId
@@ -22,6 +22,13 @@ const selectServiceService = async (status, type) => {
     if (type) {
         sqlQuery += ' AND type = ?';
         sqlValues.push(type);
+    }
+
+    if (delegationNames.length) {
+        sqlQuery += ` AND t.city IN (${delegationNames
+            .map(() => '?')
+            .join(', ')})`;
+        sqlValues.push(...delegationNames);
     }
 
     const [service] = await pool.query(sqlQuery, sqlValues);

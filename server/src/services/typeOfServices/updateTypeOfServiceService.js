@@ -3,24 +3,23 @@ import getPool from '../../db/getPool.js';
 const updateTypeOfServiceService = async (
     imgName,
     typeOfServiceId,
-    description,
-    price
+    description
 ) => {
     const pool = await getPool();
 
     if (!imgName) {
         await pool.query(
             `
-        UPDATE typeOfServices SET description = ?, price = ? WHERE id = ?
+        UPDATE typeOfServices SET description = ? WHERE id = ?
         `,
-            [description, price, typeOfServiceId]
+            [description, typeOfServiceId]
         );
     } else {
         await pool.query(
             `
-        UPDATE typeOfServices SET description = ?, price = ?, image = ? WHERE id = ?
+        UPDATE typeOfServices SET description = ?, image = ? WHERE id = ?
         `,
-            [description, price, imgName, typeOfServiceId]
+            [description, imgName, typeOfServiceId]
         );
     }
 

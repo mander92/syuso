@@ -1,0 +1,254 @@
+.work-report-page {
+    padding: 32px 24px 64px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.work-report-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.work-report-header h1 {
+    margin-bottom: 6px;
+}
+
+.work-report-service {
+    margin-top: 8px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.work-report-save {
+    margin-top: 6px;
+    font-size: 13px;
+    color: #475569;
+}
+
+.work-report-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.work-report-section h2 {
+    margin-bottom: 12px;
+    font-size: 18px;
+}
+
+.work-report-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+}
+
+.work-report-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.work-report-grid input,
+.work-report-grid select,
+.work-report-grid textarea {
+    border-radius: 10px;
+    border: 1px solid #d1d5db;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.work-report-grid textarea {
+    resize: vertical;
+}
+
+.work-report-span {
+    grid-column: 1 / -1;
+}
+
+.work-report-signature {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.work-report-signature-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.work-report-signature-header button {
+    border: none;
+    background: #e2e8f0;
+    color: #1e293b;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.work-report-incident {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.work-report-incident input {
+    flex: 1;
+}
+
+.work-report-incident button {
+    border: none;
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 6px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.work-report-incident-photos {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.work-report-photo-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.work-report-photo-list .work-report-photo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+
+.work-report-photo-list .work-report-photo span {
+    font-size: 13px;
+    color: #1f2937;
+}
+
+.work-report-photo-list .work-report-photo button {
+    border: none;
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 6px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.work-report-incident-add {
+    align-self: flex-start;
+    border: none;
+    background: #e2e8f0;
+    color: #1e293b;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.work-report-add {
+    justify-self: start;
+    border: none;
+    background: #e2e8f0;
+    color: #1e293b;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.work-report-photos {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+}
+
+.work-report-photo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.work-report-photo img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+}
+
+.work-report-photo button {
+    border: none;
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 6px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.work-report-canvas {
+    width: 100%;
+    height: 220px;
+    border: 1px dashed #94a3b8;
+    border-radius: 12px;
+    background: #f8fafc;
+    touch-action: none;
+    pointer-events: auto;
+    cursor: crosshair;
+}
+
+.work-report-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.work-report-actions button,
+.work-report-back {
+    background: #0f172a;
+    color: #ffffff;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.work-report-draft {
+    background: #e2e8f0;
+    color: #1e293b;
+}
+
+.work-report-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 720px) {
+    .work-report-header {
+        flex-direction: column;
+    }
+
+    .work-report-card {
+        padding: 20px;
+    }
+}

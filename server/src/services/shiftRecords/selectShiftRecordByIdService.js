@@ -5,7 +5,7 @@ const selectShiftRecordByIdService = async (shiftRecordId) => {
 
     const [shiftRecord] = await pool.query(
         `
-        SELECT clockIn, clockOut FROM shiftRecords WHERE id = ?
+        SELECT id, serviceId, clockIn, clockOut FROM shiftRecords WHERE id = ?
         `,
         [shiftRecordId]
     );

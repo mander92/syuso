@@ -5,8 +5,7 @@ const selectTypeOfServiceByIdService = async (typeOfServiceId) => {
 
     const [type] = await pool.query(
         ` 
-        SELECT t.id, t.image, t.type, t.description, t.city, t.price,
-        (SELECT AVG(rating) FROM services s WHERE s.typeOfServicesId = t.id) AS averageRating
+        SELECT t.id, t.image, t.type, t.description, t.city
         FROM 
         typeOfServices t
         WHERE 

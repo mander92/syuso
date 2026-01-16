@@ -1,0 +1,184 @@
+.consulting-page {
+    background: var(--color-bg);
+    min-height: calc(100vh - 80px);
+    padding: 3rem 1.5rem 3.5rem;
+    box-sizing: border-box;
+}
+
+.consulting-wrapper {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: 2.5rem;
+}
+
+/* Columna izquierda: info */
+.consulting-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.consulting-tag {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+.consulting-title {
+    margin: 0;
+    font-size: 1.9rem;
+    color: var(--color-text);
+}
+
+.consulting-text {
+    margin: 0;
+    font-size: 0.98rem;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+}
+
+.consulting-highlights {
+    margin-top: 1.4rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.9rem;
+}
+
+.consulting-highlight {
+    background: var(--color-surface);
+    border-radius: 14px;
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--color-border-soft);
+}
+
+.ch-label {
+    display: inline-block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    margin-bottom: 0.3rem;
+}
+
+/* Columna derecha: formulario */
+.consulting-form-card {
+    background: var(--color-surface);
+    border-radius: 18px;
+    padding: 2rem 2.2rem;
+    box-shadow: 0 18px 40px rgba(0, 21, 59, 0.16);
+    border: 1px solid var(--color-border-soft);
+}
+
+.consulting-form-card h2 {
+    margin: 0 0 0.4rem;
+    font-size: 1.3rem;
+    color: var(--color-text);
+}
+
+.consulting-form-subtitle {
+    margin: 0 0 1.4rem;
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+}
+
+/* Form */
+.consulting-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.form-row {
+    display: flex;
+    gap: 0.9rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    flex: 1;
+}
+
+.form-group label {
+    font-size: 0.9rem;
+    color: var(--color-text);
+    font-weight: 500;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    padding: 0.55rem 0.8rem;
+    border-radius: 10px;
+    border: 1px solid var(--color-border);
+    font-size: 0.95rem;
+    color: var(--color-text);
+    background: #ffffff;
+    outline: none;
+    resize: vertical;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(26, 71, 136, 0.12);
+}
+
+/* Pie del formulario */
+.form-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    margin-top: 0.6rem;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+}
+
+.checkbox-label input[type='checkbox'] {
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+}
+
+.consulting-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .consulting-wrapper {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .consulting-form-card {
+        padding: 1.8rem 1.6rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .consulting-page {
+        padding: 2.2rem 1rem 3rem;
+    }
+
+    .form-row {
+        flex-direction: column;
+    }
+
+    .consulting-buttons {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+}

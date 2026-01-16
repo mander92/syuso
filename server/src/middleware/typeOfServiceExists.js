@@ -5,6 +5,8 @@ import generateErrorUtil from '../utils/generateErrorUtil.js';
 
 const typeOfServiceExist = async (req, res, next) => {
     try {
+
+        console.log(req.params);
         const schema = Joi.object().keys({
             typeOfServiceId: Joi.string().length(36).required(),
         });

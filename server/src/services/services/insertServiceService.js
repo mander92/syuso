@@ -52,15 +52,6 @@ const insertServiceService = async (
             401
         );
 
-    const [price] = await pool.query(
-        `
-        SELECT price FROM typeOfServices WHERE id = ?
-        `,
-        [typeOfServiceId]
-    );
-
-    const resultPrice = price[0].price * hours * numberOfPeople;
-
     const addressId = uuid();
 
     await pool.query(
@@ -74,40 +65,69 @@ const insertServiceService = async (
 
     const serviceId = uuid();
 
-    await pool.query(
-        `
+    if (endDateTime) {
+        await pool.query(
+            `
   INSERT INTO services(
     id, name, startDateTime, endDateTime,
     hours, numberOfPeople, comments, validationCode,
-    clientId, addressId, typeOfServicesId, totalPrice
+    clientId, addressId, typeOfServicesId
   )
   VALUES (
     ?, ?, 
     STR_TO_DATE(?, '%Y-%m-%dT%H:%i:%sZ'),
     STR_TO_DATE(?, '%Y-%m-%dT%H:%i:%sZ'),
-    ?, ?, ?, ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?
   )
   `,
-        [
-            serviceId,
-            name,
-            startDateTime,
-            endDateTime,
-            hours,
-            numberOfPeople,
-            comments,
-            validationCode,
-            userId,
-            addressId,
-            typeOfServiceId,
-            resultPrice,
-        ]
-    );
+            [
+                serviceId,
+                name,
+                startDateTime,
+                endDateTime,
+                hours,
+                numberOfPeople,
+                comments,
+                validationCode,
+                userId,
+                addressId,
+                typeOfServiceId,
+            ]
+        );
+    } else {
+        await pool.query(
+            `
+  INSERT INTO services(
+    id, name, startDateTime, endDateTime,
+    hours, numberOfPeople, comments, validationCode,
+    clientId, addressId, typeOfServicesId
+  )
+  VALUES (
+    ?, ?, 
+    STR_TO_DATE(?, '%Y-%m-%dT%H:%i:%sZ'),
+    NULL,
+    ?, ?, ?, ?, ?, ?, ?
+  )
+  `,
+            [
+                serviceId,
+                name,
+                startDateTime,
+                hours,
+                numberOfPeople,
+                comments,
+                validationCode,
+                userId,
+                addressId,
+                typeOfServiceId,
+            ]
+        );
+    }
 
     const [data] = await pool.query(
         `
         SELECT s.status,
-        t.type, t.city AS province, t.price, s.hours, s.totalPrice, s.startDateTime, a.address, a.postCode, a.city, s.comments, u.email, u.firstName, u.lastName, u.phone
+        t.type, t.city AS province, s.hours, s.startDateTime, a.address, a.postCode, a.city, s.comments, u.email, u.firstName, u.lastName, u.phone
         FROM addresses a
         INNER JOIN services s
         ON a.id = s.addressId

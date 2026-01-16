@@ -10,7 +10,6 @@ const editTypeOfServiceController = async (req, res, next) => {
     try {
         /*const schema = Joi.object().keys({
             description: Joi.string().max(250).required(),
-            price: Joi.number().min(1).max(100).required(),
         });
 
         const validation = schema.validate(req.body);
@@ -19,11 +18,13 @@ const editTypeOfServiceController = async (req, res, next) => {
 
         const { typeOfServiceId } = req.params;
 
-        const { description, price } = req.body;
+        const { description } = req.body;
 
         let imgName;
 
-        if (req.files.image) {
+        const hasImage = req.files && req.files.image;
+
+        if (hasImage) {
 
             const [imgToDelete] = await pool.query(
                 `SELECT image FROM typeOfServices WHERE id = ?`,
@@ -37,7 +38,7 @@ const editTypeOfServiceController = async (req, res, next) => {
             imgName = await savePictureUtil(req.files.image, 320, 240);
         }
 
-        await updateTypeOfServiceService(imgName, typeOfServiceId, description, price);
+        await updateTypeOfServiceService(imgName, typeOfServiceId, description);
 
         res.send({
             staus: 'ok',

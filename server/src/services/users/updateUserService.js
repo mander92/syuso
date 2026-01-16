@@ -1,3 +1,4 @@
+// services/users/updateUserService.js
 import getPool from '../../db/getPool.js';
 
 const updateUserService = async (userId, firstName, lastName, phone) => {
@@ -5,10 +6,13 @@ const updateUserService = async (userId, firstName, lastName, phone) => {
 
     await pool.query(
         `
-        UPDATE users SET firstName=?, lastName=?, phone=? WHERE id=?
+        UPDATE users 
+        SET firstName = ?, lastName = ?, phone = ?
+        WHERE id = ?
         `,
         [firstName, lastName, phone, userId]
     );
 };
 
 export default updateUserService;
+

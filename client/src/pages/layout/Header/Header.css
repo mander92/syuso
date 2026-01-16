@@ -1,0 +1,223 @@
+/* HEADER BASADO EN LOS COLORES DEL LOGO SYUSO */
+
+.header {
+    width: 100%;
+    height: 80px;
+    padding: 0 2rem;
+    background: var(--color-surface);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0, 21, 59, 0.12);
+    box-sizing: border-box;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    border-bottom: 2px solid rgba(0, 21, 59, 0.06);
+}
+
+/* ---- Logo ---- */
+.header-left {
+    display: flex;
+    align-items: center;
+}
+
+.header-logo {
+    height: 55px;
+    width: auto;
+    object-fit: contain;
+}
+
+/* ---- Navegación desktop ---- */
+.header-nav {
+    display: flex;
+    gap: 1.2rem;
+}
+
+/* Botón base navegación desktop */
+.nav-btn {
+    padding: 0.6rem 1.3rem;
+    background: transparent;
+    border: 1.5px solid var(--color-primary);
+    border-radius: 999px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.1s ease;
+    color: var(--color-primary);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+
+.nav-btn:hover {
+    background: rgba(26, 71, 136, 0.08);
+    border-color: var(--color-primary-medium);
+    transform: translateY(-1px);
+}
+
+/* Botón destacado (login / salir) */
+.nav-btn-primary {
+    background: var(--color-primary);
+    color: #ffffff;
+    border-color: var(--color-primary);
+}
+
+.nav-btn-primary:hover {
+    background: var(--color-primary-medium);
+    border-color: var(--color-primary-medium);
+}
+
+/* ---- Botón hamburguesa ---- */
+
+.burger-btn {
+    width: 38px;
+    height: 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 6px;
+    cursor: pointer;
+    background: var(--color-surface);
+    border-radius: 10px;
+    border: 1px solid var(--color-border-soft);
+    transition:
+        background 0.3s ease,
+        border-color 0.3s ease;
+}
+
+.burger-btn:hover {
+    background: var(--color-border-soft);
+}
+
+.burger-btn span {
+    display: block;
+    width: 100%;
+    height: 3px;
+    background: var(--color-text);
+    border-radius: 3px;
+    transition:
+        transform 0.35s ease,
+        opacity 0.35s ease,
+        background 0.3s ease;
+}
+
+/* Estado abierto: animación a "X" */
+.burger-btn--open {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+.burger-btn--open span {
+    background: #fff;
+}
+
+.burger-btn--open span:nth-child(1) {
+    transform: translateY(10px) rotate(45deg);
+}
+
+.burger-btn--open span:nth-child(2) {
+    opacity: 0;
+}
+
+.burger-btn--open span:nth-child(3) {
+    transform: translateY(-10px) rotate(-45deg);
+}
+
+/* Ocultar hamburguesa en desktop */
+@media (min-width: 850px) {
+    .burger-btn {
+        display: none;
+    }
+}
+
+/* ---- Menú móvil ---- */
+
+.mobile-nav {
+    position: fixed;
+    top: 70px; /* altura aproximada del header en móvil */
+    right: 0;
+    width: 100%;
+    max-width: 320px;
+    background: var(--color-surface);
+    box-shadow: -4px 0 20px rgba(0, 21, 59, 0.25);
+    padding: 1.2rem 1.3rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    transform: translateX(100%);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+        opacity 0.25s ease,
+        transform 0.25s ease;
+    z-index: 25;
+    border-left: 1px solid var(--color-border-soft);
+    border-bottom: 2px solid rgba(0, 21, 59, 0.06);
+}
+
+/* Cuando está abierto (clase que añades desde React) */
+.mobile-nav--open {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+/* Botones dentro del menú móvil */
+.mobile-nav-btn {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border-soft);
+    color: var(--color-text);
+    text-align: left;
+    font-size: 0.98rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+        background 0.25s ease,
+        transform 0.2s ease,
+        border-color 0.25s ease;
+}
+
+.mobile-nav-btn:hover {
+    background: var(--color-border-soft);
+    transform: translateX(4px);
+}
+
+.mobile-nav-btn:active {
+    transform: scale(0.98);
+}
+
+/* Botón principal en el menú móvil (login / salir) */
+.mobile-nav-btn-primary {
+    background: var(--color-primary);
+    color: #fff;
+    border-color: var(--color-primary);
+}
+
+.mobile-nav-btn-primary:hover {
+    background: var(--color-primary-medium);
+    border-color: var(--color-primary-medium);
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+    .header {
+        height: 70px;
+        padding: 0 1rem;
+    }
+
+    /* Escondemos nav desktop en móvil */
+    .header-nav {
+        display: none;
+    }
+
+    /* Mostramos hamburguesa en móvil */
+    .burger-btn {
+        display: flex;
+    }
+}

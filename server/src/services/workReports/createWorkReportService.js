@@ -1,0 +1,559 @@
+import fs from 'fs';
+import fsPromises from 'fs/promises';
+import path from 'path';
+import { v4 as uuid } from 'uuid';
+import PDFDocument from 'pdfkit';
+import sharp from 'sharp';
+
+import getPool from '../../db/getPool.js';
+import generateErrorUtil from '../../utils/generateErrorUtil.js';
+import sendMail from '../../utils/sendBrevoMail.js';
+import { ADMIN_EMAIL, UPLOADS_DIR } from '../../../env.js';
+
+const ensureDir = async (dirPath) => {
+    try {
+        await fsPromises.access(dirPath);
+    } catch (error) {
+        await fsPromises.mkdir(dirPath, { recursive: true });
+    }
+};
+
+const escapeXml = (value) =>
+    String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+
+const normalizeDate = (value) => {
+    if (!value) return null;
+    if (value.includes('T')) return value.split('T')[0];
+    return value;
+};
+
+const normalizeDateTime = (value) => {
+    if (!value) return null;
+    if (value.includes('T')) {
+        const parts = value.split('T');
+        const time = parts[1] || '';
+        const normalizedTime = time.length === 5 ? `${time}:00` : time;
+        return `${parts[0]} ${normalizedTime}`;
+    }
+    return value;
+};
+
+const buildReportSvg = (payload, signatureDataUrl) => {
+    const width = 1240;
+    const height = 1754;
+    const lines = [
+        `Numero de parte: ${payload.folio}`,
+        `Fecha del reporte: ${payload.reportDate}`,
+        `Hora inicio incidente: ${payload.incidentStart}`,
+        `Hora fin incidente: ${payload.incidentEnd}`,
+        `Lugar: ${payload.location}`,
+        `Vigilante: ${payload.guardFullName}`,
+        `Numero empleado: ${payload.guardEmployeeNumber}`,
+        `Turno: ${payload.guardShift}`,
+        `Empresa de seguridad: ${payload.securityCompany}`,
+        `Tipo incidencia: ${payload.incidentType}`,
+        `Gravedad: ${payload.severity}`,
+        `Descripcion: ${payload.description}`,
+        `Deteccion: ${payload.detection}`,
+        `Acciones: ${payload.actionsTaken}`,
+        `Resultado: ${payload.outcome}`,
+    ];
+
+    let y = 120;
+    const lineHeight = 48;
+    const textBlocks = lines
+        .map((line) => {
+            const text = escapeXml(line);
+            const block = `<text x="80" y="${y}" font-size="28" fill="#111">${text}</text>`;
+            y += lineHeight;
+            return block;
+        })
+        .join('');
+
+    const signatureBlock = signatureDataUrl
+        ? `<image x="80" y="${y + 40}" width="420" height="160" href="${signatureDataUrl}" />`
+        : '';
+
+    return `
+        <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100%" height="100%" fill="#ffffff" />
+            <text x="80" y="70" font-size="36" fill="#0f172a">Parte de trabajo</text>
+            ${textBlocks}
+            <text x="80" y="${y + 30}" font-size="24" fill="#111">Firma:</text>
+            ${signatureBlock}
+        </svg>
+    `;
+};
+
+const createPdfFromPng = async (pngPath, pdfPath) => {
+    await new Promise((resolve, reject) => {
+        const doc = new PDFDocument({ size: 'A4', margin: 0 });
+        const stream = fs.createWriteStream(pdfPath);
+        doc.pipe(stream);
+        doc.image(pngPath, 0, 0, { fit: [595, 842] });
+        doc.end();
+        stream.on('finish', resolve);
+        stream.on('error', reject);
+    });
+};
+
+const createPdfWithIncidents = async (
+    pdfPath,
+    reportData,
+    incidents,
+    logoPath,
+    signaturePath
+) => {
+    await new Promise((resolve, reject) => {
+        const doc = new PDFDocument({ size: 'A4', margin: 40 });
+        const stream = fs.createWriteStream(pdfPath);
+        doc.pipe(stream);
+
+        const sanitizeText = (value) =>
+            String(value || '')
+                .replace(/\u00d0/g, '')
+                .replace(/\r/g, '')
+                .trim();
+
+        if (logoPath) {
+            try {
+                doc.image(logoPath, doc.page.margins.left, 30, {
+                    fit: [140, 50],
+                });
+            } catch (error) {
+                // ignore missing logo
+            }
+        }
+
+        doc.moveDown(3.0);
+        doc.fontSize(22).text('Parte de trabajo', { align: 'left' });
+        doc.moveDown(0.6);
+
+        doc.fontSize(12).fillColor('#111827');
+        doc.text(`Numero de parte: ${sanitizeText(reportData.folio)}`);
+        const formatDate = (value) => {
+            const dateText = sanitizeText(value);
+            if (!dateText) return '';
+            if (dateText.includes('T')) return dateText.split('T')[0].split('-').reverse().join('-');
+            if (dateText.includes(' ')) return dateText.split(' ')[0].split('-').reverse().join('-');
+            if (dateText.includes('-')) return dateText.split('-').reverse().join('-');
+            return dateText;
+        };
+
+        const formatDateTime = (value) => {
+            const dateText = sanitizeText(value);
+            if (!dateText) return '';
+            if (dateText.includes('T')) {
+                const [datePart, timePart] = dateText.split('T');
+                return `${datePart.split('-').reverse().join('-')} ${timePart}`;
+            }
+            if (dateText.includes(' ')) {
+                const [datePart, timePart] = dateText.split(' ');
+                return `${datePart.split('-').reverse().join('-')} ${timePart}`;
+            }
+            if (dateText.includes('-')) {
+                return dateText.split('-').reverse().join('-');
+            }
+            return dateText;
+        };
+
+        doc.text(`Fecha del reporte: ${formatDate(reportData.reportDate)}`);
+        doc.text(`Hora inicio: ${formatDateTime(reportData.incidentStart)}`);
+        doc.text(`Hora fin: ${formatDateTime(reportData.incidentEnd)}`);
+        doc.text(`Lugar: ${sanitizeText(reportData.location)}`);
+        doc.text(`Vigilante: ${sanitizeText(reportData.guardFullName)}`);
+        doc.text(`TIP: ${sanitizeText(reportData.guardEmployeeNumber)}`);
+        doc.text(`Turno: ${sanitizeText(reportData.guardShift)}`);
+        doc.text(`Empresa: ${sanitizeText(reportData.securityCompany)}`);
+
+        doc.moveDown(0.6);
+        doc.fontSize(13).text('Informe');
+        doc.moveDown(0.2);
+        doc.fontSize(12).text(sanitizeText(reportData.description), {
+            width:
+                doc.page.width -
+                doc.page.margins.left -
+                doc.page.margins.right,
+        });
+
+        doc.moveDown(0.8);
+        doc.fontSize(14).text('Incidencias');
+        doc.moveDown(0.4);
+        doc.fontSize(12);
+
+        const pageWidth =
+            doc.page.width - doc.page.margins.left - doc.page.margins.right;
+        const imageGap = 12;
+        const imageWidth = (pageWidth - imageGap) / 2;
+        const imageHeight = 120;
+
+        incidents.forEach((incident, index) => {
+            doc.text(
+                `Incidencia ${index + 1}: ${sanitizeText(incident.text)}`
+            );
+            doc.moveDown(0.3);
+
+            const photos = incident.photos || [];
+            for (let i = 0; i < photos.length; i += 2) {
+                if (doc.y + imageHeight > doc.page.height - doc.page.margins.bottom) {
+                    doc.addPage();
+                }
+
+                const xLeft = doc.page.margins.left;
+                const xRight = xLeft + imageWidth + imageGap;
+                const y = doc.y;
+                const leftPath = photos[i];
+                const rightPath = photos[i + 1];
+
+                if (leftPath) {
+                    try {
+                        doc.image(leftPath, xLeft, y, {
+                            width: imageWidth,
+                            height: imageHeight,
+                        });
+                    } catch (error) {
+                        // ignore missing image
+                    }
+                }
+
+                if (rightPath) {
+                    try {
+                        doc.image(rightPath, xRight, y, {
+                            width: imageWidth,
+                            height: imageHeight,
+                        });
+                    } catch (error) {
+                        // ignore missing image
+                    }
+                }
+
+                doc.moveDown(0.1);
+                doc.y = y + imageHeight + 8;
+            }
+
+            doc.moveDown(0.6);
+        });
+
+        if (signaturePath) {
+            const signatureWidth = 140;
+            const signatureHeight = 60;
+            const signatureX =
+                doc.page.width - doc.page.margins.right - signatureWidth;
+            const signatureY =
+                doc.page.height - doc.page.margins.bottom - signatureHeight;
+
+            if (doc.y + signatureHeight > signatureY) {
+                doc.addPage();
+            }
+
+            doc.fontSize(11).text('Firma', signatureX, signatureY - 16, {
+                width: signatureWidth,
+                align: 'right',
+            });
+
+            try {
+                doc.image(signaturePath, signatureX, signatureY, {
+                    fit: [signatureWidth, signatureHeight],
+                });
+            } catch (error) {
+                // ignore missing signature
+            }
+        }
+
+        doc.end();
+        stream.on('finish', resolve);
+        stream.on('error', reject);
+    });
+};
+
+const createWorkReportService = async ({
+    shiftRecordId,
+    serviceId,
+    employeeId,
+    reportEmail,
+    locationCoords,
+    incidents,
+    incidentFiles,
+    reportData,
+}) => {
+    const pool = await getPool();
+
+    const [shiftRows] = await pool.query(
+        `
+        SELECT id, serviceId, employeeId, clockOut
+        FROM shiftRecords
+        WHERE id = ?
+        `,
+        [shiftRecordId]
+    );
+
+    if (!shiftRows.length) generateErrorUtil('Turno no encontrado', 404);
+
+    const shift = shiftRows[0];
+    if (shift.employeeId !== employeeId || shift.serviceId !== serviceId) {
+        generateErrorUtil('Turno invalido', 403);
+    }
+
+    if (shift.clockOut) {
+        generateErrorUtil('El turno ya esta cerrado', 409);
+    }
+
+    const [serviceRows] = await pool.query(
+        `
+        SELECT reportEmail FROM services WHERE id = ?
+        `,
+        [serviceId]
+    );
+
+    const finalReportEmail =
+        reportEmail || serviceRows?.[0]?.reportEmail || null;
+
+    const uploadsRoot = path.join(process.cwd(), UPLOADS_DIR);
+    const signatureDir = path.join(uploadsRoot, 'workReports', 'signatures');
+    const reportDir = path.join(uploadsRoot, 'workReports', 'reports');
+    const pdfDir = path.join(uploadsRoot, 'workReports', 'pdfs');
+    const photoDir = path.join(uploadsRoot, 'workReports', 'photos');
+    await ensureDir(signatureDir);
+    await ensureDir(reportDir);
+    await ensureDir(pdfDir);
+    await ensureDir(photoDir);
+
+    const signatureId = uuid();
+    const reportId = uuid();
+    const signaturePath = path.join(signatureDir, `${signatureId}.png`);
+    const reportImagePath = path.join(reportDir, `${reportId}.png`);
+    const reportPdfPath = path.join(pdfDir, `${reportId}.pdf`);
+
+    const signatureBase64 = reportData.signature.replace(
+        /^data:image\/png;base64,/, ''
+    );
+    const signatureBuffer = Buffer.from(signatureBase64, 'base64');
+    await fsPromises.writeFile(signaturePath, signatureBuffer);
+
+    const normalizedReportDate = normalizeDate(reportData.reportDate);
+    const normalizedIncidentStart = normalizeDateTime(reportData.incidentStart);
+    const normalizedIncidentEnd = normalizeDateTime(reportData.incidentEnd);
+
+    const svgPayload = {
+        ...reportData,
+        reportDate: normalizedReportDate,
+        incidentStart: normalizedIncidentStart,
+        incidentEnd: normalizedIncidentEnd,
+    };
+
+    const svg = buildReportSvg(svgPayload, reportData.signature);
+    await sharp(Buffer.from(svg)).png().toFile(reportImagePath);
+
+    await pool.query(
+        `
+        INSERT INTO workReports (
+            id,
+            shiftRecordId,
+            serviceId,
+            folio,
+            reportDate,
+            incidentStart,
+            incidentEnd,
+            location,
+            guardFullName,
+            guardEmployeeNumber,
+            guardShift,
+            securityCompany,
+            incidentType,
+            severity,
+            description,
+            detection,
+            actionsTaken,
+            outcome,
+            signaturePath,
+            reportImagePath
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        [
+            reportId,
+            shiftRecordId,
+            serviceId,
+            reportData.folio,
+            normalizedReportDate,
+            normalizedIncidentStart,
+            normalizedIncidentEnd,
+            reportData.location,
+            reportData.guardFullName,
+            reportData.guardEmployeeNumber,
+            reportData.guardShift,
+            reportData.securityCompany,
+            reportData.incidentType,
+            reportData.severity,
+            reportData.description,
+            reportData.detection,
+            reportData.actionsTaken,
+            reportData.outcome,
+            `workReports/signatures/${signatureId}.png`,
+            `workReports/reports/${reportId}.png`,
+        ]
+    );
+
+    const normalizedIncidents = Array.isArray(incidents)
+        ? incidents
+              .map((incident) => ({
+                  id: incident.id,
+                  text: incident.text || '',
+                  photoPaths: Array.isArray(incident.photoPaths)
+                      ? [...incident.photoPaths]
+                      : [],
+              }))
+              .filter((incident) => incident.text)
+        : [];
+
+    const fileEntries = Object.entries(incidentFiles || {});
+
+    for (const [fieldName, fileValue] of fileEntries) {
+        if (!fieldName.startsWith('incidentPhotos_')) continue;
+        const incidentId = fieldName.replace('incidentPhotos_', '');
+        const incident = normalizedIncidents.find(
+            (item) => String(item.id) === incidentId
+        );
+        if (!incident) continue;
+        const files = Array.isArray(fileValue) ? fileValue : [fileValue];
+
+        for (const file of files) {
+            if (!file) continue;
+            const extension =
+                path.extname(file.name || '').toLowerCase() ||
+                (file.mimetype === 'image/png' ? '.png' : '.jpg');
+            const photoId = uuid();
+            const photoFileName = `${photoId}${extension}`;
+            const photoPath = path.join(photoDir, photoFileName);
+
+            if (file.tempFilePath) {
+                await fsPromises.copyFile(file.tempFilePath, photoPath);
+            } else if (file.data) {
+                await fsPromises.writeFile(photoPath, file.data);
+            }
+
+            incident.photoPaths.push(`workReports/photos/${photoFileName}`);
+        }
+    }
+
+    if (normalizedIncidents.length) {
+        const incidentValues = normalizedIncidents.map((incident) => [
+            uuid(),
+            reportId,
+            incident.text,
+        ]);
+
+        const incidentIds = incidentValues.map((row) => row[0]);
+        await pool.query(
+            `
+            INSERT INTO workReportIncidents (id, workReportId, description)
+            VALUES ?
+            `,
+            [incidentValues]
+        );
+
+        const photoValues = [];
+        const incidentPhotoFiles = normalizedIncidents.map(() => []);
+
+        for (let index = 0; index < normalizedIncidents.length; index += 1) {
+            const incident = normalizedIncidents[index];
+            const incidentId = incidentIds[index];
+            const paths = incident.photoPaths || [];
+
+            for (const photoPath of paths) {
+                if (!photoPath) continue;
+                if (photoPath.includes('workReports/drafts/photos/')) {
+                    const sourcePath = path.join(uploadsRoot, photoPath);
+                    const extension = path.extname(photoPath) || '.jpg';
+                    const photoId = uuid();
+                    const photoFileName = `${photoId}${extension}`;
+                    const finalPath = path.join(photoDir, photoFileName);
+                    const finalRelPath = `workReports/photos/${photoFileName}`;
+
+                    try {
+                        await fsPromises.copyFile(sourcePath, finalPath);
+                        photoValues.push([photoId, incidentId, finalRelPath]);
+                        incidentPhotoFiles[index].push(finalPath);
+                    } catch (error) {
+                        // ignore missing draft file
+                    }
+                } else {
+                    photoValues.push([uuid(), incidentId, photoPath]);
+                    incidentPhotoFiles[index].push(
+                        path.join(uploadsRoot, photoPath)
+                    );
+                }
+            }
+        }
+
+        if (photoValues.length) {
+            await pool.query(
+                `
+                INSERT INTO workReportIncidentPhotos (id, workReportIncidentId, photoPath)
+                VALUES ?
+                `,
+                [photoValues]
+            );
+        }
+
+        const incidentsForPdf = normalizedIncidents.map((incident, index) => ({
+            text: incident.text,
+            photos: incidentPhotoFiles[index] || [],
+        }));
+
+        const logoPath =
+            process.env.SYUSO_LOGO_PATH ||
+            'C:\\Users\\Mario\\OneDrive\\Escritorio\\SYUSO_app\\client\\src\\assets\\syusoLogo.png';
+
+        await createPdfWithIncidents(
+            reportPdfPath,
+            svgPayload,
+            incidentsForPdf,
+            logoPath,
+            signaturePath
+        );
+    } else {
+        await createPdfFromPng(reportImagePath, reportPdfPath);
+    }
+
+    await pool.query(
+        `
+        DELETE FROM workReportDrafts WHERE shiftRecordId = ?
+        `,
+        [shiftRecordId]
+    );
+
+    const subject = `Parte de trabajo - ${reportData.folio}`;
+    const html = `
+        <html>
+            <body>
+                <p>Parte de trabajo generado para el servicio ${serviceId}.</p>
+                <p>Folio: ${escapeXml(reportData.folio)}</p>
+            </body>
+        </html>
+    `;
+
+    if (ADMIN_EMAIL) {
+        await sendMail('Admin', ADMIN_EMAIL, subject, html, [
+            { path: reportPdfPath },
+        ]);
+    }
+
+    if (finalReportEmail && finalReportEmail !== ADMIN_EMAIL) {
+        await sendMail('Reporte', finalReportEmail, subject, html, [
+            { path: reportPdfPath },
+        ]);
+    }
+
+    return {
+        id: reportId,
+        reportImagePath: `workReports/reports/${reportId}.png`,
+    };
+};
+
+export default createWorkReportService;

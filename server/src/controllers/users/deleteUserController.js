@@ -7,7 +7,11 @@ const deleteUserController = async (req, res, next) => {
 
         const { userId } = req.params;
 
-        if (loggedId !== userId)
+        if (
+            loggedId !== userId &&
+            req.userLogged.role !== 'admin' &&
+            req.userLogged.role !== 'sudo'
+        )
             generateErrorUtil('Acceso denegado, el token no coincide', 409);
 
         await deleteUserService(userId);

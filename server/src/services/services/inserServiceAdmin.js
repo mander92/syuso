@@ -3,7 +3,7 @@ import { ADMIN_EMAIL } from '../../../env.js';
 import getPool from '../../db/getPool.js';
 import Randomstring from 'randomstring';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
-import sendMailUtils from '../../utils/sendMailUtil.js';
+//import sendMailUtils from '../../utils/sendMailUtil.js';
 import sendMail from '../../utils/sendBrevoMail.js'
 
 const insertServiceAdmin = async (
@@ -50,15 +50,6 @@ const insertServiceAdmin = async (
     //         401
     //     );
 
-    const [price] = await pool.query(
-        `
-        SELECT price FROM typeOfServices WHERE id = ?
-        `,
-        [typeOfServiceId]
-    );
-
-    const resultPrice = price[0].price * hours * numberOfPeople;
-
     const addressId = uuid();
 
     await pool.query(
@@ -72,32 +63,31 @@ const insertServiceAdmin = async (
 
     const serviceId = uuid();
 
-    if (endDateTime) {
-        await pool.query(
-            `
-            INSERT INTO services(id, startDateTime, endDateTime, hours, numberOfPeople, comments, validationCode, clientId, addressId, typeOfServicesId, totalPrice, name) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+    const normalizedEndDateTime = endDateTime || null;
+
+    await pool.query(
+        `
+            INSERT INTO services(id, startDateTime, endDateTime, hours, numberOfPeople, comments, validationCode, clientId, addressId, typeOfServicesId, name) VALUES (?,?,?,?,?,?,?,?,?,?,?)
             `,
-            [
-                serviceId,
-                startDateTime,
-                endDateTime,
-                hours,
-                numberOfPeople,
-                comments,
-                validationCode,
-                clientId,
-                addressId,
-                typeOfServiceId,
-                resultPrice,
-                name
-            ]
-        );
-    }
+        [
+            serviceId,
+            startDateTime,
+            normalizedEndDateTime,
+            hours,
+            numberOfPeople,
+            comments,
+            validationCode,
+            clientId,
+            addressId,
+            typeOfServiceId,
+            name
+        ]
+    );
 
     const [data] = await pool.query(
         `
         SELECT s.status, s.name,
-        t.type, t.city AS province, t.price, s.hours, s.totalPrice, s.startDateTime, a.address, a.postCode, a.city, s.comments, u.email, u.firstName, u.lastName, u.phone
+        t.type, t.city AS province, s.hours, s.startDateTime, a.address, a.postCode, a.city, s.comments, u.email, u.firstName, u.lastName, u.phone
         FROM addresses a
         INNER JOIN services s
         ON a.id = s.addressId

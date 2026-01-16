@@ -1,0 +1,108 @@
+﻿.type-service-edit-wrapper {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 20px 60px;
+}
+
+.type-service-edit-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.type-service-edit-header h1 {
+    font-size: 28px;
+    margin-bottom: 6px;
+}
+
+.type-service-edit-header p {
+    color: #4a4a4a;
+}
+
+.type-service-edit-back {
+    text-decoration: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    background: #1f2d3d;
+    color: #fff;
+}
+
+.type-service-edit-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.type-service-edit-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.type-service-edit-card h2 {
+    margin-bottom: 16px;
+    font-size: 20px;
+}
+
+.type-service-edit-form {
+    display: grid;
+    gap: 12px;
+}
+
+.type-service-edit-form input,
+.type-service-edit-form textarea {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #d9d9d9;
+    font-size: 14px;
+}
+
+.type-service-edit-form input[disabled] {
+    background: #f5f5f5;
+    color: #666;
+}
+
+.type-service-edit-form button {
+    border: none;
+    border-radius: 8px;
+    padding: 10px 14px;
+    background: #0f5c9e;
+    color: #fff;
+    cursor: pointer;
+}
+
+.type-service-edit-form button[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.type-service-edit-image {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    background: #f0f0f0;
+}
+
+.type-service-edit-image.placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+}
+
+@media (max-width: 720px) {
+    .type-service-edit-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .type-service-edit-back {
+        width: 100%;
+        text-align: center;
+    }
+}

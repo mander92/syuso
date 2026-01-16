@@ -7,7 +7,13 @@ const endShiftRecordsController = async (req, res, next) => {
         const { shiftRecordId } = req.params;
         const endDateTime = new Date(clockOut);
 
-        await endShiftRecordService(shiftRecordId, employeeId, location, endDateTime, serviceId);
+        await endShiftRecordService(
+            shiftRecordId,
+            employeeId,
+            location,
+            endDateTime,
+            serviceId
+        );
 
         res.send({
             status: 'ok',

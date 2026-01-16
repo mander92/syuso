@@ -1,0 +1,141 @@
+// src/services/typeOfServiceService.js
+const { VITE_API_URL } = import.meta.env;
+
+export const fetchTypeOfServiceServices = async (typeOfServiceId) => {
+    const res = await fetch(
+        `${VITE_API_URL}/typeOfServices/${typeOfServiceId}`
+    );
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};
+
+// Alias para que coincida con el import fetchTypeOfServiceByIdServices
+export const fetchTypeOfServiceByIdServices = fetchTypeOfServiceServices;
+
+export const fetchAllTypeOfServicesServices = async (searchParamsToString) => {
+    const res = await fetch(
+        `${VITE_API_URL}/typeOfServices/?${searchParamsToString}`
+    );
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};
+
+export const fetchEditTypeOfServiceServices = async (
+    typeOfServiceId,
+    description,
+    authToken
+) => {
+    const res = await fetch(
+        `${VITE_API_URL}/typeOfServices/${typeOfServiceId}`,
+        {
+            method: 'PUT',
+            headers: authToken
+                ? {
+                    Authorization: authToken,
+                    'Content-Type': 'application/json',
+                }
+                : {},
+            body: JSON.stringify({
+                description,
+            }),
+        }
+    );
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body;
+};
+
+export const fetchDeleteTypeOfServiceServices = async (
+    typeOfServiceId,
+    authToken
+) => {
+    const res = await fetch(
+        `${VITE_API_URL}/typeOfServices/${typeOfServiceId}`,
+        {
+            method: 'DELETE',
+            headers: authToken
+                ? {
+                    Authorization: authToken,
+                    'Content-Type': 'application/json',
+                }
+                : {},
+        }
+    );
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body;
+};
+
+export const fetchNewTypeOfServiceServices = async (
+    type,
+    description,
+    city,
+    image,
+    authToken
+) => {
+    const formData = new FormData();
+    formData.append('type', type);
+    formData.append('description', description);
+    formData.append('city', city);
+    formData.append('image', image);
+
+    const res = await fetch(`${VITE_API_URL}/typeOfServices`, {
+        method: 'POST',
+        headers: { Authorization: authToken },
+        body: formData,
+    });
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body;
+};
+
+export const fetchEditImageTypeOfServicesService = async (
+    image,
+    authToken,
+    typeOfServiceId
+) => {
+    const formData = new FormData();
+    formData.append('image', image);
+
+    const res = await fetch(
+        `${VITE_API_URL}/typeOfServices/${typeOfServiceId}`,
+        {
+            method: 'PATCH',
+            headers: { Authorization: authToken },
+            body: formData,
+        }
+    );
+
+    const body = await res.json();
+
+    if (body.status !== 'ok') {
+        throw new Error(body.message);
+    }
+
+    return body;
+};

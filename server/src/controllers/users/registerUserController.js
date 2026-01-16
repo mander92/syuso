@@ -1,42 +1,27 @@
 import randomstring from 'randomstring';
-import Joi from 'joi';
-
-import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import insertUserService from '../../services/users/insertUserService.js';
 
 const registerUserController = async (req, res, next) => {
     try {
-
-        // Verificaciones con Joi 
-        // de momento no las voy a implementar
-
-        /*const schema = Joi.object().keys({
-            email: Joi.string().email().required(),
-            password: Joi.string().min(8).max(25).required(),
-            firstName: Joi.string().max(25).required(),
-            lastName: Joi.string().max(40).required(),
-            dni: Joi.string().length(9).required(),
-            phone: Joi.string().max(15).required(),
-        });
-
-        const validation = schema.validate(req.body);*/
-
-        //if (validation.error) generateErrorUtil(validation.error.message, 401);
-
-        const { email, password, firstName, lastName, dni, phone, job } =
-            req.body;
-
+        // De momento sin JOI, pero aquí iría la validación
         const registrationCode = randomstring.generate(30);
+
+        let { email, firstName, lastName, dni, phone, password } = req.body;
+
+        // Normalizamos: si viene vacío o sólo espacios → NULL
+        const normalizedDni =
+            dni && dni.trim() !== '' ? dni.trim() : null;
+        const normalizedPhone =
+            phone && phone.trim() !== '' ? phone.trim() : null;
 
         await insertUserService(
             email,
             password,
             firstName,
             lastName,
-            dni,
-            phone,
-            registrationCode,
-            job
+            normalizedDni,
+            normalizedPhone,
+            registrationCode
         );
 
         res.send({
