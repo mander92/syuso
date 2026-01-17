@@ -386,6 +386,12 @@ const createWorkReportService = async ({
         .png()
         .toBuffer();
     await fsPromises.writeFile(signaturePath, signatureImage);
+    const keepAssets = process.env.WORKREPORT_KEEP_ASSETS === '1';
+    if (keepAssets) {
+        console.log(
+            `[workReports] signature bytes: ${signatureImage.length}`
+        );
+    }
 
     const normalizedReportDate = normalizeDate(reportData.reportDate);
     const normalizedIncidentStart = normalizeDateTime(reportData.incidentStart);
@@ -446,8 +452,8 @@ const createWorkReportService = async ({
             reportData.detection,
             reportData.actionsTaken,
             reportData.outcome,
-            '',
-            '',
+            keepAssets ? `workReports/signatures/${signatureId}.png` : '',
+            keepAssets ? `workReports/reports/${reportId}.png` : '',
         ]
     );
 
@@ -609,8 +615,10 @@ const createWorkReportService = async ({
         [reportId, shiftRecordId]
     );
 
-    await deleteIfExists(signaturePath);
-    await deleteIfExists(reportImagePath);
+    if (!keepAssets) {
+        await deleteIfExists(signaturePath);
+        await deleteIfExists(reportImagePath);
+    }
 
     for (const files of incidentPhotoFiles) {
         for (const filePath of files) {
