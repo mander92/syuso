@@ -31,7 +31,7 @@ const newAssingPersonToServiceService = async (employeeId, serviceId) => {
     }
 
     const [personAlreadyAssigned] = await pool.query(`
-        SELECT id FROM personsassigned WHERE employeeId = ? AND serviceId = ?
+        SELECT id FROM personsAssigned WHERE employeeId = ? AND serviceId = ?
         `, [employeeId, serviceId])
 
 
@@ -44,7 +44,7 @@ const newAssingPersonToServiceService = async (employeeId, serviceId) => {
     const pin = Randomstring.generate(4);
 
     await pool.query(`
-        INSERT INTO personsassigned(id, employeeId, serviceId, pin) VALUES(?,?,?,?)
+        INSERT INTO personsAssigned(id, employeeId, serviceId, pin) VALUES(?,?,?,?)
         `, [personAssignedId, employeeId, serviceId, pin]);
 
 
@@ -56,7 +56,7 @@ const newAssingPersonToServiceService = async (employeeId, serviceId) => {
             FROM addresses a
             INNER JOIN services s
             ON a.id = s.addressId
-            INNER JOIN personsassigned pa 
+            INNER JOIN personsAssigned pa 
             ON s.id = pa.serviceId
             INNER JOIN users u
             ON u.id = pa.employeeId
@@ -132,7 +132,7 @@ const newAssingPersonToServiceService = async (employeeId, serviceId) => {
             SELECT pa.pin, s.status,
             t.type, t.city AS province, s.hours, s.startDateTime, s.comments, u.email, u.firstName, u.lastName, u.phone
             FROM users u
-            INNER JOIN personsassigned pa
+            INNER JOIN personsAssigned pa
             ON u.id = pa.employeeId
             INNER JOIN services s
             ON s.id = pa.serviceId

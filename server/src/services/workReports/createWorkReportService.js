@@ -555,7 +555,18 @@ const createWorkReportService = async ({
             tagLogs
         );
     } else {
-        await createPdfFromPng(reportImagePath, reportPdfPath);
+        const logoPath =
+            process.env.SYUSO_LOGO_PATH ||
+            'C:\\Users\\Mario\\OneDrive\\Escritorio\\SYUSO_app\\client\\src\\assets\\syusoLogo.jpg';
+
+        await createPdfWithIncidents(
+            reportPdfPath,
+            svgPayload,
+            [],
+            logoPath,
+            signaturePath,
+            []
+        );
     }
 
     await pool.query(

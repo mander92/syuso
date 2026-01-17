@@ -19,7 +19,7 @@ const endShiftRecordService = async (
     const [rows] = await pool.query(
         `
       SELECT id, serviceId, clockOut
-      FROM shiftrecords
+      FROM shiftRecords
       WHERE id = ? AND employeeId = ?
       LIMIT 1
     `,
@@ -59,7 +59,7 @@ const endShiftRecordService = async (
     // 2) Cerrar el turno. La condición "AND clockOut IS NULL" evita carreras:
     const [result] = await pool.query(
         `
-      UPDATE shiftrecords
+      UPDATE shiftRecords
       SET clockOut = ?, latitudeOut = ?, longitudeOut = ?
       WHERE id = ? AND clockOut IS NULL
     `,

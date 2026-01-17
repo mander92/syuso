@@ -19,7 +19,7 @@ const initDb = async () => {
 
         await pool.query(
             `
-            DROP TABLE IF EXISTS serviceNfcTagLogs, serviceNfcTags, job_applications, adminDelegations, delegations, shiftRecords, services, typeOfServices, users, addresses, personsAssigned
+            DROP TABLE IF EXISTS serviceNfcTagLogs, workReportIncidentPhotos, workReportPhotos, workReportIncidents, workReportDrafts, workReports, serviceChatMessages, personsAssigned, serviceNfcTags, shiftRecords, adminDelegations, delegations, services, typeOfServices, users, addresses, consulting_requests, job_applications
             `
         );
 
@@ -213,23 +213,6 @@ const initDb = async () => {
         );
 
         console.log('serviceChatMessages creada');
-
-        await pool.query(
-            `
-            CREATE TABLE consulting_requests (
-            id CHAR(36) NOT NULL PRIMARY KEY,
-            fullName VARCHAR(100) NOT NULL,
-            company VARCHAR(150) DEFAULT NULL,
-            email VARCHAR(150) NOT NULL,
-            phone VARCHAR(30) NOT NULL,
-            topic VARCHAR(50) NOT NULL,
-            message TEXT NOT NULL,
-            createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-            `
-        );
-
-        console.log('consulting_requests creada');
 
         await pool.query(
             `

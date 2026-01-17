@@ -31,7 +31,7 @@ const selectServiceByIdService = async (serviceId) => {
                 u.dni
             FROM services s
             INNER JOIN addresses a ON a.id = s.addressId
-            LEFT JOIN personsassigned pa ON s.id = pa.serviceId
+            LEFT JOIN personsAssigned pa ON s.id = pa.serviceId
             LEFT JOIN users u ON u.id = pa.employeeId
             LEFT JOIN users ue ON pa.employeeId = ue.id
             INNER JOIN typeOfServices t ON s.typeOfServicesId = t.id

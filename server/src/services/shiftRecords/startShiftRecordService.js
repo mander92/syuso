@@ -14,7 +14,7 @@ const startShiftRecordService = async (
     const [rows] = await pool.query(
         `
     SELECT id
-    FROM shiftrecords
+    FROM shiftRecords
     WHERE employeeId = ? AND serviceId = ? AND clockOut IS NULL
     `,
         [employeeId, serviceId]
@@ -27,7 +27,7 @@ const startShiftRecordService = async (
     // Insertar nuevo turno
     await pool.query(
         `
-    INSERT INTO shiftrecords (id, clockIn, employeeId, serviceId, latitudeIn, longitudeIn)
+    INSERT INTO shiftRecords (id, clockIn, employeeId, serviceId, latitudeIn, longitudeIn)
     VALUES (?, ?, ?, ?, ?, ?)
     `,
         [id, startDateTime, employeeId, serviceId, latitudeIn, longitudeIn]
