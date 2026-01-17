@@ -572,7 +572,10 @@ const WorkReport = () => {
             return;
         }
 
-        if (!hasSignature) {
+        const signaturePayload =
+            signatureDataRef.current || signatureData || '';
+
+        if (!hasSignature || !signaturePayload) {
             toast.error('La firma es obligatoria');
             return;
         }
@@ -629,10 +632,7 @@ const WorkReport = () => {
             formDataPayload.append('detection', 'No aplica');
             formDataPayload.append('actionsTaken', 'No aplica');
             formDataPayload.append('outcome', 'controlado');
-            formDataPayload.append(
-                'signature',
-                canvas.toDataURL('image/png')
-            );
+            formDataPayload.append('signature', signaturePayload);
             formDataPayload.append(
                 'locationCoords',
                 JSON.stringify(locationCoords)
