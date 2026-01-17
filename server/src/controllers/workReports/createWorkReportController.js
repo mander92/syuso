@@ -8,6 +8,12 @@ const createWorkReportController = async (req, res, next) => {
             try {
                 req.body.locationCoords = JSON.parse(req.body.locationCoords);
             } catch (error) {
+                console.error(
+                    '[workReports] locationCoords parse error:',
+                    error?.message,
+                    'value:',
+                    req.body.locationCoords
+                );
                 generateErrorUtil('Formato de ubicacion invalido', 400);
             }
         }
@@ -16,6 +22,12 @@ const createWorkReportController = async (req, res, next) => {
             try {
                 req.body.incidents = JSON.parse(req.body.incidents);
             } catch (error) {
+                console.error(
+                    '[workReports] incidents parse error:',
+                    error?.message,
+                    'value:',
+                    req.body.incidents
+                );
                 generateErrorUtil('Formato de incidencias invalido', 400);
             }
         }
