@@ -218,6 +218,7 @@
     display: flex;
     justify-content: flex-end;
     gap: 12px;
+    flex-wrap: wrap;
 }
 
 .work-report-actions button,
@@ -230,6 +231,7 @@
     cursor: pointer;
     text-decoration: none;
     font-weight: 600;
+    max-width: 100%;
 }
 
 .work-report-draft {
@@ -250,5 +252,12 @@
 
     .work-report-card {
         padding: 20px;
+    }
+    .work-report-actions {
+        justify-content: stretch;
+    }
+
+    .work-report-actions button {
+        flex: 1 1 100%;
     }
 }
