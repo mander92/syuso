@@ -65,6 +65,12 @@ const downloadWorkReportPdfController = async (req, res, next) => {
             'Content-Disposition',
             `inline; filename="${fileName}"`
         );
+        res.setHeader(
+            'Cache-Control',
+            'no-store, no-cache, must-revalidate, proxy-revalidate'
+        );
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         res.sendFile(pdfPath);
     } catch (error) {
         next(error);
