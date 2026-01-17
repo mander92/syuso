@@ -96,6 +96,7 @@ const WorkReport = () => {
     const ctxRef = useRef(null);
     const isDrawingRef = useRef(false);
     const [hasSignature, setHasSignature] = useState(false);
+    const signatureDataRef = useRef('');
 
     useEffect(() => {
         const initCanvas = () => {
@@ -114,7 +115,17 @@ const WorkReport = () => {
             ctx.lineCap = 'round';
             ctx.strokeStyle = '#111';
             ctxRef.current = ctx;
-            setHasSignature(false);
+            if (signatureDataRef.current) {
+                const img = new Image();
+                img.src = signatureDataRef.current;
+                img.onload = () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    setHasSignature(true);
+                };
+            } else {
+                setHasSignature(false);
+            }
         };
 
         requestAnimationFrame(initCanvas);
@@ -213,7 +224,9 @@ const WorkReport = () => {
                         ctx.clearRect(0, 0, canvas.width, canvas.height);
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                         setHasSignature(true);
-                        setSignatureData(canvas.toDataURL('image/png'));
+                        const dataUrl = canvas.toDataURL('image/png');
+                        signatureDataRef.current = dataUrl;
+                        setSignatureData(dataUrl);
                     };
                 }
             } catch (error) {
@@ -365,7 +378,9 @@ const WorkReport = () => {
         }
         isDrawingRef.current = false;
         if (canvas) {
-            setSignatureData(canvas.toDataURL('image/png'));
+            const dataUrl = canvas.toDataURL('image/png');
+            signatureDataRef.current = dataUrl;
+            setSignatureData(dataUrl);
         }
     }, []);
 
@@ -391,6 +406,7 @@ const WorkReport = () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         setHasSignature(false);
         setSignatureData('');
+        signatureDataRef.current = '';
     };
 
     const addIncident = () => {
