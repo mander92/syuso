@@ -381,7 +381,11 @@ const createWorkReportService = async ({
         generateErrorUtil('Firma invalida', 400);
     }
     const signatureBuffer = Buffer.from(signatureBase64, 'base64');
-    await fsPromises.writeFile(signaturePath, signatureBuffer);
+    const signatureImage = await sharp(signatureBuffer)
+        .flatten({ background: '#ffffff' })
+        .png()
+        .toBuffer();
+    await fsPromises.writeFile(signaturePath, signatureImage);
 
     const normalizedReportDate = normalizeDate(reportData.reportDate);
     const normalizedIncidentStart = normalizeDateTime(reportData.incidentStart);
@@ -542,7 +546,7 @@ const createWorkReportService = async ({
             svgPayload,
             incidentsForPdf,
             logoPath,
-            signatureBuffer,
+            signatureImage,
             tagLogs
         );
     } else if (tagLogs.length) {
@@ -555,7 +559,7 @@ const createWorkReportService = async ({
             svgPayload,
             [],
             logoPath,
-            signatureBuffer,
+            signatureImage,
             tagLogs
         );
     } else {
@@ -568,7 +572,7 @@ const createWorkReportService = async ({
             svgPayload,
             [],
             logoPath,
-            signatureBuffer,
+            signatureImage,
             []
         );
     }
