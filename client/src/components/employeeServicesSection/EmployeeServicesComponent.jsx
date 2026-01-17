@@ -70,6 +70,7 @@ const EmployeeServicesComponent = () => {
     const [expandedAddress, setExpandedAddress] = useState({});
     const [unreadCounts, setUnreadCounts] = useState({});
     const openChatsRef = useRef({});
+    const scrollRestoreRef = useRef(0);
     const nfcSupported = typeof window !== 'undefined' && 'NDEFReader' in window;
     const [loading, setLoading] = useState(false);
     const socket = useMemo(
@@ -279,6 +280,36 @@ const EmployeeServicesComponent = () => {
     useEffect(() => {
         openChatsRef.current = openChats;
     }, [openChats]);
+
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') {
+                scrollRestoreRef.current = window.scrollY || 0;
+                if (
+                    document.activeElement &&
+                    typeof document.activeElement.blur === 'function'
+                ) {
+                    document.activeElement.blur();
+                }
+                return;
+            }
+
+            requestAnimationFrame(() => {
+                window.scrollTo(0, scrollRestoreRef.current || 0);
+            });
+        };
+
+        document.addEventListener(
+            'visibilitychange',
+            handleVisibilityChange
+        );
+        return () => {
+            document.removeEventListener(
+                'visibilitychange',
+                handleVisibilityChange
+            );
+        };
+    }, []);
 
     useEffect(() => {
         if (!socket || !user) return;
