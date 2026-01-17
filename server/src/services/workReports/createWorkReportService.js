@@ -376,6 +376,10 @@ const createWorkReportService = async ({
     const signatureBase64 = reportData.signature.replace(
         /^data:image\/png;base64,/, ''
     );
+
+    if (!signatureBase64 || signatureBase64.length < 50) {
+        generateErrorUtil('Firma invalida', 400);
+    }
     const signatureBuffer = Buffer.from(signatureBase64, 'base64');
     await fsPromises.writeFile(signaturePath, signatureBuffer);
 

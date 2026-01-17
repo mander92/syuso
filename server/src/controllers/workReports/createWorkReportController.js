@@ -37,7 +37,10 @@ const createWorkReportController = async (req, res, next) => {
             detection: Joi.string().required(),
             actionsTaken: Joi.string().required(),
             outcome: Joi.string().required(),
-            signature: Joi.string().required(),
+            signature: Joi.string()
+                .pattern(/^data:image\/png;base64,/)
+                .min(100)
+                .required(),
             reportEmail: Joi.string().allow('', null),
             locationCoords: Joi.array().items(Joi.number()).length(2).required(),
             incidents: Joi.array()
