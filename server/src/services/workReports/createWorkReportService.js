@@ -116,7 +116,7 @@ const createPdfWithIncidents = async (
     reportData,
     incidents,
     logoPath,
-    signaturePath,
+    signatureSource,
     tagLogs
 ) => {
     await new Promise((resolve, reject) => {
@@ -274,7 +274,7 @@ const createPdfWithIncidents = async (
             });
         }
 
-        if (signaturePath) {
+        if (signatureSource) {
             const signatureWidth = 140;
             const signatureHeight = 60;
             const signatureX =
@@ -292,7 +292,7 @@ const createPdfWithIncidents = async (
             });
 
             try {
-                doc.image(signaturePath, signatureX, signatureY, {
+                doc.image(signatureSource, signatureX, signatureY, {
                     fit: [signatureWidth, signatureHeight],
                 });
             } catch (error) {
@@ -538,7 +538,7 @@ const createWorkReportService = async ({
             svgPayload,
             incidentsForPdf,
             logoPath,
-            signaturePath,
+            signatureBuffer,
             tagLogs
         );
     } else if (tagLogs.length) {
@@ -551,7 +551,7 @@ const createWorkReportService = async ({
             svgPayload,
             [],
             logoPath,
-            signaturePath,
+            signatureBuffer,
             tagLogs
         );
     } else {
@@ -564,7 +564,7 @@ const createWorkReportService = async ({
             svgPayload,
             [],
             logoPath,
-            signaturePath,
+            signatureBuffer,
             []
         );
     }
