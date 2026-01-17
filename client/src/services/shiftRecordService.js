@@ -208,7 +208,16 @@ export const fetchCreateWorkReport = async (
         }
     );
 
-    const body = await res.json();
+    const contentType = res.headers.get('content-type') || '';
+    let body;
+    if (contentType.includes('application/json')) {
+        body = await res.json();
+    } else {
+        const text = await res.text();
+        throw new Error(
+            `Respuesta no valida (${res.status}). ${text.slice(0, 120)}`
+        );
+    }
 
     if (body.status === 'error') {
         throw new Error(body.message);
@@ -252,7 +261,16 @@ export const fetchSaveWorkReportDraft = async (
         }
     );
 
-    const body = await res.json();
+    const contentType = res.headers.get('content-type') || '';
+    let body;
+    if (contentType.includes('application/json')) {
+        body = await res.json();
+    } else {
+        const text = await res.text();
+        throw new Error(
+            `Respuesta no valida (${res.status}). ${text.slice(0, 120)}`
+        );
+    }
 
     if (body.status === 'error') {
         throw new Error(body.message);
