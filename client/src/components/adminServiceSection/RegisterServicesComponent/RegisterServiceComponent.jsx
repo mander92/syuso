@@ -44,7 +44,7 @@ const RegisterNewTypeOfServiceController = () => {
     return (
         <form className='mx-auto'>
             <fieldset>
-                <legend>Servicio</legend>
+                <legend>Tipo de servicio</legend>
                 <label htmlFor='type'>Tipo</label>
                 <input
                     required

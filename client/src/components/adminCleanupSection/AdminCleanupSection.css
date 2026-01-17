@@ -1,0 +1,101 @@
+.cleanup {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+    width: 100%;
+}
+
+.cleanup-header h1 {
+    font-size: 1.5rem;
+    margin: 0;
+    color: #0f172a;
+}
+
+.cleanup-header p {
+    color: #64748b;
+    margin: 0.35rem 0 0;
+}
+
+.cleanup-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-end;
+}
+
+.cleanup-field {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.85rem;
+    color: #475569;
+    gap: 0.25rem;
+}
+
+.cleanup-field select,
+.cleanup-field input {
+    border-radius: 0.55rem;
+    border: 1px solid #e2e8f0;
+    padding: 0.45rem 0.7rem;
+    font-size: 0.9rem;
+    min-width: 180px;
+    background-color: #ffffff;
+}
+
+.cleanup-btn {
+    border-radius: 999px;
+    border: none;
+    padding: 0.45rem 1.2rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    background-color: #0f172a;
+    color: #ffffff;
+}
+
+.cleanup-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.cleanup-result {
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    padding: 12px 14px;
+    color: #475569;
+}
+
+.cleanup-storage {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cleanup-storage-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #0f172a;
+}
+
+.cleanup-storage-bar {
+    width: 100%;
+    height: 12px;
+    background: #e2e8f0;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.cleanup-storage-bar-fill {
+    height: 100%;
+    background: #0f172a;
+}
+
+.cleanup-storage-meta {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.85rem;
+}

@@ -8,6 +8,9 @@ import shiftRecordExists from '../middleware/shiftRecordExists.js';
 import createWorkReportController from '../controllers/workReports/createWorkReportController.js';
 import saveWorkReportDraftController from '../controllers/workReports/saveWorkReportDraftController.js';
 import selectWorkReportDraftController from '../controllers/workReports/selectWorkReportDraftController.js';
+import downloadWorkReportsZipController from '../controllers/workReports/downloadWorkReportsZipController.js';
+import downloadWorkReportPdfController from '../controllers/workReports/downloadWorkReportPdfController.js';
+import deleteWorkReportsController from '../controllers/workReports/deleteWorkReportsController.js';
 
 import {
     newShiftRecordController,
@@ -30,6 +33,27 @@ router.post(
 );
 
 router.get('/shiftRecords', authUser, isAdmin, listShiftRecordsController);
+
+router.get(
+    '/workReports/zip',
+    authUser,
+    isAdmin,
+    downloadWorkReportsZipController
+);
+
+router.get(
+    '/workReports/:reportId/pdf',
+    authUser,
+    isAdmin,
+    downloadWorkReportPdfController
+);
+
+router.delete(
+    '/workReports',
+    authUser,
+    isAdmin,
+    deleteWorkReportsController
+);
 
 router.get(
     '/shiftRecords/employee',

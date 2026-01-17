@@ -1,5 +1,5 @@
 // src/components/DashboardComponent.jsx
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import useUser from '../../hooks/useUser.js';
 import ProfileComponent from '../profileComponent/PorfileComponent';
 import './DashboardComponent.css';
@@ -7,6 +7,9 @@ import AdminUsersSection from '../adminUsersSection/AminUsersSection.jsx';
 import ContractsComponent from '../adminContractSetion/ContractComponent.jsx';
 import ServicesComponent from '../adminServiceSection/ServiceComponent/ServiceComponent.jsx';
 import ShiftComponent from '../adminShiftSection/ShiftComponent.jsx';
+import WorkReportsComponent from '../adminWorkReportsSection/WorkReportsComponent.jsx';
+import AdminCleanupSection from '../adminCleanupSection/AdminCleanupSection.jsx';
+import AdminCvSection from '../adminCvSection/AdminCvSection.jsx';
 import EmployeeServicesComponent from '../employeeServicesSection/EmployeeServicesComponent.jsx';
 import ClientServicesComponent from '../clientServicesSection/ClientServicesComponent.jsx';
 import ServiceChatDashboard from '../serviceChat/ServiceChatDashboard.jsx';
@@ -14,6 +17,7 @@ import ServiceChatDashboard from '../serviceChat/ServiceChatDashboard.jsx';
 const DashboardComponent = () => {
     const { user } = useUser();
     const [activeSection, setActiveSection] = useState('profile');
+    const hasSetDefault = useRef(false);
 
     const sections = useMemo(() => {
         if (!user) return [];
@@ -21,22 +25,34 @@ const DashboardComponent = () => {
         const isAdminLike = user.role === 'admin' || user.role === 'sudo';
 
         if (isAdminLike) {
-            return [
-                { id: 'profile', label: 'Mi perfil' },
-                { id: 'contracts', label: 'Contratos' },
-                { id: 'services', label: 'Servicios' },
-                { id: 'chats', label: 'Chats' },
+            const adminSections = [
+                { id: 'contracts', label: 'Servicios' },
                 { id: 'shifts', label: 'Turnos' },
+                { id: 'chats', label: 'Chats' },
+                { id: 'workReports', label: 'Partes de trabajo' },
                 { id: 'users', label: 'Usuarios' },
+                { id: 'services', label: 'Tipos de servicios' },
+                { id: 'profile', label: 'Mi perfil' },
             ];
+            if (user.role === 'sudo') {
+                adminSections.splice(
+                    adminSections.length - 1,
+                    0,
+                    { id: 'cleanup', label: 'Limpieza' }
+                );
+                adminSections.splice(
+                    adminSections.length - 1,
+                    0,
+                    { id: 'cv', label: 'CV' }
+                );
+            }
+            return adminSections;
         }
 
         if (user.role === 'employee') {
             return [
+                { id: 'services', label: 'Mis servicios' },
                 { id: 'profile', label: 'Mi perfil' },
-                { id: 'shifts', label: 'Mis turnos' },
-                { id: 'services', label: 'Servicios asignados' },
-                { id: 'chats', label: 'Chats' },
             ];
         }
 
@@ -47,6 +63,17 @@ const DashboardComponent = () => {
             { id: 'services', label: 'Servicios activos' },
         ];
     }, [user]);
+
+    useEffect(() => {
+        if (!sections.length) return;
+        const currentExists = sections.some(
+            (section) => section.id === activeSection
+        );
+        if (!hasSetDefault.current || !currentExists) {
+            setActiveSection(sections[0].id);
+            hasSetDefault.current = true;
+        }
+    }, [sections, activeSection]);
 
     const renderSectionContent = () => {
         if (!user) return null;
@@ -75,6 +102,12 @@ const DashboardComponent = () => {
 
             case 'chats':
                 return <ServiceChatDashboard />;
+            case 'workReports':
+                return <WorkReportsComponent />;
+            case 'cleanup':
+                return <AdminCleanupSection />;
+            case 'cv':
+                return <AdminCvSection />;
 
             default:
                 return null;

@@ -13,6 +13,26 @@
     margin-bottom: 1.3rem;
 }
 
+.services-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 1rem;
+}
+
+.services-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0;
+}
+
+.services-subtitle {
+    font-size: 0.92rem;
+    color: #64748b;
+    margin: 0;
+}
+
 /* Responsive: ocupar ancho completo */
 @media (max-width: 640px) {
     .manager-tabs {

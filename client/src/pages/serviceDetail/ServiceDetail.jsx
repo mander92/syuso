@@ -12,6 +12,7 @@ import { fetchUpdateServiceStatus } from '../../services/serviceService.js';
 import { fetchDeleteEmployeeService } from '../../services/personAssigned.js';
 import ListEmployeeComponent from '../../components/adminServiceSection/listEmployeeComponent/ListEmployeeComponent.jsx';
 import ServiceChat from '../../components/serviceChat/ServiceChat.jsx';
+import NfcTagsManager from '../../components/nfcTags/NfcTagsManager.jsx';
 import './ServiceDetail.css';
 
 const formatDateTime = (value) => {
@@ -476,6 +477,12 @@ const ServiceDetail = () => {
                                 employeeData={assignedEmployees}
                                 setEmployeeData={setAssignedEmployees}
                             />
+                        </section>
+                    )}
+
+                    {(user?.role === 'admin' || user?.role === 'sudo') && (
+                        <section className='service-detail-card service-detail-section'>
+                            <NfcTagsManager serviceId={serviceId} />
                         </section>
                     )}
 

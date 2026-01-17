@@ -1,0 +1,105 @@
+.nfc-tags {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 14px;
+    background: #f8fafc;
+}
+
+.nfc-tags-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.nfc-tags-header h3 {
+    margin: 0;
+    color: #0f172a;
+}
+
+.nfc-tags-header p {
+    margin: 4px 0 0;
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
+.nfc-tags-warning {
+    color: #b45309;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.nfc-tags-form {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.nfc-tags-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.85rem;
+    color: #475569;
+}
+
+.nfc-tags-field input {
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    padding: 8px 10px;
+    font-size: 0.9rem;
+    background: #ffffff;
+}
+
+.nfc-tags-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.nfc-tags-btn {
+    border-radius: 999px;
+    border: none;
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    background-color: #0f172a;
+    color: #ffffff;
+}
+
+.nfc-tags-btn--ghost {
+    background-color: #e2e8f0;
+    color: #0f172a;
+}
+
+.nfc-tags-read {
+    font-size: 0.8rem;
+    color: #475569;
+}
+
+.nfc-tags-list {
+    display: grid;
+    gap: 8px;
+}
+
+.nfc-tags-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 8px 10px;
+}
+
+.nfc-tags-item strong {
+    display: block;
+    color: #0f172a;
+}
+
+.nfc-tags-item span {
+    font-size: 0.78rem;
+    color: #64748b;
+}

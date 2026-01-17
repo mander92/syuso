@@ -25,6 +25,10 @@ import listServiceChatMessagesController from '../controllers/serviceChat/listSe
 import createServiceChatMessageController from '../controllers/serviceChat/createServiceChatMessageController.js';
 import listServiceChatMembersController from '../controllers/serviceChat/listServiceChatMembersController.js';
 import uploadServiceChatImageController from '../controllers/serviceChat/uploadServiceChatImageController.js';
+import listServiceNfcTagsController from '../controllers/nfcTags/listServiceNfcTagsController.js';
+import createServiceNfcTagController from '../controllers/nfcTags/createServiceNfcTagController.js';
+import deleteServiceNfcTagController from '../controllers/nfcTags/deleteServiceNfcTagController.js';
+import createServiceNfcLogController from '../controllers/nfcTags/createServiceNfcLogController.js';
 
 const router = express.Router();
 
@@ -82,6 +86,38 @@ router.post(
     isAdmin,
     serviceExists,
     updateServiceScheduleImageController
+);
+
+router.get(
+    '/services/:serviceId/nfc-tags',
+    authUser,
+    isAdmin,
+    serviceExists,
+    listServiceNfcTagsController
+);
+
+router.post(
+    '/services/:serviceId/nfc-tags',
+    authUser,
+    isAdmin,
+    serviceExists,
+    createServiceNfcTagController
+);
+
+router.delete(
+    '/services/:serviceId/nfc-tags/:tagId',
+    authUser,
+    isAdmin,
+    serviceExists,
+    deleteServiceNfcTagController
+);
+
+router.post(
+    '/services/:serviceId/nfc-logs',
+    authUser,
+    isEmployee,
+    serviceExists,
+    createServiceNfcLogController
 );
 
 router.get('/services/validate/:validationCode', validateServiceController);

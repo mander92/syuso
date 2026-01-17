@@ -19,7 +19,7 @@ const initDb = async () => {
 
         await pool.query(
             `
-            DROP TABLE IF EXISTS adminDelegations, delegations, shiftRecords, services, typeOfServices, users, addresses, personsAssigned
+            DROP TABLE IF EXISTS serviceNfcTagLogs, serviceNfcTags, job_applications, adminDelegations, delegations, shiftRecords, services, typeOfServices, users, addresses, personsAssigned
             `
         );
 
@@ -135,6 +135,24 @@ const initDb = async () => {
 
         await pool.query(
             `
+            CREATE TABLE IF NOT EXISTS serviceNfcTags (
+                id CHAR(36) PRIMARY KEY NOT NULL,
+                serviceId CHAR(36) NOT NULL,
+                tagUid VARCHAR(100) NOT NULL,
+                tagName VARCHAR(120) NOT NULL,
+                createdBy CHAR(36),
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_service_tag (serviceId, tagUid),
+                FOREIGN KEY (serviceId) REFERENCES services(id),
+                FOREIGN KEY (createdBy) REFERENCES users(id)
+            )
+            `
+        );
+
+        console.log('serviceNfcTags creada');
+
+        await pool.query(
+            `
             CREATE TABLE IF NOT EXISTS personsAssigned(
                 id CHAR(36) PRIMARY KEY NOT NULL,
                 pin CHAR(8),
@@ -228,6 +246,20 @@ const initDb = async () => {
             `
         );
 
+        await pool.query(
+            `
+            CREATE TABLE job_applications (
+            id CHAR(36) NOT NULL PRIMARY KEY,
+            fullName VARCHAR(100) NOT NULL,
+            email VARCHAR(150) NOT NULL,
+            phone VARCHAR(30) NOT NULL,
+            message TEXT,
+            cvFile VARCHAR(255) NOT NULL,
+            createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            `
+        );
+
         console.log('job_application creada');
 
         await pool.query(
@@ -310,6 +342,28 @@ const initDb = async () => {
             photoPath VARCHAR(255) NOT NULL,
             createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (workReportIncidentId) REFERENCES workReportIncidents(id));
+            `
+        );
+
+        await pool.query(
+            `
+            CREATE TABLE serviceNfcTagLogs (
+            id CHAR(36) PRIMARY KEY NOT NULL,
+            serviceId CHAR(36) NOT NULL,
+            shiftRecordId CHAR(36),
+            workReportId CHAR(36),
+            employeeId CHAR(36) NOT NULL,
+            tagId CHAR(36),
+            tagUid VARCHAR(100) NOT NULL,
+            tagName VARCHAR(120) NOT NULL,
+            latitude DECIMAL(10,8),
+            longitude DECIMAL(11,8),
+            scannedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (serviceId) REFERENCES services(id),
+            FOREIGN KEY (shiftRecordId) REFERENCES shiftRecords(id) ON DELETE SET NULL,
+            FOREIGN KEY (workReportId) REFERENCES workReports(id) ON DELETE SET NULL,
+            FOREIGN KEY (employeeId) REFERENCES users(id),
+            FOREIGN KEY (tagId) REFERENCES serviceNfcTags(id) ON DELETE SET NULL);
             `
         );
 

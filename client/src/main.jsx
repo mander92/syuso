@@ -10,7 +10,12 @@ import App from './App.jsx';
 createRoot(document.getElementById('root')).render(
     <StrictMode>
         <AuthProvider>
-            <BrowserRouter>
+            <BrowserRouter
+                future={{
+                    v7_startTransition: true,
+                    v7_relativeSplatPath: true,
+                }}
+            >
                 <Toaster
                     position='bottom-center'
                     toastOptions={{

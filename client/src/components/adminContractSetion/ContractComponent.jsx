@@ -12,6 +12,7 @@ import {
 } from '../../services/serviceService.js';
 import { fetchDelegations } from '../../services/delegationService.js';
 import CalendarComponent from '../calendarComponent/CalendarComponent.jsx';
+import NfcTagsManager from '../nfcTags/NfcTagsManager.jsx';
 import toast from 'react-hot-toast';
 import './ContractsComponent.css';
 
@@ -29,9 +30,11 @@ const ContractsComponent = () => {
     const [delegations, setDelegations] = useState([]);
     const [activeServiceSearch, setActiveServiceSearch] = useState('');
     const [calendarSearch, setCalendarSearch] = useState('');
+    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const [activeServices, setActiveServices] = useState([]);
     const [activeLoading, setActiveLoading] = useState(false);
     const [expandedActive, setExpandedActive] = useState({});
+    const [expandedNfc, setExpandedNfc] = useState({});
     const [loading, setLoading] = useState(false);
 
     const handleToggleLegend = (e) => {
@@ -215,6 +218,13 @@ const ContractsComponent = () => {
         }));
     };
 
+    const handleToggleNfc = (serviceId) => {
+        setExpandedNfc((prev) => ({
+            ...prev,
+            [serviceId]: !prev[serviceId],
+        }));
+    };
+
     const handleScheduleUpload = async (serviceId, file) => {
         if (!file) return;
         if (file.type !== 'image/png') {
@@ -248,7 +258,7 @@ const ContractsComponent = () => {
         <section className='contracts-wrapper'>
             <div className='contracts-header'>
                 <div>
-                    <h1 className='contracts-title'>Agenda de servicios</h1>
+                    <h1 className='contracts-title'>Servicios</h1>
                     <p className='contracts-subtitle'>
                         {user?.role === 'client'
                             ? 'Consulta tus servicios en el calendario.'
@@ -357,24 +367,41 @@ const ContractsComponent = () => {
             )}
 
             <div className='contracts-calendar-search'>
-                <input
-                    type='text'
-                    placeholder='Buscar servicio'
-                    value={calendarSearch}
-                    onChange={(e) => setCalendarSearch(e.target.value)}
-                />
-            </div>
-
-            <div className='contracts-calendar-card'>
-                {loading ? (
-                    <p className='contracts-loading'>Cargando servicios...</p>
-                ) : (
-                    <CalendarComponent
-                        events={calendarEvents}
-                        onSelectEvent={handleSelectEvent}
+                <div className='contracts-calendar-toggle'>
+                    <button
+                        type='button'
+                        className='contracts-btn'
+                        onClick={() =>
+                            setIsCalendarOpen((prev) => !prev)
+                        }
+                    >
+                        {isCalendarOpen
+                            ? 'Ocultar calendario'
+                            : 'Mostrar calendario'}
+                    </button>
+                </div>
+                {isCalendarOpen && (
+                    <input
+                        type='text'
+                        placeholder='Buscar servicio'
+                        value={calendarSearch}
+                        onChange={(e) => setCalendarSearch(e.target.value)}
                     />
                 )}
             </div>
+
+            {isCalendarOpen && (
+                <div className='contracts-calendar-card'>
+                    {loading ? (
+                        <p className='contracts-loading'>Cargando servicios...</p>
+                    ) : (
+                        <CalendarComponent
+                            events={calendarEvents}
+                            onSelectEvent={handleSelectEvent}
+                        />
+                    )}
+                </div>
+            )}
 
             {isAdminLike && (
                 <section className='contracts-active'>
@@ -465,7 +492,20 @@ const ContractsComponent = () => {
                                                     ? 'Ocultar turnos'
                                                     : 'Ver turnos activos'}
                                             </button>
-                                            <label className='contracts-upload'>
+                                            <button
+                                                type='button'
+                                                className='contracts-btn contracts-btn--ghost'
+                                                onClick={() =>
+                                                    handleToggleNfc(
+                                                        service.serviceId
+                                                    )
+                                                }
+                                            >
+                                                {expandedNfc[service.serviceId]
+                                                    ? 'Ocultar NFC'
+                                                    : 'Gestionar NFC'}
+                                            </button>
+                                            <label className='contracts-upload contracts-btn contracts-btn--ghost'>
                                                 Subir cuadrante
                                                 <input
                                                     type='file'
@@ -531,6 +571,14 @@ const ContractsComponent = () => {
                                             Sin turnos activos.
                                         </p>
                                     )}
+                                </div>
+                            )}
+
+                            {expandedNfc[service.serviceId] && (
+                                <div className='contracts-active-nfc'>
+                                    <NfcTagsManager
+                                        serviceId={service.serviceId}
+                                    />
                                 </div>
                             )}
 

@@ -277,6 +277,35 @@
     gap: 16px;
 }
 
+@media (min-width: 900px) {
+    .contracts-active-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .contracts-active-card {
+        padding-top: 52px;
+    }
+
+    .contracts-schedule-preview {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+    }
+
+    .contracts-active-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        width: 100%;
+    }
+
+    .contracts-active-actions .contracts-btn,
+    .contracts-active-actions .contracts-upload {
+        width: 100%;
+        text-align: center;
+    }
+}
+
 .contracts-active-card {
     background: #ffffff;
     border-radius: 12px;
@@ -286,6 +315,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+    position: relative;
 }
 
 .contracts-active-card-row {
@@ -316,12 +346,9 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
-    padding: 8px 12px;
-    background: #0f172a;
-    color: #fff;
-    font-size: 0.9rem;
     cursor: pointer;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .contracts-upload input {
@@ -337,6 +364,11 @@
 .contracts-active-employees {
     display: grid;
     gap: 8px;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 12px;
+}
+
+.contracts-active-nfc {
     border-top: 1px solid #e2e8f0;
     padding-top: 12px;
 }
@@ -429,5 +461,34 @@
         width: 100%;
         justify-content: flex-start;
         flex-wrap: wrap;
+    }
+
+    .contracts-active-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        width: 100%;
+    }
+
+    .contracts-active-actions .contracts-btn,
+    .contracts-active-actions .contracts-upload {
+        width: 100%;
+        text-align: center;
+    }
+
+    .contracts-active-card {
+        padding-top: 52px;
+    }
+
+    .contracts-schedule-preview {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .contracts-calendar-toggle .contracts-btn {
+        width: 100%;
     }
 }

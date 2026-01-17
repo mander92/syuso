@@ -2,7 +2,7 @@ import './Header.css';
 
 import { useState, useContext } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import logo from '../../../assets/syusoLogo.png';
+import logo from '../../../assets/syusoLogo.jpg';
 import { AuthContext } from '../../../context/AuthContext.jsx';
 
 export default function Header() {

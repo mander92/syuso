@@ -432,14 +432,16 @@ const ShiftComponent = () => {
                     <button className='shift-btn shift-btn--ghost' type='submit'>
                         Limpiar filtros
                     </button>
-                    <button
-                        className='shift-btn'
-                        type='button'
-                        onClick={handleExport}
-                        disabled={isDownloading}
-                    >
-                        {isDownloading ? 'Generando...' : 'Exportar Excel'}
-                    </button>
+                    {isAdminLike && (
+                        <button
+                            className='shift-btn'
+                            type='button'
+                            onClick={handleExport}
+                            disabled={isDownloading}
+                        >
+                            {isDownloading ? 'Generando...' : 'Exportar Excel'}
+                        </button>
+                    )}
                 </form>
             </div>
 
@@ -490,14 +492,14 @@ const ShiftComponent = () => {
                     </div>
                     {locationRows.length ? (
                         <div className='shift-location-list'>
-                            {pagedLocationRows.map((row) => {
+                            {pagedLocationRows.map((row, index) => {
                                 const hasIn =
                                     row.latitudeIn && row.longitudeIn;
                                 const hasOut =
                                     row.latitudeOut && row.longitudeOut;
                                 return (
                                     <div
-                                        key={row.id}
+                                        key={`${row.id}-${row.clockIn || 'na'}-${row.clockOut || 'na'}-${index}`}
                                         className='shift-location-item'
                                     >
                                         <div>

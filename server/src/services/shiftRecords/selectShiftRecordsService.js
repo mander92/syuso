@@ -19,7 +19,7 @@ const selectShiftRecordsService = async (
         SELECT 
         s.id, s.serviceId, s.employeeId, u.firstName, u.lastName, s.clockIn, s.clockOut,
         s.latitudeIn, s.longitudeIn, s.latitudeOut, s.longitudeOut,
-        wr.id AS reportId, se.name AS serviceName, se.status, se.hours, se.startDateTime, a.city, a.address, t.type, t.city AS province,
+        wr.id AS reportId, wr.reportDate, se.name AS serviceName, se.status, se.hours, se.startDateTime, a.city, a.address, t.type, t.city AS province,
         TIMESTAMPDIFF(HOUR, s.clockIn, s.clockOut) AS hoursWorked,
         MOD(TIMESTAMPDIFF(MINUTE, s.clockIn, s.clockOut), 60) AS minutesWorked
         FROM shiftRecords s 

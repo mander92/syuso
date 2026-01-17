@@ -310,3 +310,15 @@
 .service-chat-action-delete {
     color: #b91c1c;
 }
+
+@media (max-width: 640px) {
+    .service-chat--compact {
+        margin-top: 12px;
+        width: 100%;
+    }
+
+    .service-chat-body {
+        min-height: 320px;
+        max-height: 520px;
+    }
+}

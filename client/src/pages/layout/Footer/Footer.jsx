@@ -1,6 +1,6 @@
 import './Footer.css';
 import { NavLink } from 'react-router-dom';
-import logo from '../../../assets/syusoLogo.png';
+import logo from '../../../assets/syusoLogo.jpg';
 
 export default function Footer() {
     return (

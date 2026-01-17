@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -12,6 +12,8 @@ import {
     fetchStartShiftRecord,
     fetchEndShiftRecord,
 } from '../../services/shiftRecordService.js';
+import { createServiceNfcLog } from '../../services/nfcService.js';
+import { getChatSocket } from '../../services/chatSocket.js';
 import ServiceChat from '../serviceChat/ServiceChat.jsx';
 import './EmployeeServicesComponent.css';
 
@@ -30,6 +32,29 @@ const getLocation = () =>
         );
     });
 
+const decodeTextRecord = (record) => {
+    try {
+        if (typeof record.data === 'string') {
+            return record.data;
+        }
+
+        if (record.data instanceof DataView) {
+            const status = record.data.getUint8(0);
+            const langLength = status & 0x3f;
+            const encoding = status & 0x80 ? 'utf-16' : 'utf-8';
+            const textBytes = new Uint8Array(
+                record.data.buffer,
+                record.data.byteOffset + 1 + langLength,
+                record.data.byteLength - 1 - langLength
+            );
+            return new TextDecoder(encoding).decode(textBytes);
+        }
+    } catch (error) {
+        return '';
+    }
+    return '';
+};
+
 const EmployeeServicesComponent = () => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
@@ -41,7 +66,16 @@ const EmployeeServicesComponent = () => {
     const [openShifts, setOpenShifts] = useState({});
     const [reportByService, setReportByService] = useState({});
     const [openChats, setOpenChats] = useState({});
+    const [readingNfc, setReadingNfc] = useState({});
+    const [expandedAddress, setExpandedAddress] = useState({});
+    const [unreadCounts, setUnreadCounts] = useState({});
+    const openChatsRef = useRef({});
+    const nfcSupported = typeof window !== 'undefined' && 'NDEFReader' in window;
     const [loading, setLoading] = useState(false);
+    const socket = useMemo(
+        () => getChatSocket(authToken),
+        [authToken]
+    );
 
     useEffect(() => {
         const loadServices = async () => {
@@ -168,7 +202,117 @@ const EmployeeServicesComponent = () => {
             ...prev,
             [serviceId]: !prev[serviceId],
         }));
+        setUnreadCounts((prev) => ({
+            ...prev,
+            [serviceId]: 0,
+        }));
     };
+
+    const toggleAddress = (serviceId) => {
+        setExpandedAddress((prev) => ({
+            ...prev,
+            [serviceId]: !prev[serviceId],
+        }));
+    };
+
+    const handleReadNfc = async (serviceId) => {
+        if (!('NDEFReader' in window)) {
+            toast.error('NFC no disponible en este dispositivo');
+            return;
+        }
+
+        const shiftId = openShifts[serviceId];
+        if (!shiftId) {
+            toast.error('No hay un turno abierto para este servicio');
+            return;
+        }
+
+        try {
+            setReadingNfc((prev) => ({ ...prev, [serviceId]: true }));
+            const reader = new NDEFReader();
+            const controller = new AbortController();
+            await reader.scan({ signal: controller.signal });
+
+            reader.onreading = async (event) => {
+                controller.abort();
+                const uid = event.serialNumber || '';
+                let tagName = '';
+                for (const record of event.message.records) {
+                    if (record.recordType === 'text') {
+                        tagName = decodeTextRecord(record);
+                        break;
+                    }
+                }
+
+                try {
+                    const location = await getLocation();
+                    await createServiceNfcLog(
+                        serviceId,
+                        {
+                            shiftRecordId: shiftId,
+                            tagUid: uid,
+                            tagName,
+                            locationCoords: location,
+                        },
+                        authToken
+                    );
+                    toast.success('Lectura NFC registrada');
+                } catch (error) {
+                    toast.error(
+                        error.message || 'No se pudo guardar la lectura NFC'
+                    );
+                } finally {
+                    setReadingNfc((prev) => ({ ...prev, [serviceId]: false }));
+                }
+            };
+
+            reader.onreadingerror = () => {
+                toast.error('No se pudo leer el tag');
+                setReadingNfc((prev) => ({ ...prev, [serviceId]: false }));
+            };
+        } catch (error) {
+            toast.error('No se pudo iniciar la lectura NFC');
+            setReadingNfc((prev) => ({ ...prev, [serviceId]: false }));
+        }
+    };
+
+    useEffect(() => {
+        openChatsRef.current = openChats;
+    }, [openChats]);
+
+    useEffect(() => {
+        if (!socket || !user) return;
+        if (!services.length) return;
+
+        const serviceIds = services
+            .map((service) => service.serviceId)
+            .filter(Boolean);
+
+        serviceIds.forEach((serviceId) => {
+            socket.emit('chat:join', { serviceId });
+        });
+
+        const handleMessage = (message) => {
+            if (!message?.serviceId) return;
+            if (message.userId === user.id) return;
+            if (!serviceIds.includes(message.serviceId)) return;
+            if (openChatsRef.current[message.serviceId]) return;
+
+            setUnreadCounts((prev) => ({
+                ...prev,
+                [message.serviceId]: (prev[message.serviceId] || 0) + 1,
+            }));
+        };
+
+        socket.on('chat:message', handleMessage);
+
+        return () => {
+            socket.off('chat:message', handleMessage);
+            serviceIds.forEach((serviceId) => {
+                socket.emit('chat:leave', { serviceId });
+            });
+        };
+    }, [socket, services, user]);
 
     return (
         <section className='employee-services'>
@@ -227,22 +371,39 @@ const EmployeeServicesComponent = () => {
                             <li key={service.serviceId} className='employee-card'>
                                 <div className='employee-card-row'>
                                     <div>
-                                        <h3>{service.name || service.type}</h3>
-                                        <p>
-                                            Cliente: {service.firstName}{' '}
-                                            {service.lastName}
-                                        </p>
-                                        <p>Tipo: {service.type}</p>
-                                        <p>
-                                            Direccion: {service.address},{' '}
-                                            {service.city}
-                                        </p>
-                                        <p>
-                                            Fecha: {new Date(
-                                                service.startDateTime
-                                            ).toLocaleString()}
-                                        </p>
-                                        <p>Estado: {service.status}</p>
+                                        <div className='employee-card-title'>
+                                            <h3>
+                                                {service.name || service.type}
+                                            </h3>
+                                            <button
+                                                type='button'
+                                                className='employee-card-toggle'
+                                                onClick={() =>
+                                                    toggleAddress(
+                                                        service.serviceId
+                                                    )
+                                                }
+                                                aria-expanded={
+                                                    expandedAddress[
+                                                        service.serviceId
+                                                    ]
+                                                        ? 'true'
+                                                        : 'false'
+                                                }
+                                            >
+                                                {expandedAddress[
+                                                    service.serviceId
+                                                ]
+                                                    ? '–'
+                                                    : '+'}
+                                            </button>
+                                        </div>
+                                        {expandedAddress[service.serviceId] && (
+                                            <p>
+                                                Direccion: {service.address},{' '}
+                                                {service.city}
+                                            </p>
+                                        )}
                                     </div>
                                     <div className='employee-card-actions'>
                                         <button
@@ -282,7 +443,7 @@ const EmployeeServicesComponent = () => {
                                         ) : null}
                                         <button
                                             type='button'
-                                            className='employee-btn'
+                                            className='employee-btn employee-btn--chat'
                                             onClick={() =>
                                                 toggleChat(service.serviceId)
                                             }
@@ -290,7 +451,34 @@ const EmployeeServicesComponent = () => {
                                             {openChats[service.serviceId]
                                                 ? 'Cerrar chat'
                                                 : 'Chat'}
+                                            {unreadCounts[service.serviceId] ? (
+                                                <span className='employee-chat-badge'>
+                                                    {unreadCounts[
+                                                        service.serviceId
+                                                    ]}
+                                                </span>
+                                            ) : null}
                                         </button>
+                                        {isOpen ? (
+                                            <button
+                                                type='button'
+                                                className='employee-btn employee-btn--nfc'
+                                                onClick={() =>
+                                                    handleReadNfc(
+                                                        service.serviceId
+                                                    )
+                                                }
+                                                disabled={
+                                                    readingNfc[
+                                                        service.serviceId
+                                                    ] || !nfcSupported
+                                                }
+                                            >
+                                                {readingNfc[service.serviceId]
+                                                    ? 'Leyendo NFC...'
+                                                    : 'Leer NFC'}
+                                            </button>
+                                        ) : null}
                                     </div>
                                 </div>
                                 {service.scheduleImage && (

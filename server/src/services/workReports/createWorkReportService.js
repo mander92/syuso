@@ -8,13 +8,22 @@ import sharp from 'sharp';
 import getPool from '../../db/getPool.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import sendMail from '../../utils/sendBrevoMail.js';
-import { ADMIN_EMAIL, UPLOADS_DIR } from '../../../env.js';
+import { UPLOADS_DIR } from '../../../env.js';
 
 const ensureDir = async (dirPath) => {
     try {
         await fsPromises.access(dirPath);
     } catch (error) {
         await fsPromises.mkdir(dirPath, { recursive: true });
+    }
+};
+
+const deleteIfExists = async (filePath) => {
+    if (!filePath) return;
+    try {
+        await fsPromises.unlink(filePath);
+    } catch (error) {
+        // ignore missing files
     }
 };
 
@@ -107,7 +116,8 @@ const createPdfWithIncidents = async (
     reportData,
     incidents,
     logoPath,
-    signaturePath
+    signaturePath,
+    tagLogs
 ) => {
     await new Promise((resolve, reject) => {
         const doc = new PDFDocument({ size: 'A4', margin: 40 });
@@ -181,63 +191,88 @@ const createPdfWithIncidents = async (
                 doc.page.margins.right,
         });
 
-        doc.moveDown(0.8);
-        doc.fontSize(14).text('Incidencias');
-        doc.moveDown(0.4);
-        doc.fontSize(12);
+        if (incidents?.length) {
+            doc.moveDown(0.8);
+            doc.fontSize(14).text('Incidencias');
+            doc.moveDown(0.4);
+            doc.fontSize(12);
 
-        const pageWidth =
-            doc.page.width - doc.page.margins.left - doc.page.margins.right;
-        const imageGap = 12;
-        const imageWidth = (pageWidth - imageGap) / 2;
-        const imageHeight = 120;
+            const pageWidth =
+                doc.page.width -
+                doc.page.margins.left -
+                doc.page.margins.right;
+            const imageGap = 12;
+            const imageWidth = (pageWidth - imageGap) / 2;
+            const imageHeight = 120;
 
-        incidents.forEach((incident, index) => {
-            doc.text(
-                `Incidencia ${index + 1}: ${sanitizeText(incident.text)}`
-            );
-            doc.moveDown(0.3);
+            incidents.forEach((incident, index) => {
+                doc.text(
+                    `Incidencia ${index + 1}: ${sanitizeText(incident.text)}`
+                );
+                doc.moveDown(0.3);
 
-            const photos = incident.photos || [];
-            for (let i = 0; i < photos.length; i += 2) {
-                if (doc.y + imageHeight > doc.page.height - doc.page.margins.bottom) {
-                    doc.addPage();
-                }
-
-                const xLeft = doc.page.margins.left;
-                const xRight = xLeft + imageWidth + imageGap;
-                const y = doc.y;
-                const leftPath = photos[i];
-                const rightPath = photos[i + 1];
-
-                if (leftPath) {
-                    try {
-                        doc.image(leftPath, xLeft, y, {
-                            width: imageWidth,
-                            height: imageHeight,
-                        });
-                    } catch (error) {
-                        // ignore missing image
+                const photos = incident.photos || [];
+                for (let i = 0; i < photos.length; i += 2) {
+                    if (
+                        doc.y + imageHeight >
+                        doc.page.height - doc.page.margins.bottom
+                    ) {
+                        doc.addPage();
                     }
-                }
 
-                if (rightPath) {
-                    try {
-                        doc.image(rightPath, xRight, y, {
-                            width: imageWidth,
-                            height: imageHeight,
-                        });
-                    } catch (error) {
-                        // ignore missing image
+                    const xLeft = doc.page.margins.left;
+                    const xRight = xLeft + imageWidth + imageGap;
+                    const y = doc.y;
+                    const leftPath = photos[i];
+                    const rightPath = photos[i + 1];
+
+                    if (leftPath) {
+                        try {
+                            doc.image(leftPath, xLeft, y, {
+                                width: imageWidth,
+                                height: imageHeight,
+                            });
+                        } catch (error) {
+                            // ignore missing image
+                        }
                     }
+
+                    if (rightPath) {
+                        try {
+                            doc.image(rightPath, xRight, y, {
+                                width: imageWidth,
+                                height: imageHeight,
+                            });
+                        } catch (error) {
+                            // ignore missing image
+                        }
+                    }
+
+                    doc.moveDown(0.1);
+                    doc.y = y + imageHeight + 8;
                 }
 
-                doc.moveDown(0.1);
-                doc.y = y + imageHeight + 8;
-            }
+                doc.moveDown(0.6);
+            });
+        }
 
+        if (tagLogs?.length) {
             doc.moveDown(0.6);
-        });
+            doc.fontSize(14).text('Lecturas NFC');
+            doc.moveDown(0.3);
+            doc.fontSize(12);
+
+            tagLogs.forEach((log) => {
+                const when = formatDateTime(log.scannedAt);
+                const coords =
+                    log.latitude != null && log.longitude != null
+                        ? ` (${log.latitude}, ${log.longitude})`
+                        : '';
+                doc.text(
+                    `${when} - ${sanitizeText(log.tagName)}${coords}`
+                );
+            });
+        }
 
         if (signaturePath) {
             const signatureWidth = 140;
@@ -302,6 +337,15 @@ const createWorkReportService = async ({
     if (shift.clockOut) {
         generateErrorUtil('El turno ya esta cerrado', 409);
     }
+
+    const [draftRows] = await pool.query(
+        `
+        SELECT signaturePath, data
+        FROM workReportDrafts
+        WHERE shiftRecordId = ?
+        `,
+        [shiftRecordId]
+    );
 
     const [serviceRows] = await pool.query(
         `
@@ -394,8 +438,8 @@ const createWorkReportService = async ({
             reportData.detection,
             reportData.actionsTaken,
             reportData.outcome,
-            `workReports/signatures/${signatureId}.png`,
-            `workReports/reports/${reportId}.png`,
+            '',
+            '',
         ]
     );
 
@@ -410,6 +454,16 @@ const createWorkReportService = async ({
               }))
               .filter((incident) => incident.text)
         : [];
+    let incidentPhotoFiles = [];
+    const [tagLogs] = await pool.query(
+        `
+        SELECT tagName, tagUid, latitude, longitude, scannedAt
+        FROM serviceNfcTagLogs
+        WHERE shiftRecordId = ?
+        ORDER BY scannedAt ASC
+        `,
+        [shiftRecordId]
+    );
 
     const fileEntries = Object.entries(incidentFiles || {});
 
@@ -442,27 +496,10 @@ const createWorkReportService = async ({
     }
 
     if (normalizedIncidents.length) {
-        const incidentValues = normalizedIncidents.map((incident) => [
-            uuid(),
-            reportId,
-            incident.text,
-        ]);
-
-        const incidentIds = incidentValues.map((row) => row[0]);
-        await pool.query(
-            `
-            INSERT INTO workReportIncidents (id, workReportId, description)
-            VALUES ?
-            `,
-            [incidentValues]
-        );
-
-        const photoValues = [];
-        const incidentPhotoFiles = normalizedIncidents.map(() => []);
+        incidentPhotoFiles = normalizedIncidents.map(() => []);
 
         for (let index = 0; index < normalizedIncidents.length; index += 1) {
             const incident = normalizedIncidents[index];
-            const incidentId = incidentIds[index];
             const paths = incident.photoPaths || [];
 
             for (const photoPath of paths) {
@@ -473,32 +510,18 @@ const createWorkReportService = async ({
                     const photoId = uuid();
                     const photoFileName = `${photoId}${extension}`;
                     const finalPath = path.join(photoDir, photoFileName);
-                    const finalRelPath = `workReports/photos/${photoFileName}`;
-
                     try {
                         await fsPromises.copyFile(sourcePath, finalPath);
-                        photoValues.push([photoId, incidentId, finalRelPath]);
                         incidentPhotoFiles[index].push(finalPath);
                     } catch (error) {
                         // ignore missing draft file
                     }
                 } else {
-                    photoValues.push([uuid(), incidentId, photoPath]);
                     incidentPhotoFiles[index].push(
                         path.join(uploadsRoot, photoPath)
                     );
                 }
             }
-        }
-
-        if (photoValues.length) {
-            await pool.query(
-                `
-                INSERT INTO workReportIncidentPhotos (id, workReportIncidentId, photoPath)
-                VALUES ?
-                `,
-                [photoValues]
-            );
         }
 
         const incidentsForPdf = normalizedIncidents.map((incident, index) => ({
@@ -508,14 +531,28 @@ const createWorkReportService = async ({
 
         const logoPath =
             process.env.SYUSO_LOGO_PATH ||
-            'C:\\Users\\Mario\\OneDrive\\Escritorio\\SYUSO_app\\client\\src\\assets\\syusoLogo.png';
+            'C:\\Users\\Mario\\OneDrive\\Escritorio\\SYUSO_app\\client\\src\\assets\\syusoLogo.jpg';
 
         await createPdfWithIncidents(
             reportPdfPath,
             svgPayload,
             incidentsForPdf,
             logoPath,
-            signaturePath
+            signaturePath,
+            tagLogs
+        );
+    } else if (tagLogs.length) {
+        const logoPath =
+            process.env.SYUSO_LOGO_PATH ||
+            'C:\\Users\\Mario\\OneDrive\\Escritorio\\SYUSO_app\\client\\src\\assets\\syusoLogo.jpg';
+
+        await createPdfWithIncidents(
+            reportPdfPath,
+            svgPayload,
+            [],
+            logoPath,
+            signaturePath,
+            tagLogs
         );
     } else {
         await createPdfFromPng(reportImagePath, reportPdfPath);
@@ -538,21 +575,56 @@ const createWorkReportService = async ({
         </html>
     `;
 
-    if (ADMIN_EMAIL) {
-        await sendMail('Admin', ADMIN_EMAIL, subject, html, [
-            { path: reportPdfPath },
-        ]);
-    }
-
-    if (finalReportEmail && finalReportEmail !== ADMIN_EMAIL) {
+    if (finalReportEmail) {
         await sendMail('Reporte', finalReportEmail, subject, html, [
             { path: reportPdfPath },
         ]);
     }
 
+    await pool.query(
+        `
+        UPDATE serviceNfcTagLogs
+        SET workReportId = ?
+        WHERE shiftRecordId = ?
+        `,
+        [reportId, shiftRecordId]
+    );
+
+    await deleteIfExists(signaturePath);
+    await deleteIfExists(reportImagePath);
+
+    for (const files of incidentPhotoFiles) {
+        for (const filePath of files) {
+            await deleteIfExists(filePath);
+        }
+    }
+
+    if (draftRows.length) {
+        const draft = draftRows[0];
+        const draftSignaturePath = draft.signaturePath
+            ? path.join(uploadsRoot, draft.signaturePath)
+            : null;
+        await deleteIfExists(draftSignaturePath);
+        try {
+            const draftData = draft.data ? JSON.parse(draft.data) : null;
+            const draftIncidents = Array.isArray(draftData?.incidents)
+                ? draftData.incidents
+                : [];
+            const draftPhotos = draftIncidents.flatMap(
+                (incident) => incident.photoPaths || []
+            );
+            for (const relPath of draftPhotos) {
+                const fullPath = path.join(uploadsRoot, relPath);
+                await deleteIfExists(fullPath);
+            }
+        } catch (error) {
+            // ignore malformed draft data
+        }
+    }
+
     return {
         id: reportId,
-        reportImagePath: `workReports/reports/${reportId}.png`,
+        reportPdfPath: `workReports/pdfs/${reportId}.pdf`,
     };
 };
 
