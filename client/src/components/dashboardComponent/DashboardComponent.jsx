@@ -54,6 +54,7 @@ const DashboardComponent = () => {
         if (user.role === 'employee') {
             return [
                 { id: 'services', label: 'Mis servicios' },
+                { id: 'chats', label: 'Chats' },
                 { id: 'profile', label: 'Mi perfil' },
             ];
         }
