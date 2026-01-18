@@ -8,12 +8,14 @@ import {
     fetchEmployeeAllServicesServices,
 } from '../../services/serviceService.js';
 import { getChatSocket } from '../../services/chatSocket.js';
+import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 import ServiceChat from './ServiceChat.jsx';
 import './ServiceChatDashboard.css';
 
 const ServiceChatDashboard = () => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
+    const { resetServiceUnread } = useChatNotifications();
     const [services, setServices] = useState([]);
     const [openChats, setOpenChats] = useState({});
     const [unreadCounts, setUnreadCounts] = useState({});
@@ -202,6 +204,7 @@ const ServiceChatDashboard = () => {
             ...prev,
             [serviceId]: 0,
         }));
+        resetServiceUnread(serviceId);
     };
 
     useEffect(() => {

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { NavLink, Navigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -14,7 +14,7 @@ import { fetchDeleteEmployeeService } from '../../services/personAssigned.js';
 import ListEmployeeComponent from '../../components/adminServiceSection/listEmployeeComponent/ListEmployeeComponent.jsx';
 import ServiceChat from '../../components/serviceChat/ServiceChat.jsx';
 import NfcTagsManager from '../../components/nfcTags/NfcTagsManager.jsx';
-import { getChatSocket } from '../../services/chatSocket.js';
+import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 import './ServiceDetail.css';
 
 const formatDateTime = (value) => {
@@ -39,7 +39,6 @@ const ServiceDetail = () => {
     const [isCompleting, setIsCompleting] = useState(false);
     const [isReactivating, setIsReactivating] = useState(false);
     const [activeTab, setActiveTab] = useState('summary');
-    const [unreadChats, setUnreadChats] = useState(0);
     const [statusModal, setStatusModal] = useState({
         open: false,
         targetStatus: '',
@@ -47,11 +46,8 @@ const ServiceDetail = () => {
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
     const [activeShifts, setActiveShifts] = useState([]);
     const [activeShiftsLoading, setActiveShiftsLoading] = useState(false);
-    const activeTabRef = useRef(activeTab);
-    const socket = useMemo(
-        () => getChatSocket(authToken),
-        [authToken]
-    );
+    const { unreadByService, resetServiceUnread } = useChatNotifications();
+    const unreadChats = unreadByService?.[serviceId] || 0;
 
     useEffect(() => {
         const loadService = async () => {
@@ -275,30 +271,10 @@ const ServiceDetail = () => {
     }, [activeTab, authToken, serviceId]);
 
     useEffect(() => {
-        activeTabRef.current = activeTab;
         if (activeTab === 'chat') {
-            setUnreadChats(0);
+            resetServiceUnread(serviceId);
         }
-    }, [activeTab]);
-
-    useEffect(() => {
-        if (!socket || !serviceId) return;
-
-        const handleMessage = (message) => {
-            if (message?.serviceId !== serviceId) return;
-            if (message?.userId && message.userId === user?.id) return;
-            if (activeTabRef.current === 'chat') return;
-            setUnreadChats((prev) => prev + 1);
-        };
-
-        socket.emit('chat:join', { serviceId });
-        socket.on('chat:message', handleMessage);
-
-        return () => {
-            socket.emit('chat:leave', { serviceId });
-            socket.off('chat:message', handleMessage);
-        };
-    }, [socket, serviceId, user?.id]);
+    }, [activeTab, resetServiceUnread, serviceId]);
 
 
     if (!authToken) return <Navigate to='/login' />;

@@ -14,6 +14,7 @@ import {
 } from '../../services/shiftRecordService.js';
 import { createServiceNfcLog } from '../../services/nfcService.js';
 import { getChatSocket } from '../../services/chatSocket.js';
+import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 import ServiceChat from '../serviceChat/ServiceChat.jsx';
 import './EmployeeServicesComponent.css';
 
@@ -59,6 +60,7 @@ const EmployeeServicesComponent = () => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
     const navigate = useNavigate();
+    const { resetServiceUnread } = useChatNotifications();
 
     const [services, setServices] = useState([]);
     const [status, setStatus] = useState('');
@@ -207,6 +209,7 @@ const EmployeeServicesComponent = () => {
             ...prev,
             [serviceId]: 0,
         }));
+        resetServiceUnread(serviceId);
     };
 
     const toggleAddress = (serviceId) => {

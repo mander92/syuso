@@ -4,6 +4,7 @@ import { useState, useContext } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import logo from '../../../assets/syusoLogo.jpg';
 import { AuthContext } from '../../../context/AuthContext.jsx';
+import { useChatNotifications } from '../../../context/ChatNotificationsContext.jsx';
 
 export default function Header() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -11,6 +12,7 @@ export default function Header() {
 
     // Leemos del contexto
     const { authToken, authLogout } = useContext(AuthContext);
+    const { unreadTotal } = useChatNotifications();
     const isLoggedIn = Boolean(authToken);
 
     const toggleMenu = () => {
@@ -45,7 +47,14 @@ export default function Header() {
                     <>
                         {/* Mi cuenta cuando está loggeado */}
                         <NavLink to={'/account'}>
-                            <button className='nav-btn'>Mi cuenta</button>
+                            <button className='nav-btn nav-btn-chat'>
+                                Mi cuenta
+                                {unreadTotal > 0 ? (
+                                    <span className='nav-chat-badge'>
+                                        {unreadTotal}
+                                    </span>
+                                ) : null}
+                            </button>
                         </NavLink>
 
                         {/* Botón de salir */}
@@ -89,8 +98,13 @@ export default function Header() {
                 {isLoggedIn ? (
                     <>
                         <NavLink to='/account' onClick={closeMenu}>
-                            <button className='mobile-nav-btn'>
+                            <button className='mobile-nav-btn mobile-nav-btn-chat'>
                                 Mi cuenta
+                                {unreadTotal > 0 ? (
+                                    <span className='mobile-chat-badge'>
+                                        {unreadTotal}
+                                    </span>
+                                ) : null}
                             </button>
                         </NavLink>
                         <button

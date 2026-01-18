@@ -13,9 +13,11 @@ import AdminCvSection from '../adminCvSection/AdminCvSection.jsx';
 import EmployeeServicesComponent from '../employeeServicesSection/EmployeeServicesComponent.jsx';
 import ClientServicesComponent from '../clientServicesSection/ClientServicesComponent.jsx';
 import ServiceChatDashboard from '../serviceChat/ServiceChatDashboard.jsx';
+import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 
 const DashboardComponent = () => {
     const { user } = useUser();
+    const { unreadTotal } = useChatNotifications();
     const [activeSection, setActiveSection] = useState('profile');
     const hasSetDefault = useRef(false);
 
@@ -164,7 +166,14 @@ const DashboardComponent = () => {
                                 }
                                 onClick={() => setActiveSection(section.id)}
                             >
-                                {section.label}
+                                <span className='dashboard-navitem-label'>
+                                    {section.label}
+                                </span>
+                                {section.id === 'chats' && unreadTotal > 0 ? (
+                                    <span className='dashboard-nav-badge'>
+                                        {unreadTotal}
+                                    </span>
+                                ) : null}
                             </button>
                         ))}
                     </nav>

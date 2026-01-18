@@ -98,6 +98,10 @@
         background-color 0.15s ease,
         color 0.15s ease,
         transform 0.08s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
 }
 
 .dashboard-navitem:hover {
@@ -108,6 +112,23 @@
 .dashboard-navitem--active {
     background-color: #f9fafb;
     color: #111827;
+}
+
+.dashboard-navitem-label {
+    flex: 1;
+}
+
+.dashboard-nav-badge {
+    min-width: 18px;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 0.72rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* CONTENIDO PRINCIPAL */
