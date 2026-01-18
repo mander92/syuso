@@ -21,6 +21,7 @@ const ChatNotificationsContext = createContext({
     resetServiceUnread: () => {},
     resetGeneralUnread: () => {},
     resetAllUnread: () => {},
+    syncGeneralChats: () => {},
 });
 
 export const ChatNotificationsProvider = ({ children }) => {
@@ -384,6 +385,11 @@ export const ChatNotificationsProvider = ({ children }) => {
         setUnreadByGeneral({});
     };
 
+    const syncGeneralChats = (nextChats) => {
+        if (!Array.isArray(nextChats)) return;
+        setGeneralChats(nextChats);
+    };
+
     const unreadTotal = useMemo(
         () =>
             Object.values(unreadByService).reduce(
@@ -406,6 +412,7 @@ export const ChatNotificationsProvider = ({ children }) => {
                 resetServiceUnread,
                 resetGeneralUnread,
                 resetAllUnread,
+                syncGeneralChats,
             }}
         >
             {children}

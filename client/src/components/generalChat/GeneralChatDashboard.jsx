@@ -25,7 +25,8 @@ const normalizeText = (value) =>
 const GeneralChatDashboard = () => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
-    const { unreadByGeneral, resetGeneralUnread } = useChatNotifications();
+    const { unreadByGeneral, resetGeneralUnread, syncGeneralChats } =
+        useChatNotifications();
     const [chats, setChats] = useState([]);
     const [openChats, setOpenChats] = useState({});
     const [membersByChat, setMembersByChat] = useState({});
@@ -47,8 +48,12 @@ const GeneralChatDashboard = () => {
         try {
             setLoading(true);
             const data = await fetchGeneralChats(authToken);
-            setChats(Array.isArray(data) ? data : []);
+            const nextChats = Array.isArray(data) ? data : [];
+            setChats(nextChats);
+            syncGeneralChats(nextChats);
         } catch (error) {
+            setChats([]);
+            syncGeneralChats([]);
             toast.error(
                 error.message || 'No se pudieron cargar los chats'
             );
