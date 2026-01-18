@@ -309,7 +309,6 @@ const ServiceDetail = () => {
                     </NavLink>
                 </div>
             ) : (
-
                 <div className='service-detail-layout'>
                     <nav className='service-detail-menu'>
                         <button
@@ -704,6 +703,8 @@ const ServiceDetail = () => {
                             </section>
                         )}
                 </div>
+            )}
+
             {statusModal.open && (
                 <div className='service-detail-modal-overlay'>
                     <div className='service-detail-modal'>
