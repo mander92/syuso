@@ -15,7 +15,9 @@ export const getChatSocket = (token) => {
 
         socketInstance = io(VITE_API_URL, {
             auth: { token },
-            transports: ['websocket'],
+            path: '/socket.io',
+            timeout: 10000,
+            reconnectionAttempts: 5,
         });
 
         activeToken = token;
