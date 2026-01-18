@@ -45,7 +45,6 @@ const ServiceDetail = () => {
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
     const [activeShifts, setActiveShifts] = useState([]);
     const [activeShiftsLoading, setActiveShiftsLoading] = useState(false);
-    const [isActiveShiftsVisible, setIsActiveShiftsVisible] = useState(false);
 
     useEffect(() => {
         const loadService = async () => {
@@ -247,12 +246,8 @@ const ServiceDetail = () => {
         }
     };
 
-    const handleToggleActiveShifts = async () => {
-        const willOpen = !isActiveShiftsVisible;
-        setIsActiveShiftsVisible(willOpen);
-
-        if (!willOpen || !authToken || !serviceId) return;
-
+    const loadActiveShifts = async () => {
+        if (!authToken || !serviceId) return;
         try {
             setActiveShiftsLoading(true);
             const rows = await fetchActiveServiceShifts(authToken, serviceId);
@@ -265,6 +260,12 @@ const ServiceDetail = () => {
             setActiveShiftsLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (activeTab === 'shifts') {
+            loadActiveShifts();
+        }
+    }, [activeTab, authToken, serviceId]);
 
 
     if (!authToken) return <Navigate to='/login' />;
@@ -563,45 +564,36 @@ const ServiceDetail = () => {
                         <section className='service-detail-card service-detail-section'>
                             <div className='service-detail-section-header'>
                                 <h2>Turnos abiertos</h2>
-                                <button
-                                    type='button'
-                                    className='service-detail-toggle'
-                                    onClick={handleToggleActiveShifts}
-                                >
-                                    {isActiveShiftsVisible ? 'Ocultar' : 'Mostrar'}
-                                </button>
                             </div>
-                            {isActiveShiftsVisible && (
-                                <div className='service-detail-collapsible'>
-                                    {activeShiftsLoading ? (
-                                        <p className='service-detail-empty'>
-                                            Cargando turnos abiertos...
-                                        </p>
-                                    ) : activeShifts.length ? (
-                                        <div className='service-detail-list'>
-                                            {activeShifts.map((employee) => (
-                                                <div
-                                                    key={employee.shiftId}
-                                                    className='service-detail-employee service-detail-employee--active'
-                                                >
-                                                    <div>
-                                                        <strong>
-                                                            {employee.firstName || ''} {employee.lastName || ''}
-                                                        </strong>
-                                                        <p>{employee.email || 'Sin email'}</p>
-                                                        <p>{employee.phone || 'Sin telefono'}</p>
-                                                    </div>
-                                                    <span className='service-detail-active-dot' />
+                            <div className='service-detail-collapsible'>
+                                {activeShiftsLoading ? (
+                                    <p className='service-detail-empty'>
+                                        Cargando turnos abiertos...
+                                    </p>
+                                ) : activeShifts.length ? (
+                                    <div className='service-detail-list'>
+                                        {activeShifts.map((employee) => (
+                                            <div
+                                                key={employee.shiftId}
+                                                className='service-detail-employee service-detail-employee--active'
+                                            >
+                                                <div>
+                                                    <strong>
+                                                        {employee.firstName || ''} {employee.lastName || ''}
+                                                    </strong>
+                                                    <p>{employee.email || 'Sin email'}</p>
+                                                    <p>{employee.phone || 'Sin telefono'}</p>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <p className='service-detail-empty'>
-                                            Sin turnos abiertos.
-                                        </p>
-                                    )}
-                                </div>
-                            )}
+                                                <span className='service-detail-active-dot' />
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className='service-detail-empty'>
+                                        Sin turnos abiertos.
+                                    </p>
+                                )}
+                            </div>
                         </section>
                     )}
 
