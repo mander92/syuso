@@ -19,20 +19,17 @@ const selectInProgressServicesService = async (
             a.city,
             a.postCode,
             t.type,
-            sr.id AS shiftId,
-            sr.clockIn,
-            sr.employeeId,
+            pa.id AS assignmentId,
+            pa.employeeId,
             u.firstName,
             u.lastName
-        FROM shiftRecords sr
-        INNER JOIN services s ON s.id = sr.serviceId
+        FROM services s
         INNER JOIN addresses a ON a.id = s.addressId
         INNER JOIN typeOfServices t ON t.id = s.typeOfServicesId
-        INNER JOIN users u ON u.id = sr.employeeId
-        WHERE sr.clockOut IS NULL
-        AND sr.deletedAt IS NULL
-        AND s.deletedAt IS NULL
-        AND s.status NOT IN ('completed', 'canceled', 'rejected')
+        LEFT JOIN personsAssigned pa ON pa.serviceId = s.id
+        LEFT JOIN users u ON u.id = pa.employeeId
+        WHERE s.deletedAt IS NULL
+        AND s.status = 'confirmed'
     `;
 
     const sqlValues = [];
@@ -49,7 +46,7 @@ const selectInProgressServicesService = async (
         sqlValues.push(...delegationNames);
     }
 
-    sqlQuery += ' ORDER BY s.startDateTime DESC, sr.clockIn DESC';
+    sqlQuery += ' ORDER BY s.startDateTime DESC';
 
     const [rows] = await pool.query(sqlQuery, sqlValues);
 

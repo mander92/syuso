@@ -407,8 +407,8 @@ const ContractsComponent = () => {
                 <section className='contracts-active'>
                     <div className='contracts-active-header'>
                         <div>
-                            <h2>Servicios activos</h2>
-                            <p>Turnos abiertos con personal activo.</p>
+                            <h2>Servicios confirmados</h2>
+                            <p>Servicios con estado confirmado.</p>
                         </div>
                         <div className='contracts-active-filters'>
                             <input
@@ -440,7 +440,7 @@ const ContractsComponent = () => {
 
                     {activeLoading ? (
                         <p className='contracts-loading'>
-                            Cargando servicios en curso...
+                            Cargando servicios confirmados...
                         </p>
                     ) : filteredActiveServices.length ? (
                         <div className='contracts-active-list'>
@@ -489,8 +489,8 @@ const ContractsComponent = () => {
                                                 {expandedActive[
                                                     service.serviceId
                                                 ]
-                                                    ? 'Ocultar turnos'
-                                                    : 'Ver turnos activos'}
+                                                    ? 'Ocultar asignados'
+                                                    : 'Ver empleados asignados'}
                                             </button>
                                             <button
                                                 type='button'
@@ -546,7 +546,8 @@ const ContractsComponent = () => {
                                                     (employee) => (
                                                         <div
                                                             key={
-                                                                employee.shiftId
+                                                                employee.shiftId ||
+                                                                employee.employeeId
                                                             }
                                                             className='contracts-active-employee'
                                                         >
@@ -556,19 +557,14 @@ const ContractsComponent = () => {
                                                                 {employee.lastName}
                                                             </span>
                                                             <span>
-                                                                Entrada:{' '}
-                                                                {employee.clockIn
-                                                                    ? new Date(
-                                                                          employee.clockIn
-                                                                      ).toLocaleString()
-                                                                    : 'Sin hora'}
+                                                                Asignado
                                                             </span>
                                                         </div>
                                                     )
                                                 )
                                     ) : (
                                         <p className='contracts-loading'>
-                                            Sin turnos activos.
+                                            Sin empleados asignados.
                                         </p>
                                     )}
                                 </div>
@@ -587,7 +583,7 @@ const ContractsComponent = () => {
                 </div>
             ) : (
                         <p className='contracts-loading'>
-                            No hay servicios en curso.
+                            No hay servicios confirmados.
                         </p>
                     )}
                 </section>

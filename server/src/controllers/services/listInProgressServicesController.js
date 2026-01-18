@@ -57,13 +57,15 @@ const listInProgressServicesController = async (req, res, next) => {
                 };
             }
 
-            acc[row.serviceId].activeEmployees.push({
-                shiftId: row.shiftId,
-                employeeId: row.employeeId,
-                firstName: row.firstName,
-                lastName: row.lastName,
-                clockIn: row.clockIn,
-            });
+            if (row.employeeId) {
+                acc[row.serviceId].activeEmployees.push({
+                    shiftId: row.assignmentId,
+                    employeeId: row.employeeId,
+                    firstName: row.firstName,
+                    lastName: row.lastName,
+                    clockIn: null,
+                });
+            }
 
             return acc;
         }, {});
