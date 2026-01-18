@@ -113,36 +113,29 @@ const ContractsComponent = () => {
         loadDelegations();
     }, [authToken, isAdminLike]);
 
+    const loadActiveServices = async () => {
+        if (!authToken || !user || !isAdminLike) return;
+
+        try {
+            setActiveLoading(true);
+            const data = await fetchInProgressServices(
+                authToken,
+                delegationId
+            );
+            setActiveServices(data || []);
+        } catch (error) {
+            toast.error(
+                error.message || 'No se pudieron cargar los servicios'
+            );
+        } finally {
+            setActiveLoading(false);
+        }
+    };
+
     useEffect(() => {
-        let intervalId;
-
-        const loadActiveServices = async () => {
-            if (!authToken || !user || !isAdminLike) return;
-
-            try {
-                setActiveLoading(true);
-                const data = await fetchInProgressServices(
-                    authToken,
-                    delegationId
-                );
-                setActiveServices(data || []);
-            } catch (error) {
-                toast.error(
-                    error.message || 'No se pudieron cargar los servicios'
-                );
-            } finally {
-                setActiveLoading(false);
-            }
-        };
-
         if (authToken && isAdminLike) {
             loadActiveServices();
-            intervalId = setInterval(loadActiveServices, 15000);
         }
-
-        return () => {
-            if (intervalId) clearInterval(intervalId);
-        };
     }, [authToken, user, delegationId, isAdminLike]);
 
     const typeNoRepeated = useMemo(
@@ -462,6 +455,16 @@ const ContractsComponent = () => {
                                     </option>
                                 ))}
                             </select>
+                            <button
+                                type='button'
+                                className='contracts-btn contracts-btn--ghost'
+                                onClick={loadActiveServices}
+                                disabled={activeLoading}
+                            >
+                                {activeLoading
+                                    ? 'Actualizando...'
+                                    : 'Actualizar'}
+                            </button>
                         </div>
                     </div>
 
