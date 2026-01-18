@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import toast from 'react-hot-toast';
 
 import { AuthContext } from './AuthContext.jsx';
 import useUser from '../hooks/useUser.js';
@@ -27,6 +28,13 @@ export const ChatNotificationsProvider = ({ children }) => {
         [authToken]
     );
 
+    const normalizeServices = (data) => {
+        if (Array.isArray(data)) return data;
+        if (Array.isArray(data?.data)) return data.data;
+        if (Array.isArray(data?.data?.data)) return data.data.data;
+        return [];
+    };
+
     const serviceIds = useMemo(
         () =>
             services
@@ -34,6 +42,16 @@ export const ChatNotificationsProvider = ({ children }) => {
                 .filter(Boolean),
         [services]
     );
+
+    const serviceNameMap = useMemo(() => {
+        const map = new Map();
+        services.forEach((service) => {
+            const id = service.serviceId || service.id;
+            if (!id || map.has(id)) return;
+            map.set(id, service.name || service.type || 'Servicio');
+        });
+        return map;
+    }, [services]);
 
     useEffect(() => {
         if (!authToken || !user) {
@@ -52,7 +70,7 @@ export const ChatNotificationsProvider = ({ children }) => {
             try {
                 if (user.role === 'admin' || user.role === 'sudo') {
                     const data = await fetchAllServicesServices('', authToken);
-                    setServices(data?.data || []);
+                    setServices(normalizeServices(data));
                     return;
                 }
 
@@ -61,7 +79,7 @@ export const ChatNotificationsProvider = ({ children }) => {
                         '',
                         authToken
                     );
-                    setServices(data || []);
+                    setServices(normalizeServices(data));
                     return;
                 }
 
@@ -105,6 +123,12 @@ export const ChatNotificationsProvider = ({ children }) => {
                 ...prev,
                 [message.serviceId]: (prev[message.serviceId] || 0) + 1,
             }));
+
+            const serviceName =
+                serviceNameMap.get(message.serviceId) || 'Servicio';
+            toast(`${serviceName}: nuevo mensaje`, {
+                id: `chat-${message.id || message.serviceId}`,
+            });
         };
 
         socket.on('chat:message', handleMessage);
@@ -117,7 +141,7 @@ export const ChatNotificationsProvider = ({ children }) => {
                 joinedRooms.current.delete(serviceId);
             });
         };
-    }, [socket, serviceIds, user]);
+    }, [socket, serviceIds, user, serviceNameMap]);
 
     const resetServiceUnread = (serviceId) => {
         if (!serviceId) return;

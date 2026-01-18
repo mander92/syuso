@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 
 import { AuthContext } from '../../context/AuthContext.jsx';
@@ -7,7 +7,6 @@ import {
     fetchAllServicesServices,
     fetchEmployeeAllServicesServices,
 } from '../../services/serviceService.js';
-import { getChatSocket } from '../../services/chatSocket.js';
 import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 import ServiceChat from './ServiceChat.jsx';
 import './ServiceChatDashboard.css';
@@ -15,19 +14,11 @@ import './ServiceChatDashboard.css';
 const ServiceChatDashboard = () => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
-    const { resetServiceUnread } = useChatNotifications();
+    const { unreadByService, resetServiceUnread } = useChatNotifications();
     const [services, setServices] = useState([]);
     const [openChats, setOpenChats] = useState({});
-    const [unreadCounts, setUnreadCounts] = useState({});
     const [searchText, setSearchText] = useState('');
     const [loading, setLoading] = useState(false);
-    const joinedRooms = useRef(new Set());
-    const openChatsRef = useRef({});
-
-    const socket = useMemo(
-        () => getChatSocket(authToken),
-        [authToken]
-    );
 
     const normalizeText = (value) =>
         String(value || '')
@@ -35,37 +26,6 @@ const ServiceChatDashboard = () => {
             .replace(/[\u0300-\u036f]/g, '')
             .toLowerCase()
             .trim();
-    const escapeRegExp = (value) =>
-        String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-    const hasMentionForUser = (messageText) => {
-        if (!messageText || !user) return false;
-        const normalized = normalizeText(messageText);
-        if (!normalized) return false;
-        const firstName = normalizeText(user.firstName);
-        const lastName = normalizeText(user.lastName);
-        const fullName = normalizeText(
-            `${user.firstName || ''} ${user.lastName || ''}`.trim()
-        );
-        const patterns = [];
-        if (fullName) {
-            patterns.push(
-                new RegExp(`@${escapeRegExp(fullName)}(\\s|$)`)
-            );
-        }
-        if (firstName) {
-            patterns.push(
-                new RegExp(`@${escapeRegExp(firstName)}(\\s|$)`)
-            );
-        }
-        if (lastName) {
-            patterns.push(
-                new RegExp(`@${escapeRegExp(lastName)}(\\s|$)`)
-            );
-        }
-        return patterns.some((pattern) => pattern.test(normalized));
-    };
-
     useEffect(() => {
         const loadServices = async () => {
             if (!authToken || !user) return;
@@ -100,73 +60,6 @@ const ServiceChatDashboard = () => {
         loadServices();
     }, [authToken, user]);
 
-    useEffect(() => {
-        if (!socket || !user) return;
-        if (user.role === 'client') return;
-
-        const serviceIds = services
-            .map((service) => service.serviceId || service.id)
-            .filter(Boolean);
-
-        serviceIds.forEach((serviceId) => {
-            if (joinedRooms.current.has(serviceId)) return;
-            socket.emit('chat:join', { serviceId }, (response) => {
-                if (response?.ok === false) {
-                    toast.error(
-                        response.message || 'No se pudo unir al chat'
-                    );
-                }
-            });
-            joinedRooms.current.add(serviceId);
-        });
-
-        const handleMessage = (message) => {
-            if (!message?.serviceId) return;
-            if (message.userId === user.id) return;
-            if (!serviceIds.includes(message.serviceId)) return;
-
-            const isMention = hasMentionForUser(message.message);
-
-            setUnreadCounts((prev) => {
-                const current = prev[message.serviceId] || 0;
-                if (openChatsRef.current[message.serviceId]) return prev;
-                return {
-                    ...prev,
-                    [message.serviceId]: current + 1,
-                };
-            });
-
-            const name =
-                services.find(
-                    (service) =>
-                        (service.serviceId || service.id) ===
-                        message.serviceId
-                )?.name || 'Servicio';
-
-            if (isMention) {
-                toast(`${name}: te han mencionado`, {
-                    id: `mention-${message.id}`,
-                });
-                return;
-            }
-
-            if (!openChatsRef.current[message.serviceId]) {
-                toast(`${name}: nuevo mensaje`, { id: message.id });
-            }
-        };
-
-        socket.on('chat:message', handleMessage);
-
-        return () => {
-            socket.off('chat:message', handleMessage);
-            serviceIds.forEach((serviceId) => {
-                if (!joinedRooms.current.has(serviceId)) return;
-                socket.emit('chat:leave', { serviceId });
-                joinedRooms.current.delete(serviceId);
-            });
-        };
-    }, [socket, services, user]);
-
     const normalizedServices = useMemo(
         () => {
             const query = normalizeText(searchText);
@@ -200,16 +93,8 @@ const ServiceChatDashboard = () => {
             ...prev,
             [serviceId]: !prev[serviceId],
         }));
-        setUnreadCounts((prev) => ({
-            ...prev,
-            [serviceId]: 0,
-        }));
         resetServiceUnread(serviceId);
     };
-
-    useEffect(() => {
-        openChatsRef.current = openChats;
-    }, [openChats]);
 
     return (
         <section className='service-chat-dashboard'>
@@ -261,9 +146,9 @@ const ServiceChatDashboard = () => {
                                     {openChats[service.id]
                                         ? 'Cerrar chat'
                                         : 'Abrir chat'}
-                                    {unreadCounts[service.id] ? (
+                                    {unreadByService?.[service.id] ? (
                                         <span className='service-chat-badge'>
-                                            {unreadCounts[service.id]}
+                                            {unreadByService[service.id]}
                                         </span>
                                     ) : null}
                                 </button>

@@ -13,7 +13,6 @@ import {
     fetchEndShiftRecord,
 } from '../../services/shiftRecordService.js';
 import { createServiceNfcLog } from '../../services/nfcService.js';
-import { getChatSocket } from '../../services/chatSocket.js';
 import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 import ServiceChat from '../serviceChat/ServiceChat.jsx';
 import './EmployeeServicesComponent.css';
@@ -70,15 +69,10 @@ const EmployeeServicesComponent = () => {
     const [openChats, setOpenChats] = useState({});
     const [readingNfc, setReadingNfc] = useState({});
     const [expandedAddress, setExpandedAddress] = useState({});
-    const [unreadCounts, setUnreadCounts] = useState({});
-    const openChatsRef = useRef({});
     const scrollRestoreRef = useRef(0);
     const nfcSupported = typeof window !== 'undefined' && 'NDEFReader' in window;
     const [loading, setLoading] = useState(false);
-    const socket = useMemo(
-        () => getChatSocket(authToken),
-        [authToken]
-    );
+    const { unreadByService } = useChatNotifications();
 
     useEffect(() => {
         const loadServices = async () => {
@@ -281,10 +275,6 @@ const EmployeeServicesComponent = () => {
     };
 
     useEffect(() => {
-        openChatsRef.current = openChats;
-    }, [openChats]);
-
-    useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'hidden') {
                 scrollRestoreRef.current = window.scrollY || 0;
@@ -313,40 +303,6 @@ const EmployeeServicesComponent = () => {
             );
         };
     }, []);
-
-    useEffect(() => {
-        if (!socket || !user) return;
-        if (!services.length) return;
-
-        const serviceIds = services
-            .map((service) => service.serviceId)
-            .filter(Boolean);
-
-        serviceIds.forEach((serviceId) => {
-            socket.emit('chat:join', { serviceId });
-        });
-
-        const handleMessage = (message) => {
-            if (!message?.serviceId) return;
-            if (message.userId === user.id) return;
-            if (!serviceIds.includes(message.serviceId)) return;
-            if (openChatsRef.current[message.serviceId]) return;
-
-            setUnreadCounts((prev) => ({
-                ...prev,
-                [message.serviceId]: (prev[message.serviceId] || 0) + 1,
-            }));
-        };
-
-        socket.on('chat:message', handleMessage);
-
-        return () => {
-            socket.off('chat:message', handleMessage);
-            serviceIds.forEach((serviceId) => {
-                socket.emit('chat:leave', { serviceId });
-            });
-        };
-    }, [socket, services, user]);
 
     return (
         <section className='employee-services'>
@@ -485,9 +441,9 @@ const EmployeeServicesComponent = () => {
                                             {openChats[service.serviceId]
                                                 ? 'Cerrar chat'
                                                 : 'Chat'}
-                                            {unreadCounts[service.serviceId] ? (
+                                            {unreadByService?.[service.serviceId] ? (
                                                 <span className='employee-chat-badge'>
-                                                    {unreadCounts[
+                                                    {unreadByService[
                                                         service.serviceId
                                                     ]}
                                                 </span>
