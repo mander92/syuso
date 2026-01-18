@@ -268,6 +268,13 @@ const ServiceDetail = () => {
         }
     };
 
+    const scrollToSection = (sectionId) => {
+        const section = document.getElementById(sectionId);
+        if (section) {
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    };
+
     if (!authToken) return <Navigate to='/login' />;
 
     if (user && user.role !== 'admin' && user.role !== 'sudo') {
@@ -311,7 +318,79 @@ const ServiceDetail = () => {
                 </div>
             ) : (
                 <div className='service-detail-layout'>
-                    <section className='service-detail-card service-detail-section'>
+                    <nav className='service-detail-menu'>
+                        <button
+                            type='button'
+                            onClick={() => scrollToSection('service-summary')}
+                        >
+                            Resumen
+                        </button>
+                        <button
+                            type='button'
+                            onClick={() => scrollToSection('service-address')}
+                        >
+                            Direccion
+                        </button>
+                        <button
+                            type='button'
+                            onClick={() => scrollToSection('service-client')}
+                        >
+                            Cliente
+                        </button>
+                        <button
+                            type='button'
+                            onClick={() => scrollToSection('service-employees')}
+                        >
+                            Empleados
+                        </button>
+                        <button
+                            type='button'
+                            onClick={() => scrollToSection('service-shifts')}
+                        >
+                            Turnos abiertos
+                        </button>
+                        {(user?.role === 'admin' || user?.role === 'sudo') && (
+                            <button
+                                type='button'
+                                onClick={() =>
+                                    scrollToSection('service-report-emails')
+                                }
+                            >
+                                Envio partes
+                            </button>
+                        )}
+                        {(user?.role === 'admin' || user?.role === 'sudo') && (
+                            <button
+                                type='button'
+                                onClick={() => scrollToSection('service-search')}
+                            >
+                                Buscar empleados
+                            </button>
+                        )}
+                        {(user?.role === 'admin' || user?.role === 'sudo') && (
+                            <button
+                                type='button'
+                                onClick={() => scrollToSection('service-nfc')}
+                            >
+                                NFC
+                            </button>
+                        )}
+                        <button
+                            type='button'
+                            onClick={() => scrollToSection('service-chat')}
+                        >
+                            Chat
+                        </button>
+                        {(user?.role === 'admin' || user?.role === 'sudo') && (
+                            <button
+                                type='button'
+                                onClick={() => scrollToSection('service-status')}
+                            >
+                                Estado
+                            </button>
+                        )}
+                    </nav>
+                    <section className='service-detail-card service-detail-section' id='service-summary'>
                         <div className='service-detail-section-header'>
                             <h2>Resumen</h2>
                             <button
@@ -366,7 +445,10 @@ const ServiceDetail = () => {
                         )}
                     </section>
 
-                    <section className='service-detail-card service-detail-section'>
+                    <section
+                        className='service-detail-card service-detail-section'
+                        id='service-shifts'
+                    >
                         <div className='service-detail-section-header'>
                             <h2>Direccion</h2>
                             <button
@@ -411,7 +493,10 @@ const ServiceDetail = () => {
                         )}
                     </section>
 
-                    <section className='service-detail-card service-detail-section'>
+                    <section
+                        className='service-detail-card service-detail-section'
+                        id='service-chat'
+                    >
                         <div className='service-detail-section-header'>
                             <h2>Cliente</h2>
                             <button
@@ -451,7 +536,10 @@ const ServiceDetail = () => {
                         )}
                     </section>
 
-                    <section className='service-detail-card service-detail-section'>
+                    <section
+                        className='service-detail-card service-detail-section'
+                        id='service-address'
+                    >
                         <div className='service-detail-section-header'>
                             <div>
                                 <h2>Empleados asignados</h2>
@@ -524,7 +612,10 @@ const ServiceDetail = () => {
                         )}
                     </section>
 
-                    <section className='service-detail-card service-detail-section'>
+                    <section
+                        className='service-detail-card service-detail-section'
+                        id='service-client'
+                    >
                         <div className='service-detail-section-header'>
                             <h2>Turnos abiertos</h2>
                             <button
@@ -576,7 +667,10 @@ const ServiceDetail = () => {
                     </section>
 
                     {(user?.role === 'admin' || user?.role === 'sudo') && (
-                        <section className='service-detail-card service-detail-section'>
+                        <section
+                            className='service-detail-card service-detail-section'
+                            id='service-report-emails'
+                        >
                             <div className='service-detail-section-header'>
                                 <div>
                                     <h2>Envio de partes</h2>
@@ -611,7 +705,10 @@ const ServiceDetail = () => {
                     )}
 
                     {(user?.role === 'admin' || user?.role === 'sudo') && (
-                        <section className='service-detail-card service-detail-section'>
+                        <section
+                            className='service-detail-card service-detail-section'
+                            id='service-search'
+                        >
                             <h2>Buscar empleados</h2>
                             <ListEmployeeComponent
                                 serviceId={serviceId}
@@ -623,12 +720,18 @@ const ServiceDetail = () => {
                     )}
 
                     {(user?.role === 'admin' || user?.role === 'sudo') && (
-                        <section className='service-detail-card service-detail-section'>
+                        <section
+                            className='service-detail-card service-detail-section'
+                            id='service-nfc'
+                        >
                             <NfcTagsManager serviceId={serviceId} />
                         </section>
                     )}
 
-                    <section className='service-detail-card service-detail-section'>
+                    <section
+                        className='service-detail-card service-detail-section'
+                        id='service-employees'
+                    >
                         <ServiceChat
                             serviceId={serviceId}
                             title={`Chat del servicio: ${detail.name || detail.type || ''}`}
@@ -636,7 +739,10 @@ const ServiceDetail = () => {
                     </section>
 
                     {(user?.role === 'admin' || user?.role === 'sudo') && (
-                        <section className='service-detail-card service-detail-footer'>
+                        <section
+                            className='service-detail-card service-detail-footer'
+                            id='service-status'
+                        >
                             <div className='service-detail-footer-actions'>
                                 {detail?.status !== 'completed' ? (
                                     <button

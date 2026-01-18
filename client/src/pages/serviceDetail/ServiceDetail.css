@@ -44,6 +44,30 @@
     gap: 20px;
 }
 
+.service-detail-menu {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 10px;
+}
+
+.service-detail-menu button {
+    border: none;
+    background: #0f172a;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    cursor: pointer;
+}
+
+.service-detail-menu button:hover {
+    background: #020617;
+}
+
 .service-detail-card {
     background: #ffffff;
     border-radius: 12px;
