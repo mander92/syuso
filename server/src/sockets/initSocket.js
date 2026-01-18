@@ -11,6 +11,7 @@ import deleteServiceChatMessagesByServiceService from '../services/serviceChat/d
 import ensureGeneralChatAccessService from '../services/generalChat/ensureGeneralChatAccessService.js';
 import ensureGeneralChatWriteAccessService from '../services/generalChat/ensureGeneralChatWriteAccessService.js';
 import createGeneralChatMessageService from '../services/generalChat/createGeneralChatMessageService.js';
+import deleteGeneralChatMessageService from '../services/generalChat/deleteGeneralChatMessageService.js';
 import generateErrorUtil from '../utils/generateErrorUtil.js';
 
 const initSocket = (httpServer) => {
@@ -254,6 +255,39 @@ const initSocket = (httpServer) => {
                     );
 
                     callback?.({ ok: true, message: newMessage });
+                } catch (error) {
+                    callback?.({ ok: false, message: error.message });
+                }
+            }
+        );
+
+        socket.on(
+            'generalChat:delete',
+            async ({ chatId, messageId }, callback) => {
+                try {
+                    if (!isAdminUser) {
+                        generateErrorUtil(
+                            'Acceso denegado: Se requiere rol de Administrador',
+                            403
+                        );
+                    }
+
+                    await ensureGeneralChatAccessService(
+                        chatId,
+                        socket.user.id
+                    );
+
+                    await deleteGeneralChatMessageService(chatId, messageId);
+
+                    io.to(`generalChat:${chatId}`).emit(
+                        'generalChat:delete',
+                        {
+                            chatId,
+                            messageId,
+                        }
+                    );
+
+                    callback?.({ ok: true });
                 } catch (error) {
                     callback?.({ ok: false, message: error.message });
                 }
