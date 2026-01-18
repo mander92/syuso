@@ -336,10 +336,10 @@
 }
 
 .contracts-active-top-link {
-    font-size: 13px;
+    font-size: 0.9rem;
     font-weight: 600;
-    color: #0f172a;
-    text-decoration: underline;
+    color: #1d4ed8;
+    text-decoration: none;
 }
 
 .contracts-active-card-top .contracts-btn--ellipsis {

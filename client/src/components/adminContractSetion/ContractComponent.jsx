@@ -30,7 +30,7 @@ const ContractsComponent = () => {
     const [delegations, setDelegations] = useState([]);
     const [activeServiceSearch, setActiveServiceSearch] = useState('');
     const [calendarSearch, setCalendarSearch] = useState('');
-    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+    const [isCalendarOpen, setIsCalendarOpen] = useState(true);
     const [activeServices, setActiveServices] = useState([]);
     const [activeLoading, setActiveLoading] = useState(false);
     const [expandedActive, setExpandedActive] = useState({});
@@ -378,48 +378,11 @@ const ContractsComponent = () => {
                 </div>
             )}
 
-            <div className='contracts-calendar-search'>
-                <div className='contracts-calendar-toggle'>
-                    <button
-                        type='button'
-                        className='contracts-btn'
-                        onClick={() =>
-                            setIsCalendarOpen((prev) => !prev)
-                        }
-                    >
-                        {isCalendarOpen
-                            ? 'Ocultar calendario'
-                            : 'Mostrar calendario'}
-                    </button>
-                </div>
-                {isCalendarOpen && (
-                    <input
-                        type='text'
-                        placeholder='Buscar servicio'
-                        value={calendarSearch}
-                        onChange={(e) => setCalendarSearch(e.target.value)}
-                    />
-                )}
-            </div>
-
-            {isCalendarOpen && (
-                <div className='contracts-calendar-card'>
-                    {loading ? (
-                        <p className='contracts-loading'>Cargando servicios...</p>
-                    ) : (
-                        <CalendarComponent
-                            events={calendarEvents}
-                            onSelectEvent={handleSelectEvent}
-                        />
-                    )}
-                </div>
-            )}
-
             {isAdminLike && (
                 <section className='contracts-active'>
                     <div className='contracts-active-header'>
                         <div>
-                            <h2>Servicios confirmados</h2>
+                            <h2>Servicios activos</h2>
                             <p>Servicios con estado confirmado.</p>
                         </div>
                         <div className='contracts-active-filters'>
@@ -449,7 +412,7 @@ const ContractsComponent = () => {
                             </select>
                             <button
                                 type='button'
-                                className='contracts-btn contracts-btn--ghost'
+                                className='contracts-btn'
                                 onClick={loadActiveServices}
                                 disabled={activeLoading}
                             >
@@ -462,7 +425,7 @@ const ContractsComponent = () => {
 
                     {activeLoading ? (
                         <p className='contracts-loading'>
-                            Cargando servicios confirmados...
+                            Cargando servicios activos...
                         </p>
                     ) : filteredActiveServices.length ? (
                         <div className='contracts-active-list'>
@@ -505,12 +468,6 @@ const ContractsComponent = () => {
                                             <p>
                                                 {service.address},{' '}
                                                 {service.city}
-                                            </p>
-                                            <p>
-                                                Inicio:{' '}
-                                                {new Date(
-                                                    service.startDateTime
-                                                ).toLocaleString()}
                                             </p>
                                         </div>
                                         <div className='contracts-active-actions'>
@@ -589,12 +546,49 @@ const ContractsComponent = () => {
                         </article>
                     ))}
                 </div>
-            ) : (
+                    ) : (
                         <p className='contracts-loading'>
-                            No hay servicios confirmados.
+                            No hay servicios activos.
                         </p>
                     )}
                 </section>
+            )}
+
+            <div className='contracts-calendar-search'>
+                <div className='contracts-calendar-toggle'>
+                    <button
+                        type='button'
+                        className='contracts-btn'
+                        onClick={() =>
+                            setIsCalendarOpen((prev) => !prev)
+                        }
+                    >
+                        {isCalendarOpen
+                            ? 'Ocultar calendario'
+                            : 'Mostrar calendario'}
+                    </button>
+                </div>
+                {isCalendarOpen && (
+                    <input
+                        type='text'
+                        placeholder='Buscar servicio'
+                        value={calendarSearch}
+                        onChange={(e) => setCalendarSearch(e.target.value)}
+                    />
+                )}
+            </div>
+
+            {isCalendarOpen && (
+                <div className='contracts-calendar-card'>
+                    {loading ? (
+                        <p className='contracts-loading'>Cargando servicios...</p>
+                    ) : (
+                        <CalendarComponent
+                            events={calendarEvents}
+                            onSelectEvent={handleSelectEvent}
+                        />
+                    )}
+                </div>
             )}
 
         </section>
