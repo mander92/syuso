@@ -18,7 +18,12 @@ const formatTime = (value) => {
     return date.toLocaleString();
 };
 
-const ServiceChat = ({ serviceId, title, compact = false }) => {
+const ServiceChat = ({
+    serviceId,
+    title,
+    compact = false,
+    manageRoom = true,
+}) => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
     const [messages, setMessages] = useState([]);
@@ -94,6 +99,7 @@ const ServiceChat = ({ serviceId, title, compact = false }) => {
     useEffect(() => {
         if (!socket || !serviceId) return;
 
+        setConnected(socket.connected);
         const handleConnect = () => setConnected(true);
         const handleDisconnect = () => setConnected(false);
         const handleMessage = (newMessage) => {
@@ -123,14 +129,18 @@ const ServiceChat = ({ serviceId, title, compact = false }) => {
         socket.on('chat:clear', handleClear);
         socket.on('chat:delete', handleDelete);
 
-        socket.emit('chat:join', { serviceId }, (response) => {
-            if (response?.ok === false) {
-                toast.error(response.message || 'No se pudo unir al chat');
-            }
-        });
+        if (manageRoom) {
+            socket.emit('chat:join', { serviceId }, (response) => {
+                if (response?.ok === false) {
+                    toast.error(response.message || 'No se pudo unir al chat');
+                }
+            });
+        }
 
         return () => {
-            socket.emit('chat:leave', { serviceId });
+            if (manageRoom) {
+                socket.emit('chat:leave', { serviceId });
+            }
             socket.off('connect', handleConnect);
             socket.off('disconnect', handleDisconnect);
             socket.off('chat:message', handleMessage);
@@ -138,7 +148,7 @@ const ServiceChat = ({ serviceId, title, compact = false }) => {
             socket.off('chat:clear', handleClear);
             socket.off('chat:delete', handleDelete);
         };
-    }, [socket, serviceId]);
+    }, [socket, serviceId, manageRoom]);
 
     useEffect(() => {
         if (!listRef.current) return;
