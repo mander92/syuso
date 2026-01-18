@@ -32,7 +32,9 @@ const ServiceDetail = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [assignedEmployees, setAssignedEmployees] = useState([]);
     const [numberOfPeople, setNumberOfPeople] = useState('');
+    const [reportEmails, setReportEmails] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [isSavingEmails, setIsSavingEmails] = useState(false);
     const [isCompleting, setIsCompleting] = useState(false);
     const [isReactivating, setIsReactivating] = useState(false);
     const [isClientVisible, setIsClientVisible] = useState(false);
@@ -71,6 +73,7 @@ const ServiceDetail = () => {
                 if (rows[0]?.numberOfPeople != null) {
                     setNumberOfPeople(String(rows[0].numberOfPeople));
                 }
+                setReportEmails(rows[0]?.reportEmail || '');
             } catch (error) {
                 toast.error(error.message || 'No se pudo cargar el servicio', {
                     id: 'service-detail',
@@ -213,6 +216,36 @@ const ServiceDetail = () => {
 
         if (statusModal.targetStatus === 'confirmed') {
             handleReactivateService();
+        }
+    };
+
+    const handleUpdateReportEmails = async (e) => {
+        e.preventDefault();
+
+        try {
+            setIsSavingEmails(true);
+            const response = await fetchEditServiceServices(
+                serviceId,
+                { reportEmail: reportEmails },
+                authToken
+            );
+            toast.success(response.message || 'Correos actualizados');
+            setService((prev) => {
+                if (!prev) return prev;
+                if (Array.isArray(prev)) {
+                    return prev.map((row) => ({
+                        ...row,
+                        reportEmail: reportEmails,
+                    }));
+                }
+                return { ...prev, reportEmail: reportEmails };
+            });
+        } catch (error) {
+            toast.error(error.message || 'No se pudieron actualizar', {
+                id: 'service-report-emails',
+            });
+        } finally {
+            setIsSavingEmails(false);
         }
     };
 
@@ -541,6 +574,41 @@ const ServiceDetail = () => {
                             </div>
                         )}
                     </section>
+
+                    {(user?.role === 'admin' || user?.role === 'sudo') && (
+                        <section className='service-detail-card service-detail-section'>
+                            <div className='service-detail-section-header'>
+                                <div>
+                                    <h2>Envio de partes</h2>
+                                    <p className='service-detail-help'>
+                                        Correos que reciben los partes del servicio
+                                    </p>
+                                </div>
+                            </div>
+                            <form
+                                className='service-detail-form'
+                                onSubmit={handleUpdateReportEmails}
+                            >
+                                <label htmlFor='reportEmails'>
+                                    Correos (separados por coma)
+                                </label>
+                                <textarea
+                                    id='reportEmails'
+                                    rows='3'
+                                    placeholder='cliente@empresa.com, otro@empresa.com'
+                                    value={reportEmails}
+                                    onChange={(e) =>
+                                        setReportEmails(e.target.value)
+                                    }
+                                />
+                                <button type='submit' disabled={isSavingEmails}>
+                                    {isSavingEmails
+                                        ? 'Guardando...'
+                                        : 'Guardar correos'}
+                                </button>
+                            </form>
+                        </section>
+                    )}
 
                     {(user?.role === 'admin' || user?.role === 'sudo') && (
                         <section className='service-detail-card service-detail-section'>

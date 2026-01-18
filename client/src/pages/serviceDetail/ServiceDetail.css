@@ -112,6 +112,40 @@
     opacity: 0.6;
     cursor: not-allowed;
 }
+
+.service-detail-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin-top: 0.75rem;
+}
+
+.service-detail-form textarea {
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    padding: 8px 10px;
+    font-size: 0.9rem;
+    outline: none;
+    resize: vertical;
+    min-height: 90px;
+}
+
+.service-detail-form textarea:focus {
+    border-color: #0f172a;
+    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.08);
+    background-color: #f8fafc;
+}
+
+.service-detail-form button {
+    align-self: flex-start;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 12px;
+    background: #0f172a;
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
 .service-detail-card h2 {
     margin-bottom: 12px;
     font-size: 16px;

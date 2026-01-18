@@ -29,6 +29,7 @@ const editServiceController = async (req, res, next) => {
             startDateTime,
             hours,
             numberOfPeople,
+            reportEmail,
         } = req.body;
 
         await ensureServiceDelegationAccessService(serviceId, userId, role);
@@ -42,6 +43,7 @@ const editServiceController = async (req, res, next) => {
             startDateTime,
             hours,
             numberOfPeople,
+            reportEmail,
             role
         );
 

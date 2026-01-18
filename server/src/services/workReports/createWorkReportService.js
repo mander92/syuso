@@ -603,10 +603,24 @@ const createWorkReportService = async ({
         </html>
     `;
 
-    if (finalReportEmail) {
-        await sendMail('Reporte', finalReportEmail, subject, html, [
-            { path: reportPdfPath },
-        ]);
+    const parseRecipients = (value) => {
+        if (!value) return [];
+        return value
+            .split(/[,;\s]+/)
+            .map((item) => item.trim())
+            .filter((item) => item.length > 3)
+            .filter((item, index, list) => list.indexOf(item) === index)
+            .filter((item) => /.+@.+\..+/.test(item));
+    };
+
+    const recipients = parseRecipients(finalReportEmail);
+
+    if (recipients.length) {
+        for (const recipient of recipients) {
+            await sendMail('Reporte', recipient, subject, html, [
+                { path: reportPdfPath },
+            ]);
+        }
     }
 
     await pool.query(
