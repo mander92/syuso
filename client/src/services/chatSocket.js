@@ -13,11 +13,15 @@ export const getChatSocket = (token) => {
             socketInstance.disconnect();
         }
 
+        const apiOrigin = VITE_API_URL
+            ? VITE_API_URL.replace(/\/api\/?$/, '')
+            : '';
         const socketBase =
             VITE_SOCKET_URL ||
+            apiOrigin ||
             (typeof window !== 'undefined'
                 ? window.location.origin
-                : VITE_API_URL);
+                : '');
 
         socketInstance = io(socketBase, {
             auth: { token },
