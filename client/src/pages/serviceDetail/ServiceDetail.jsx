@@ -37,9 +37,7 @@ const ServiceDetail = () => {
     const [isSavingEmails, setIsSavingEmails] = useState(false);
     const [isCompleting, setIsCompleting] = useState(false);
     const [isReactivating, setIsReactivating] = useState(false);
-    const [isClientVisible, setIsClientVisible] = useState(false);
-    const [isSummaryVisible, setIsSummaryVisible] = useState(false);
-    const [isAddressVisible, setIsAddressVisible] = useState(false);
+    const [activeTab, setActiveTab] = useState('summary');
     const [statusModal, setStatusModal] = useState({
         open: false,
         targetStatus: '',
@@ -268,12 +266,6 @@ const ServiceDetail = () => {
         }
     };
 
-    const scrollToSection = (sectionId) => {
-        const section = document.getElementById(sectionId);
-        if (section) {
-            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    };
 
     if (!authToken) return <Navigate to='/login' />;
 
@@ -317,44 +309,49 @@ const ServiceDetail = () => {
                     </NavLink>
                 </div>
             ) : (
+
                 <div className='service-detail-layout'>
                     <nav className='service-detail-menu'>
                         <button
                             type='button'
-                            onClick={() => scrollToSection('service-summary')}
+                            className={activeTab === 'summary' ? 'is-active' : ''}
+                            onClick={() => setActiveTab('summary')}
                         >
                             Resumen
                         </button>
                         <button
                             type='button'
-                            onClick={() => scrollToSection('service-address')}
+                            className={activeTab === 'address' ? 'is-active' : ''}
+                            onClick={() => setActiveTab('address')}
                         >
                             Direccion
                         </button>
                         <button
                             type='button'
-                            onClick={() => scrollToSection('service-client')}
+                            className={activeTab === 'client' ? 'is-active' : ''}
+                            onClick={() => setActiveTab('client')}
                         >
                             Cliente
                         </button>
                         <button
                             type='button'
-                            onClick={() => scrollToSection('service-employees')}
+                            className={activeTab === 'employees' ? 'is-active' : ''}
+                            onClick={() => setActiveTab('employees')}
                         >
                             Empleados
                         </button>
                         <button
                             type='button'
-                            onClick={() => scrollToSection('service-shifts')}
+                            className={activeTab === 'shifts' ? 'is-active' : ''}
+                            onClick={() => setActiveTab('shifts')}
                         >
                             Turnos abiertos
                         </button>
                         {(user?.role === 'admin' || user?.role === 'sudo') && (
                             <button
                                 type='button'
-                                onClick={() =>
-                                    scrollToSection('service-report-emails')
-                                }
+                                className={activeTab === 'reports' ? 'is-active' : ''}
+                                onClick={() => setActiveTab('reports')}
                             >
                                 Envio partes
                             </button>
@@ -362,7 +359,8 @@ const ServiceDetail = () => {
                         {(user?.role === 'admin' || user?.role === 'sudo') && (
                             <button
                                 type='button'
-                                onClick={() => scrollToSection('service-search')}
+                                className={activeTab === 'search' ? 'is-active' : ''}
+                                onClick={() => setActiveTab('search')}
                             >
                                 Buscar empleados
                             </button>
@@ -370,42 +368,35 @@ const ServiceDetail = () => {
                         {(user?.role === 'admin' || user?.role === 'sudo') && (
                             <button
                                 type='button'
-                                onClick={() => scrollToSection('service-nfc')}
+                                className={activeTab === 'nfc' ? 'is-active' : ''}
+                                onClick={() => setActiveTab('nfc')}
                             >
                                 NFC
                             </button>
                         )}
                         <button
                             type='button'
-                            onClick={() => scrollToSection('service-chat')}
+                            className={activeTab === 'chat' ? 'is-active' : ''}
+                            onClick={() => setActiveTab('chat')}
                         >
                             Chat
                         </button>
                         {(user?.role === 'admin' || user?.role === 'sudo') && (
                             <button
                                 type='button'
-                                onClick={() => scrollToSection('service-status')}
+                                className={activeTab === 'status' ? 'is-active' : ''}
+                                onClick={() => setActiveTab('status')}
                             >
                                 Estado
                             </button>
                         )}
                     </nav>
-                    <section className='service-detail-card service-detail-section' id='service-summary'>
-                        <div className='service-detail-section-header'>
-                            <h2>Resumen</h2>
-                            <button
-                                type='button'
-                                className='service-detail-toggle'
-                                onClick={() =>
-                                    setIsSummaryVisible((prev) => !prev)
-                                }
-                            >
-                                {isSummaryVisible
-                                    ? 'Ocultar'
-                                    : 'Mostrar detalles'}
-                            </button>
-                        </div>
-                        {isSummaryVisible && (
+
+                    {activeTab === 'summary' && (
+                        <section className='service-detail-card service-detail-section'>
+                            <div className='service-detail-section-header'>
+                                <h2>Resumen</h2>
+                            </div>
                             <div className='service-detail-collapsible'>
                                 <div className='service-detail-row'>
                                     <span>Nombre</span>
@@ -438,32 +429,18 @@ const ServiceDetail = () => {
                                 <div className='service-detail-row'>
                                     <span>Personas</span>
                                     <strong>
-                                        {detail.numberOfPeople ??
-                                            'Sin informacion'}
+                                        {detail.numberOfPeople ?? 'Sin informacion'}
                                     </strong>
-                                </div>                            </div>
-                        )}
-                    </section>
+                                </div>
+                            </div>
+                        </section>
+                    )}
 
-                    <section
-                        className='service-detail-card service-detail-section'
-                        id='service-shifts'
-                    >
-                        <div className='service-detail-section-header'>
-                            <h2>Direccion</h2>
-                            <button
-                                type='button'
-                                className='service-detail-toggle'
-                                onClick={() =>
-                                    setIsAddressVisible((prev) => !prev)
-                                }
-                            >
-                                {isAddressVisible
-                                    ? 'Ocultar'
-                                    : 'Mostrar detalles'}
-                            </button>
-                        </div>
-                        {isAddressVisible && (
+                    {activeTab === 'address' && (
+                        <section className='service-detail-card service-detail-section'>
+                            <div className='service-detail-section-header'>
+                                <h2>Direccion</h2>
+                            </div>
                             <div className='service-detail-collapsible'>
                                 <div className='service-detail-row'>
                                     <span>Ciudad</span>
@@ -471,15 +448,11 @@ const ServiceDetail = () => {
                                 </div>
                                 <div className='service-detail-row'>
                                     <span>Provincia</span>
-                                    <strong>
-                                        {detail.province || 'Sin provincia'}
-                                    </strong>
+                                    <strong>{detail.province || 'Sin provincia'}</strong>
                                 </div>
                                 <div className='service-detail-row'>
                                     <span>Direccion</span>
-                                    <strong>
-                                        {detail.address || 'Sin direccion'}
-                                    </strong>
+                                    <strong>{detail.address || 'Sin direccion'}</strong>
                                 </div>
                                 <div className='service-detail-row'>
                                     <span>CP</span>
@@ -490,293 +463,247 @@ const ServiceDetail = () => {
                                     <p>{detail.comments || 'Sin comentarios'}</p>
                                 </div>
                             </div>
-                        )}
-                    </section>
+                        </section>
+                    )}
 
-                    <section
-                        className='service-detail-card service-detail-section'
-                        id='service-chat'
-                    >
-                        <div className='service-detail-section-header'>
-                            <h2>Cliente</h2>
-                            <button
-                                type='button'
-                                className='service-detail-toggle'
-                                onClick={() =>
-                                    setIsClientVisible((prev) => !prev)
-                                }
-                            >
-                                {isClientVisible
-                                    ? 'Ocultar'
-                                    : 'Mostrar detalles'}
-                            </button>
-                        </div>
-                        {isClientVisible && (
+                    {activeTab === 'client' && (
+                        <section className='service-detail-card service-detail-section'>
+                            <div className='service-detail-section-header'>
+                                <h2>Cliente</h2>
+                            </div>
                             <div className='service-detail-collapsible'>
                                 <div className='service-detail-row'>
                                     <span>Nombre</span>
                                     <strong>
-                                        {detail.clientName || ''}{' '}
-                                        {detail.clientLastName || ''}
+                                        {detail.clientName || ''} {detail.clientLastName || ''}
                                     </strong>
                                 </div>
                                 <div className='service-detail-row'>
                                     <span>Email</span>
-                                    <strong>
-                                        {detail.clientEmail || 'Sin email'}
-                                    </strong>
+                                    <strong>{detail.clientEmail || 'Sin email'}</strong>
                                 </div>
                                 <div className='service-detail-row'>
                                     <span>Telefono</span>
-                                    <strong>
-                                        {detail.clientPhone || 'Sin telefono'}
-                                    </strong>
+                                    <strong>{detail.clientPhone || 'Sin telefono'}</strong>
                                 </div>
                             </div>
-                        )}
-                    </section>
-
-                    <section
-                        className='service-detail-card service-detail-section'
-                        id='service-address'
-                    >
-                        <div className='service-detail-section-header'>
-                            <div>
-                                <h2>Empleados asignados</h2>
-                                <p className='service-detail-help'>
-                                    Capacidad: {detail.numberOfPeople}
-                                </p>
-                            </div>
-                            {(user?.role === 'admin' ||
-                                user?.role === 'sudo') && (
-                                <form
-                                    className='service-detail-form-inline'
-                                    onSubmit={handleUpdateCapacity}
-                                >
-                                    <label htmlFor='numberOfPeople'>
-                                        Capacidad
-                                    </label>
-                                    <input
-                                        id='numberOfPeople'
-                                        type='number'
-                                        min='1'
-                                        value={numberOfPeople}
-                                        onChange={(e) =>
-                                            setNumberOfPeople(e.target.value)
-                                        }
-                                        required
-                                    />
-                                    <button type='submit' disabled={isSaving}>
-                                        {isSaving ? 'Guardando...' : 'Guardar'}
-                                    </button>
-                                </form>
-                            )}
-                        </div>
-                        {assignedEmployees.length ? (
-                            <div className='service-detail-list'>
-                                {assignedEmployees.map((employee) => (
-                                    <div
-                                        key={employee.id}
-                                        className='service-detail-employee'
-                                    >
-                                        <div>
-                                            <strong>
-                                                {employee.firstName || ''}{' '}
-                                                {employee.lastName || ''}
-                                            </strong>
-                                            <p>{employee.email || 'Sin email'}</p>
-                                            <p>
-                                                {employee.phone || 'Sin telefono'}
-                                            </p>
-                                            <p>{employee.dni || 'Sin DNI'}</p>
-                                        </div>
-                                        {(user?.role === 'admin' ||
-                                            user?.role === 'sudo') && (
-                                            <button
-                                                type='button'
-                                                className='service-detail-btn'
-                                                onClick={() =>
-                                                    handleUnassign(employee.id)
-                                                }
-                                            >
-                                                Desasignar
-                                            </button>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <p className='service-detail-empty'>
-                                Sin empleado asignado.
-                            </p>
-                        )}
-                    </section>
-
-                    <section
-                        className='service-detail-card service-detail-section'
-                        id='service-client'
-                    >
-                        <div className='service-detail-section-header'>
-                            <h2>Turnos abiertos</h2>
-                            <button
-                                type='button'
-                                className='service-detail-toggle'
-                                onClick={handleToggleActiveShifts}
-                            >
-                                {isActiveShiftsVisible
-                                    ? 'Ocultar'
-                                    : 'Mostrar'}
-                            </button>
-                        </div>
-                        {isActiveShiftsVisible && (
-                            <div className='service-detail-collapsible'>
-                                {activeShiftsLoading ? (
-                                    <p className='service-detail-empty'>
-                                        Cargando turnos abiertos...
-                                    </p>
-                                ) : activeShifts.length ? (
-                                    <div className='service-detail-list'>
-                                        {activeShifts.map((employee) => (
-                                            <div
-                                                key={employee.shiftId}
-                                                className='service-detail-employee service-detail-employee--active'
-                                            >
-                                                <div>
-                                                    <strong>
-                                                        {employee.firstName || ''}{' '}
-                                                        {employee.lastName || ''}
-                                                    </strong>
-                                                    <p>
-                                                        {employee.email || 'Sin email'}
-                                                    </p>
-                                                    <p>
-                                                        {employee.phone || 'Sin telefono'}
-                                                    </p>
-                                                </div>
-                                                <span className='service-detail-active-dot' />
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className='service-detail-empty'>
-                                        Sin turnos abiertos.
-                                    </p>
-                                )}
-                            </div>
-                        )}
-                    </section>
-
-                    {(user?.role === 'admin' || user?.role === 'sudo') && (
-                        <section
-                            className='service-detail-card service-detail-section'
-                            id='service-report-emails'
-                        >
-                            <div className='service-detail-section-header'>
-                                <div>
-                                    <h2>Envio de partes</h2>
-                                    <p className='service-detail-help'>
-                                        Correos que reciben los partes del servicio
-                                    </p>
-                                </div>
-                            </div>
-                            <form
-                                className='service-detail-form'
-                                onSubmit={handleUpdateReportEmails}
-                            >
-                                <label htmlFor='reportEmails'>
-                                    Correos (separados por coma)
-                                </label>
-                                <textarea
-                                    id='reportEmails'
-                                    rows='3'
-                                    placeholder='cliente@empresa.com, otro@empresa.com'
-                                    value={reportEmails}
-                                    onChange={(e) =>
-                                        setReportEmails(e.target.value)
-                                    }
-                                />
-                                <button type='submit' disabled={isSavingEmails}>
-                                    {isSavingEmails
-                                        ? 'Guardando...'
-                                        : 'Guardar correos'}
-                                </button>
-                            </form>
                         </section>
                     )}
 
-                    {(user?.role === 'admin' || user?.role === 'sudo') && (
-                        <section
-                            className='service-detail-card service-detail-section'
-                            id='service-search'
-                        >
-                            <h2>Buscar empleados</h2>
-                            <ListEmployeeComponent
+                    {activeTab === 'employees' && (
+                        <section className='service-detail-card service-detail-section'>
+                            <div className='service-detail-section-header'>
+                                <div>
+                                    <h2>Empleados asignados</h2>
+                                    <p className='service-detail-help'>
+                                        Capacidad: {detail.numberOfPeople}
+                                    </p>
+                                </div>
+                                {(user?.role === 'admin' || user?.role === 'sudo') && (
+                                    <form
+                                        className='service-detail-form-inline'
+                                        onSubmit={handleUpdateCapacity}
+                                    >
+                                        <label htmlFor='numberOfPeople'>
+                                            Capacidad
+                                        </label>
+                                        <input
+                                            id='numberOfPeople'
+                                            type='number'
+                                            min='1'
+                                            value={numberOfPeople}
+                                            onChange={(e) =>
+                                                setNumberOfPeople(e.target.value)
+                                            }
+                                            required
+                                        />
+                                        <button type='submit' disabled={isSaving}>
+                                            {isSaving ? 'Guardando...' : 'Guardar'}
+                                        </button>
+                                    </form>
+                                )}
+                            </div>
+                            {assignedEmployees.length ? (
+                                <div className='service-detail-list'>
+                                    {assignedEmployees.map((employee) => (
+                                        <div
+                                            key={employee.id}
+                                            className='service-detail-employee'
+                                        >
+                                            <div>
+                                                <strong>
+                                                    {employee.firstName || ''} {employee.lastName || ''}
+                                                </strong>
+                                                <p>{employee.email || 'Sin email'}</p>
+                                                <p>{employee.phone || 'Sin telefono'}</p>
+                                                <p>{employee.dni || 'Sin DNI'}</p>
+                                            </div>
+                                            {(user?.role === 'admin' || user?.role === 'sudo') && (
+                                                <button
+                                                    type='button'
+                                                    className='service-detail-btn'
+                                                    onClick={() =>
+                                                        handleUnassign(employee.id)
+                                                    }
+                                                >
+                                                    Desasignar
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className='service-detail-empty'>
+                                    Sin empleado asignado.
+                                </p>
+                            )}
+                        </section>
+                    )}
+
+                    {activeTab === 'shifts' && (
+                        <section className='service-detail-card service-detail-section'>
+                            <div className='service-detail-section-header'>
+                                <h2>Turnos abiertos</h2>
+                                <button
+                                    type='button'
+                                    className='service-detail-toggle'
+                                    onClick={handleToggleActiveShifts}
+                                >
+                                    {isActiveShiftsVisible ? 'Ocultar' : 'Mostrar'}
+                                </button>
+                            </div>
+                            {isActiveShiftsVisible && (
+                                <div className='service-detail-collapsible'>
+                                    {activeShiftsLoading ? (
+                                        <p className='service-detail-empty'>
+                                            Cargando turnos abiertos...
+                                        </p>
+                                    ) : activeShifts.length ? (
+                                        <div className='service-detail-list'>
+                                            {activeShifts.map((employee) => (
+                                                <div
+                                                    key={employee.shiftId}
+                                                    className='service-detail-employee service-detail-employee--active'
+                                                >
+                                                    <div>
+                                                        <strong>
+                                                            {employee.firstName || ''} {employee.lastName || ''}
+                                                        </strong>
+                                                        <p>{employee.email || 'Sin email'}</p>
+                                                        <p>{employee.phone || 'Sin telefono'}</p>
+                                                    </div>
+                                                    <span className='service-detail-active-dot' />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className='service-detail-empty'>
+                                            Sin turnos abiertos.
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+                        </section>
+                    )}
+
+                    {activeTab === 'reports' &&
+                        (user?.role === 'admin' || user?.role === 'sudo') && (
+                            <section className='service-detail-card service-detail-section'>
+                                <div className='service-detail-section-header'>
+                                    <div>
+                                        <h2>Envio de partes</h2>
+                                        <p className='service-detail-help'>
+                                            Correos que reciben los partes del servicio
+                                        </p>
+                                    </div>
+                                </div>
+                                <form
+                                    className='service-detail-form'
+                                    onSubmit={handleUpdateReportEmails}
+                                >
+                                    <label htmlFor='reportEmails'>
+                                        Correos (separados por coma)
+                                    </label>
+                                    <textarea
+                                        id='reportEmails'
+                                        rows='3'
+                                        placeholder='cliente@empresa.com, otro@empresa.com'
+                                        value={reportEmails}
+                                        onChange={(e) =>
+                                            setReportEmails(e.target.value)
+                                        }
+                                    />
+                                    <button type='submit' disabled={isSavingEmails}>
+                                        {isSavingEmails ? 'Guardando...' : 'Guardar correos'}
+                                    </button>
+                                </form>
+                            </section>
+                        )}
+
+                    {activeTab === 'search' &&
+                        (user?.role === 'admin' || user?.role === 'sudo') && (
+                            <section className='service-detail-card service-detail-section'>
+                                <h2>Buscar empleados</h2>
+                                <ListEmployeeComponent
+                                    serviceId={serviceId}
+                                    numberOfPeople={detail.numberOfPeople}
+                                    employeeData={assignedEmployees}
+                                    setEmployeeData={setAssignedEmployees}
+                                />
+                            </section>
+                        )}
+
+                    {activeTab === 'nfc' &&
+                        (user?.role === 'admin' || user?.role === 'sudo') && (
+                            <section className='service-detail-card service-detail-section'>
+                                <NfcTagsManager serviceId={serviceId} />
+                            </section>
+                        )}
+
+                    {activeTab === 'chat' && (
+                        <section className='service-detail-card service-detail-section'>
+                            <ServiceChat
                                 serviceId={serviceId}
-                                numberOfPeople={detail.numberOfPeople}
-                                employeeData={assignedEmployees}
-                                setEmployeeData={setAssignedEmployees}
+                                title={`Chat del servicio: ${detail.name || detail.type || ''}`}
                             />
                         </section>
                     )}
 
-                    {(user?.role === 'admin' || user?.role === 'sudo') && (
-                        <section
-                            className='service-detail-card service-detail-section'
-                            id='service-nfc'
-                        >
-                            <NfcTagsManager serviceId={serviceId} />
-                        </section>
-                    )}
-
-                    <section
-                        className='service-detail-card service-detail-section'
-                        id='service-employees'
-                    >
-                        <ServiceChat
-                            serviceId={serviceId}
-                            title={`Chat del servicio: ${detail.name || detail.type || ''}`}
-                        />
-                    </section>
-
-                    {(user?.role === 'admin' || user?.role === 'sudo') && (
-                        <section
-                            className='service-detail-card service-detail-footer'
-                            id='service-status'
-                        >
-                            <div className='service-detail-footer-actions'>
-                                {detail?.status !== 'completed' ? (
-                                    <button
-                                        type='button'
-                                        className='service-detail-btn'
-                                        onClick={() =>
-                                            openStatusModal('completed')
-                                        }
-                                        disabled={isCompleting}
-                                    >
-                                        {isCompleting
-                                            ? 'Desactivando...'
-                                            : 'Desactivar servicio'}
-                                    </button>
-                                ) : (
-                                    <button
-                                        type='button'
-                                        className='service-detail-btn service-detail-btn--confirm'
-                                        onClick={() =>
-                                            openStatusModal('confirmed')
-                                        }
-                                        disabled={isReactivating}
-                                    >
-                                        {isReactivating
-                                            ? 'Activando...'
-                                            : 'Activar servicio'}
-                                    </button>
-                                )}
-                            </div>
-                        </section>
-                    )}
+                    {activeTab === 'status' &&
+                        (user?.role === 'admin' || user?.role === 'sudo') && (
+                            <section className='service-detail-card service-detail-footer'>
+                                <div className='service-detail-footer-actions'>
+                                    {detail?.status !== 'completed' ? (
+                                        <button
+                                            type='button'
+                                            className='service-detail-btn'
+                                            onClick={() =>
+                                                openStatusModal('completed')
+                                            }
+                                            disabled={isCompleting}
+                                        >
+                                            {isCompleting
+                                                ? 'Desactivando...'
+                                                : 'Desactivar servicio'}
+                                        </button>
+                                    ) : (
+                                        <button
+                                            type='button'
+                                            className='service-detail-btn service-detail-btn--confirm'
+                                            onClick={() =>
+                                                openStatusModal('confirmed')
+                                            }
+                                            disabled={isReactivating}
+                                        >
+                                            {isReactivating
+                                                ? 'Activando...'
+                                                : 'Activar servicio'}
+                                        </button>
+                                    )}
+                                </div>
+                            </section>
+                        )}
                 </div>
-            )}
-
             {statusModal.open && (
                 <div className='service-detail-modal-overlay'>
                     <div className='service-detail-modal'>

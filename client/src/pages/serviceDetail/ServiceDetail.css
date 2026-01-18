@@ -68,6 +68,23 @@
     background: #020617;
 }
 
+.service-detail-menu button.is-active {
+    background: #1d4ed8;
+}
+
+@media (max-width: 720px) {
+    .service-detail-menu {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .service-detail-menu button {
+        white-space: nowrap;
+        flex: 0 0 auto;
+    }
+}
+
 .service-detail-card {
     background: #ffffff;
     border-radius: 12px;
