@@ -9,6 +9,7 @@ import requests from './requests.js';
 import jobsApplication from './jobApplicationRouter.js'
 import delegationRouter from './delegationRouter.js';
 import cleanupRouter from './cleanupRouter.js';
+import generalChatRouter from './generalChatRouter.js';
 
 const router = express.Router();
 
@@ -21,5 +22,6 @@ router.use(requests);
 router.use(jobsApplication);
 router.use(delegationRouter);
 router.use(cleanupRouter);
+router.use(generalChatRouter);
 
 export default router;

@@ -8,6 +8,9 @@ import ensureServiceChatNotPausedService from '../services/serviceChat/ensureSer
 import updateServiceChatPausedService from '../services/serviceChat/updateServiceChatPausedService.js';
 import deleteServiceChatMessageService from '../services/serviceChat/deleteServiceChatMessageService.js';
 import deleteServiceChatMessagesByServiceService from '../services/serviceChat/deleteServiceChatMessagesByServiceService.js';
+import ensureGeneralChatAccessService from '../services/generalChat/ensureGeneralChatAccessService.js';
+import ensureGeneralChatWriteAccessService from '../services/generalChat/ensureGeneralChatWriteAccessService.js';
+import createGeneralChatMessageService from '../services/generalChat/createGeneralChatMessageService.js';
 import generateErrorUtil from '../utils/generateErrorUtil.js';
 
 const initSocket = (httpServer) => {
@@ -198,6 +201,59 @@ const initSocket = (httpServer) => {
                     });
 
                     callback?.({ ok: true });
+                } catch (error) {
+                    callback?.({ ok: false, message: error.message });
+                }
+            }
+        );
+
+        socket.on('generalChat:join', async ({ chatId }, callback) => {
+            try {
+                await ensureGeneralChatAccessService(chatId, socket.user.id);
+                socket.join(`generalChat:${chatId}`);
+                callback?.({ ok: true });
+            } catch (error) {
+                callback?.({ ok: false, message: error.message });
+            }
+        });
+
+        socket.on('generalChat:leave', ({ chatId }) => {
+            socket.leave(`generalChat:${chatId}`);
+        });
+
+        socket.on(
+            'generalChat:message',
+            async ({ chatId, message, imagePath, replyToMessageId }, callback) => {
+                try {
+                    const text = message ? String(message).trim() : '';
+                    const image = imagePath ? String(imagePath).trim() : '';
+                    if (!text && !image) {
+                        generateErrorUtil('Mensaje vacio', 400);
+                    }
+
+                    await ensureGeneralChatAccessService(
+                        chatId,
+                        socket.user.id
+                    );
+                    await ensureGeneralChatWriteAccessService(
+                        chatId,
+                        socket.user.role
+                    );
+
+                    const newMessage = await createGeneralChatMessageService(
+                        chatId,
+                        socket.user.id,
+                        text,
+                        image || null,
+                        replyToMessageId || null
+                    );
+
+                    io.to(`generalChat:${chatId}`).emit(
+                        'generalChat:message',
+                        newMessage
+                    );
+
+                    callback?.({ ok: true, message: newMessage });
                 } catch (error) {
                     callback?.({ ok: false, message: error.message });
                 }

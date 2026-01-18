@@ -1,0 +1,234 @@
+.general-chat-dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.general-chat-dashboard-header h1 {
+    font-size: 1.5rem;
+    margin: 0;
+    color: #0f172a;
+}
+
+.general-chat-dashboard-header p {
+    color: #64748b;
+    margin: 0.35rem 0 0;
+}
+
+.general-chat-dashboard-filter {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 12px;
+}
+
+.general-chat-dashboard-filter label {
+    font-size: 0.85rem;
+    color: #475569;
+}
+
+.general-chat-dashboard-filter input {
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+}
+
+.general-chat-create {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+.general-chat-create-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.general-chat-create-field label {
+    font-size: 0.85rem;
+    color: #475569;
+}
+
+.general-chat-create-field input,
+.general-chat-create-field select {
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+}
+
+.general-chat-create button {
+    border: none;
+    border-radius: 10px;
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    background: #0f172a;
+    color: #fff;
+    align-self: end;
+}
+
+.general-chat-create button:hover {
+    background: #1e293b;
+}
+
+.general-chat-dashboard-loading,
+.general-chat-dashboard-empty {
+    color: #64748b;
+}
+
+.general-chat-dashboard-list {
+    display: grid;
+    gap: 16px;
+}
+
+.general-chat-dashboard-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.general-chat-dashboard-card-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.general-chat-dashboard-card h3 {
+    margin: 0;
+    color: #0f172a;
+}
+
+.general-chat-dashboard-card p {
+    margin: 4px 0 0;
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
+.general-chat-dashboard-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.general-chat-dashboard-btn {
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    background: #0f172a;
+    color: #fff;
+    position: relative;
+}
+
+.general-chat-dashboard-btn:hover {
+    background: #1e293b;
+}
+
+.general-chat-dashboard-secondary {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    background: #f8fafc;
+    color: #0f172a;
+}
+
+.general-chat-members {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px;
+    background: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.general-chat-members-list {
+    display: grid;
+    gap: 8px;
+}
+
+.general-chat-member {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 8px 10px;
+    border: 1px solid #e2e8f0;
+    font-size: 0.85rem;
+    color: #334155;
+}
+
+.general-chat-member button {
+    border: none;
+    background: #fee2e2;
+    color: #b91c1c;
+    border-radius: 999px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: 0.75rem;
+}
+
+.general-chat-add {
+    display: grid;
+    gap: 8px;
+}
+
+.general-chat-add label {
+    font-size: 0.85rem;
+    color: #475569;
+}
+
+.general-chat-add select {
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+}
+
+.general-chat-add button {
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    background: #0f172a;
+    color: #fff;
+    width: fit-content;
+}
+
+.general-chat-empty {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 640px) {
+    .general-chat-create {
+        grid-template-columns: 1fr;
+    }
+
+    .general-chat-create button {
+        width: 100%;
+    }
+}

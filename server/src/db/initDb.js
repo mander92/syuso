@@ -19,7 +19,7 @@ const initDb = async () => {
 
         await pool.query(
             `
-            DROP TABLE IF EXISTS serviceNfcTagLogs, workReportIncidentPhotos, workReportPhotos, workReportIncidents, workReportDrafts, workReports, serviceChatMessages, serviceChatReads, personsAssigned, serviceNfcTags, shiftRecords, adminDelegations, delegations, services, typeOfServices, users, addresses, consulting_requests, job_applications
+            DROP TABLE IF EXISTS serviceNfcTagLogs, workReportIncidentPhotos, workReportPhotos, workReportIncidents, workReportDrafts, workReports, serviceChatMessages, serviceChatReads, generalChatMessages, generalChatReads, generalChatMembers, generalChats, personsAssigned, serviceNfcTags, shiftRecords, adminDelegations, delegations, services, typeOfServices, users, addresses, consulting_requests, job_applications
             `
         );
 
@@ -228,6 +228,73 @@ const initDb = async () => {
         );
 
         console.log('serviceChatReads creada');
+
+        await pool.query(
+            `
+            CREATE TABLE IF NOT EXISTS generalChats (
+                id CHAR(36) PRIMARY KEY NOT NULL,
+                name VARCHAR(120) NOT NULL,
+                type ENUM('standard','announcement') NOT NULL DEFAULT 'standard',
+                createdBy CHAR(36) NOT NULL,
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                deletedAt TIMESTAMP,
+                FOREIGN KEY (createdBy) REFERENCES users(id)
+            )
+            `
+        );
+
+        console.log('generalChats creada');
+
+        await pool.query(
+            `
+            CREATE TABLE IF NOT EXISTS generalChatMembers (
+                chatId CHAR(36) NOT NULL,
+                userId CHAR(36) NOT NULL,
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (chatId, userId),
+                FOREIGN KEY (chatId) REFERENCES generalChats(id) ON DELETE CASCADE,
+                FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+            )
+            `
+        );
+
+        console.log('generalChatMembers creada');
+
+        await pool.query(
+            `
+            CREATE TABLE IF NOT EXISTS generalChatMessages (
+                id CHAR(36) PRIMARY KEY NOT NULL,
+                chatId CHAR(36) NOT NULL,
+                userId CHAR(36) NOT NULL,
+                message TEXT,
+                imagePath VARCHAR(255),
+                replyToMessageId CHAR(36),
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (chatId) REFERENCES generalChats(id) ON DELETE CASCADE,
+                FOREIGN KEY (userId) REFERENCES users(id),
+                FOREIGN KEY (replyToMessageId)
+                    REFERENCES generalChatMessages(id)
+                    ON DELETE SET NULL
+            )
+            `
+        );
+
+        console.log('generalChatMessages creada');
+
+        await pool.query(
+            `
+            CREATE TABLE IF NOT EXISTS generalChatReads (
+                userId CHAR(36) NOT NULL,
+                chatId CHAR(36) NOT NULL,
+                lastReadAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (userId, chatId),
+                FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (chatId) REFERENCES generalChats(id) ON DELETE CASCADE
+            )
+            `
+        );
+
+        console.log('generalChatReads creada');
 
         await pool.query(
             `

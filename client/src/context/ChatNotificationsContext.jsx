@@ -8,12 +8,18 @@ import {
     fetchEmployeeAllServicesServices,
 } from '../services/serviceService.js';
 import { fetchServiceChatUnreadCounts } from '../services/serviceChatService.js';
+import {
+    fetchGeneralChatUnreadCounts,
+    fetchGeneralChats,
+} from '../services/generalChatService.js';
 import { getChatSocket } from '../services/chatSocket.js';
 
 const ChatNotificationsContext = createContext({
     unreadByService: {},
+    unreadByGeneral: {},
     unreadTotal: 0,
     resetServiceUnread: () => {},
+    resetGeneralUnread: () => {},
     resetAllUnread: () => {},
 });
 
@@ -23,9 +29,16 @@ export const ChatNotificationsProvider = ({ children }) => {
     const [services, setServices] = useState([]);
     const [unreadByService, setUnreadByService] = useState({});
     const [trackedServiceIds, setTrackedServiceIds] = useState([]);
-    const joinedRooms = useRef(new Set());
+    const [generalChats, setGeneralChats] = useState([]);
+    const [unreadByGeneral, setUnreadByGeneral] = useState({});
+    const [trackedGeneralChatIds, setTrackedGeneralChatIds] = useState([]);
+    const joinedServiceRooms = useRef(new Set());
+    const joinedGeneralRooms = useRef(new Set());
     const storageKey = user?.id
         ? `syuso_chat_unread_${user.id}`
+        : null;
+    const generalStorageKey = user?.id
+        ? `syuso_chat_unread_general_${user.id}`
         : null;
 
     const socket = useMemo(
@@ -58,17 +71,36 @@ export const ChatNotificationsProvider = ({ children }) => {
         return map;
     }, [services]);
 
+    const generalChatIds = useMemo(
+        () => generalChats.map((chat) => chat.id).filter(Boolean),
+        [generalChats]
+    );
+
+    const generalChatNameMap = useMemo(() => {
+        const map = new Map();
+        generalChats.forEach((chat) => {
+            if (!chat?.id || map.has(chat.id)) return;
+            map.set(chat.id, chat.name || 'Chat');
+        });
+        return map;
+    }, [generalChats]);
+
     useEffect(() => {
         if (!authToken || !user) {
             setServices([]);
             setUnreadByService({});
             setTrackedServiceIds([]);
+            setGeneralChats([]);
+            setUnreadByGeneral({});
+            setTrackedGeneralChatIds([]);
             return;
         }
 
         if (user.role === 'client') {
             setServices([]);
             setUnreadByService({});
+            setGeneralChats([]);
+            setUnreadByGeneral({});
             return;
         }
 
@@ -99,6 +131,22 @@ export const ChatNotificationsProvider = ({ children }) => {
     }, [authToken, user]);
 
     useEffect(() => {
+        if (!authToken || !user) return;
+        if (user.role === 'client') return;
+
+        const loadGeneralChats = async () => {
+            try {
+                const data = await fetchGeneralChats(authToken);
+                setGeneralChats(Array.isArray(data) ? data : []);
+            } catch {
+                setGeneralChats([]);
+            }
+        };
+
+        loadGeneralChats();
+    }, [authToken, user]);
+
+    useEffect(() => {
         if (!serviceIds.length) return;
         setUnreadByService((prev) => {
             const next = {};
@@ -110,6 +158,19 @@ export const ChatNotificationsProvider = ({ children }) => {
             return next;
         });
     }, [serviceIds]);
+
+    useEffect(() => {
+        if (!generalChatIds.length) return;
+        setUnreadByGeneral((prev) => {
+            const next = {};
+            generalChatIds.forEach((chatId) => {
+                if (prev[chatId]) {
+                    next[chatId] = prev[chatId];
+                }
+            });
+            return next;
+        });
+    }, [generalChatIds]);
 
     useEffect(() => {
         if (!storageKey) return;
@@ -124,6 +185,20 @@ export const ChatNotificationsProvider = ({ children }) => {
             // ignore storage errors
         }
     }, [storageKey]);
+
+    useEffect(() => {
+        if (!generalStorageKey) return;
+        try {
+            const raw = localStorage.getItem(generalStorageKey);
+            if (!raw) return;
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === 'object') {
+                setUnreadByGeneral(parsed);
+            }
+        } catch {
+            // ignore storage errors
+        }
+    }, [generalStorageKey]);
 
     useEffect(() => {
         if (!authToken || !user) return;
@@ -144,6 +219,24 @@ export const ChatNotificationsProvider = ({ children }) => {
     }, [authToken, user]);
 
     useEffect(() => {
+        if (!authToken || !user) return;
+        if (user.role === 'client') return;
+
+        const loadGeneralUnread = async () => {
+            try {
+                const data = await fetchGeneralChatUnreadCounts(authToken);
+                const counts = data?.counts || {};
+                setUnreadByGeneral(counts);
+                setTrackedGeneralChatIds(Object.keys(counts));
+            } catch {
+                // ignore errors to avoid blocking
+            }
+        };
+
+        loadGeneralUnread();
+    }, [authToken, user]);
+
+    useEffect(() => {
         if (!storageKey) return;
         try {
             localStorage.setItem(
@@ -156,6 +249,18 @@ export const ChatNotificationsProvider = ({ children }) => {
     }, [storageKey, unreadByService]);
 
     useEffect(() => {
+        if (!generalStorageKey) return;
+        try {
+            localStorage.setItem(
+                generalStorageKey,
+                JSON.stringify(unreadByGeneral || {})
+            );
+        } catch {
+            // ignore storage errors
+        }
+    }, [generalStorageKey, unreadByGeneral]);
+
+    useEffect(() => {
         if (!socket || !user) return;
         if (user.role === 'client') return;
 
@@ -164,9 +269,19 @@ export const ChatNotificationsProvider = ({ children }) => {
         ];
 
         joinServiceIds.forEach((serviceId) => {
-            if (joinedRooms.current.has(serviceId)) return;
+            if (joinedServiceRooms.current.has(serviceId)) return;
             socket.emit('chat:join', { serviceId });
-            joinedRooms.current.add(serviceId);
+            joinedServiceRooms.current.add(serviceId);
+        });
+
+        const joinGeneralChatIds = [
+            ...new Set([...generalChatIds, ...trackedGeneralChatIds]),
+        ];
+
+        joinGeneralChatIds.forEach((chatId) => {
+            if (joinedGeneralRooms.current.has(chatId)) return;
+            socket.emit('generalChat:join', { chatId });
+            joinedGeneralRooms.current.add(chatId);
         });
 
         const handleMessage = (message) => {
@@ -185,17 +300,49 @@ export const ChatNotificationsProvider = ({ children }) => {
             });
         };
 
+        const handleGeneralMessage = (message) => {
+            if (!message?.chatId) return;
+            if (message.userId === user.id) return;
+
+            setUnreadByGeneral((prev) => ({
+                ...prev,
+                [message.chatId]: (prev[message.chatId] || 0) + 1,
+            }));
+
+            const chatName =
+                generalChatNameMap.get(message.chatId) || 'Chat';
+            toast(`${chatName}: nuevo mensaje`, {
+                id: `general-chat-${message.id || message.chatId}`,
+            });
+        };
+
         socket.on('chat:message', handleMessage);
+        socket.on('generalChat:message', handleGeneralMessage);
 
         return () => {
             socket.off('chat:message', handleMessage);
+            socket.off('generalChat:message', handleGeneralMessage);
             joinServiceIds.forEach((serviceId) => {
-                if (!joinedRooms.current.has(serviceId)) return;
+                if (!joinedServiceRooms.current.has(serviceId)) return;
                 socket.emit('chat:leave', { serviceId });
-                joinedRooms.current.delete(serviceId);
+                joinedServiceRooms.current.delete(serviceId);
+            });
+            joinGeneralChatIds.forEach((chatId) => {
+                if (!joinedGeneralRooms.current.has(chatId)) return;
+                socket.emit('generalChat:leave', { chatId });
+                joinedGeneralRooms.current.delete(chatId);
             });
         };
-    }, [socket, serviceIds, trackedServiceIds, user, serviceNameMap]);
+    }, [
+        socket,
+        serviceIds,
+        trackedServiceIds,
+        generalChatIds,
+        trackedGeneralChatIds,
+        user,
+        serviceNameMap,
+        generalChatNameMap,
+    ]);
 
     const resetServiceUnread = (serviceId) => {
         if (!serviceId) return;
@@ -205,8 +352,17 @@ export const ChatNotificationsProvider = ({ children }) => {
         }));
     };
 
+    const resetGeneralUnread = (chatId) => {
+        if (!chatId) return;
+        setUnreadByGeneral((prev) => ({
+            ...prev,
+            [chatId]: 0,
+        }));
+    };
+
     const resetAllUnread = () => {
         setUnreadByService({});
+        setUnreadByGeneral({});
     };
 
     const unreadTotal = useMemo(
@@ -214,16 +370,22 @@ export const ChatNotificationsProvider = ({ children }) => {
             Object.values(unreadByService).reduce(
                 (sum, value) => sum + (value || 0),
                 0
+            ) +
+            Object.values(unreadByGeneral).reduce(
+                (sum, value) => sum + (value || 0),
+                0
             ),
-        [unreadByService]
+        [unreadByService, unreadByGeneral]
     );
 
     return (
         <ChatNotificationsContext.Provider
             value={{
                 unreadByService,
+                unreadByGeneral,
                 unreadTotal,
                 resetServiceUnread,
+                resetGeneralUnread,
                 resetAllUnread,
             }}
         >
