@@ -22,6 +22,7 @@ export const ChatNotificationsProvider = ({ children }) => {
     const { user } = useUser();
     const [services, setServices] = useState([]);
     const [unreadByService, setUnreadByService] = useState({});
+    const [trackedServiceIds, setTrackedServiceIds] = useState([]);
     const joinedRooms = useRef(new Set());
     const storageKey = user?.id
         ? `syuso_chat_unread_${user.id}`
@@ -61,6 +62,7 @@ export const ChatNotificationsProvider = ({ children }) => {
         if (!authToken || !user) {
             setServices([]);
             setUnreadByService({});
+            setTrackedServiceIds([]);
             return;
         }
 
@@ -130,7 +132,9 @@ export const ChatNotificationsProvider = ({ children }) => {
         const loadUnread = async () => {
             try {
                 const data = await fetchServiceChatUnreadCounts(authToken);
-                setUnreadByService(data?.counts || {});
+                const counts = data?.counts || {};
+                setUnreadByService(counts);
+                setTrackedServiceIds(Object.keys(counts));
             } catch {
                 // ignore errors to avoid blocking
             }
@@ -155,7 +159,11 @@ export const ChatNotificationsProvider = ({ children }) => {
         if (!socket || !user) return;
         if (user.role === 'client') return;
 
-        serviceIds.forEach((serviceId) => {
+        const joinServiceIds = [
+            ...new Set([...serviceIds, ...trackedServiceIds]),
+        ];
+
+        joinServiceIds.forEach((serviceId) => {
             if (joinedRooms.current.has(serviceId)) return;
             socket.emit('chat:join', { serviceId });
             joinedRooms.current.add(serviceId);
@@ -164,7 +172,6 @@ export const ChatNotificationsProvider = ({ children }) => {
         const handleMessage = (message) => {
             if (!message?.serviceId) return;
             if (message.userId === user.id) return;
-            if (!serviceIds.includes(message.serviceId)) return;
 
             setUnreadByService((prev) => ({
                 ...prev,
@@ -182,13 +189,13 @@ export const ChatNotificationsProvider = ({ children }) => {
 
         return () => {
             socket.off('chat:message', handleMessage);
-            serviceIds.forEach((serviceId) => {
+            joinServiceIds.forEach((serviceId) => {
                 if (!joinedRooms.current.has(serviceId)) return;
                 socket.emit('chat:leave', { serviceId });
                 joinedRooms.current.delete(serviceId);
             });
         };
-    }, [socket, serviceIds, user, serviceNameMap]);
+    }, [socket, serviceIds, trackedServiceIds, user, serviceNameMap]);
 
     const resetServiceUnread = (serviceId) => {
         if (!serviceId) return;
