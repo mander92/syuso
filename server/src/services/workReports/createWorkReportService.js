@@ -458,15 +458,13 @@ const createWorkReportService = async ({
     );
 
     const normalizedIncidents = Array.isArray(incidents)
-        ? incidents
-              .map((incident) => ({
-                  id: incident.id,
-                  text: incident.text || '',
-                  photoPaths: Array.isArray(incident.photoPaths)
-                      ? [...incident.photoPaths]
-                      : [],
-              }))
-              .filter((incident) => incident.text)
+        ? incidents.map((incident) => ({
+              id: incident.id,
+              text: incident.text || '',
+              photoPaths: Array.isArray(incident.photoPaths)
+                  ? [...incident.photoPaths]
+                  : [],
+          }))
         : [];
     let incidentPhotoFiles = [];
     const [tagLogs] = await pool.query(
@@ -538,10 +536,15 @@ const createWorkReportService = async ({
             }
         }
 
-        const incidentsForPdf = normalizedIncidents.map((incident, index) => ({
-            text: incident.text,
-            photos: incidentPhotoFiles[index] || [],
-        }));
+        const incidentsForPdf = normalizedIncidents
+            .map((incident, index) => ({
+                text: incident.text || 'Sin descripcion',
+                photos: incidentPhotoFiles[index] || [],
+            }))
+            .filter(
+                (incident) =>
+                    incident.text.trim() || incident.photos.length
+            );
 
         const logoPath =
             process.env.SYUSO_LOGO_PATH ||
