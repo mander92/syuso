@@ -12,7 +12,7 @@ import AdminCleanupSection from '../adminCleanupSection/AdminCleanupSection.jsx'
 import AdminCvSection from '../adminCvSection/AdminCvSection.jsx';
 import EmployeeServicesComponent from '../employeeServicesSection/EmployeeServicesComponent.jsx';
 import ClientServicesComponent from '../clientServicesSection/ClientServicesComponent.jsx';
-import ServiceChatDashboard from '../serviceChat/ServiceChatDashboard.jsx';
+import ChatHub from '../chatHub/ChatHub.jsx';
 import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 
 const DashboardComponent = () => {
@@ -103,7 +103,7 @@ const DashboardComponent = () => {
                 return <AdminUsersSection />;
 
             case 'chats':
-                return <ServiceChatDashboard />;
+                return <ChatHub />;
             case 'workReports':
                 return <WorkReportsComponent />;
             case 'cleanup':
