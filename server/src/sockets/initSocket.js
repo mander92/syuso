@@ -18,6 +18,14 @@ const initSocket = (httpServer) => {
         },
     });
 
+    io.engine.on('connection_error', (err) => {
+        console.error('[socket] connection_error', {
+            code: err.code,
+            message: err.message,
+            context: err.context,
+        });
+    });
+
     io.use((socket, next) => {
         try {
             const token = socket.handshake.auth?.token;
@@ -34,6 +42,11 @@ const initSocket = (httpServer) => {
     });
 
     io.on('connection', (socket) => {
+        console.log('[socket] connected', socket.id);
+        socket.on('disconnect', (reason) => {
+            console.log('[socket] disconnected', socket.id, reason);
+        });
+
         const isAdminUser =
             socket.user?.role === 'admin' || socket.user?.role === 'sudo';
 
