@@ -17,6 +17,8 @@ import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx
 import ServiceChat from '../serviceChat/ServiceChat.jsx';
 import './EmployeeServicesComponent.css';
 
+const LOCATION_CACHE_KEY = 'syuso_last_location';
+
 const getLocation = () =>
     new Promise((resolve, reject) => {
         if (!navigator.geolocation) {
@@ -26,9 +28,45 @@ const getLocation = () =>
 
         navigator.geolocation.getCurrentPosition(
             (position) => {
-                resolve([position.coords.latitude, position.coords.longitude]);
+                const coords = [
+                    position.coords.latitude,
+                    position.coords.longitude,
+                ];
+                try {
+                    localStorage.setItem(
+                        LOCATION_CACHE_KEY,
+                        JSON.stringify(coords)
+                    );
+                } catch (error) {
+                    // ignore storage errors
+                }
+                resolve(coords);
             },
-            () => reject(new Error('No se pudo obtener la ubicacion'))
+            () => {
+                try {
+                    const cached = localStorage.getItem(
+                        LOCATION_CACHE_KEY
+                    );
+                    if (cached) {
+                        const coords = JSON.parse(cached);
+                        if (
+                            Array.isArray(coords) &&
+                            coords.length === 2
+                        ) {
+                            resolve(coords);
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    // ignore cache errors
+                }
+                reject(new Error('No se pudo obtener la ubicacion'));
+            },
+            {
+                enableHighAccuracy: false,
+                timeout: 3000,
+                maximumAge: 600000,
+            }
         );
     });
 

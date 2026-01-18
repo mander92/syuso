@@ -98,6 +98,9 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .general-chat-dashboard-card-row {
@@ -230,5 +233,31 @@
 
     .general-chat-create button {
         width: 100%;
+    }
+
+    .general-chat-dashboard-card {
+        padding: 18px;
+        gap: 18px;
+    }
+
+    .general-chat-dashboard-card-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .general-chat-dashboard-actions {
+        width: 100%;
+    }
+
+    .general-chat-dashboard-btn,
+    .general-chat-dashboard-secondary {
+        width: 100%;
+        padding: 12px 14px;
+    }
+
+    .general-chat-member {
+        flex-direction: column;
+        align-items: flex-start;
     }
 }

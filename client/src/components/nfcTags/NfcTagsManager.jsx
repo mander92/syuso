@@ -39,7 +39,6 @@ const NfcTagsManager = ({ serviceId }) => {
     const [tags, setTags] = useState([]);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
-    const [writing, setWriting] = useState(false);
     const [tagName, setTagName] = useState('');
     const [tagUid, setTagUid] = useState('');
     const [lastRead, setLastRead] = useState('');
@@ -100,29 +99,6 @@ const NfcTagsManager = ({ serviceId }) => {
             toast.error('No se pudo iniciar la lectura NFC');
         } finally {
             setSaving(false);
-        }
-    };
-
-    const handleWriteTag = async () => {
-        if (!nfcSupported) {
-            toast.error('NFC no disponible en este dispositivo');
-            return;
-        }
-        if (!tagName.trim()) {
-            toast.error('Escribe un nombre para el tag');
-            return;
-        }
-        try {
-            setWriting(true);
-            const writer = new NDEFReader();
-            await writer.write({
-                records: [{ recordType: 'text', data: tagName.trim() }],
-            });
-            toast.success('Tag escrito');
-        } catch (error) {
-            toast.error('No se pudo escribir el tag');
-        } finally {
-            setWriting(false);
         }
     };
 
@@ -202,14 +178,6 @@ const NfcTagsManager = ({ serviceId }) => {
                         disabled={saving || !nfcSupported}
                     >
                         Leer tag
-                    </button>
-                    <button
-                        type='button'
-                        className='nfc-tags-btn nfc-tags-btn--ghost'
-                        onClick={handleWriteTag}
-                        disabled={writing || !nfcSupported}
-                    >
-                        {writing ? 'Escribiendo...' : 'Escribir tag'}
                     </button>
                     <button
                         type='button'

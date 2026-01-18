@@ -101,10 +101,13 @@
     display: flex;
     gap: 12px;
     align-items: center;
+    width: 100%;
 }
 
 .work-report-incident input {
     flex: 1;
+    width: 100%;
+    min-width: 0;
 }
 
 .work-report-incident button {
@@ -259,5 +262,14 @@
 
     .work-report-actions button {
         flex: 1 1 100%;
+    }
+
+    .work-report-incident {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .work-report-incident button {
+        width: 100%;
     }
 }

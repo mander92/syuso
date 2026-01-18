@@ -53,6 +53,9 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .service-chat-dashboard-card-row {
@@ -98,4 +101,22 @@
     justify-content: center;
     padding: 0 6px;
     box-shadow: 0 6px 14px rgba(239, 68, 68, 0.3);
+}
+
+@media (max-width: 640px) {
+    .service-chat-dashboard-card {
+        padding: 18px;
+        gap: 18px;
+    }
+
+    .service-chat-dashboard-card-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .service-chat-dashboard-btn {
+        width: 100%;
+        padding: 12px 14px;
+    }
 }
