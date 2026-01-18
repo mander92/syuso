@@ -109,12 +109,12 @@
 
 @media (max-width: 720px) {
     .service-detail-menu {
-        flex-direction: column;
-        align-items: stretch;
+        flex-wrap: wrap;
+        overflow-x: hidden;
     }
 
     .service-detail-menu button {
-        width: 100%;
+        flex: 1 1 auto;
         text-align: center;
     }
 }
