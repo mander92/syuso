@@ -319,20 +319,7 @@ const ServiceDetail = () => {
                         >
                             Resumen
                         </button>
-                        <button
-                            type='button'
-                            className={activeTab === 'address' ? 'is-active' : ''}
-                            onClick={() => setActiveTab('address')}
-                        >
-                            Direccion
-                        </button>
-                        <button
-                            type='button'
-                            className={activeTab === 'client' ? 'is-active' : ''}
-                            onClick={() => setActiveTab('client')}
-                        >
-                            Cliente
-                        </button>
+                        
                         <button
                             type='button'
                             className={activeTab === 'employees' ? 'is-active' : ''}
@@ -356,15 +343,7 @@ const ServiceDetail = () => {
                                 Envio partes
                             </button>
                         )}
-                        {(user?.role === 'admin' || user?.role === 'sudo') && (
-                            <button
-                                type='button'
-                                className={activeTab === 'search' ? 'is-active' : ''}
-                                onClick={() => setActiveTab('search')}
-                            >
-                                Buscar empleados
-                            </button>
-                        )}
+                        
                         {(user?.role === 'admin' || user?.role === 'sudo') && (
                             <button
                                 type='button'
@@ -433,15 +412,8 @@ const ServiceDetail = () => {
                                     </strong>
                                 </div>
                             </div>
-                        </section>
-                    )}
-
-                    {activeTab === 'address' && (
-                        <section className='service-detail-card service-detail-section'>
-                            <div className='service-detail-section-header'>
-                                <h2>Direccion</h2>
-                            </div>
                             <div className='service-detail-collapsible'>
+                                <h3>Direccion</h3>
                                 <div className='service-detail-row'>
                                     <span>Ciudad</span>
                                     <strong>{detail.city || 'Sin ciudad'}</strong>
@@ -463,15 +435,8 @@ const ServiceDetail = () => {
                                     <p>{detail.comments || 'Sin comentarios'}</p>
                                 </div>
                             </div>
-                        </section>
-                    )}
-
-                    {activeTab === 'client' && (
-                        <section className='service-detail-card service-detail-section'>
-                            <div className='service-detail-section-header'>
-                                <h2>Cliente</h2>
-                            </div>
                             <div className='service-detail-collapsible'>
+                                <h3>Cliente</h3>
                                 <div className='service-detail-row'>
                                     <span>Nombre</span>
                                     <strong>
@@ -557,6 +522,17 @@ const ServiceDetail = () => {
                                     Sin empleado asignado.
                                 </p>
                             )}
+                            {(user?.role === 'admin' || user?.role === 'sudo') && (
+                                <div className='service-detail-employee-search'>
+                                    <h3>Buscar empleados</h3>
+                                    <ListEmployeeComponent
+                                        serviceId={serviceId}
+                                        numberOfPeople={detail.numberOfPeople}
+                                        employeeData={assignedEmployees}
+                                        setEmployeeData={setAssignedEmployees}
+                                    />
+                                </div>
+                            )}
                         </section>
                     )}
 
@@ -631,18 +607,7 @@ const ServiceDetail = () => {
                             </section>
                         )}
 
-                    {activeTab === 'search' &&
-                        (user?.role === 'admin' || user?.role === 'sudo') && (
-                            <section className='service-detail-card service-detail-section'>
-                                <h2>Buscar empleados</h2>
-                                <ListEmployeeComponent
-                                    serviceId={serviceId}
-                                    numberOfPeople={detail.numberOfPeople}
-                                    employeeData={assignedEmployees}
-                                    setEmployeeData={setAssignedEmployees}
-                                />
-                            </section>
-                        )}
+                    
 
                     {activeTab === 'nfc' &&
                         (user?.role === 'admin' || user?.role === 'sudo') && (
