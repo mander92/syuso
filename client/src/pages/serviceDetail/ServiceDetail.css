@@ -62,6 +62,7 @@
     border-radius: 999px;
     font-size: 0.82rem;
     cursor: pointer;
+    position: relative;
 }
 
 .service-detail-menu button:hover {
@@ -72,15 +73,48 @@
     background: #1d4ed8;
 }
 
+.service-detail-menu-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.service-detail-menu-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.service-detail-menu-icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+.service-detail-badge {
+    position: absolute;
+    top: -6px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 0.72rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #f8fafc;
+}
+
 @media (max-width: 720px) {
     .service-detail-menu {
-        flex-wrap: wrap;
-        overflow-x: hidden;
+        flex-direction: column;
+        align-items: stretch;
     }
 
     .service-detail-menu button {
-        white-space: normal;
-        flex: 1 1 auto;
+        width: 100%;
         text-align: center;
     }
 }

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, Navigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -14,6 +14,7 @@ import { fetchDeleteEmployeeService } from '../../services/personAssigned.js';
 import ListEmployeeComponent from '../../components/adminServiceSection/listEmployeeComponent/ListEmployeeComponent.jsx';
 import ServiceChat from '../../components/serviceChat/ServiceChat.jsx';
 import NfcTagsManager from '../../components/nfcTags/NfcTagsManager.jsx';
+import { getChatSocket } from '../../services/chatSocket.js';
 import './ServiceDetail.css';
 
 const formatDateTime = (value) => {
@@ -38,6 +39,7 @@ const ServiceDetail = () => {
     const [isCompleting, setIsCompleting] = useState(false);
     const [isReactivating, setIsReactivating] = useState(false);
     const [activeTab, setActiveTab] = useState('summary');
+    const [unreadChats, setUnreadChats] = useState(0);
     const [statusModal, setStatusModal] = useState({
         open: false,
         targetStatus: '',
@@ -45,6 +47,11 @@ const ServiceDetail = () => {
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
     const [activeShifts, setActiveShifts] = useState([]);
     const [activeShiftsLoading, setActiveShiftsLoading] = useState(false);
+    const activeTabRef = useRef(activeTab);
+    const socket = useMemo(
+        () => getChatSocket(authToken),
+        [authToken]
+    );
 
     useEffect(() => {
         const loadService = async () => {
@@ -267,6 +274,32 @@ const ServiceDetail = () => {
         }
     }, [activeTab, authToken, serviceId]);
 
+    useEffect(() => {
+        activeTabRef.current = activeTab;
+        if (activeTab === 'chat') {
+            setUnreadChats(0);
+        }
+    }, [activeTab]);
+
+    useEffect(() => {
+        if (!socket || !serviceId) return;
+
+        const handleMessage = (message) => {
+            if (message?.serviceId !== serviceId) return;
+            if (message?.userId && message.userId === user?.id) return;
+            if (activeTabRef.current === 'chat') return;
+            setUnreadChats((prev) => prev + 1);
+        };
+
+        socket.emit('chat:join', { serviceId });
+        socket.on('chat:message', handleMessage);
+
+        return () => {
+            socket.emit('chat:leave', { serviceId });
+            socket.off('chat:message', handleMessage);
+        };
+    }, [socket, serviceId, user?.id]);
+
 
     if (!authToken) return <Navigate to='/login' />;
 
@@ -314,18 +347,32 @@ const ServiceDetail = () => {
                     <nav className='service-detail-menu'>
                         <button
                             type='button'
-                            className={activeTab === 'summary' ? 'is-active' : ''}
-                            onClick={() => setActiveTab('summary')}
+                            className={activeTab === 'chat' ? 'is-active' : ''}
+                            onClick={() => setActiveTab('chat')}
                         >
-                            Resumen
-                        </button>
-                        
-                        <button
-                            type='button'
-                            className={activeTab === 'employees' ? 'is-active' : ''}
-                            onClick={() => setActiveTab('employees')}
-                        >
-                            Empleados
+                            <span className='service-detail-menu-label'>
+                                <span
+                                    className='service-detail-menu-icon'
+                                    aria-hidden='true'
+                                >
+                                    <svg
+                                        viewBox='0 0 24 24'
+                                        role='img'
+                                        aria-hidden='true'
+                                    >
+                                        <path
+                                            d='M4 5.5C4 4.12 5.12 3 6.5 3h11C18.88 3 20 4.12 20 5.5v8.5c0 1.38-1.12 2.5-2.5 2.5H9.7l-3.55 3.2c-.63.57-1.65.12-1.65-.73V16.5C4 16.5 4 5.5 4 5.5z'
+                                            fill='currentColor'
+                                        />
+                                    </svg>
+                                </span>
+                                Chat
+                            </span>
+                            {unreadChats > 0 && (
+                                <span className='service-detail-badge'>
+                                    {unreadChats}
+                                </span>
+                            )}
                         </button>
                         <button
                             type='button'
@@ -334,16 +381,13 @@ const ServiceDetail = () => {
                         >
                             Turnos abiertos
                         </button>
-                        {(user?.role === 'admin' || user?.role === 'sudo') && (
-                            <button
-                                type='button'
-                                className={activeTab === 'reports' ? 'is-active' : ''}
-                                onClick={() => setActiveTab('reports')}
-                            >
-                                Envio partes
-                            </button>
-                        )}
-                        
+                        <button
+                            type='button'
+                            className={activeTab === 'employees' ? 'is-active' : ''}
+                            onClick={() => setActiveTab('employees')}
+                        >
+                            Empleados
+                        </button>
                         {(user?.role === 'admin' || user?.role === 'sudo') && (
                             <button
                                 type='button'
@@ -353,13 +397,6 @@ const ServiceDetail = () => {
                                 NFC
                             </button>
                         )}
-                        <button
-                            type='button'
-                            className={activeTab === 'chat' ? 'is-active' : ''}
-                            onClick={() => setActiveTab('chat')}
-                        >
-                            Chat
-                        </button>
                         {(user?.role === 'admin' || user?.role === 'sudo') && (
                             <button
                                 type='button'
@@ -367,6 +404,22 @@ const ServiceDetail = () => {
                                 onClick={() => setActiveTab('status')}
                             >
                                 Estado
+                            </button>
+                        )}
+                        <button
+                            type='button'
+                            className={activeTab === 'summary' ? 'is-active' : ''}
+                            onClick={() => setActiveTab('summary')}
+                        >
+                            Resumen
+                        </button>
+                        {(user?.role === 'admin' || user?.role === 'sudo') && (
+                            <button
+                                type='button'
+                                className={activeTab === 'reports' ? 'is-active' : ''}
+                                onClick={() => setActiveTab('reports')}
+                            >
+                                Envio partes
                             </button>
                         )}
                     </nav>
@@ -621,6 +674,7 @@ const ServiceDetail = () => {
                             <ServiceChat
                                 serviceId={serviceId}
                                 title={`Chat del servicio: ${detail.name || detail.type || ''}`}
+                                manageRoom={false}
                             />
                         </section>
                     )}
