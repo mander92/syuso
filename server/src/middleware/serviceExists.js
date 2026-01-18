@@ -9,7 +9,9 @@ const serviceExists = async (req, res, next) => {
             serviceId: Joi.string().length(36).required(),
         });
 
-        const validation = schema.validate(req.params);
+        const validation = schema.validate(req.params, {
+            allowUnknown: true,
+        });
 
         if (validation.error) generateErrorUtil(validation.error.message, 401);
 
