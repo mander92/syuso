@@ -199,10 +199,6 @@ const EmployeeServicesComponent = () => {
             ...prev,
             [serviceId]: !prev[serviceId],
         }));
-        setUnreadCounts((prev) => ({
-            ...prev,
-            [serviceId]: 0,
-        }));
         resetServiceUnread(serviceId);
     };
 
@@ -353,12 +349,12 @@ const EmployeeServicesComponent = () => {
             ) : (
                 <ul className='employee-services-list'>
                     {services.map((service) => {
-                        const isOpen = Boolean(openShifts[service.serviceId]);
-                        const hasReport = Boolean(
-                            reportByService[service.serviceId]
-                        );
+                        const serviceId = service.serviceId || service.id;
+                        if (!serviceId) return null;
+                        const isOpen = Boolean(openShifts[serviceId]);
+                        const hasReport = Boolean(reportByService[serviceId]);
                         return (
-                            <li key={service.serviceId} className='employee-card'>
+                            <li key={serviceId} className='employee-card'>
                                 <div className='employee-card-row'>
                                     <div>
                                         <div className='employee-card-title'>
@@ -370,25 +366,25 @@ const EmployeeServicesComponent = () => {
                                                 className='employee-card-toggle'
                                                 onClick={() =>
                                                     toggleAddress(
-                                                        service.serviceId
+                                                        serviceId
                                                     )
                                                 }
                                                 aria-expanded={
                                                     expandedAddress[
-                                                        service.serviceId
+                                                        serviceId
                                                     ]
                                                         ? 'true'
                                                         : 'false'
                                                 }
                                             >
                                                 {expandedAddress[
-                                                    service.serviceId
+                                                    serviceId
                                                 ]
                                                     ? '–'
                                                     : '+'}
                                             </button>
                                         </div>
-                                        {expandedAddress[service.serviceId] && (
+                                        {expandedAddress[serviceId] && (
                                             <p>
                                                 Direccion: {service.address},{' '}
                                                 {service.city}
@@ -400,7 +396,7 @@ const EmployeeServicesComponent = () => {
                                             type='button'
                                             className='employee-btn employee-btn--start'
                                             onClick={() =>
-                                                handleStart(service.serviceId)
+                                                handleStart(serviceId)
                                             }
                                             disabled={isOpen}
                                         >
@@ -411,7 +407,7 @@ const EmployeeServicesComponent = () => {
                                                 type='button'
                                                 className='employee-btn employee-btn--end'
                                                 onClick={() =>
-                                                    handleEnd(service.serviceId)
+                                                    handleEnd(serviceId)
                                                 }
                                             >
                                                 Parte de trabajo
@@ -423,7 +419,7 @@ const EmployeeServicesComponent = () => {
                                                 className='employee-btn employee-btn--finish'
                                                 onClick={() =>
                                                     handleFinish(
-                                                        service.serviceId
+                                                        serviceId
                                                     )
                                                 }
                                                 disabled={!hasReport}
@@ -435,16 +431,16 @@ const EmployeeServicesComponent = () => {
                                             type='button'
                                             className='employee-btn employee-btn--chat'
                                             onClick={() =>
-                                                toggleChat(service.serviceId)
+                                                toggleChat(serviceId)
                                             }
                                         >
-                                            {openChats[service.serviceId]
+                                            {openChats[serviceId]
                                                 ? 'Cerrar chat'
                                                 : 'Chat'}
-                                            {unreadByService?.[service.serviceId] ? (
+                                            {unreadByService?.[serviceId] ? (
                                                 <span className='employee-chat-badge'>
                                                     {unreadByService[
-                                                        service.serviceId
+                                                        serviceId
                                                     ]}
                                                 </span>
                                             ) : null}
@@ -455,16 +451,16 @@ const EmployeeServicesComponent = () => {
                                                 className='employee-btn employee-btn--nfc'
                                                 onClick={() =>
                                                     handleReadNfc(
-                                                        service.serviceId
+                                                        serviceId
                                                     )
                                                 }
                                                 disabled={
                                                     readingNfc[
-                                                        service.serviceId
+                                                        serviceId
                                                     ] || !nfcSupported
                                                 }
                                             >
-                                                {readingNfc[service.serviceId]
+                                                {readingNfc[serviceId]
                                                     ? 'Leyendo NFC...'
                                                     : 'Leer NFC'}
                                             </button>
@@ -482,9 +478,9 @@ const EmployeeServicesComponent = () => {
                                         </a>
                                     </div>
                                 )}
-                                {openChats[service.serviceId] && (
+                                {openChats[serviceId] && (
                                     <ServiceChat
-                                        serviceId={service.serviceId}
+                                        serviceId={serviceId}
                                         title={`Chat: ${service.name || service.type || ''}`}
                                         compact
                                         manageRoom={false}
@@ -500,3 +496,4 @@ const EmployeeServicesComponent = () => {
 };
 
 export default EmployeeServicesComponent;
+
