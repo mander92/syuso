@@ -257,6 +257,28 @@ export const fetchInProgressServices = async (authToken, delegationId) => {
     return body.data;
 };
 
+export const fetchActiveServiceShifts = async (
+    authToken,
+    serviceId
+) => {
+    const res = await fetch(
+        `${VITE_API_URL}/services/${serviceId}/active-shifts`,
+        {
+            headers: {
+                Authorization: authToken,
+            },
+        }
+    );
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};
+
 export const uploadServiceScheduleImage = async (
     authToken,
     serviceId,

@@ -18,6 +18,7 @@ import {
     editServiceController,
     validateServiceController,
     listInProgressServicesController,
+    listActiveServiceShiftsController,
     updateServiceScheduleImageController,
     updateServiceStatusController,
 } from '../controllers/services/index.js';
@@ -44,6 +45,14 @@ router.get(
 );
 
 router.get('/services/in-progress', authUser, listInProgressServicesController);
+
+router.get(
+    '/services/:serviceId/active-shifts',
+    authUser,
+    isAdmin,
+    serviceExists,
+    listActiveServiceShiftsController
+);
 
 router.get(
     '/services/:serviceId',

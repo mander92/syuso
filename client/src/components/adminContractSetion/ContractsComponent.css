@@ -342,6 +342,14 @@
     gap: 8px;
 }
 
+.contracts-btn--ellipsis {
+    width: 40px;
+    min-width: 40px;
+    padding: 0;
+    font-size: 22px;
+    line-height: 1;
+}
+
 .contracts-upload {
     display: inline-flex;
     align-items: center;

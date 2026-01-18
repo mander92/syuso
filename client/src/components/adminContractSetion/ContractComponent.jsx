@@ -7,6 +7,7 @@ import {
     fetchAllServicesServices,
     fetchClientAllServicesServices,
     fetchInProgressServices,
+    fetchActiveServiceShifts,
     uploadServiceScheduleImage,
     fetchUpdateServiceStatus,
 } from '../../services/serviceService.js';
@@ -34,6 +35,8 @@ const ContractsComponent = () => {
     const [activeServices, setActiveServices] = useState([]);
     const [activeLoading, setActiveLoading] = useState(false);
     const [expandedActive, setExpandedActive] = useState({});
+    const [activeShifts, setActiveShifts] = useState({});
+    const [activeShiftLoading, setActiveShiftLoading] = useState({});
     const [expandedNfc, setExpandedNfc] = useState({});
     const [loading, setLoading] = useState(false);
 
@@ -211,11 +214,35 @@ const ContractsComponent = () => {
         }
     };
 
-    const handleToggleActive = (serviceId) => {
+    const handleToggleActive = async (serviceId) => {
+        const willOpen = !expandedActive[serviceId];
         setExpandedActive((prev) => ({
             ...prev,
-            [serviceId]: !prev[serviceId],
+            [serviceId]: willOpen,
         }));
+
+        if (!willOpen || activeShifts[serviceId]) return;
+
+        try {
+            setActiveShiftLoading((prev) => ({
+                ...prev,
+                [serviceId]: true,
+            }));
+            const rows = await fetchActiveServiceShifts(authToken, serviceId);
+            setActiveShifts((prev) => ({
+                ...prev,
+                [serviceId]: rows || [],
+            }));
+        } catch (error) {
+            toast.error(
+                error.message || 'No se pudieron cargar los turnos abiertos'
+            );
+        } finally {
+            setActiveShiftLoading((prev) => ({
+                ...prev,
+                [serviceId]: false,
+            }));
+        }
     };
 
     const handleToggleNfc = (serviceId) => {
@@ -468,14 +495,15 @@ const ContractsComponent = () => {
                                         <div className='contracts-active-actions'>
                                             <button
                                                 type='button'
-                                                className='contracts-btn contracts-btn--ghost'
+                                                className='contracts-btn contracts-btn--ghost contracts-btn--ellipsis'
+                                                aria-label='Detalle del servicio'
                                                 onClick={() =>
                                                     navigate(
                                                         `/services/${service.serviceId}`
                                                     )
                                                 }
                                             >
-                                                Detalle del servicio
+                                                ⋮
                                             </button>
                                             <button
                                                 type='button'
@@ -489,8 +517,8 @@ const ContractsComponent = () => {
                                                 {expandedActive[
                                                     service.serviceId
                                                 ]
-                                                    ? 'Ocultar asignados'
-                                                    : 'Ver empleados asignados'}
+                                                    ? 'Ocultar turnos'
+                                                    : 'Ver turnos abiertos'}
                                             </button>
                                             <button
                                                 type='button'
@@ -541,8 +569,12 @@ const ContractsComponent = () => {
 
                                             {expandedActive[service.serviceId] && (
                                         <div className='contracts-active-employees'>
-                                            {service.activeEmployees.length ? (
-                                                service.activeEmployees.map(
+                                            {activeShiftLoading[service.serviceId] ? (
+                                                <p className='contracts-loading'>
+                                                    Cargando turnos abiertos...
+                                                </p>
+                                            ) : (activeShifts[service.serviceId] || []).length ? (
+                                                activeShifts[service.serviceId].map(
                                                     (employee) => (
                                                         <div
                                                             key={
@@ -557,14 +589,14 @@ const ContractsComponent = () => {
                                                                 {employee.lastName}
                                                             </span>
                                                             <span>
-                                                                Asignado
+                                                                Turno abierto
                                                             </span>
                                                         </div>
                                                     )
                                                 )
                                     ) : (
                                         <p className='contracts-loading'>
-                                            Sin empleados asignados.
+                                            Sin turnos abiertos.
                                         </p>
                                     )}
                                 </div>

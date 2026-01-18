@@ -7,6 +7,7 @@ import listEmployeeServiceController from './listEmployeeServiceController.js';
 import editServiceController from './editServiceController.js';
 import validateServiceController from './validateServiceController.js';
 import listInProgressServicesController from './listInProgressServicesController.js';
+import listActiveServiceShiftsController from './listActiveServiceShiftsController.js';
 import updateServiceScheduleImageController from './updateServiceScheduleImageController.js';
 import updateServiceStatusController from './updateServiceStatusController.js';
 
@@ -20,6 +21,7 @@ export {
   editServiceController,
   validateServiceController,
   listInProgressServicesController,
+  listActiveServiceShiftsController,
   updateServiceScheduleImageController,
   updateServiceStatusController,
 };

@@ -168,6 +168,18 @@
     border: 1px solid #e2e8f0;
 }
 
+.service-detail-employee--active {
+    align-items: center;
+}
+
+.service-detail-active-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+}
+
 .service-detail-employee p {
     margin-top: 4px;
     color: #475569;
