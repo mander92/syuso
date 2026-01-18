@@ -310,12 +310,40 @@
     background: #ffffff;
     border-radius: 12px;
     padding: 16px;
+    padding-top: 52px;
     border: 1px solid #e5e7eb;
     box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
     display: flex;
     flex-direction: column;
     gap: 12px;
     position: relative;
+}
+
+.contracts-active-card-top {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    pointer-events: none;
+}
+
+.contracts-active-top-link,
+.contracts-active-top-placeholder {
+    pointer-events: auto;
+}
+
+.contracts-active-top-link {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0f172a;
+    text-decoration: underline;
+}
+
+.contracts-active-card-top .contracts-btn--ellipsis {
+    pointer-events: auto;
 }
 
 .contracts-active-card-row {
@@ -343,11 +371,13 @@
 }
 
 .contracts-btn--ellipsis {
-    width: 40px;
-    min-width: 40px;
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
     padding: 0;
-    font-size: 22px;
+    font-size: 18px;
     line-height: 1;
+    border-radius: 999px;
 }
 
 .contracts-upload {

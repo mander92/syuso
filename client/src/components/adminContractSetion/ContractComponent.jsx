@@ -13,7 +13,6 @@ import {
 } from '../../services/serviceService.js';
 import { fetchDelegations } from '../../services/delegationService.js';
 import CalendarComponent from '../calendarComponent/CalendarComponent.jsx';
-import NfcTagsManager from '../nfcTags/NfcTagsManager.jsx';
 import toast from 'react-hot-toast';
 import './ContractsComponent.css';
 
@@ -37,7 +36,6 @@ const ContractsComponent = () => {
     const [expandedActive, setExpandedActive] = useState({});
     const [activeShifts, setActiveShifts] = useState({});
     const [activeShiftLoading, setActiveShiftLoading] = useState({});
-    const [expandedNfc, setExpandedNfc] = useState({});
     const [loading, setLoading] = useState(false);
 
     const handleToggleLegend = (e) => {
@@ -238,12 +236,6 @@ const ContractsComponent = () => {
         }
     };
 
-    const handleToggleNfc = (serviceId) => {
-        setExpandedNfc((prev) => ({
-            ...prev,
-            [serviceId]: !prev[serviceId],
-        }));
-    };
 
     const handleScheduleUpload = async (serviceId, file) => {
         if (!file) return;
@@ -480,6 +472,32 @@ const ContractsComponent = () => {
                                     className='contracts-active-card'
                                 >
                                     <div className='contracts-active-card-row'>
+                                        <div className='contracts-active-card-top'>
+                                            {service.scheduleImage ? (
+                                                <a
+                                                    className='contracts-active-top-link'
+                                                    href={`${import.meta.env.VITE_API_URL}/uploads/${service.scheduleImage}`}
+                                                    target='_blank'
+                                                    rel='noreferrer'
+                                                >
+                                                    Ver cuadrante actual
+                                                </a>
+                                            ) : (
+                                                <span className='contracts-active-top-placeholder' />
+                                            )}
+                                            <button
+                                                type='button'
+                                                className='contracts-btn contracts-btn--ghost contracts-btn--ellipsis'
+                                                aria-label='Detalle del servicio'
+                                                onClick={() =>
+                                                    navigate(
+                                                        `/services/${service.serviceId}`
+                                                    )
+                                                }
+                                            >
+                                                ...
+                                            </button>
+                                        </div>
                                         <div>
                                             <h3>
                                                 {service.name || service.type}
@@ -498,18 +516,6 @@ const ContractsComponent = () => {
                                         <div className='contracts-active-actions'>
                                             <button
                                                 type='button'
-                                                className='contracts-btn contracts-btn--ghost contracts-btn--ellipsis'
-                                                aria-label='Detalle del servicio'
-                                                onClick={() =>
-                                                    navigate(
-                                                        `/services/${service.serviceId}`
-                                                    )
-                                                }
-                                            >
-                                                ⋮
-                                            </button>
-                                            <button
-                                                type='button'
                                                 className='contracts-btn'
                                                 onClick={() =>
                                                     handleToggleActive(
@@ -522,19 +528,6 @@ const ContractsComponent = () => {
                                                 ]
                                                     ? 'Ocultar turnos'
                                                     : 'Ver turnos abiertos'}
-                                            </button>
-                                            <button
-                                                type='button'
-                                                className='contracts-btn contracts-btn--ghost'
-                                                onClick={() =>
-                                                    handleToggleNfc(
-                                                        service.serviceId
-                                                    )
-                                                }
-                                            >
-                                                {expandedNfc[service.serviceId]
-                                                    ? 'Ocultar NFC'
-                                                    : 'Gestionar NFC'}
                                             </button>
                                             <label className='contracts-upload contracts-btn contracts-btn--ghost'>
                                                 Subir cuadrante
@@ -557,18 +550,6 @@ const ContractsComponent = () => {
                                             </label>
                                         </div>
                                     </div>
-
-                                    {service.scheduleImage && (
-                                        <div className='contracts-schedule-preview'>
-                                            <a
-                                                href={`${import.meta.env.VITE_API_URL}/uploads/${service.scheduleImage}`}
-                                                target='_blank'
-                                                rel='noreferrer'
-                                            >
-                                                Ver cuadrante actual
-                                            </a>
-                                        </div>
-                                    )}
 
                                             {expandedActive[service.serviceId] && (
                                         <div className='contracts-active-employees'>
@@ -602,14 +583,6 @@ const ContractsComponent = () => {
                                             Sin turnos abiertos.
                                         </p>
                                     )}
-                                </div>
-                            )}
-
-                            {expandedNfc[service.serviceId] && (
-                                <div className='contracts-active-nfc'>
-                                    <NfcTagsManager
-                                        serviceId={service.serviceId}
-                                    />
                                 </div>
                             )}
 
