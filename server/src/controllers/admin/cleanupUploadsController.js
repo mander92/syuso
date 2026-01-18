@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 
 import { UPLOADS_DIR } from '../../../env.js';
+import getPool from '../../db/getPool.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 
 const directoriesByType = {
@@ -14,6 +15,18 @@ const directoriesByType = {
     schedules: ['services', 'schedules'],
     documents: ['documents'],
     cv: ['cv'],
+};
+
+const cleanupChatReads = async (beforeDate) => {
+    const pool = await getPool();
+    const [result] = await pool.query(
+        `
+        DELETE FROM serviceChatReads
+        WHERE lastReadAt < ?
+        `,
+        [beforeDate]
+    );
+    return { deletedCount: result.affectedRows || 0, deletedBytes: 0 };
 };
 
 const walkAndDelete = async (rootPath, beforeDate) => {
@@ -61,6 +74,20 @@ const cleanupUploadsController = async (req, res, next) => {
         const results = [];
 
         for (const entry of types) {
+            if (entry === 'chatReads') {
+                const { deletedCount, deletedBytes } = await cleanupChatReads(
+                    parsedDate
+                );
+                totalDeleted += deletedCount;
+                totalBytes += deletedBytes;
+                results.push({
+                    type: entry,
+                    deleted: deletedCount,
+                    bytes: deletedBytes,
+                });
+                continue;
+            }
+
             const relative = directoriesByType[entry];
             if (!relative) {
                 generateErrorUtil('Tipo no soportado', 400);

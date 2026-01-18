@@ -221,8 +221,8 @@ const initDb = async () => {
                 serviceId CHAR(36) NOT NULL,
                 lastReadAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (userId, serviceId),
-                FOREIGN KEY (userId) REFERENCES users(id),
-                FOREIGN KEY (serviceId) REFERENCES services(id)
+                FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (serviceId) REFERENCES services(id) ON DELETE CASCADE
             )
             `
         );

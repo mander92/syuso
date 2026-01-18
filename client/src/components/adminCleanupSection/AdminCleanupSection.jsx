@@ -12,6 +12,7 @@ const cleanupOptions = [
     { value: 'workReportsSignatures', label: 'Firmas partes' },
     { value: 'workReportsDrafts', label: 'Borradores partes' },
     { value: 'serviceChat', label: 'Adjuntos chat' },
+    { value: 'chatReads', label: 'Lecturas chat' },
     { value: 'schedules', label: 'Cuadrantes' },
     { value: 'documents', label: 'Documentos Excel' },
     { value: 'cv', label: 'CVs' },
