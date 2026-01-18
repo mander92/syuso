@@ -7,6 +7,7 @@ import {
     fetchAllServicesServices,
     fetchEmployeeAllServicesServices,
 } from '../services/serviceService.js';
+import { fetchServiceChatUnreadCounts } from '../services/serviceChatService.js';
 import { getChatSocket } from '../services/chatSocket.js';
 
 const ChatNotificationsContext = createContext({
@@ -121,6 +122,22 @@ export const ChatNotificationsProvider = ({ children }) => {
             // ignore storage errors
         }
     }, [storageKey]);
+
+    useEffect(() => {
+        if (!authToken || !user) return;
+        if (user.role === 'client') return;
+
+        const loadUnread = async () => {
+            try {
+                const data = await fetchServiceChatUnreadCounts(authToken);
+                setUnreadByService(data?.counts || {});
+            } catch {
+                // ignore errors to avoid blocking
+            }
+        };
+
+        loadUnread();
+    }, [authToken, user]);
 
     useEffect(() => {
         if (!storageKey) return;

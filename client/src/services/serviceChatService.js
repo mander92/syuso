@@ -67,3 +67,19 @@ export const uploadServiceChatImage = async (serviceId, authToken, file) => {
 
     return body.data;
 };
+
+export const fetchServiceChatUnreadCounts = async (authToken) => {
+    const res = await fetch(`${VITE_API_URL}/services/chat/unread`, {
+        headers: {
+            Authorization: authToken,
+        },
+    });
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data || { counts: {}, total: 0 };
+};

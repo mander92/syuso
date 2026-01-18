@@ -19,7 +19,7 @@ const initDb = async () => {
 
         await pool.query(
             `
-            DROP TABLE IF EXISTS serviceNfcTagLogs, workReportIncidentPhotos, workReportPhotos, workReportIncidents, workReportDrafts, workReports, serviceChatMessages, personsAssigned, serviceNfcTags, shiftRecords, adminDelegations, delegations, services, typeOfServices, users, addresses, consulting_requests, job_applications
+            DROP TABLE IF EXISTS serviceNfcTagLogs, workReportIncidentPhotos, workReportPhotos, workReportIncidents, workReportDrafts, workReports, serviceChatMessages, serviceChatReads, personsAssigned, serviceNfcTags, shiftRecords, adminDelegations, delegations, services, typeOfServices, users, addresses, consulting_requests, job_applications
             `
         );
 
@@ -213,6 +213,21 @@ const initDb = async () => {
         );
 
         console.log('serviceChatMessages creada');
+
+        await pool.query(
+            `
+            CREATE TABLE IF NOT EXISTS serviceChatReads (
+                userId CHAR(36) NOT NULL,
+                serviceId CHAR(36) NOT NULL,
+                lastReadAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (userId, serviceId),
+                FOREIGN KEY (userId) REFERENCES users(id),
+                FOREIGN KEY (serviceId) REFERENCES services(id)
+            )
+            `
+        );
+
+        console.log('serviceChatReads creada');
 
         await pool.query(
             `

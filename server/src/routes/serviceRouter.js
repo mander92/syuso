@@ -26,6 +26,7 @@ import listServiceChatMessagesController from '../controllers/serviceChat/listSe
 import createServiceChatMessageController from '../controllers/serviceChat/createServiceChatMessageController.js';
 import listServiceChatMembersController from '../controllers/serviceChat/listServiceChatMembersController.js';
 import uploadServiceChatImageController from '../controllers/serviceChat/uploadServiceChatImageController.js';
+import listServiceChatUnreadCountsController from '../controllers/serviceChat/listServiceChatUnreadCountsController.js';
 import listServiceNfcTagsController from '../controllers/nfcTags/listServiceNfcTagsController.js';
 import createServiceNfcTagController from '../controllers/nfcTags/createServiceNfcTagController.js';
 import deleteServiceNfcTagController from '../controllers/nfcTags/deleteServiceNfcTagController.js';
@@ -73,6 +74,12 @@ router.get(
     authUser,
     serviceExists,
     listServiceChatMembersController
+);
+
+router.get(
+    '/services/chat/unread',
+    authUser,
+    listServiceChatUnreadCountsController
 );
 
 router.post(
