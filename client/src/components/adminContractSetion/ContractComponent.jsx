@@ -484,7 +484,7 @@ const ContractsComponent = () => {
                                                     service.serviceId
                                                 ]
                                                     ? 'Ocultar turnos'
-                                                    : 'Ver turnos abiertos'}
+                                                    : 'Turnos abiertos'}
                                             </button>
                                             <label className='contracts-upload contracts-btn contracts-btn--ghost'>
                                                 Subir cuadrante
