@@ -22,6 +22,9 @@ export const ChatNotificationsProvider = ({ children }) => {
     const [services, setServices] = useState([]);
     const [unreadByService, setUnreadByService] = useState({});
     const joinedRooms = useRef(new Set());
+    const storageKey = user?.id
+        ? `syuso_chat_unread_${user.id}`
+        : null;
 
     const socket = useMemo(
         () => getChatSocket(authToken),
@@ -93,6 +96,7 @@ export const ChatNotificationsProvider = ({ children }) => {
     }, [authToken, user]);
 
     useEffect(() => {
+        if (!serviceIds.length) return;
         setUnreadByService((prev) => {
             const next = {};
             serviceIds.forEach((serviceId) => {
@@ -103,6 +107,32 @@ export const ChatNotificationsProvider = ({ children }) => {
             return next;
         });
     }, [serviceIds]);
+
+    useEffect(() => {
+        if (!storageKey) return;
+        try {
+            const raw = localStorage.getItem(storageKey);
+            if (!raw) return;
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === 'object') {
+                setUnreadByService(parsed);
+            }
+        } catch {
+            // ignore storage errors
+        }
+    }, [storageKey]);
+
+    useEffect(() => {
+        if (!storageKey) return;
+        try {
+            localStorage.setItem(
+                storageKey,
+                JSON.stringify(unreadByService || {})
+            );
+        } catch {
+            // ignore storage errors
+        }
+    }, [storageKey, unreadByService]);
 
     useEffect(() => {
         if (!socket || !user) return;
