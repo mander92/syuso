@@ -54,7 +54,6 @@ const endShiftRecordService = async (
     }
 
     const shiftId = shift.id;
-    const targetServiceId = serviceId || shift.serviceId;
 
     // 2) Cerrar el turno. La condición "AND clockOut IS NULL" evita carreras:
     const [result] = await pool.query(
@@ -72,17 +71,6 @@ const endShiftRecordService = async (
     }
 
     // 3) Marcar el servicio como completado (si aplica a tu lógica de negocio)
-    if (targetServiceId) {
-        await pool.query(
-            `
-          UPDATE services
-          SET status = 'completed'
-          WHERE id = ?
-        `,
-            [targetServiceId]
-        );
-    }
-
     return;
 
 };

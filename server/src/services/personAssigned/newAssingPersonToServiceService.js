@@ -1,5 +1,4 @@
 import { v4 as uuid } from 'uuid';
-import { CLIENT_URL } from '../../../env.js';;
 import getPool from '../../db/getPool.js';
 import Randomstring from 'randomstring';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
@@ -88,63 +87,24 @@ const newAssingPersonToServiceService = async (employeeId, serviceId) => {
     sendMail(serviceInfo[0].firstName, serviceInfo[0].email, emailSubjectEmployee, emailBodyEmployee);
 
 
-    const [verifyStatus] = await pool.query(`
-        SELECT status FROM services WHERE id = ?
-        `, [serviceId]);
+    const [data] = await pool.query(
+        `
+        SELECT pa.pin, s.status,
+        t.type, t.city AS province, s.hours, s.startDateTime, s.comments, u.email, u.firstName, u.lastName, u.phone
+        FROM users u
+        INNER JOIN personsAssigned pa
+        ON u.id = pa.employeeId
+        INNER JOIN services s
+        ON s.id = pa.serviceId
+        INNER JOIN typeOfServices t
+        ON s.typeOfServicesId = t.id
+        WHERE u.id = ? AND s.id = ?
+    `,
+        [employeeId, serviceId]
+    );
 
-    if (verifyStatus[0].status === 'pending') {
-        await pool.query(`
-            UPDATE services SET status = 'confirmed' WHERE id = ?
-            `, [serviceId]);
-
-        const [pedido] = await pool.query(
-            `
-                SELECT s.status,
-                t.type, t.city AS province, s.validationCode, s.startDateTime, a.address, a.postCode, a.city, u.email, u.firstName
-                FROM addresses a
-                INNER JOIN services s
-                ON a.id = s.addressId
-                INNER JOIN users u
-                ON u.id = s.clientId
-                INNER JOIN typeOfServices t
-                ON s.typeOfServicesId = t.id
-                WHERE s.id = ? AND s.deletedAt IS NULL
-                `,
-            [serviceId]
-        );
-
-        const localDateTime = new Date(pedido[0].startDateTime).toLocaleString();
-
-        const emailSubjectClient = `Su Servicio ha sido aceptado`;
-
-        const emailBodyClient = `
-            <html>
-                <body>
-                    <table bgcolor="#3c3c3c" width="670" border="0" cellspacing="0" cellpadding="0" align="center" style="margin: 0 auto" > <tbody> <tr> <td> <table bgcolor="#3c3c3c" width="670" border="0" cellspacing="0" cellpadding="0" align="left" > <tbody> <tr> <td align="left" style=" padding: 20px 40px; color: #fff; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; " > <p style=" margin: 10px 0 20px; font-size: 35px; font-weight: bold; color: #fff;" >  Syuso </p> <p style="margin: 0 0 15px; font-size: 20px; color: #fff;"> Resumen de su pedido </p> <p style="margin: 0 0 10px; font-size: 16px; color: #fff;"> Tipo De Servicio: ${pedido[0].type} en ${pedido[0].province} </p> <p style="margin: 0 0 10px; font-size: 16px; color: #fff;">El ${localDateTime} en Calle: ${pedido[0].address}, ${pedido[0].postCode}, ${pedido[0].city} </p>   <br /> <p style="margin: 50px 0 2px; color: #fff;"> Gracias por confiar en Syuso. </p> <p style="margin: 0 0 10px; color: #fff;">&copy; Syuso ${anioactual}</p> </td> </tr> </tbody> </table> </td> </tr> </tbody> </table>
-                </body>
-            </html>
-        `;
-
-        sendMail(pedido[0].name, pedido[0].email, emailSubjectClient, emailBodyClient);
-
-        const [data] = await pool.query(
-            `
-            SELECT pa.pin, s.status,
-            t.type, t.city AS province, s.hours, s.startDateTime, s.comments, u.email, u.firstName, u.lastName, u.phone
-            FROM users u
-            INNER JOIN personsAssigned pa
-            ON u.id = pa.employeeId
-            INNER JOIN services s
-            ON s.id = pa.serviceId
-            INNER JOIN typeOfServices t
-            ON s.typeOfServicesId = t.id
-            WHERE u.id = ? AND s.id = ?
-        `,
-            [employeeId, serviceId]
-        );
-
-        return data;
-    };
+    return data;
 };
 
 export default newAssingPersonToServiceService
+
