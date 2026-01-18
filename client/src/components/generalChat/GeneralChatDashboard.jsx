@@ -374,7 +374,6 @@ const GeneralChatDashboard = () => {
                                     chatName={chat.name}
                                     chatType={chat.type}
                                     compact
-                                    manageRoom={false}
                                 />
                             )}
                         </div>
