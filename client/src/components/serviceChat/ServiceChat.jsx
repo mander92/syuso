@@ -100,7 +100,18 @@ const ServiceChat = ({
         if (!socket || !serviceId) return;
 
         setConnected(socket.connected);
-        const handleConnect = () => setConnected(true);
+        const joinRoom = () => {
+            if (!manageRoom) return;
+            socket.emit('chat:join', { serviceId }, (response) => {
+                if (response?.ok === false) {
+                    toast.error(response.message || 'No se pudo unir al chat');
+                }
+            });
+        };
+        const handleConnect = () => {
+            setConnected(true);
+            joinRoom();
+        };
         const handleDisconnect = () => setConnected(false);
         const handleMessage = (newMessage) => {
             if (newMessage?.serviceId !== serviceId) return;
@@ -129,13 +140,7 @@ const ServiceChat = ({
         socket.on('chat:clear', handleClear);
         socket.on('chat:delete', handleDelete);
 
-        if (manageRoom) {
-            socket.emit('chat:join', { serviceId }, (response) => {
-                if (response?.ok === false) {
-                    toast.error(response.message || 'No se pudo unir al chat');
-                }
-            });
-        }
+        joinRoom();
 
         return () => {
             if (manageRoom) {

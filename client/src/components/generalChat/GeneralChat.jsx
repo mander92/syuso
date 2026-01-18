@@ -63,7 +63,18 @@ const GeneralChat = ({ chatId, chatName, chatType, compact = false, manageRoom =
         if (!socket || !chatId) return;
 
         setConnected(socket.connected);
-        const handleConnect = () => setConnected(true);
+        const joinRoom = () => {
+            if (!manageRoom) return;
+            socket.emit('generalChat:join', { chatId }, (response) => {
+                if (response?.ok === false) {
+                    toast.error(response.message || 'No se pudo unir al chat');
+                }
+            });
+        };
+        const handleConnect = () => {
+            setConnected(true);
+            joinRoom();
+        };
         const handleDisconnect = () => setConnected(false);
         const handleMessage = (newMessage) => {
             if (!newMessage?.chatId) return;
@@ -75,13 +86,7 @@ const GeneralChat = ({ chatId, chatName, chatType, compact = false, manageRoom =
         socket.on('disconnect', handleDisconnect);
         socket.on('generalChat:message', handleMessage);
 
-        if (manageRoom) {
-            socket.emit('generalChat:join', { chatId }, (response) => {
-                if (response?.ok === false) {
-                    toast.error(response.message || 'No se pudo unir al chat');
-                }
-            });
-        }
+        joinRoom();
 
         return () => {
             if (manageRoom) {

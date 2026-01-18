@@ -284,6 +284,23 @@ export const ChatNotificationsProvider = ({ children }) => {
             joinedGeneralRooms.current.add(chatId);
         });
 
+        const joinRooms = () => {
+            joinServiceIds.forEach((serviceId) => {
+                if (joinedServiceRooms.current.has(serviceId)) return;
+                socket.emit('chat:join', { serviceId });
+                joinedServiceRooms.current.add(serviceId);
+            });
+            joinGeneralChatIds.forEach((chatId) => {
+                if (joinedGeneralRooms.current.has(chatId)) return;
+                socket.emit('generalChat:join', { chatId });
+                joinedGeneralRooms.current.add(chatId);
+            });
+        };
+
+        const handleConnect = () => {
+            joinRooms();
+        };
+
         const handleMessage = (message) => {
             if (!message?.serviceId) return;
             if (message.userId === user.id) return;
@@ -316,10 +333,12 @@ export const ChatNotificationsProvider = ({ children }) => {
             });
         };
 
+        socket.on('connect', handleConnect);
         socket.on('chat:message', handleMessage);
         socket.on('generalChat:message', handleGeneralMessage);
 
         return () => {
+            socket.off('connect', handleConnect);
             socket.off('chat:message', handleMessage);
             socket.off('generalChat:message', handleGeneralMessage);
             joinServiceIds.forEach((serviceId) => {
