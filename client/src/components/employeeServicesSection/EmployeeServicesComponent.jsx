@@ -367,28 +367,25 @@ const EmployeeServicesComponent = () => {
                                                     : '+'}
                                             </button>
                                         </div>
-                                        {expandedAddress[serviceId] && (
+                                        {service.locationLink ? (
                                             <p>
-                                                {service.locationLink ? (
-                                                    <>
-                                                        Ubicacion:{' '}
-                                                        <a
-                                                            href={service.locationLink}
-                                                            target='_blank'
-                                                            rel='noreferrer'
-                                                        >
-                                                            Ver ubicacion
-                                                        </a>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        Direccion:{' '}
-                                                        {service.address},{' '}
-                                                        {service.city}
-                                                    </>
-                                                )}
+                                                Ubicacion:{' '}
+                                                <a
+                                                    href={service.locationLink}
+                                                    target='_blank'
+                                                    rel='noreferrer'
+                                                >
+                                                    Ver ubicacion
+                                                </a>
                                             </p>
-                                        )}
+                                        ) : null}
+                                        {expandedAddress[serviceId] &&
+                                        !service.locationLink ? (
+                                            <p>
+                                                Direccion: {service.address},{' '}
+                                                {service.city}
+                                            </p>
+                                        ) : null}
                                     </div>
                                     <div className='employee-card-actions'>
                                         <button
