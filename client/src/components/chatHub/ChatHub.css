@@ -35,7 +35,7 @@
 }
 
 .chat-hub-tab--active {
-    background: #0f172a;
+    background: var(--color-primary);
     color: #ffffff;
     box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
 }
@@ -70,5 +70,23 @@
     .chat-hub-tab {
         flex: 1;
         text-align: center;
+    }
+}
+
+@media (hover: none) {
+    .chat-hub-tab:hover {
+        background: transparent;
+    }
+
+    .chat-hub-tab:active,
+    .chat-hub-tab:focus {
+        background: transparent;
+        color: #334155;
+    }
+
+    .chat-hub-tab--active:active,
+    .chat-hub-tab--active:focus {
+        background: var(--color-primary);
+        color: #ffffff;
     }
 }
