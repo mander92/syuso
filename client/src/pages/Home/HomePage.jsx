@@ -215,7 +215,7 @@ export default function Home() {
                 </div>
                 <div className='home-cta-actions'>
                     {/* CONTACTAR → LLAMADA DIRECTA */}
-                    <a href='tel:+34644185486'>
+                    <a href='tel:+34621008448'>
                         <Button variant='btn btn-primary'>
                             Contactar ahora
                         </Button>

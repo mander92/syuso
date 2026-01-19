@@ -109,6 +109,13 @@
     transform: translateX(2px);
 }
 
+@media (hover: none) {
+    .dashboard-navitem:hover {
+        background-color: transparent;
+        transform: none;
+    }
+}
+
 .dashboard-navitem--active {
     background-color: #f9fafb;
     color: #111827;

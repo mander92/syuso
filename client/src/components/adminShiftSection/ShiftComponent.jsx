@@ -34,6 +34,7 @@ const ShiftComponent = () => {
     const [loading, setLoading] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
     const [locationPage, setLocationPage] = useState(1);
+    const [locationMode, setLocationMode] = useState('shifts');
 
     const locationsPerPage = 10;
 
@@ -129,7 +130,15 @@ const ShiftComponent = () => {
 
     useEffect(() => {
         setLocationPage(1);
-    }, [serviceName, employeeId, startDate, endDate, personSearch, details]);
+    }, [
+        serviceName,
+        employeeId,
+        startDate,
+        endDate,
+        personSearch,
+        locationMode,
+        details,
+    ]);
 
     const handleReset = (e) => {
         e.preventDefault();
@@ -140,6 +149,7 @@ const ShiftComponent = () => {
         setDelegationId('');
         setStartDate('');
         setEndDate('');
+        setLocationMode('shifts');
     };
 
     const buildParams = () => {
@@ -246,6 +256,11 @@ const ShiftComponent = () => {
 
         return details
             .filter((record) => {
+                if (locationMode === 'punches') {
+                    if (!record.clockIn && !record.clockOut) {
+                        return false;
+                    }
+                }
                 if (serviceName && record.serviceName !== serviceName) {
                     return false;
                 }
@@ -286,6 +301,7 @@ const ShiftComponent = () => {
         startDate,
         endDate,
         personSearch,
+        locationMode,
     ]);
 
     const totalLocationPages = Math.max(
@@ -460,6 +476,13 @@ const ShiftComponent = () => {
                 <div className='shift-location-card'>
                     <h2>Geolocalizaciones</h2>
                     <div className='shift-location-filters'>
+                        <select
+                            value={locationMode}
+                            onChange={(e) => setLocationMode(e.target.value)}
+                        >
+                            <option value='shifts'>Turnos</option>
+                            <option value='punches'>Picadas</option>
+                        </select>
                         <select
                             value={serviceName}
                             onChange={(e) => setServiceName(e.target.value)}

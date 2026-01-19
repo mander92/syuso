@@ -100,7 +100,6 @@ const EmployeeServicesComponent = () => {
     const { resetServiceUnread } = useChatNotifications();
 
     const [services, setServices] = useState([]);
-    const [status, setStatus] = useState('');
     const [type, setType] = useState('');
     const [openShifts, setOpenShifts] = useState({});
     const [reportByService, setReportByService] = useState({});
@@ -119,8 +118,7 @@ const EmployeeServicesComponent = () => {
             try {
                 setLoading(true);
                 const params = new URLSearchParams();
-                if (status) params.append('status', status);
-                if (type) params.append('type', type);
+                if (type) params.append('name', type);
 
                 const data = await fetchEmployeeAllServicesServices(
                     params.toString(),
@@ -138,7 +136,7 @@ const EmployeeServicesComponent = () => {
         };
 
         loadServices();
-    }, [authToken, status, type]);
+    }, [authToken, type]);
 
     useEffect(() => {
         const loadOpenShifts = async () => {
@@ -168,7 +166,7 @@ const EmployeeServicesComponent = () => {
 
     const uniqueTypes = useMemo(
         () =>
-            [...new Set(services.map((item) => item.type))]
+            [...new Set(services.map((item) => item.name))]
                 .filter(Boolean)
                 .sort((a, b) => a.localeCompare(b)),
         [services]
@@ -346,22 +344,6 @@ const EmployeeServicesComponent = () => {
                     <p>Gestiona tus servicios y registra entradas y salidas.</p>
                 </div>
                 <form className='employee-services-filters'>
-                    <div className='employee-services-filter'>
-                        <label htmlFor='status'>Estado</label>
-                        <select
-                            id='status'
-                            value={status}
-                            onChange={(e) => setStatus(e.target.value)}
-                        >
-                            <option value=''>Todos</option>
-                            <option value='accepted'>Aceptado</option>
-                            <option value='canceled'>Cancelado</option>
-                            <option value='completed'>Completado</option>
-                            <option value='confirmed'>Confirmado</option>
-                            <option value='pending'>Pendiente</option>
-                            <option value='rejected'>Rechazado</option>
-                        </select>
-                    </div>
                     <div className='employee-services-filter'>
                         <label htmlFor='type'>Servicio</label>
                         <select

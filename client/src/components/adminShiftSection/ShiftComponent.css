@@ -217,6 +217,32 @@
     font-size: 0.9rem;
 }
 
+@media (max-width: 720px) {
+    .shift-filters {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+        align-items: start;
+    }
+
+    .shift-filter label {
+        margin-bottom: 0.2rem;
+        font-size: 0.75rem;
+    }
+
+    .shift-filter select,
+    .shift-filter input {
+        min-width: 0;
+        padding: 0.35rem 0.6rem;
+        font-size: 0.82rem;
+    }
+
+    .shift-btn {
+        padding: 0.35rem 0.7rem;
+        font-size: 0.75rem;
+    }
+}
+
 .shift-modal-overlay {
     position: fixed;
     inset: 0;

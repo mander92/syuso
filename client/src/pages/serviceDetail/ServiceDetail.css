@@ -69,6 +69,12 @@
     background: #020617;
 }
 
+@media (hover: none) {
+    .service-detail-menu button:hover {
+        background: #0f172a;
+    }
+}
+
 .service-detail-menu button.is-active {
     background: #1d4ed8;
 }
