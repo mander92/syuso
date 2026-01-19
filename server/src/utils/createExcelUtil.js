@@ -6,13 +6,25 @@ import { UPLOADS_DIR } from '../../env.js';
 const createExcelUtil = async (data, columns, fileName) => {
     try {
         const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('Sheet 1');
+        const isMultiSheet = Array.isArray(data) && data.length > 0 && data[0]?.rows;
 
-        worksheet.columns = columns;
-
-        data.forEach((row) => {
-            worksheet.addRow(row);
-        });
+        if (isMultiSheet) {
+            data.forEach((sheet) => {
+                const worksheet = workbook.addWorksheet(
+                    sheet.name || 'Sheet'
+                );
+                worksheet.columns = sheet.columns || [];
+                (sheet.rows || []).forEach((row) => {
+                    worksheet.addRow(row);
+                });
+            });
+        } else {
+            const worksheet = workbook.addWorksheet('Sheet 1');
+            worksheet.columns = columns;
+            (data || []).forEach((row) => {
+                worksheet.addRow(row);
+            });
+        }
 
         const directoryPath = path.resolve(`${UPLOADS_DIR}/documents`);
 

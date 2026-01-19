@@ -10,7 +10,6 @@ import {
 import {
     fetchShiftRecordsEmployee,
     fetchStartShiftRecord,
-    fetchEndShiftRecord,
 } from '../../services/shiftRecordService.js';
 import { createServiceNfcLog } from '../../services/nfcService.js';
 import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
@@ -102,7 +101,6 @@ const EmployeeServicesComponent = () => {
     const [services, setServices] = useState([]);
     const [type, setType] = useState('');
     const [openShifts, setOpenShifts] = useState({});
-    const [reportByService, setReportByService] = useState({});
     const [openChats, setOpenChats] = useState({});
     const [readingNfc, setReadingNfc] = useState({});
     const [expandedAddress, setExpandedAddress] = useState({});
@@ -145,15 +143,12 @@ const EmployeeServicesComponent = () => {
             try {
                 const data = await fetchShiftRecordsEmployee('', authToken);
                 const open = {};
-                const reports = {};
                 (data?.details || []).forEach((record) => {
                     if (!record.clockOut) {
                         open[record.serviceId] = record.id;
-                        reports[record.serviceId] = record.reportId || null;
                     }
                 });
                 setOpenShifts(open);
-                setReportByService(reports);
             } catch (error) {
                 toast.error(
                     error.message || 'No se pudieron cargar los turnos'
@@ -196,38 +191,6 @@ const EmployeeServicesComponent = () => {
             return;
         }
         navigate(`/shiftRecords/${shiftId}/report?serviceId=${serviceId}`);
-    };
-
-    const handleFinish = async (serviceId) => {
-        try {
-            const shiftId = openShifts[serviceId];
-            if (!shiftId) {
-                toast.error('No hay un turno abierto para este servicio');
-                return;
-            }
-            const location = await getLocation();
-            await fetchEndShiftRecord(
-                authToken,
-                shiftId,
-                serviceId,
-                user?.id,
-                location,
-                new Date().toISOString()
-            );
-            setOpenShifts((prev) => {
-                const next = { ...prev };
-                delete next[serviceId];
-                return next;
-            });
-            setReportByService((prev) => {
-                const next = { ...prev };
-                delete next[serviceId];
-                return next;
-            });
-            toast.success('Turno finalizado');
-        } catch (error) {
-            toast.error(error.message || 'No se pudo finalizar el servicio');
-        }
     };
 
     const toggleChat = (serviceId) => {
@@ -372,7 +335,7 @@ const EmployeeServicesComponent = () => {
                         const serviceId = service.serviceId || service.id;
                         if (!serviceId) return null;
                         const isOpen = Boolean(openShifts[serviceId]);
-                        const hasReport = Boolean(reportByService[serviceId]);
+                        const hasNfc = Number(service.nfcCount || 0) > 0;
                         return (
                             <li key={serviceId} className='employee-card'>
                                 <div className='employee-card-row'>
@@ -433,20 +396,6 @@ const EmployeeServicesComponent = () => {
                                                 Parte de trabajo
                                             </button>
                                         ) : null}
-                                        {isOpen ? (
-                                            <button
-                                                type='button'
-                                                className='employee-btn employee-btn--finish'
-                                                onClick={() =>
-                                                    handleFinish(
-                                                        serviceId
-                                                    )
-                                                }
-                                                disabled={!hasReport}
-                                            >
-                                                Finalizar turno
-                                            </button>
-                                        ) : null}
                                         <button
                                             type='button'
                                             className='employee-btn employee-btn--chat'
@@ -465,7 +414,7 @@ const EmployeeServicesComponent = () => {
                                                 </span>
                                             ) : null}
                                         </button>
-                                        {isOpen ? (
+                                        {isOpen && hasNfc ? (
                                             <button
                                                 type='button'
                                                 className='employee-btn employee-btn--nfc'

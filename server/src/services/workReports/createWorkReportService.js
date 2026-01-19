@@ -396,6 +396,27 @@ const createWorkReportService = async ({
     const normalizedReportDate = normalizeDate(reportData.reportDate);
     const normalizedIncidentStart = normalizeDateTime(reportData.incidentStart);
     const normalizedIncidentEnd = normalizeDateTime(reportData.incidentEnd);
+    const latitudeOut = Array.isArray(locationCoords)
+        ? locationCoords[0]
+        : null;
+    const longitudeOut = Array.isArray(locationCoords)
+        ? locationCoords[1]
+        : null;
+
+    await pool.query(
+        `
+        UPDATE shiftRecords
+        SET clockIn = ?, clockOut = ?, latitudeOut = ?, longitudeOut = ?
+        WHERE id = ?
+        `,
+        [
+            normalizedIncidentStart,
+            normalizedIncidentEnd,
+            latitudeOut,
+            longitudeOut,
+            shiftRecordId,
+        ]
+    );
 
     const svgPayload = {
         ...reportData,

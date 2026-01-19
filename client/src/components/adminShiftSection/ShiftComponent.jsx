@@ -520,6 +520,17 @@ const ShiftComponent = () => {
                                     row.latitudeIn && row.longitudeIn;
                                 const hasOut =
                                     row.latitudeOut && row.longitudeOut;
+                                const punchCoords = hasIn
+                                    ? {
+                                          lat: row.latitudeIn,
+                                          lng: row.longitudeIn,
+                                      }
+                                    : hasOut
+                                      ? {
+                                            lat: row.latitudeOut,
+                                            lng: row.longitudeOut,
+                                        }
+                                      : null;
                                 return (
                                     <div
                                         key={`${row.id}-${row.clockIn || 'na'}-${row.clockOut || 'na'}-${index}`}
@@ -537,27 +548,43 @@ const ShiftComponent = () => {
                                             </span>
                                         </div>
                                         <div className='shift-location-links'>
-                                            {hasIn ? (
-                                                <a
-                                                    href={`https://www.google.com/maps?q=${row.latitudeIn},${row.longitudeIn}`}
-                                                    target='_blank'
-                                                    rel='noreferrer'
-                                                >
-                                                    Ver entrada
-                                                </a>
+                                            {locationMode === 'punches' ? (
+                                                punchCoords ? (
+                                                    <a
+                                                        href={`https://www.google.com/maps?q=${punchCoords.lat},${punchCoords.lng}`}
+                                                        target='_blank'
+                                                        rel='noreferrer'
+                                                    >
+                                                        Ver ubicacion
+                                                    </a>
+                                                ) : (
+                                                    <span>Sin GPS</span>
+                                                )
                                             ) : (
-                                                <span>Entrada sin GPS</span>
-                                            )}
-                                            {hasOut ? (
-                                                <a
-                                                    href={`https://www.google.com/maps?q=${row.latitudeOut},${row.longitudeOut}`}
-                                                    target='_blank'
-                                                    rel='noreferrer'
-                                                >
-                                                    Ver salida
-                                                </a>
-                                            ) : (
-                                                <span>Salida sin GPS</span>
+                                                <>
+                                                    {hasIn ? (
+                                                        <a
+                                                            href={`https://www.google.com/maps?q=${row.latitudeIn},${row.longitudeIn}`}
+                                                            target='_blank'
+                                                            rel='noreferrer'
+                                                        >
+                                                            Ver entrada
+                                                        </a>
+                                                    ) : (
+                                                        <span>Entrada sin GPS</span>
+                                                    )}
+                                                    {hasOut ? (
+                                                        <a
+                                                            href={`https://www.google.com/maps?q=${row.latitudeOut},${row.longitudeOut}`}
+                                                            target='_blank'
+                                                            rel='noreferrer'
+                                                        >
+                                                            Ver salida
+                                                        </a>
+                                                    ) : (
+                                                        <span>Salida sin GPS</span>
+                                                    )}
+                                                </>
                                             )}
                                         </div>
                                     </div>

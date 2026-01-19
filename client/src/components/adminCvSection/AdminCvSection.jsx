@@ -12,18 +12,15 @@ const AdminCvSection = () => {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [loading, setLoading] = useState(false);
+    const [downloading, setDownloading] = useState(false);
     const [applications, setApplications] = useState([]);
+    const [preview, setPreview] = useState(null);
 
     const loadApplications = async () => {
         if (!authToken) return;
         try {
             setLoading(true);
-            const params = new URLSearchParams();
-            if (search) params.append('search', search.trim());
-            if (startDate && endDate) {
-                params.append('startDate', startDate);
-                params.append('endDate', endDate);
-            }
+            const params = buildQueryParams();
             const res = await fetch(
                 `${import.meta.env.VITE_API_URL}/jobs/applications?${params.toString()}`,
                 {
@@ -46,6 +43,63 @@ const AdminCvSection = () => {
         if (user?.role !== 'sudo') return;
         loadApplications();
     }, [authToken, user, search, startDate, endDate]);
+
+    const buildQueryParams = () => {
+        const params = new URLSearchParams();
+        if (search) params.append('search', search.trim());
+        if (startDate && endDate) {
+            params.append('startDate', startDate);
+            params.append('endDate', endDate);
+        }
+        return params;
+    };
+
+    const handleZipDownload = async () => {
+        if (!authToken) return;
+        try {
+            setDownloading(true);
+            const params = buildQueryParams();
+            const res = await fetch(
+                `${import.meta.env.VITE_API_URL}/jobs/applications/zip?${params.toString()}`,
+                {
+                    headers: { Authorization: authToken },
+                }
+            );
+            if (!res.ok) {
+                const body = await res.json().catch(() => ({}));
+                throw new Error(body.message || 'No se pudo descargar');
+            }
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `cvs_${Date.now()}.zip`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            toast.error(error.message || 'No se pudo descargar');
+        } finally {
+            setDownloading(false);
+        }
+    };
+
+    const openPreview = (item) => {
+        if (!item?.cvFile) return;
+        const fileUrl = `${import.meta.env.VITE_API_URL}/uploads/${item.cvFile}`;
+        const extension = item.cvFile.split('.').pop()?.toLowerCase();
+        const isPdf = extension === 'pdf';
+        const previewUrl = isPdf
+            ? fileUrl
+            : `https://docs.google.com/gview?url=${encodeURIComponent(
+                  fileUrl
+              )}&embedded=true`;
+        setPreview({
+            title: item.fullName || 'CV',
+            url: previewUrl,
+        });
+    };
 
     if (user?.role !== 'sudo') return null;
 
@@ -95,6 +149,14 @@ const AdminCvSection = () => {
                 >
                     {loading ? 'Cargando...' : 'Aplicar'}
                 </button>
+                <button
+                    type='button'
+                    className='cv-btn cv-btn--ghost'
+                    onClick={handleZipDownload}
+                    disabled={downloading || !applications.length}
+                >
+                    {downloading ? 'Descargando...' : 'Descargar zip'}
+                </button>
             </form>
 
             {loading ? (
@@ -116,6 +178,13 @@ const AdminCvSection = () => {
                                 </p>
                             </div>
                             <div className='cv-actions'>
+                                <button
+                                    type='button'
+                                    className='cv-btn'
+                                    onClick={() => openPreview(item)}
+                                >
+                                    Ver CV
+                                </button>
                                 <a
                                     className='cv-btn cv-btn--ghost'
                                     href={`${import.meta.env.VITE_API_URL}/uploads/${item.cvFile}`}
@@ -131,6 +200,30 @@ const AdminCvSection = () => {
             ) : (
                 <p className='cv-loading'>No hay CVs.</p>
             )}
+
+            {preview ? (
+                <div className='cv-preview-overlay'>
+                    <div className='cv-preview-modal'>
+                        <div className='cv-preview-header'>
+                            <h3>{preview.title}</h3>
+                            <button
+                                type='button'
+                                className='cv-btn cv-btn--ghost'
+                                onClick={() => setPreview(null)}
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                        <div className='cv-preview-frame'>
+                            <iframe
+                                title={preview.title}
+                                src={preview.url}
+                                frameBorder='0'
+                            />
+                        </div>
+                    </div>
+                </div>
+            ) : null}
         </section>
     );
 };

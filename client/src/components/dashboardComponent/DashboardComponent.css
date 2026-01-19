@@ -124,7 +124,13 @@
 @media (max-width: 720px) {
     .dashboard-navitem--active {
         background-color: #ffffff;
-        color: #1d4ed8;
+        color: var(--color-primary);
+    }
+
+    .dashboard-navitem:active,
+    .dashboard-navitem:focus {
+        background-color: #ffffff;
+        color: var(--color-primary);
     }
 }
 

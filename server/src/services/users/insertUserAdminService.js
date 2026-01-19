@@ -2,7 +2,7 @@
 import { v4 as uuid } from 'uuid';
 import getPool from '../../db/getPool.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
-import { SERVER_URL } from '../../../env.js';
+import { CLIENT_URL } from '../../../env.js';
 import randomstring from 'randomstring';
 import sendMail from '../../utils/sendBrevoMail.js';
 import bcrypt from 'bcrypt';
@@ -97,7 +97,7 @@ const insertAdminService = async (
                                                 </span>
                                             </p>
                                             <p>
-                                                <a href="${SERVER_URL}/password"
+                                                <a href="${CLIENT_URL}/recoverpassword"
                                                    style="display: inline-block; margin: 0 0 5px; padding: 10px 25px 15px; background-color: #008aff; font-size: 20px; color: #fff; width: auto; text-decoration: none; font-weight: bold;">
                                                     Cambiar mi contraseña
                                                 </a>

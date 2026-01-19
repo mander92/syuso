@@ -191,9 +191,6 @@ const WorkReport = () => {
 
                 setFormData((prev) => ({
                     ...prev,
-                    incidentStart: shiftDetail?.clockIn
-                        ? toLocalInputDateTime(shiftDetail.clockIn)
-                        : prev.incidentStart,
                     incidentEnd: shiftDetail?.clockOut
                         ? toLocalInputDateTime(shiftDetail.clockOut)
                         : prev.incidentEnd,
@@ -329,9 +326,6 @@ const WorkReport = () => {
             ...prev,
             folio,
             reportDate: startDate ? toLocalInputDate(startDate) : prev.reportDate,
-            incidentStart: startDate
-                ? toLocalInputDateTime(startDate)
-                : prev.incidentStart,
             incidentEnd: endDate
                 ? toLocalInputDateTime(endDate)
                 : prev.incidentEnd,

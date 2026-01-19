@@ -82,7 +82,13 @@
 @media (max-width: 720px) {
     .service-detail-menu button.is-active {
         background: #ffffff;
-        color: #1d4ed8;
+        color: var(--color-primary);
+    }
+
+    .service-detail-menu button:active,
+    .service-detail-menu button:focus {
+        background: #ffffff;
+        color: var(--color-primary);
     }
 }
 

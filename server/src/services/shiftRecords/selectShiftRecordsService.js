@@ -148,25 +148,67 @@ const selectShiftRecordsService = async (
     const data = { details: rowsDetails, totals: rowsTotal };
 
     if (generateExcel) {
-        const columns = [
-            { header: 'Nombre', key: 'firstName', width: 20 },
-            { header: 'Apellidos', key: 'lastName', width: 20 },
+        const detailRows = rowsDetails.map((row) => ({
+            firstName: row.firstName || '',
+            lastName: row.lastName || '',
+            serviceName: row.serviceName || '',
+            hoursWorked: row.hoursWorked ?? 0,
+            minutesWorked: row.minutesWorked ?? 0,
+        }));
 
+        const totalRows = rowsTotal.map((row) => {
+            const hours = Number(row.totalHoursWorked || 0);
+            const minutes = Number(row.totalMinutesWorked || 0);
+            const totalHours = (hours + minutes / 60).toFixed(2);
+            return {
+                firstName: row.firstName || '',
+                lastName: row.lastName || '',
+                totalHoursWorked: hours,
+                totalMinutesWorked: minutes,
+                totalHoursAdjusted: totalHours,
+            };
+        });
+
+        const sheets = [
             {
-                header: 'Total Horas',
-                key: 'totalHoursWorked',
-                width: 20,
+                name: 'Desglose',
+                columns: [
+                    { header: 'Nombre', key: 'firstName', width: 20 },
+                    { header: 'Apellidos', key: 'lastName', width: 20 },
+                    { header: 'Servicio', key: 'serviceName', width: 30 },
+                    { header: 'Horas', key: 'hoursWorked', width: 12 },
+                    { header: 'Minutos', key: 'minutesWorked', width: 12 },
+                ],
+                rows: detailRows,
             },
             {
-                header: 'Total Minutos',
-                key: 'totalMinutesWorked',
-                width: 20,
+                name: 'Totales',
+                columns: [
+                    { header: 'Nombre', key: 'firstName', width: 20 },
+                    { header: 'Apellidos', key: 'lastName', width: 20 },
+                    {
+                        header: 'Total Horas',
+                        key: 'totalHoursWorked',
+                        width: 14,
+                    },
+                    {
+                        header: 'Total Minutos',
+                        key: 'totalMinutesWorked',
+                        width: 16,
+                    },
+                    {
+                        header: 'Total Ajustado',
+                        key: 'totalHoursAdjusted',
+                        width: 16,
+                    },
+                ],
+                rows: totalRows,
             },
         ];
 
         const filePath = await createExcelUtil(
-            rowsTotal,
-            columns,
+            sheets,
+            null,
             'shiftRecords.xlsx'
         );
 

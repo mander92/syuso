@@ -1,6 +1,7 @@
 import express from 'express';
 import createJobApplicationController from '../controllers/jobs/createJobApplicationController.js';
 import listJobApplicationsController from '../controllers/jobs/listJobApplicationsController.js';
+import downloadJobApplicationsZipController from '../controllers/jobs/downloadJobApplicationsZipController.js';
 import authUser from '../middleware/authUser.js';
 import isSudo from '../middleware/isSudo.js';
 
@@ -12,6 +13,12 @@ router.get(
     authUser,
     isSudo,
     listJobApplicationsController
+);
+router.get(
+    '/jobs/applications/zip',
+    authUser,
+    isSudo,
+    downloadJobApplicationsZipController
 );
 
 export default router;
