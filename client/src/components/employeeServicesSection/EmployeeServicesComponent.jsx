@@ -367,23 +367,26 @@ const EmployeeServicesComponent = () => {
                                                     : '+'}
                                             </button>
                                         </div>
-                                        {service.locationLink ? (
+                                        {expandedAddress[serviceId] ? (
                                             <p>
-                                                Ubicacion:{' '}
-                                                <a
-                                                    href={service.locationLink}
-                                                    target='_blank'
-                                                    rel='noreferrer'
-                                                >
-                                                    Ver ubicacion
-                                                </a>
-                                            </p>
-                                        ) : null}
-                                        {expandedAddress[serviceId] &&
-                                        !service.locationLink ? (
-                                            <p>
-                                                Direccion: {service.address},{' '}
-                                                {service.city}
+                                                {service.locationLink ? (
+                                                    <>
+                                                        Ubicacion:{' '}
+                                                        <a
+                                                            href={service.locationLink}
+                                                            target='_blank'
+                                                            rel='noreferrer'
+                                                        >
+                                                            Ver ubicacion
+                                                        </a>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        Direccion:{' '}
+                                                        {service.address},{' '}
+                                                        {service.city}
+                                                    </>
+                                                )}
                                             </p>
                                         ) : null}
                                     </div>

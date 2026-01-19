@@ -446,4 +446,40 @@
         width: 100%;
         text-align: center;
     }
+
+    .service-detail-page {
+        padding: 16px 14px 40px;
+        overflow-x: hidden;
+    }
+
+    .service-detail-card {
+        margin: 0 auto;
+    }
+
+    .service-detail-section-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .service-detail-form-inline {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+    }
+
+    .service-detail-form-inline input {
+        width: 100%;
+    }
+
+    .service-detail-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .service-detail-row strong,
+    .service-detail-row a {
+        max-width: 100%;
+        text-align: left;
+        word-break: break-word;
+    }
 }
