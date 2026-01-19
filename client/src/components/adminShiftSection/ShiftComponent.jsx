@@ -8,6 +8,9 @@ import { fetchAllUsersServices } from '../../services/userService.js';
 import {
     fetchShiftRecordsAdmin,
     fetchShiftRecordsEmployee,
+    fetchShiftRecordDetail,
+    fetchUpdateShiftRecord,
+    fetchDeleteShiftRecord,
 } from '../../services/shiftRecordService.js';
 import { fetchDelegations } from '../../services/delegationService.js';
 import CalendarComponent from '../calendarComponent/CalendarComponent.jsx';
@@ -35,6 +38,10 @@ const ShiftComponent = () => {
     const [locationPage, setLocationPage] = useState(1);
     const [locationMode, setLocationMode] = useState('shifts');
     const [selectedShift, setSelectedShift] = useState(null);
+    const [modalLoading, setModalLoading] = useState(false);
+    const [modalSaving, setModalSaving] = useState(false);
+    const [modalClockIn, setModalClockIn] = useState('');
+    const [modalClockOut, setModalClockOut] = useState('');
 
     const locationsPerPage = 10;
 
@@ -86,36 +93,36 @@ const ShiftComponent = () => {
         loadDelegations();
     }, [authToken, isAdminLike]);
 
+    const loadShiftRecords = async () => {
+        if (!authToken || !user) return;
+
+        try {
+            setLoading(true);
+
+            const params = buildParams();
+
+            const data =
+                isAdminLike
+                    ? await fetchShiftRecordsAdmin(
+                          params.toString(),
+                          authToken
+                      )
+                    : await fetchShiftRecordsEmployee(
+                          params.toString(),
+                          authToken
+                      );
+
+            setDetails(data?.details || []);
+        } catch (error) {
+            toast.error(
+                error.message || 'No se pudieron cargar los turnos'
+            );
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const loadShiftRecords = async () => {
-            if (!authToken || !user) return;
-
-            try {
-                setLoading(true);
-
-                const params = buildParams();
-
-                const data =
-                    isAdminLike
-                        ? await fetchShiftRecordsAdmin(
-                              params.toString(),
-                              authToken
-                          )
-                        : await fetchShiftRecordsEmployee(
-                              params.toString(),
-                              authToken
-                          );
-
-                setDetails(data?.details || []);
-            } catch (error) {
-                toast.error(
-                    error.message || 'No se pudieron cargar los turnos'
-                );
-            } finally {
-                setLoading(false);
-            }
-        };
-
         loadShiftRecords();
     }, [
         authToken,
@@ -328,11 +335,99 @@ const ShiftComponent = () => {
 
     const handleSelectEvent = (event) => {
         if (!event?.shiftId || !isAdminLike) return;
+        const serviceNameLabel = event.serviceName || 'Servicio';
+        const employeeNameLabel = event.employeeName || 'Empleado';
         setSelectedShift({
             shiftId: event.shiftId,
-            serviceName: event.serviceName || 'Servicio',
-            employeeName: event.employeeName || 'Empleado',
+            serviceName: serviceNameLabel,
+            employeeName: employeeNameLabel,
         });
+        setModalLoading(true);
+        fetchShiftRecordDetail(event.shiftId, authToken)
+            .then((data) => {
+                setSelectedShift((prev) => ({
+                    ...prev,
+                    serviceName: data?.serviceName || prev?.serviceName,
+                    employeeName:
+                        data?.firstName && data?.lastName
+                            ? `${data.firstName} ${data.lastName}`.trim()
+                            : prev?.employeeName,
+                }));
+                setModalClockIn(
+                    data?.clockIn ? data.clockIn.slice(0, 16) : ''
+                );
+                setModalClockOut(
+                    data?.clockOut ? data.clockOut.slice(0, 16) : ''
+                );
+            })
+            .catch((error) => {
+                toast.error(
+                    error.message || 'No se pudo cargar el turno'
+                );
+                setSelectedShift(null);
+            })
+            .finally(() => {
+                setModalLoading(false);
+            });
+    };
+
+    const handleModalClose = () => {
+        setSelectedShift(null);
+        setModalClockIn('');
+        setModalClockOut('');
+    };
+
+    const handleModalSave = async (e) => {
+        e.preventDefault();
+        if (!selectedShift?.shiftId) return;
+        if (!modalClockIn || !modalClockOut) {
+            toast.error('Debes indicar entrada y salida');
+            return;
+        }
+
+        const normalizeDateTime = (value) => {
+            const [datePart, timePart] = value.split('T');
+            return `${datePart} ${timePart}:00`;
+        };
+
+        try {
+            setModalSaving(true);
+            const body = await fetchUpdateShiftRecord(
+                selectedShift.shiftId,
+                authToken,
+                normalizeDateTime(modalClockIn),
+                normalizeDateTime(modalClockOut)
+            );
+            toast.success(body.message || 'Turno actualizado');
+            await loadShiftRecords();
+            handleModalClose();
+        } catch (error) {
+            toast.error(error.message || 'No se pudo guardar el turno');
+        } finally {
+            setModalSaving(false);
+        }
+    };
+
+    const handleModalDelete = async () => {
+        if (!selectedShift?.shiftId) return;
+        if (!window.confirm('¿Seguro que quieres eliminar este turno?')) {
+            return;
+        }
+
+        try {
+            setModalSaving(true);
+            const body = await fetchDeleteShiftRecord(
+                selectedShift.shiftId,
+                authToken
+            );
+            toast.success(body.message || 'Turno eliminado');
+            await loadShiftRecords();
+            handleModalClose();
+        } catch (error) {
+            toast.error(error.message || 'No se pudo eliminar el turno');
+        } finally {
+            setModalSaving(false);
+        }
     };
 
     return (
@@ -635,15 +730,64 @@ const ShiftComponent = () => {
                         <h3>Turno</h3>
                         <p>Servicio: {selectedShift.serviceName}</p>
                         <p>Empleado: {selectedShift.employeeName}</p>
-                        <div className='shift-modal-actions'>
-                            <button
-                                type='button'
-                                className='shift-btn shift-btn--ghost'
-                                onClick={() => setSelectedShift(null)}
+                        {modalLoading ? (
+                            <p className='shift-loading'>
+                                Cargando turno...
+                            </p>
+                        ) : (
+                            <form
+                                className='shift-modal-form'
+                                onSubmit={handleModalSave}
                             >
-                                Cerrar
-                            </button>
-                        </div>
+                                <label htmlFor='modal-clock-in'>Entrada</label>
+                                <input
+                                    id='modal-clock-in'
+                                    type='datetime-local'
+                                    value={modalClockIn}
+                                    onChange={(e) =>
+                                        setModalClockIn(e.target.value)
+                                    }
+                                    required
+                                />
+                                <label htmlFor='modal-clock-out'>Salida</label>
+                                <input
+                                    id='modal-clock-out'
+                                    type='datetime-local'
+                                    value={modalClockOut}
+                                    onChange={(e) =>
+                                        setModalClockOut(e.target.value)
+                                    }
+                                    required
+                                />
+                                <div className='shift-modal-actions'>
+                                    <button
+                                        type='submit'
+                                        className='shift-btn'
+                                        disabled={modalSaving}
+                                    >
+                                        {modalSaving
+                                            ? 'Guardando...'
+                                            : 'Guardar cambios'}
+                                    </button>
+                                    <button
+                                        type='button'
+                                        className='shift-btn shift-btn--ghost'
+                                        onClick={handleModalClose}
+                                        disabled={modalSaving}
+                                    >
+                                        Cerrar
+                                    </button>
+                                    <button
+                                        type='button'
+                                        className='shift-btn shift-btn--danger'
+                                        onClick={handleModalDelete}
+                                        disabled={modalSaving}
+                                    >
+                                        Eliminar turno
+                                    </button>
+                                </div>
+                            </form>
+                        )}
                     </div>
                 </div>
             )}

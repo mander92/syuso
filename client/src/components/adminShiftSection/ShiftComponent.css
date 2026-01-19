@@ -273,9 +273,35 @@
     color: #475569;
 }
 
+.shift-modal-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.shift-modal-form label {
+    font-size: 0.85rem;
+    color: #475569;
+}
+
+.shift-modal-form input {
+    border-radius: 0.55rem;
+    border: 1px solid #e2e8f0;
+    padding: 0.45rem 0.7rem;
+    font-size: 0.9rem;
+    outline: none;
+    background-color: #ffffff;
+}
+
 .shift-modal-actions {
     display: flex;
     justify-content: flex-end;
     gap: 0.5rem;
     margin-top: 16px;
+}
+
+.shift-btn--danger {
+    background-color: #b91c1c;
+    color: #ffffff;
 }

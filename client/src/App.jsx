@@ -17,7 +17,6 @@ import Work from './pages/work/Work';
 import DashboardComponent from './components/dashboardComponent/DashboardComponent';
 import CreateContract from './pages/CreateContract/CreateContact';
 import ServiceDetail from './pages/serviceDetail/ServiceDetail';
-import ShiftDetail from './pages/ShiftDetail/ShiftDetail';
 import ShiftCreate from './pages/ShiftCreate/ShiftCreate';
 import WorkReport from './pages/WorkReport/WorkReport';
 
@@ -36,10 +35,6 @@ const App = () => {
                 />
                 <Route path='/recoverpassword' element={<RecoverPassword />} />
                 <Route path='/services/:serviceId' element={<ServiceDetail />} />
-                <Route
-                    path='/shiftRecords/:shiftRecordId'
-                    element={<ShiftDetail />}
-                />
                 <Route
                     path='/shiftRecords/create'
                     element={<ShiftCreate />}
