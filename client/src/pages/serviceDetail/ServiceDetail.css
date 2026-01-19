@@ -79,6 +79,13 @@
     background: #1d4ed8;
 }
 
+@media (max-width: 720px) {
+    .service-detail-menu button.is-active {
+        background: #ffffff;
+        color: #1d4ed8;
+    }
+}
+
 .service-detail-menu-label {
     display: inline-flex;
     align-items: center;

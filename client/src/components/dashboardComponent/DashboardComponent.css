@@ -121,6 +121,13 @@
     color: #111827;
 }
 
+@media (max-width: 720px) {
+    .dashboard-navitem--active {
+        background-color: #ffffff;
+        color: #1d4ed8;
+    }
+}
+
 .dashboard-navitem-label {
     flex: 1;
 }
