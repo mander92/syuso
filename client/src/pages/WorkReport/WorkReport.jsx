@@ -700,7 +700,7 @@ const WorkReport = () => {
                 authToken,
                 formDataPayload
             );
-            toast.success('Parte enviado');
+            toast.success('Parte enviado y turno finalizado');
             navigate('/account');
         } catch (error) {
             toast.error(error.message || 'No se pudo generar el parte');
