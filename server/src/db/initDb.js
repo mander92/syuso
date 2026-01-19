@@ -93,6 +93,7 @@ const initDb = async () => {
                 numberOfPeople INT UNSIGNED NOT NULL,
                 comments VARCHAR(250),
                 reportEmail VARCHAR(255),
+                locationLink VARCHAR(255),
                 scheduleImage VARCHAR(255),
                 chatPaused BOOLEAN DEFAULT false,
                 status ENUM ('accepted', 'rejected', 'pending', 'completed', 'confirmed', 'canceled') DEFAULT 'pending',

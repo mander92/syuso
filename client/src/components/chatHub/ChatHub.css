@@ -6,10 +6,10 @@
 
 .chat-hub-tabs {
     display: inline-flex;
-    gap: 8px;
+    gap: 0.6rem;
     background: #f1f5f9;
-    padding: 8px;
-    border-radius: 12px;
+    padding: 0.5rem;
+    border-radius: 0.9rem;
     border: 1px solid #e2e8f0;
     width: fit-content;
 }
@@ -18,11 +18,16 @@
     border: none;
     background: transparent;
     color: #334155;
-    padding: 8px 16px;
-    border-radius: 10px;
-    font-size: 0.95rem;
+    padding: 0.45rem 1.1rem;
+    border-radius: 0.55rem;
+    font-size: 0.92rem;
+    font-weight: 500;
     cursor: pointer;
     position: relative;
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease,
+        box-shadow 0.15s ease;
 }
 
 .chat-hub-tab:hover {

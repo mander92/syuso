@@ -20,6 +20,7 @@ const selectServiceByIdService = async (serviceId) => {
                 s.endDateTime,
                 s.scheduleImage,
                 s.reportEmail,
+                s.locationLink,
                 a.address, 
                 a.postCode, 
                 a.city, 

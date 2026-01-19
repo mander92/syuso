@@ -11,6 +11,7 @@ const updateServiceByIdService = async (
     hours,
     numberOfPeople,
     reportEmail,
+    locationLink,
     role
 ) => {
     const pool = await getPool();
@@ -18,7 +19,7 @@ const updateServiceByIdService = async (
     const [serviceInfo] = await pool.query(
         `
         SELECT s.id, s.status, s.startDateTime, s.hours, s.numberOfPeople, s.comments,
-               s.reportEmail,
+               s.reportEmail, s.locationLink,
                s.addressId, s.typeOfServicesId,
                a.address, a.postCode, a.city
         FROM services s
@@ -68,6 +69,10 @@ const updateServiceByIdService = async (
         reportEmail !== undefined && reportEmail !== null
             ? String(reportEmail).trim()
             : current.reportEmail;
+    const resolvedLocationLink =
+        locationLink !== undefined && locationLink !== null
+            ? String(locationLink).trim()
+            : current.locationLink;
 
     await pool.query(
         `
@@ -82,12 +87,14 @@ const updateServiceByIdService = async (
         'hours = ?',
         'numberOfPeople = ?',
         'reportEmail = ?',
+        'locationLink = ?',
     ];
     const values = [
         resolvedComments,
         resolvedHours,
         resolvedNumberOfPeople,
         resolvedReportEmail,
+        resolvedLocationLink,
     ];
 
     if (startDateTime && startDateTime !== '') {
@@ -109,6 +116,7 @@ const updateServiceByIdService = async (
     const [data] = await pool.query(
         `
         SELECT s.startDateTime, s.hours, s.numberOfPeople, s.reportEmail,
+               s.locationLink,
                a.address, a.city, a.postCode
         FROM services s
         INNER JOIN addresses a

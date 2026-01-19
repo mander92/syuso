@@ -369,8 +369,24 @@ const EmployeeServicesComponent = () => {
                                         </div>
                                         {expandedAddress[serviceId] && (
                                             <p>
-                                                Direccion: {service.address},{' '}
-                                                {service.city}
+                                                {service.locationLink ? (
+                                                    <>
+                                                        Ubicacion:{' '}
+                                                        <a
+                                                            href={service.locationLink}
+                                                            target='_blank'
+                                                            rel='noreferrer'
+                                                        >
+                                                            Ver ubicacion
+                                                        </a>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        Direccion:{' '}
+                                                        {service.address},{' '}
+                                                        {service.city}
+                                                    </>
+                                                )}
                                             </p>
                                         )}
                                     </div>

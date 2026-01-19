@@ -4,7 +4,7 @@ const selectServiceByEmployeeIdService = async (status, type, employeeId) => {
     const pool = await getPool();
 
     let sqlQuery = `
-        SELECT  pa.id, pa.serviceId, pa.employeeId, s.id, s.name, s.status, s.scheduleImage, u.firstName, u.lastName, u.phone, t.type, t.city AS province, s.comments, s.startDateTime, s.hours, s.status, a.address, a.city, a.postCode,
+        SELECT  pa.id, pa.serviceId, pa.employeeId, s.id, s.name, s.status, s.scheduleImage, s.locationLink, u.firstName, u.lastName, u.phone, t.type, t.city AS province, s.comments, s.startDateTime, s.hours, s.status, a.address, a.city, a.postCode,
                 (
                     SELECT COUNT(*)
                     FROM serviceNfcTags snt

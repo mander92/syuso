@@ -34,8 +34,10 @@ const ServiceDetail = () => {
     const [assignedEmployees, setAssignedEmployees] = useState([]);
     const [numberOfPeople, setNumberOfPeople] = useState('');
     const [reportEmails, setReportEmails] = useState('');
+    const [locationLink, setLocationLink] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [isSavingEmails, setIsSavingEmails] = useState(false);
+    const [isSavingLocation, setIsSavingLocation] = useState(false);
     const [isCompleting, setIsCompleting] = useState(false);
     const [isReactivating, setIsReactivating] = useState(false);
     const [activeTab, setActiveTab] = useState('summary');
@@ -78,6 +80,7 @@ const ServiceDetail = () => {
                     setNumberOfPeople(String(rows[0].numberOfPeople));
                 }
                 setReportEmails(rows[0]?.reportEmail || '');
+                setLocationLink(rows[0]?.locationLink || '');
             } catch (error) {
                 toast.error(error.message || 'No se pudo cargar el servicio', {
                     id: 'service-detail',
@@ -265,6 +268,36 @@ const ServiceDetail = () => {
             );
         } finally {
             setActiveShiftsLoading(false);
+        }
+    };
+
+    const handleUpdateLocationLink = async (e) => {
+        e.preventDefault();
+
+        try {
+            setIsSavingLocation(true);
+            const response = await fetchEditServiceServices(
+                serviceId,
+                { locationLink },
+                authToken
+            );
+            toast.success(response.message || 'Ubicacion actualizada');
+            setService((prev) => {
+                if (!prev) return prev;
+                if (Array.isArray(prev)) {
+                    return prev.map((row) => ({
+                        ...row,
+                        locationLink,
+                    }));
+                }
+                return { ...prev, locationLink };
+            });
+        } catch (error) {
+            toast.error(error.message || 'No se pudo actualizar', {
+                id: 'service-location-link',
+            });
+        } finally {
+            setIsSavingLocation(false);
         }
     };
 
@@ -460,6 +493,20 @@ const ServiceDetail = () => {
                                     <strong>{detail.address || 'Sin direccion'}</strong>
                                 </div>
                                 <div className='service-detail-row'>
+                                    <span>Ubicacion</span>
+                                    {detail.locationLink ? (
+                                        <a
+                                            href={detail.locationLink}
+                                            target='_blank'
+                                            rel='noreferrer'
+                                        >
+                                            Ver ubicacion
+                                        </a>
+                                    ) : (
+                                        <strong>Sin enlace</strong>
+                                    )}
+                                </div>
+                                <div className='service-detail-row'>
                                     <span>CP</span>
                                     <strong>{detail.postCode || 'Sin CP'}</strong>
                                 </div>
@@ -467,6 +514,33 @@ const ServiceDetail = () => {
                                     <h3>Comentarios</h3>
                                     <p>{detail.comments || 'Sin comentarios'}</p>
                                 </div>
+                                {(user?.role === 'admin' || user?.role === 'sudo') && (
+                                    <form
+                                        className='service-detail-form-inline'
+                                        onSubmit={handleUpdateLocationLink}
+                                    >
+                                        <label htmlFor='locationLink'>
+                                            Enlace ubicacion
+                                        </label>
+                                        <input
+                                            id='locationLink'
+                                            type='url'
+                                            placeholder='https://maps.google.com/...'
+                                            value={locationLink}
+                                            onChange={(e) =>
+                                                setLocationLink(e.target.value)
+                                            }
+                                        />
+                                        <button
+                                            type='submit'
+                                            disabled={isSavingLocation}
+                                        >
+                                            {isSavingLocation
+                                                ? 'Guardando...'
+                                                : 'Guardar'}
+                                        </button>
+                                    </form>
+                                )}
                             </div>
                             <div className='service-detail-collapsible'>
                                 <h3>Cliente</h3>
