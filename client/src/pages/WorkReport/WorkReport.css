@@ -242,6 +242,15 @@
     color: #1e293b;
 }
 
+.work-report-submit {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+.work-report-submit:hover {
+    background: #b91c1c;
+}
+
 .work-report-back {
     display: inline-flex;
     align-items: center;

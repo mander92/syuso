@@ -1033,7 +1033,11 @@ const WorkReport = () => {
                     >
                         {draftSaving ? 'Guardando...' : 'Guardar borrador'}
                     </button>
-                    <button type='submit' disabled={saving}>
+                    <button
+                        type='submit'
+                        className='work-report-submit'
+                        disabled={saving}
+                    >
                         {saving ? 'Enviando...' : 'Enviar parte'}
                     </button>
                 </div>
