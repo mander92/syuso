@@ -50,6 +50,10 @@ const ServiceDetail = () => {
     const unreadChats = unreadByService?.[serviceId] || 0;
 
     useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [serviceId]);
+
+    useEffect(() => {
         const loadService = async () => {
             try {
                 setIsLoading(true);

@@ -1,5 +1,5 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 import { AuthContext } from '../../context/AuthContext.jsx';
@@ -18,7 +18,6 @@ const { VITE_API_URL } = import.meta.env;
 const ShiftComponent = () => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
-    const navigate = useNavigate();
     const isAdminLike = user?.role === 'admin' || user?.role === 'sudo';
 
     const [details, setDetails] = useState([]);
@@ -35,6 +34,7 @@ const ShiftComponent = () => {
     const [isDownloading, setIsDownloading] = useState(false);
     const [locationPage, setLocationPage] = useState(1);
     const [locationMode, setLocationMode] = useState('shifts');
+    const [selectedShift, setSelectedShift] = useState(null);
 
     const locationsPerPage = 10;
 
@@ -246,6 +246,8 @@ const ShiftComponent = () => {
                     status: record.status,
                     serviceId: record.serviceId,
                     shiftId: record.id,
+                    serviceName: record.serviceName || record.type,
+                    employeeName: `${record.firstName} ${record.lastName}`.trim(),
                 };
             }),
         [details]
@@ -325,9 +327,12 @@ const ShiftComponent = () => {
     };
 
     const handleSelectEvent = (event) => {
-        if (event?.shiftId && isAdminLike) {
-            navigate(`/shiftRecords/${event.shiftId}`);
-        }
+        if (!event?.shiftId || !isAdminLike) return;
+        setSelectedShift({
+            shiftId: event.shiftId,
+            serviceName: event.serviceName || 'Servicio',
+            employeeName: event.employeeName || 'Empleado',
+        });
     };
 
     return (
@@ -621,6 +626,25 @@ const ShiftComponent = () => {
                             </button>
                         </div>
                     )}
+                </div>
+            )}
+
+            {selectedShift && (
+                <div className='shift-modal-overlay'>
+                    <div className='shift-modal'>
+                        <h3>Turno</h3>
+                        <p>Servicio: {selectedShift.serviceName}</p>
+                        <p>Empleado: {selectedShift.employeeName}</p>
+                        <div className='shift-modal-actions'>
+                            <button
+                                type='button'
+                                className='shift-btn shift-btn--ghost'
+                                onClick={() => setSelectedShift(null)}
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </section>
