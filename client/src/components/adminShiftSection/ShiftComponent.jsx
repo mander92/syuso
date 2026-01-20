@@ -14,6 +14,7 @@ import {
 } from '../../services/shiftRecordService.js';
 import { fetchDelegations } from '../../services/delegationService.js';
 import CalendarComponent from '../calendarComponent/CalendarComponent.jsx';
+import { formatDateTimeMadrid } from '../../utils/dateTimeMadrid.js';
 import './ShiftComponent.css';
 
 const { VITE_API_URL } = import.meta.env;
@@ -641,9 +642,9 @@ const ShiftComponent = () => {
                                             <span>
                                                 {row.employee} -{' '}
                                                 {row.clockIn
-                                                    ? new Date(
+                                                    ? formatDateTimeMadrid(
                                                           row.clockIn
-                                                      ).toLocaleString()
+                                                      )
                                                     : 'Sin entrada'}
                                             </span>
                                         </div>

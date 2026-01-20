@@ -9,6 +9,7 @@ import getPool from '../../db/getPool.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import sendMail from '../../utils/sendBrevoMail.js';
 import { UPLOADS_DIR } from '../../../env.js';
+import { formatDateTimeMadrid } from '../../utils/dateTimeMadrid.js';
 
 const ensureDir = async (dirPath) => {
     try {
@@ -263,7 +264,7 @@ const createPdfWithIncidents = async (
             doc.fontSize(12);
 
             tagLogs.forEach((log) => {
-                const when = formatDateTime(log.scannedAt);
+                const when = formatDateTimeMadrid(log.scannedAt);
                 const coords =
                     log.latitude != null && log.longitude != null
                         ? ` (${log.latitude}, ${log.longitude})`
