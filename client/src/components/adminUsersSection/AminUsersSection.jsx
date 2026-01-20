@@ -5,7 +5,6 @@ import useUser from '../../hooks/useUser.js';
 import {
     fetchAllUsersServices,
     fetchAdminUpdateUserServices,
-    fetchDeleteUserServices,
     fetchSendRecoverPasswordUserServices,
     fetchRegisterAdminUserServices,
 } from '../../services/userService.js';
@@ -38,7 +37,7 @@ const AdminUsersSection = () => {
     const [filterCity, setFilterCity] = useState('');
     // Lo llamas "job" en el front y probablemente "job" o "position" en el back
     const [filterJob, setFilterJob] = useState('');
-    const [filterActive, setFilterActive] = useState('all');
+    const [filterActive, setFilterActive] = useState('1');
     const [filterDelegation, setFilterDelegation] = useState('');
 
     // Búsqueda local (front)
@@ -47,6 +46,8 @@ const AdminUsersSection = () => {
     // Edición
     const [editingUser, setEditingUser] = useState(null);
     const [savingEdit, setSavingEdit] = useState(false);
+    const [actionUser, setActionUser] = useState(null);
+    const [expandedUserId, setExpandedUserId] = useState(null);
 
     // Crear usuario nuevo
     const [creating, setCreating] = useState(false);
@@ -140,9 +141,18 @@ const AdminUsersSection = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [authToken]);
 
-    const handleApplyFilters = (e) => {
-        e.preventDefault();
-        loadUsers();
+    useEffect(() => {
+        if (authToken) loadUsers();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filterRole, filterCity, filterJob, filterActive, filterDelegation]);
+
+    const handleClearFilters = () => {
+        setFilterRole('all');
+        setFilterCity('');
+        setFilterJob('');
+        setFilterDelegation('');
+        setFilterActive('1');
+        setSearch('');
     };
 
     // ===============================
@@ -202,39 +212,6 @@ const AdminUsersSection = () => {
         } catch (error) {
             console.error(error);
             alert(error.message || 'Error cambiando estado');
-        }
-    };
-
-    const handleDeleteUser = async (userId) => {
-        if (!window.confirm('?Seguro que quieres eliminar este usuario?'))
-            return;
-
-        try {
-            if (!authToken) return;
-
-            await fetchDeleteUserServices(authToken, userId);
-            await loadUsers();
-        } catch (error) {
-            console.error(error);
-            alert(error.message || 'Error eliminando usuario');
-        }
-    };
-
-    const handleRestoreUser = async (userId) => {
-        if (!window.confirm('?Restaurar este usuario?')) return;
-
-        try {
-            if (!authToken) return;
-
-            await fetchAdminUpdateUserServices(authToken, userId, {
-                active: 1,
-                deletedAt: null,
-            });
-
-            await loadUsers();
-        } catch (error) {
-            console.error(error);
-            alert(error.message || 'Error restaurando usuario');
         }
     };
 
@@ -349,6 +326,10 @@ const AdminUsersSection = () => {
     const handleCancelEdit = () => {
         setEditingUser(null);
         setEditingDelegations([]);
+    };
+
+    const closeActionModal = () => {
+        setActionUser(null);
     };
 
     // ===============================
@@ -509,10 +490,7 @@ const AdminUsersSection = () => {
                 </div>
 
                 {/* Filtros */}
-                <form
-                    className='admin-users-filters'
-                    onSubmit={handleApplyFilters}
-                >
+                <div className='admin-users-filters'>
                     <div className='admin-users-filter'>
                         <label htmlFor='roleFilter'>Rol</label>
                         <select
@@ -598,13 +576,14 @@ const AdminUsersSection = () => {
                     </div>
 
                     <button
-                        type='submit'
+                        type='button'
                         className='admin-users-btn admin-users-btn--ghost'
                         style={{ alignSelf: 'flex-end' }}
+                        onClick={handleClearFilters}
                     >
-                        Aplicar filtros
+                        Limpiar filtros
                     </button>
-                </form>
+                </div>
             </div>
 
             {isSudo && (
@@ -1008,7 +987,6 @@ const AdminUsersSection = () => {
                                 <tr>
                                     <th>Nombre</th>
                                     <th>Email</th>
-                                    <th>Rol</th>
                                     <th>Teléfono</th>
                                     <th>DNI</th>
                                     <th>Delegacion / Trabajo</th>
@@ -1019,56 +997,27 @@ const AdminUsersSection = () => {
                             <tbody>
                                 {filteredUsers.map((u) => {
                                     const active = isUserActive(u.active);
-                                    const isDeleted = Boolean(u.deletedAt);
                                     const isEditing =
                                         editingUser && editingUser.id === u.id;
 
                                     return (
                                         <Fragment key={u.id}>
                                             <tr>
-                                                <td>
+                                                <td data-label='Nombre'>
                                                     {(u.firstName || '') +
                                                         ' ' +
                                                         (u.lastName || '')}
                                                 </td>
-                                                <td>{u.email}</td>
-                                                <td>
-                                                    <select
-                                                        className='admin-users-role-select'
-                                                        value={u.role}
-                                                        onChange={(e) =>
-                                                            handleChangeRole(
-                                                                u.id,
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                    >
-                                                        {isSudo && (
-                                                            <option value='sudo'>
-                                                                Sudo
-                                                            </option>
-                                                        )}
-                                                        {isSudo && (
-                                                            <option value='admin'>
-                                                                Admin
-                                                            </option>
-                                                        )}
-                                                        {!isSudo && (
-                                                            <option value='admin'>
-                                                                Admin
-                                                            </option>
-                                                        )}
-                                                        <option value='client'>
-                                                            Client
-                                                        </option>
-                                                        <option value='employee'>
-                                                            Employee
-                                                        </option>
-                                                    </select>
+                                                <td data-label='Email'>
+                                                    {u.email}
                                                 </td>
-                                                <td>{u.phone || '-'}</td>
-                                                <td>{u.dni || '-'}</td>
-                                                <td>
+                                                <td data-label='Telefono'>
+                                                    {u.phone || '-'}
+                                                </td>
+                                                <td data-label='DNI'>
+                                                    {u.dni || '-'}
+                                                </td>
+                                                <td data-label='Delegacion / Trabajo'>
                                                     {u.delegations || u.city || u.job
                                                         ? `${u.delegations || u.city || ''}${
                                                               (u.delegations || u.city) && u.job
@@ -1077,95 +1026,80 @@ const AdminUsersSection = () => {
                                                           }${u.job || ''}`
                                                         : '-'}
                                                 </td>
-                                                <td>
+                                                <td data-label='Estado'>
                                                     <span
                                                         className={
-                                                            'admin-users-badge ' +
-                                                            (isDeleted
-                                                                ? 'admin-users-badge--deleted'
-                                                                : active
-                                                                  ? 'admin-users-badge--active'
-                                                                  : 'admin-users-badge--inactive')
+                                                            'admin-users-status-dot ' +
+                                                            (active
+                                                                ? 'admin-users-status-dot--active'
+                                                                : 'admin-users-status-dot--inactive')
                                                         }
-                                                    >
-                                                        {isDeleted
-                                                            ? 'Eliminado'
-                                                            : active
-                                                              ? 'Activo'
-                                                              : 'Inactivo'}
-                                                    </span>
+                                                        title={
+                                                            active
+                                                                ? 'Activo'
+                                                                : 'Inactivo'
+                                                        }
+                                                    />
                                                 </td>
-                                                <td>
-                                                    <div className='admin-users-actions'>
-                                                        <button
-                                                            type='button'
-                                                            className='admin-users-btn admin-users-btn--ghost'
-                                                            onClick={() =>
-                                                                startEditUser(u)
-                                                            }
-                                                            disabled={isDeleted}
-                                                        >
-                                                            Editar
-                                                        </button>
-                                                        <button
-                                                            type='button'
-                                                            className='admin-users-btn admin-users-btn--ghost'
-                                                            onClick={() =>
-                                                                handleToggleActive(
-                                                                    u.id,
-                                                                    u.active
-                                                                )
-                                                            }
-                                                            disabled={isDeleted}
-                                                        >
-                                                            {active
-                                                                ? 'Desactivar'
-                                                                : 'Activar'}
-                                                        </button>
-                                                        <button
-                                                            type='button'
-                                                            className='admin-users-btn admin-users-btn--ghost'
-                                                            onClick={() =>
-                                                                handleResetPassword(
-                                                                    u
-                                                                )
-                                                            }
-                                                            disabled={isDeleted}
-                                                        >
-                                                            Reset pass
-                                                        </button>
-                                                        {isDeleted ? (
-                                                            <button
-                                                                type='button'
-                                                                className='admin-users-btn admin-users-btn--ghost'
-                                                                onClick={() =>
-                                                                    handleRestoreUser(
-                                                                        u.id
-                                                                    )
-                                                                }
-                                                            >
-                                                                Restaurar
-                                                            </button>
-                                                        ) : (
-                                                            <button
-                                                                type='button'
-                                                                className='admin-users-btn admin-users-btn--danger'
-                                                                onClick={() =>
-                                                                    handleDeleteUser(
-                                                                        u.id
-                                                                    )
-                                                                }
-                                                            >
-                                                                Eliminar
-                                                            </button>
-                                                        )}
-                                                    </div>
+                                                <td className='admin-users-mobile-toggle-cell'>
+                                                    <button
+                                                        type='button'
+                                                        className='admin-users-mobile-toggle'
+                                                        onClick={() =>
+                                                            setExpandedUserId(
+                                                                expandedUserId ===
+                                                                    u.id
+                                                                    ? null
+                                                                    : u.id
+                                                            )
+                                                        }
+                                                        aria-label='Mostrar detalles'
+                                                    >
+                                                        {expandedUserId === u.id
+                                                            ? '-'
+                                                            : '+'}
+                                                    </button>
+                                                </td>
+                                                <td data-label='Acciones'>
+                                                    <button
+                                                        type='button'
+                                                        className='admin-users-action-menu'
+                                                        onClick={() =>
+                                                            setActionUser(u)
+                                                        }
+                                                        aria-label='Abrir acciones'
+                                                    >
+                                                        ...
+                                                    </button>
+                                                </td>
+                                                <td className='admin-users-mobile-extra-cell'>
+                                                    {expandedUserId === u.id && (
+                                                        <div className='admin-users-mobile-extra'>
+                                                            <div>
+                                                                {u.email}
+                                                            </div>
+                                                            <div>
+                                                                {u.phone || '-'}
+                                                            </div>
+                                                            <div>
+                                                                {u.delegations ||
+                                                                u.city ||
+                                                                u.job
+                                                                    ? `${u.delegations || u.city || ''}${
+                                                                          (u.delegations || u.city) && u.job
+                                                                              ? ' · '
+                                                                              : ''
+                                                                      }${u.job || ''}`
+                                                                    : '-'}
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </td>
                                             </tr>
 
                                             {isEditing && (
                                                 <tr className='admin-users-edit-row'>
-                                                    <td colSpan='9'>
+                                                    <td colSpan='7'>
                                                         <div className='admin-users-edit-card'>
                                                             <h3>
                                                                 Editar usuario
@@ -1443,6 +1377,111 @@ const AdminUsersSection = () => {
                     </div>
                 )}
             </div>
+            {actionUser && (
+                <div
+                    className='admin-users-modal-overlay'
+                    role='presentation'
+                    onClick={closeActionModal}
+                >
+                    <div
+                        className='admin-users-modal'
+                        role='dialog'
+                        aria-modal='true'
+                        aria-label='Acciones de usuario'
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className='admin-users-modal-header'>
+                            <div>
+                                <h3>Acciones</h3>
+                                <p>
+                                    {actionUser.firstName || ''}{' '}
+                                    {actionUser.lastName || ''}
+                                </p>
+                            </div>
+                            <button
+                                type='button'
+                                className='admin-users-btn admin-users-btn--ghost'
+                                onClick={closeActionModal}
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                        <div className='admin-users-modal-body'>
+                            <div className='admin-users-modal-field'>
+                                <label htmlFor='actionRoleSelect'>Rol</label>
+                                <select
+                                    id='actionRoleSelect'
+                                    className='admin-users-role-select'
+                                    value={actionUser.role}
+                                    onChange={(e) => {
+                                        const newRole = e.target.value;
+                                        handleChangeRole(
+                                            actionUser.id,
+                                            newRole
+                                        );
+                                        setActionUser((prev) =>
+                                            prev
+                                                ? { ...prev, role: newRole }
+                                                : prev
+                                        );
+                                    }}
+                                >
+                                    {isSudo && (
+                                        <option value='sudo'>Sudo</option>
+                                    )}
+                                    {(isSudo ||
+                                        actionUser.role === 'admin') && (
+                                        <option value='admin'>Admin</option>
+                                    )}
+                                    {!isSudo &&
+                                        actionUser.role !== 'admin' && (
+                                            <option value='admin'>Admin</option>
+                                        )}
+                                    <option value='client'>Client</option>
+                                    <option value='employee'>Employee</option>
+                                </select>
+                            </div>
+                            <div className='admin-users-modal-actions'>
+                                <button
+                                    type='button'
+                                    className='admin-users-btn admin-users-btn--ghost'
+                                    onClick={() => {
+                                        startEditUser(actionUser);
+                                        closeActionModal();
+                                    }}
+                                >
+                                    Editar
+                                </button>
+                                <button
+                                    type='button'
+                                    className='admin-users-btn admin-users-btn--ghost'
+                                    onClick={() => {
+                                        handleToggleActive(
+                                            actionUser.id,
+                                            actionUser.active
+                                        );
+                                        closeActionModal();
+                                    }}
+                                >
+                                    {isUserActive(actionUser.active)
+                                        ? 'Desactivar'
+                                        : 'Activar'}
+                                </button>
+                                <button
+                                    type='button'
+                                    className='admin-users-btn admin-users-btn--ghost'
+                                    onClick={() => {
+                                        handleResetPassword(actionUser);
+                                        closeActionModal();
+                                    }}
+                                >
+                                    Reset pass
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </section>
     );
 };

@@ -142,13 +142,11 @@
 
 .admin-users-table-wrapper {
     width: 100%;
-    overflow-x: auto;
-    overflow-y: hidden;
+    overflow: hidden;
 }
 
 .admin-users-table {
     width: 100%;
-    min-width: 960px;
     border-collapse: collapse;
     font-size: 0.85rem;
     background-color: #fff;
@@ -170,6 +168,41 @@
     word-break: break-word;
 }
 
+.admin-users-table th:nth-child(1),
+.admin-users-table td:nth-child(1) {
+    width: 18%;
+}
+
+.admin-users-table th:nth-child(2),
+.admin-users-table td:nth-child(2) {
+    width: 22%;
+}
+
+.admin-users-table th:nth-child(3),
+.admin-users-table td:nth-child(3) {
+    width: 12%;
+}
+
+.admin-users-table th:nth-child(4),
+.admin-users-table td:nth-child(4) {
+    width: 10%;
+}
+
+.admin-users-table th:nth-child(5),
+.admin-users-table td:nth-child(5) {
+    width: 20%;
+}
+
+.admin-users-table th:nth-child(6),
+.admin-users-table td:nth-child(6) {
+    width: 8%;
+}
+
+.admin-users-table th:nth-child(7),
+.admin-users-table td:nth-child(7) {
+    width: 10%;
+}
+
 /* ZEBRA */
 .admin-users-table tbody tr:nth-child(even) {
     background-color: #f9fafb;
@@ -186,6 +219,77 @@
     border: 1px solid #e2e8f0;
     padding: 0.25rem 0.6rem;
     font-size: 0.78rem;
+}
+
+.admin-users-action-menu {
+    border: 1px solid #e2e8f0;
+    background-color: #fff;
+    color: #1d4ed8;
+    border-radius: 999px;
+    font-weight: 700;
+    padding: 0.2rem 0.7rem;
+    line-height: 1;
+    letter-spacing: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        'Liberation Mono', 'Courier New', monospace;
+    cursor: pointer;
+}
+
+.admin-users-action-menu:hover {
+    background-color: #eff6ff;
+}
+
+.admin-users-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    z-index: 9999;
+}
+
+.admin-users-modal {
+    width: min(520px, 100%);
+    background: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 25px 50px rgba(15, 23, 42, 0.2);
+    padding: 1.5rem;
+}
+
+.admin-users-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.admin-users-modal-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.admin-users-modal-header p {
+    margin: 0.2rem 0 0;
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
+.admin-users-modal-body {
+    display: grid;
+    gap: 1rem;
+}
+
+.admin-users-modal-field {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.admin-users-modal-actions {
+    display: grid;
+    gap: 0.6rem;
 }
 
 /* === BADGES === */
@@ -210,6 +314,22 @@
 .admin-users-badge--deleted {
     background-color: #e2e8f0;
     color: #334155;
+}
+
+.admin-users-status-dot {
+    display: inline-flex;
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: #cbd5f5;
+}
+
+.admin-users-status-dot--active {
+    background: #22c55e;
+}
+
+.admin-users-status-dot--inactive {
+    background: #ef4444;
 }
 
 /* === ACCIONES === */
@@ -396,21 +516,108 @@
     }
 
     .admin-users-table tr {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem 0.9rem;
+        align-items: center;
         background: white;
         border-radius: 0.75rem;
-        padding: 1rem;
+        padding: 2rem 1rem 0.9rem;
         box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
+        position: relative;
     }
 
     .admin-users-table td {
-        display: flex;
-        justify-content: space-between;
-        padding: 0.3rem 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0;
         border-bottom: none;
+        max-width: 100%;
+        word-break: break-word;
+        font-size: 0.85rem;
+    }
+
+    .admin-users-table td::before,
+    .admin-users-edit-row td::before {
+        content: none;
+    }
+
+    .admin-users-table td:last-child {
+        margin-left: auto;
+    }
+
+    .admin-users-table td[data-label='DNI'] {
+        display: none;
+    }
+
+    .admin-users-table td[data-label='Email'],
+    .admin-users-table td[data-label='Telefono'],
+    .admin-users-table td[data-label='Delegacion / Trabajo'] {
+        display: none;
+    }
+
+    .admin-users-table td[data-label='Estado'] {
+        position: absolute;
+        top: 0.6rem;
+        left: 0.6rem;
+        padding: 0;
+        margin: 0;
+    }
+
+    .admin-users-mobile-toggle-cell {
+        display: block;
+        position: absolute;
+        top: 0.45rem;
+        right: 3.4rem;
+        padding: 0;
+        margin: 0;
+    }
+
+    .admin-users-table td[data-label='Acciones'] {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.6rem;
+        padding: 0;
+        margin: 0;
+    }
+
+    .admin-users-mobile-toggle {
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        color: #1d4ed8;
+        border-radius: 999px;
+        width: 28px;
+        height: 28px;
+        font-size: 1rem;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .admin-users-mobile-extra-cell {
+        flex-basis: 100%;
+        width: 100%;
+        padding-top: 0.5rem;
+    }
+
+    .admin-users-mobile-extra {
+        display: grid;
+        gap: 0.3rem;
+        font-size: 0.85rem;
+        color: #0f172a;
+        word-break: break-word;
     }
 
     .admin-users-actions {
         justify-content: flex-start;
+    }
+}
+
+@media (min-width: 1025px) {
+    .admin-users-mobile-toggle-cell,
+    .admin-users-mobile-extra-cell,
+    .admin-users-mobile-extra {
+        display: none;
     }
 }
 
