@@ -1,5 +1,6 @@
 import getPool from '../../db/getPool.js';
 import createExcelUtil from '../../utils/createExcelUtil.js';
+import { formatDateMadrid } from '../../utils/dateTimeMadrid.js';
 import path from 'path';
 
 const selectShiftRecordsService = async (
@@ -75,7 +76,7 @@ const selectShiftRecordsService = async (
         sqlValuesDetails.push(...delegationNames);
     }
 
-    sqlQueryDetails += ' ORDER BY s.modifiedAt DESC';
+    sqlQueryDetails += ' ORDER BY s.clockIn ASC';
 
     const [rowsDetails] = await pool.query(
         sqlQueryDetails,
@@ -84,7 +85,7 @@ const selectShiftRecordsService = async (
 
     let sqlQueryTotal = `
         SELECT 
-        s.employeeId, u.firstName, u.lastName,
+        s.employeeId, u.firstName, u.lastName, se.name AS serviceName,
         SUM(TIMESTAMPDIFF(HOUR, s.clockIn, s.clockOut)) AS totalHoursWorked,
         SUM(MOD(TIMESTAMPDIFF(MINUTE, s.clockIn, s.clockOut), 60)) AS totalMinutesWorked
         FROM shiftRecords s 
@@ -139,7 +140,7 @@ const selectShiftRecordsService = async (
     }
 
     sqlQueryTotal += `
-        GROUP BY s.employeeId, u.firstName, u.lastName 
+        GROUP BY s.employeeId, u.firstName, u.lastName, se.name 
         ORDER BY totalHoursWorked DESC
     `;
 
@@ -149,6 +150,7 @@ const selectShiftRecordsService = async (
 
     if (generateExcel) {
         const detailRows = rowsDetails.map((row) => ({
+            day: formatDateMadrid(row.clockIn),
             firstName: row.firstName || '',
             lastName: row.lastName || '',
             serviceName: row.serviceName || '',
@@ -157,15 +159,12 @@ const selectShiftRecordsService = async (
         }));
 
         const totalRows = rowsTotal.map((row) => {
-            const hours = Number(row.totalHoursWorked || 0);
-            const minutes = Number(row.totalMinutesWorked || 0);
-            const totalHours = (hours + minutes / 60).toFixed(2);
             return {
                 firstName: row.firstName || '',
                 lastName: row.lastName || '',
-                totalHoursWorked: hours,
-                totalMinutesWorked: minutes,
-                totalHoursAdjusted: totalHours,
+                serviceName: row.serviceName || '',
+                totalHoursWorked: Number(row.totalHoursWorked || 0),
+                totalMinutesWorked: Number(row.totalMinutesWorked || 0),
             };
         });
 
@@ -173,6 +172,7 @@ const selectShiftRecordsService = async (
             {
                 name: 'Desglose',
                 columns: [
+                    { header: 'Dia', key: 'day', width: 14 },
                     { header: 'Nombre', key: 'firstName', width: 20 },
                     { header: 'Apellidos', key: 'lastName', width: 20 },
                     { header: 'Servicio', key: 'serviceName', width: 30 },
@@ -186,6 +186,7 @@ const selectShiftRecordsService = async (
                 columns: [
                     { header: 'Nombre', key: 'firstName', width: 20 },
                     { header: 'Apellidos', key: 'lastName', width: 20 },
+                    { header: 'Servicio', key: 'serviceName', width: 30 },
                     {
                         header: 'Total Horas',
                         key: 'totalHoursWorked',
@@ -194,11 +195,6 @@ const selectShiftRecordsService = async (
                     {
                         header: 'Total Minutos',
                         key: 'totalMinutesWorked',
-                        width: 16,
-                    },
-                    {
-                        header: 'Total Ajustado',
-                        key: 'totalHoursAdjusted',
                         width: 16,
                     },
                 ],
