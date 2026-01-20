@@ -879,6 +879,36 @@ const AdminUsersSection = () => {
                                     }
                                 />
                             </div>
+                            {newUser.role !== 'admin' &&
+                                newUser.role !== 'sudo' && (
+                                    <div className='admin-users-edit-field'>
+                                        <label htmlFor='newDelegation'>
+                                            Delegacion
+                                        </label>
+                                        <select
+                                            id='newDelegation'
+                                            value={newUser.city}
+                                            onChange={(e) =>
+                                                handleNewUserChange(
+                                                    'city',
+                                                    e.target.value
+                                                )
+                                            }
+                                        >
+                                            <option value=''>
+                                                Seleccionar delegacion
+                                            </option>
+                                            {delegations.map((delegation) => (
+                                                <option
+                                                    key={delegation.id}
+                                                    value={delegation.name}
+                                                >
+                                                    {delegation.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
                             <div className='admin-users-edit-field'>
                                 <label htmlFor='newJob'>Trabajo</label>
                                 <input
@@ -1264,6 +1294,53 @@ const AdminUsersSection = () => {
                                                                             }
                                                                         />
                                                                     </div>
+                                                                    {editingUser.role !==
+                                                                        'admin' &&
+                                                                        editingUser.role !==
+                                                                            'sudo' && (
+                                                                            <div className='admin-users-edit-field'>
+                                                                                <label htmlFor='editDelegation'>
+                                                                                    Delegacion
+                                                                                </label>
+                                                                                <select
+                                                                                    id='editDelegation'
+                                                                                    value={
+                                                                                        editingUser.city ||
+                                                                                        ''
+                                                                                    }
+                                                                                    onChange={(
+                                                                                        e
+                                                                                    ) =>
+                                                                                        handleEditChange(
+                                                                                            'city',
+                                                                                            e
+                                                                                                .target
+                                                                                                .value
+                                                                                        )
+                                                                                    }
+                                                                                >
+                                                                                    <option value=''>
+                                                                                        Seleccionar delegacion
+                                                                                    </option>
+                                                                                    {delegations.map(
+                                                                                        (
+                                                                                            delegation
+                                                                                        ) => (
+                                                                                            <option
+                                                                                                key={
+                                                                                                    delegation.id
+                                                                                                }
+                                                                                                value={
+                                                                                                    delegation.name
+                                                                                                }
+                                                                                            >
+                                                                                                {delegation.name}
+                                                                                            </option>
+                                                                                        )
+                                                                                    )}
+                                                                                </select>
+                                                                            </div>
+                                                                        )}
                                                                     <div className='admin-users-edit-field'>
                                                                         <label htmlFor='editJob'>
                                                                             Trabajo
