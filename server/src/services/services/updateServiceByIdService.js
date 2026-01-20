@@ -7,11 +7,16 @@ const updateServiceByIdService = async (
     postCode,
     city,
     comments,
+    name,
+    status,
     startDateTime,
+    endDateTime,
     hours,
     numberOfPeople,
     reportEmail,
     locationLink,
+    clientId,
+    typeOfServicesId,
     role
 ) => {
     const pool = await getPool();
@@ -19,7 +24,7 @@ const updateServiceByIdService = async (
     const [serviceInfo] = await pool.query(
         `
         SELECT s.id, s.status, s.startDateTime, s.hours, s.numberOfPeople, s.comments,
-               s.reportEmail, s.locationLink,
+               s.reportEmail, s.locationLink, s.name, s.endDateTime, s.clientId,
                s.addressId, s.typeOfServicesId,
                a.address, a.postCode, a.city
         FROM services s
@@ -54,6 +59,10 @@ const updateServiceByIdService = async (
         city && city.trim() !== '' ? city.trim() : current.city;
     const resolvedComments =
         comments && comments.trim() !== '' ? comments.trim() : current.comments;
+    const resolvedName =
+        name && name.trim() !== '' ? name.trim() : current.name;
+    const resolvedStatus =
+        status && status.trim() !== '' ? status.trim() : current.status;
 
     const resolvedHours =
         hours !== undefined && hours !== null && hours !== ''
@@ -73,6 +82,14 @@ const updateServiceByIdService = async (
         locationLink !== undefined && locationLink !== null
             ? String(locationLink).trim()
             : current.locationLink;
+    const resolvedClientId =
+        clientId && clientId.trim() !== ''
+            ? clientId.trim()
+            : current.clientId;
+    const resolvedTypeOfServicesId =
+        typeOfServicesId && typeOfServicesId.trim() !== ''
+            ? typeOfServicesId.trim()
+            : current.typeOfServicesId;
 
     await pool.query(
         `
@@ -83,23 +100,62 @@ const updateServiceByIdService = async (
     );
 
     const updates = [
+        'name = ?',
+        'status = ?',
         'comments = ?',
         'hours = ?',
         'numberOfPeople = ?',
         'reportEmail = ?',
         'locationLink = ?',
+        'clientId = ?',
+        'typeOfServicesId = ?',
     ];
     const values = [
+        resolvedName,
+        resolvedStatus,
         resolvedComments,
         resolvedHours,
         resolvedNumberOfPeople,
         resolvedReportEmail,
         resolvedLocationLink,
+        resolvedClientId,
+        resolvedTypeOfServicesId,
     ];
 
     if (startDateTime && startDateTime !== '') {
-        updates.push("startDateTime = STR_TO_DATE(?, '%Y-%m-%dT%H:%i:%sZ')");
-        values.push(startDateTime);
+        updates.push(
+            `startDateTime = STR_TO_DATE(
+                CONCAT(
+                    CASE
+                        WHEN LOCATE('.', TRIM(TRAILING 'Z' FROM ?)) > 0
+                            THEN TRIM(TRAILING 'Z' FROM ?)
+                        ELSE CONCAT(TRIM(TRAILING 'Z' FROM ?), '.000')
+                    END,
+                    'Z'
+                ),
+                '%Y-%m-%dT%H:%i:%s.%fZ'
+            )`
+        );
+        values.push(startDateTime, startDateTime, startDateTime);
+    }
+
+    if (endDateTime === '') {
+        updates.push('endDateTime = NULL');
+    } else if (endDateTime) {
+        updates.push(
+            `endDateTime = STR_TO_DATE(
+                CONCAT(
+                    CASE
+                        WHEN LOCATE('.', TRIM(TRAILING 'Z' FROM ?)) > 0
+                            THEN TRIM(TRAILING 'Z' FROM ?)
+                        ELSE CONCAT(TRIM(TRAILING 'Z' FROM ?), '.000')
+                    END,
+                    'Z'
+                ),
+                '%Y-%m-%dT%H:%i:%s.%fZ'
+            )`
+        );
+        values.push(endDateTime, endDateTime, endDateTime);
     }
 
     values.push(serviceId);
@@ -116,7 +172,8 @@ const updateServiceByIdService = async (
     const [data] = await pool.query(
         `
         SELECT s.startDateTime, s.hours, s.numberOfPeople, s.reportEmail,
-               s.locationLink,
+               s.locationLink, s.name, s.status, s.endDateTime, s.clientId,
+               s.typeOfServicesId,
                a.address, a.city, a.postCode
         FROM services s
         INNER JOIN addresses a

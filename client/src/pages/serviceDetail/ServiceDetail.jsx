@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { NavLink, Navigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -11,17 +11,29 @@ import {
 } from '../../services/serviceService.js';
 import { fetchUpdateServiceStatus } from '../../services/serviceService.js';
 import { fetchDeleteEmployeeService } from '../../services/personAssigned.js';
+import { fetchAllUsersServices } from '../../services/userService.js';
+import { fetchAllTypeOfServicesServices } from '../../services/typeOfServiceService.js';
 import ListEmployeeComponent from '../../components/adminServiceSection/listEmployeeComponent/ListEmployeeComponent.jsx';
 import ServiceChat from '../../components/serviceChat/ServiceChat.jsx';
 import NfcTagsManager from '../../components/nfcTags/NfcTagsManager.jsx';
 import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 import './ServiceDetail.css';
 
-const formatDateTime = (value) => {
-    if (!value) return 'Sin fecha';
+const formatDateTimeInput = (value) => {
+    if (!value) return '';
     const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return 'Fecha invalida';
-    return date.toLocaleString();
+    if (Number.isNaN(date.getTime())) return '';
+    const pad = (number) => String(number).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+        date.getDate()
+    )}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
+const toIsoFromInput = (value) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toISOString().replace(/\.\d{3}Z$/, 'Z');
 };
 
 const ServiceDetail = () => {
@@ -32,12 +44,28 @@ const ServiceDetail = () => {
     const [service, setService] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [assignedEmployees, setAssignedEmployees] = useState([]);
+    const [clients, setClients] = useState([]);
+    const [typeOptions, setTypeOptions] = useState([]);
+    const [summaryForm, setSummaryForm] = useState({
+        name: '',
+        typeOfServicesId: '',
+        status: '',
+        startDateTime: '',
+        endDateTime: '',
+        hours: '',
+        numberOfPeople: '',
+        address: '',
+        city: '',
+        postCode: '',
+        comments: '',
+        locationLink: '',
+        clientId: '',
+    });
     const [numberOfPeople, setNumberOfPeople] = useState('');
     const [reportEmails, setReportEmails] = useState('');
-    const [locationLink, setLocationLink] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [isSavingSummary, setIsSavingSummary] = useState(false);
     const [isSavingEmails, setIsSavingEmails] = useState(false);
-    const [isSavingLocation, setIsSavingLocation] = useState(false);
     const [isCompleting, setIsCompleting] = useState(false);
     const [isReactivating, setIsReactivating] = useState(false);
     const [activeTab, setActiveTab] = useState('summary');
@@ -55,50 +83,102 @@ const ServiceDetail = () => {
         window.scrollTo(0, 0);
     }, [serviceId]);
 
-    useEffect(() => {
-        const loadService = async () => {
-            try {
-                setIsLoading(true);
-                const data = await fetchDetailServiceServices(
-                    serviceId,
-                    authToken
-                );
-                setService(data);
-                const rows = Array.isArray(data) ? data : [data];
-                const assigned = rows
-                    .filter((row) => row?.employeeId)
-                    .map((row) => ({
-                        id: row.employeeId,
-                        firstName: row.firstName,
-                        lastName: row.lastName,
-                        email: row.email,
-                        phone: row.phone,
-                        dni: row.dni,
-                    }));
-                setAssignedEmployees(assigned);
-                if (rows[0]?.numberOfPeople != null) {
-                    setNumberOfPeople(String(rows[0].numberOfPeople));
-                }
-                setReportEmails(rows[0]?.reportEmail || '');
-                setLocationLink(rows[0]?.locationLink || '');
-            } catch (error) {
-                toast.error(error.message || 'No se pudo cargar el servicio', {
-                    id: 'service-detail',
-                });
-            } finally {
-                setIsLoading(false);
+    const loadService = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            const data = await fetchDetailServiceServices(
+                serviceId,
+                authToken
+            );
+            setService(data);
+            const rows = Array.isArray(data) ? data : [data];
+            const assigned = rows
+                .filter((row) => row?.employeeId)
+                .map((row) => ({
+                    id: row.employeeId,
+                    firstName: row.firstName,
+                    lastName: row.lastName,
+                    email: row.email,
+                    phone: row.phone,
+                    dni: row.dni,
+                }));
+            setAssignedEmployees(assigned);
+            if (rows[0]?.numberOfPeople != null) {
+                setNumberOfPeople(String(rows[0].numberOfPeople));
             }
-        };
+            setReportEmails(rows[0]?.reportEmail || '');
+            setSummaryForm({
+                name: rows[0]?.name || '',
+                typeOfServicesId: rows[0]?.typeOfServicesId || '',
+                status: rows[0]?.status || '',
+                startDateTime: formatDateTimeInput(rows[0]?.startDateTime),
+                endDateTime: formatDateTimeInput(rows[0]?.endDateTime),
+                hours:
+                    rows[0]?.hours != null ? String(rows[0].hours) : '',
+                numberOfPeople:
+                    rows[0]?.numberOfPeople != null
+                        ? String(rows[0].numberOfPeople)
+                        : '',
+                address: rows[0]?.address || '',
+                city: rows[0]?.city || '',
+                postCode: rows[0]?.postCode || '',
+                comments: rows[0]?.comments || '',
+                locationLink: rows[0]?.locationLink || '',
+                clientId: rows[0]?.clientId || '',
+            });
+        } catch (error) {
+            toast.error(error.message || 'No se pudo cargar el servicio', {
+                id: 'service-detail',
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    }, [authToken, serviceId]);
 
+    useEffect(() => {
         if (authToken && serviceId) {
             loadService();
         }
-    }, [authToken, serviceId]);
+    }, [authToken, serviceId, loadService]);
 
     const detail = useMemo(() => {
         if (!service) return null;
         return Array.isArray(service) ? service[0] : service;
     }, [service]);
+
+    useEffect(() => {
+        if (!authToken || !user || (user.role !== 'admin' && user.role !== 'sudo')) {
+            return;
+        }
+
+        const loadOptions = async () => {
+            try {
+                const [clientRows, typeRows] = await Promise.all([
+                    fetchAllUsersServices('role=client&active=1', authToken),
+                    fetchAllTypeOfServicesServices(''),
+                ]);
+                setClients(Array.isArray(clientRows) ? clientRows : []);
+                setTypeOptions(Array.isArray(typeRows) ? typeRows : []);
+            } catch (error) {
+                toast.error(
+                    error.message || 'No se pudieron cargar los datos',
+                    { id: 'service-detail-options' }
+                );
+            }
+        };
+
+        loadOptions();
+    }, [authToken, user]);
+
+    const selectedClient = useMemo(() => {
+        return clients.find((client) => client.id === summaryForm.clientId);
+    }, [clients, summaryForm.clientId]);
+
+    const selectedType = useMemo(() => {
+        return typeOptions.find(
+            (typeItem) => typeItem.id === summaryForm.typeOfServicesId
+        );
+    }, [typeOptions, summaryForm.typeOfServicesId]);
 
     const handleUnassign = async (employeeId) => {
         try {
@@ -271,35 +351,56 @@ const ServiceDetail = () => {
         }
     };
 
-    const handleUpdateLocationLink = async (e) => {
-        e.preventDefault();
+    const handleSummaryChange = (field) => (event) => {
+        const { value } = event.target;
+        setSummaryForm((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const handleSaveSummary = async (event) => {
+        event.preventDefault();
 
         try {
-            setIsSavingLocation(true);
+            setIsSavingSummary(true);
+            const payload = {
+                name: summaryForm.name,
+                status: summaryForm.status,
+                hours: summaryForm.hours,
+                numberOfPeople: summaryForm.numberOfPeople,
+                address: summaryForm.address,
+                city: summaryForm.city,
+                postCode: summaryForm.postCode,
+                comments: summaryForm.comments,
+                locationLink: summaryForm.locationLink,
+                clientId: summaryForm.clientId,
+                typeOfServicesId: summaryForm.typeOfServicesId,
+                ...(summaryForm.startDateTime
+                    ? { startDateTime: toIsoFromInput(summaryForm.startDateTime) }
+                    : {}),
+                endDateTime:
+                    summaryForm.endDateTime === ''
+                        ? ''
+                        : toIsoFromInput(summaryForm.endDateTime),
+            };
+
             const response = await fetchEditServiceServices(
                 serviceId,
-                { locationLink },
+                payload,
                 authToken
             );
-            toast.success(response.message || 'Ubicacion actualizada');
-            setService((prev) => {
-                if (!prev) return prev;
-                if (Array.isArray(prev)) {
-                    return prev.map((row) => ({
-                        ...row,
-                        locationLink,
-                    }));
-                }
-                return { ...prev, locationLink };
-            });
+            toast.success(response.message || 'Servicio actualizado');
+            if (summaryForm.numberOfPeople !== '') {
+                setNumberOfPeople(summaryForm.numberOfPeople);
+            }
+            await loadService();
         } catch (error) {
             toast.error(error.message || 'No se pudo actualizar', {
-                id: 'service-location-link',
+                id: 'service-summary-update',
             });
         } finally {
-            setIsSavingLocation(false);
+            setIsSavingSummary(false);
         }
     };
+
 
     useEffect(() => {
         if (activeTab === 'shifts') {
@@ -442,123 +543,229 @@ const ServiceDetail = () => {
                             <div className='service-detail-section-header'>
                                 <h2>Resumen</h2>
                             </div>
-                            <div className='service-detail-collapsible'>
-                                <div className='service-detail-row'>
-                                    <span>Nombre</span>
-                                    <strong>{detail.name || 'Sin nombre'}</strong>
-                                </div>
-                                <div className='service-detail-row'>
-                                    <span>Tipo</span>
-                                    <strong>{detail.type || 'Sin tipo'}</strong>
-                                </div>
-                                <div className='service-detail-row'>
-                                    <span>Estado</span>
-                                    <strong>{detail.status || 'Sin estado'}</strong>
-                                </div>
-                                <div className='service-detail-row'>
-                                    <span>Inicio</span>
-                                    <strong>
-                                        {formatDateTime(detail.startDateTime)}
-                                    </strong>
-                                </div>
-                                <div className='service-detail-row'>
-                                    <span>Fin</span>
-                                    <strong>
-                                        {formatDateTime(detail.endDateTime)}
-                                    </strong>
-                                </div>
-                                <div className='service-detail-row'>
-                                    <span>Horas</span>
-                                    <strong>{detail.hours ?? 'Sin horas'}</strong>
-                                </div>
-                                <div className='service-detail-row'>
-                                    <span>Personas</span>
-                                    <strong>
-                                        {detail.numberOfPeople ?? 'Sin informacion'}
-                                    </strong>
-                                </div>
-                            </div>
-                            <div className='service-detail-collapsible'>
-                                <h3>Direccion</h3>
-                                <div className='service-detail-row'>
-                                    <span>Ciudad</span>
-                                    <strong>{detail.city || 'Sin ciudad'}</strong>
-                                </div>
-                                <div className='service-detail-row'>
-                                    <span>Provincia</span>
-                                    <strong>{detail.province || 'Sin provincia'}</strong>
-                                </div>
-                                <div className='service-detail-row'>
-                                    <span>Direccion</span>
-                                    <strong>{detail.address || 'Sin direccion'}</strong>
-                                </div>
-                                <div className='service-detail-row'>
-                                    <span>Ubicacion</span>
-                                    {detail.locationLink ? (
-                                        <a
-                                            href={detail.locationLink}
-                                            target='_blank'
-                                            rel='noreferrer'
-                                        >
-                                            Ver ubicacion
-                                        </a>
-                                    ) : (
-                                        <strong>Sin enlace</strong>
-                                    )}
-                                </div>
-                                <div className='service-detail-row'>
-                                    <span>CP</span>
-                                    <strong>{detail.postCode || 'Sin CP'}</strong>
-                                </div>
-                                <div className='service-detail-notes'>
-                                    <h3>Comentarios</h3>
-                                    <p>{detail.comments || 'Sin comentarios'}</p>
-                                </div>
-                                {(user?.role === 'admin' || user?.role === 'sudo') && (
-                                    <form
-                                        className='service-detail-form-inline'
-                                        onSubmit={handleUpdateLocationLink}
-                                    >
-                                        <label htmlFor='locationLink'>
-                                            Enlace ubicacion
-                                        </label>
+                            <form
+                                className='service-detail-summary-form'
+                                onSubmit={handleSaveSummary}
+                            >
+                                <div className='service-detail-summary-grid'>
+                                    <div className='service-detail-summary-field'>
+                                        <label htmlFor='serviceName'>Nombre</label>
                                         <input
-                                            id='locationLink'
-                                            type='url'
-                                            placeholder='https://maps.google.com/...'
-                                            value={locationLink}
-                                            onChange={(e) =>
-                                                setLocationLink(e.target.value)
-                                            }
+                                            id='serviceName'
+                                            type='text'
+                                            value={summaryForm.name}
+                                            onChange={handleSummaryChange('name')}
+                                            placeholder='Nombre del servicio'
                                         />
-                                        <button
-                                            type='submit'
-                                            disabled={isSavingLocation}
+                                    </div>
+                                    <div className='service-detail-summary-field'>
+                                        <label htmlFor='serviceType'>Tipo</label>
+                                        <select
+                                            id='serviceType'
+                                            value={summaryForm.typeOfServicesId}
+                                            onChange={handleSummaryChange(
+                                                'typeOfServicesId'
+                                            )}
                                         >
-                                            {isSavingLocation
-                                                ? 'Guardando...'
-                                                : 'Guardar'}
-                                        </button>
-                                    </form>
-                                )}
-                            </div>
-                            <div className='service-detail-collapsible'>
-                                <h3>Cliente</h3>
-                                <div className='service-detail-row'>
-                                    <span>Nombre</span>
-                                    <strong>
-                                        {detail.clientName || ''} {detail.clientLastName || ''}
-                                    </strong>
+                                            <option value=''>Selecciona un tipo</option>
+                                            {typeOptions.map((typeItem) => (
+                                                <option
+                                                    key={typeItem.id}
+                                                    value={typeItem.id}
+                                                >
+                                                    {typeItem.type} - {typeItem.city}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className='service-detail-summary-field'>
+                                        <label htmlFor='serviceStatus'>Estado</label>
+                                        <select
+                                            id='serviceStatus'
+                                            value={summaryForm.status}
+                                            onChange={handleSummaryChange('status')}
+                                        >
+                                            <option value='pending'>Pendiente</option>
+                                            <option value='confirmed'>Confirmado</option>
+                                            <option value='completed'>Completado</option>
+                                        </select>
+                                    </div>
+                                    <div className='service-detail-summary-field'>
+                                        <label htmlFor='serviceStart'>Inicio</label>
+                                        <input
+                                            id='serviceStart'
+                                            type='datetime-local'
+                                            value={summaryForm.startDateTime}
+                                            onChange={handleSummaryChange('startDateTime')}
+                                        />
+                                    </div>
+                                    <div className='service-detail-summary-field'>
+                                        <label htmlFor='serviceEnd'>Fin</label>
+                                        <input
+                                            id='serviceEnd'
+                                            type='datetime-local'
+                                            value={summaryForm.endDateTime}
+                                            onChange={handleSummaryChange('endDateTime')}
+                                        />
+                                    </div>
+                                    <div className='service-detail-summary-field'>
+                                        <label htmlFor='serviceHours'>Horas</label>
+                                        <input
+                                            id='serviceHours'
+                                            type='number'
+                                            min='1'
+                                            value={summaryForm.hours}
+                                            onChange={handleSummaryChange('hours')}
+                                        />
+                                    </div>
+                                    <div className='service-detail-summary-field'>
+                                        <label htmlFor='servicePeople'>Personas</label>
+                                        <input
+                                            id='servicePeople'
+                                            type='number'
+                                            min='1'
+                                            value={summaryForm.numberOfPeople}
+                                            onChange={handleSummaryChange(
+                                                'numberOfPeople'
+                                            )}
+                                        />
+                                    </div>
                                 </div>
-                                <div className='service-detail-row'>
-                                    <span>Email</span>
-                                    <strong>{detail.clientEmail || 'Sin email'}</strong>
+
+                                <div className='service-detail-summary-block'>
+                                    <h3>Direccion</h3>
+                                    <div className='service-detail-summary-grid'>
+                                        <div className='service-detail-summary-field'>
+                                            <label htmlFor='serviceCity'>Ciudad</label>
+                                            <input
+                                                id='serviceCity'
+                                                type='text'
+                                                value={summaryForm.city}
+                                                onChange={handleSummaryChange('city')}
+                                            />
+                                        </div>
+                                        <div className='service-detail-summary-field'>
+                                            <label htmlFor='serviceProvince'>Provincia</label>
+                                            <input
+                                                id='serviceProvince'
+                                                type='text'
+                                                value={
+                                                    selectedType?.city ||
+                                                    detail.province ||
+                                                    ''
+                                                }
+                                                disabled
+                                            />
+                                        </div>
+                                        <div className='service-detail-summary-field'>
+                                            <label htmlFor='serviceAddress'>Direccion</label>
+                                            <input
+                                                id='serviceAddress'
+                                                type='text'
+                                                value={summaryForm.address}
+                                                onChange={handleSummaryChange('address')}
+                                            />
+                                        </div>
+                                        <div className='service-detail-summary-field'>
+                                            <label htmlFor='servicePostCode'>CP</label>
+                                            <input
+                                                id='servicePostCode'
+                                                type='text'
+                                                value={summaryForm.postCode}
+                                                onChange={handleSummaryChange('postCode')}
+                                            />
+                                        </div>
+                                        <div className='service-detail-summary-field service-detail-summary-field--wide'>
+                                            <label htmlFor='serviceLocationLink'>
+                                                Enlace ubicacion
+                                            </label>
+                                            <input
+                                                id='serviceLocationLink'
+                                                type='url'
+                                                value={summaryForm.locationLink}
+                                                onChange={handleSummaryChange('locationLink')}
+                                                placeholder='https://maps.google.com/...'
+                                            />
+                                            {summaryForm.locationLink ? (
+                                                <a
+                                                    href={summaryForm.locationLink}
+                                                    target='_blank'
+                                                    rel='noreferrer'
+                                                    className='service-detail-summary-link'
+                                                >
+                                                    Ver ubicacion
+                                                </a>
+                                            ) : null}
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className='service-detail-row'>
-                                    <span>Telefono</span>
-                                    <strong>{detail.clientPhone || 'Sin telefono'}</strong>
+
+                                <div className='service-detail-summary-block'>
+                                    <h3>Comentarios</h3>
+                                    <textarea
+                                        rows='3'
+                                        value={summaryForm.comments}
+                                        onChange={handleSummaryChange('comments')}
+                                        placeholder='Comentarios del servicio'
+                                    />
                                 </div>
-                            </div>
+
+                                <div className='service-detail-summary-block'>
+                                    <h3>Cliente</h3>
+                                    <div className='service-detail-summary-grid'>
+                                        <div className='service-detail-summary-field service-detail-summary-field--wide'>
+                                            <label htmlFor='serviceClient'>Cliente</label>
+                                            <select
+                                                id='serviceClient'
+                                                value={summaryForm.clientId}
+                                                onChange={handleSummaryChange('clientId')}
+                                            >
+                                                <option value=''>
+                                                    Selecciona un cliente
+                                                </option>
+                                                {clients.map((client) => (
+                                                    <option
+                                                        key={client.id}
+                                                        value={client.id}
+                                                    >
+                                                        {client.firstName} {client.lastName} ({client.email})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className='service-detail-summary-field'>
+                                            <label>Email</label>
+                                            <input
+                                                type='text'
+                                                value={
+                                                    selectedClient?.email ||
+                                                    detail.clientEmail ||
+                                                    ''
+                                                }
+                                                disabled
+                                            />
+                                        </div>
+                                        <div className='service-detail-summary-field'>
+                                            <label>Telefono</label>
+                                            <input
+                                                type='text'
+                                                value={
+                                                    selectedClient?.phone ||
+                                                    detail.clientPhone ||
+                                                    ''
+                                                }
+                                                disabled
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className='service-detail-summary-actions'>
+                                    <button type='submit' disabled={isSavingSummary}>
+                                        {isSavingSummary ? 'Guardando...' : 'Guardar'}
+                                    </button>
+                                </div>
+                            </form>
                         </section>
                     )}
 

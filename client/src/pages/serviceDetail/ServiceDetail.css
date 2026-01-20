@@ -236,6 +236,103 @@
     margin-top: 0.75rem;
 }
 
+.service-detail-summary-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.service-detail-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px 16px;
+}
+
+.service-detail-summary-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.service-detail-summary-field label {
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.service-detail-summary-field input,
+.service-detail-summary-field select,
+.service-detail-summary-field textarea {
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    padding: 8px 10px;
+    font-size: 0.9rem;
+    outline: none;
+    background: #fff;
+}
+
+.service-detail-summary-field input:focus,
+.service-detail-summary-field select:focus,
+.service-detail-summary-field textarea:focus {
+    border-color: #0f172a;
+    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.08);
+    background-color: #f8fafc;
+}
+
+.service-detail-summary-field input:disabled,
+.service-detail-summary-field select:disabled,
+.service-detail-summary-field textarea:disabled {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.service-detail-summary-field--wide {
+    grid-column: 1 / -1;
+}
+
+.service-detail-summary-block {
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.service-detail-summary-block h3 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 14px;
+}
+
+.service-detail-summary-link {
+    margin-top: 6px;
+    font-size: 0.85rem;
+    color: #1d4ed8;
+    text-decoration: none;
+    width: fit-content;
+}
+
+.service-detail-summary-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.service-detail-summary-actions button {
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    background: #0f172a;
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.service-detail-summary-actions button[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .service-detail-form textarea {
     border-radius: 8px;
     border: 1px solid #d1d5db;
@@ -481,5 +578,13 @@
         max-width: 100%;
         text-align: left;
         word-break: break-word;
+    }
+
+    .service-detail-summary-actions {
+        justify-content: stretch;
+    }
+
+    .service-detail-summary-actions button {
+        width: 100%;
     }
 }

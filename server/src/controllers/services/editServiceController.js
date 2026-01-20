@@ -26,11 +26,16 @@ const editServiceController = async (req, res, next) => {
             postCode,
             city,
             comments,
+            name,
+            status,
             startDateTime,
+            endDateTime,
             hours,
             numberOfPeople,
             reportEmail,
             locationLink,
+            clientId,
+            typeOfServicesId,
         } = req.body;
 
         await ensureServiceDelegationAccessService(serviceId, userId, role);
@@ -41,11 +46,16 @@ const editServiceController = async (req, res, next) => {
             postCode,
             city,
             comments,
+            name,
+            status,
             startDateTime,
+            endDateTime,
             hours,
             numberOfPeople,
             reportEmail,
             locationLink,
+            clientId,
+            typeOfServicesId,
             role
         );
 
