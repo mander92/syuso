@@ -175,6 +175,16 @@
     color: #0f172a;
 }
 
+.general-chat-dashboard-danger {
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
 .general-chat-members {
     border: 1px solid #e2e8f0;
     border-radius: 12px;

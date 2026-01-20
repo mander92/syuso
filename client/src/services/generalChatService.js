@@ -169,3 +169,20 @@ export const fetchGeneralChatUnreadCounts = async (authToken) => {
 
     return body.data || { counts: {}, total: 0 };
 };
+
+export const deleteGeneralChat = async (authToken, chatId) => {
+    const res = await fetch(`${VITE_API_URL}/general-chats/${chatId}`, {
+        method: 'DELETE',
+        headers: {
+            Authorization: authToken,
+        },
+    });
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};

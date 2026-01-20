@@ -7,6 +7,7 @@ import { fetchAllUsersServices } from '../../services/userService.js';
 import {
     addGeneralChatMembers,
     createGeneralChat,
+    deleteGeneralChat,
     fetchGeneralChatMembers,
     fetchGeneralChats,
     removeGeneralChatMember,
@@ -219,6 +220,39 @@ const GeneralChatDashboard = () => {
             toast.success('Miembro eliminado');
         } catch (error) {
             toast.error(error.message || 'No se pudo eliminar');
+        }
+    };
+
+    const handleDeleteChat = async (chatId) => {
+        if (!window.confirm('¿Eliminar este chat?')) return;
+        try {
+            await deleteGeneralChat(authToken, chatId);
+            setChats((prev) => {
+                const nextChats = prev.filter(
+                    (chat) => chat.id !== chatId
+                );
+                syncGeneralChats(nextChats);
+                return nextChats;
+            });
+            setOpenChats((prev) => {
+                const next = { ...prev };
+                delete next[chatId];
+                return next;
+            });
+            setMembersByChat((prev) => {
+                const next = { ...prev };
+                delete next[chatId];
+                return next;
+            });
+            setMembersVisible((prev) => {
+                const next = { ...prev };
+                delete next[chatId];
+                return next;
+            });
+            resetGeneralUnread(chatId);
+            toast.success('Chat eliminado');
+        } catch (error) {
+            toast.error(error.message || 'No se pudo eliminar el chat');
         }
     };
 
@@ -446,6 +480,17 @@ const GeneralChatDashboard = () => {
                                             ? 'Ocultar miembros'
                                             : 'Ver miembros'}
                                     </button>
+                                    {isAdminLike && (
+                                        <button
+                                            type='button'
+                                            className='general-chat-dashboard-danger'
+                                            onClick={() =>
+                                                handleDeleteChat(chat.id)
+                                            }
+                                        >
+                                            Eliminar chat
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 

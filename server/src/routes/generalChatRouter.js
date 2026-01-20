@@ -1,7 +1,7 @@
 import express from 'express';
 
 import authUser from '../middleware/authUser.js';
-import isSudo from '../middleware/isSudo.js';
+import isAdmin from '../middleware/isAdmin.js';
 
 import listGeneralChatsController from '../controllers/generalChat/listGeneralChatsController.js';
 import createGeneralChatController from '../controllers/generalChat/createGeneralChatController.js';
@@ -11,12 +11,19 @@ import removeGeneralChatMemberController from '../controllers/generalChat/remove
 import listGeneralChatMessagesController from '../controllers/generalChat/listGeneralChatMessagesController.js';
 import uploadGeneralChatImageController from '../controllers/generalChat/uploadGeneralChatImageController.js';
 import listGeneralChatUnreadCountsController from '../controllers/generalChat/listGeneralChatUnreadCountsController.js';
+import deleteGeneralChatController from '../controllers/generalChat/deleteGeneralChatController.js';
 
 const router = express.Router();
 
 router.get('/general-chats', authUser, listGeneralChatsController);
 router.get('/general-chats/unread', authUser, listGeneralChatUnreadCountsController);
 router.post('/general-chats', authUser, createGeneralChatController);
+router.delete(
+    '/general-chats/:chatId',
+    authUser,
+    isAdmin,
+    deleteGeneralChatController
+);
 
 router.get('/general-chats/:chatId/members', authUser, listGeneralChatMembersController);
 router.post('/general-chats/:chatId/members', authUser, addGeneralChatMembersController);
