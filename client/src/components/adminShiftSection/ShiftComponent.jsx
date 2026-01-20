@@ -271,6 +271,11 @@ const ShiftComponent = () => {
                         return false;
                     }
                 }
+                if (locationMode === 'clockin') {
+                    if (!record.clockIn) {
+                        return false;
+                    }
+                }
                 if (serviceName && record.serviceName !== serviceName) {
                     return false;
                 }
@@ -583,6 +588,7 @@ const ShiftComponent = () => {
                         >
                             <option value='shifts'>Turnos</option>
                             <option value='punches'>Picadas</option>
+                            <option value='clockin'>Entradas</option>
                         </select>
                         <select
                             value={serviceName}
@@ -621,17 +627,25 @@ const ShiftComponent = () => {
                                     row.latitudeIn && row.longitudeIn;
                                 const hasOut =
                                     row.latitudeOut && row.longitudeOut;
-                                const punchCoords = hasIn
-                                    ? {
-                                          lat: row.latitudeIn,
-                                          lng: row.longitudeIn,
-                                      }
-                                    : hasOut
-                                      ? {
-                                            lat: row.latitudeOut,
-                                            lng: row.longitudeOut,
-                                        }
-                                      : null;
+                                const punchCoords =
+                                    locationMode === 'clockin'
+                                        ? hasIn
+                                            ? {
+                                                  lat: row.latitudeIn,
+                                                  lng: row.longitudeIn,
+                                              }
+                                            : null
+                                        : hasIn
+                                          ? {
+                                                lat: row.latitudeIn,
+                                                lng: row.longitudeIn,
+                                            }
+                                          : hasOut
+                                            ? {
+                                                  lat: row.latitudeOut,
+                                                  lng: row.longitudeOut,
+                                              }
+                                            : null;
                                 return (
                                     <div
                                         key={`${row.id}-${row.clockIn || 'na'}-${row.clockOut || 'na'}-${index}`}
@@ -649,7 +663,8 @@ const ShiftComponent = () => {
                                             </span>
                                         </div>
                                         <div className='shift-location-links'>
-                                            {locationMode === 'punches' ? (
+                                            {locationMode === 'punches' ||
+                                            locationMode === 'clockin' ? (
                                                 punchCoords ? (
                                                     <a
                                                         href={`https://www.google.com/maps?q=${punchCoords.lat},${punchCoords.lng}`}
