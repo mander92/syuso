@@ -1343,6 +1343,17 @@ const AdminUsersSection = () => {
                                                                                         )
                                                                                     )}
                                                                                 </select>
+                                                                                <button
+                                                                                    type='button'
+                                                                                    className='admin-users-btn admin-users-btn--ghost'
+                                                                                    onClick={() =>
+                                                                                        setEditingDelegations(
+                                                                                            []
+                                                                                        )
+                                                                                    }
+                                                                                >
+                                                                                    Quitar delegaciones
+                                                                                </button>
                                                                             </div>
                                                                         )}
                                                                 </div>
