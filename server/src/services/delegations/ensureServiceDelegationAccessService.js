@@ -32,7 +32,12 @@ const ensureServiceDelegationAccessService = async (
         generateErrorUtil('Servicio no encontrado', 404);
     }
 
-    if (!delegations.includes(rows[0].province)) {
+    const normalizedDelegations = delegations.map((name) =>
+        name.trim().toLowerCase()
+    );
+    const serviceProvince = (rows[0].province || '').trim().toLowerCase();
+
+    if (!serviceProvince || !normalizedDelegations.includes(serviceProvince)) {
         generateErrorUtil('Acceso denegado', 403);
     }
 
