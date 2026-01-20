@@ -1078,7 +1078,7 @@ const AdminUsersSection = () => {
                                                           }${u.job || ''}`
                                                         : '-'}
                                                 </td>
-                                                <td>{u.delegations || '-'}</td>
+                                                <td>{u.delegations || u.city || '-'}</td>
                                                 <td>
                                                     <span
                                                         className={
