@@ -180,6 +180,10 @@ const AdminUsersSection = () => {
     const handleChangeRole = async (userId, newRole) => {
         try {
             if (!authToken) return;
+            if (user && user.id === userId && user.role === 'admin') {
+                alert('No puedes cambiar tu propio rol.');
+                return;
+            }
 
             await fetchAdminUpdateUserServices(authToken, userId, {
                 role: newRole,
@@ -1411,40 +1415,43 @@ const AdminUsersSection = () => {
                             </button>
                         </div>
                         <div className='admin-users-modal-body'>
-                            <div className='admin-users-modal-field'>
-                                <label htmlFor='actionRoleSelect'>Rol</label>
-                                <select
-                                    id='actionRoleSelect'
-                                    className='admin-users-role-select'
-                                    value={actionUser.role}
-                                    onChange={(e) => {
-                                        const newRole = e.target.value;
-                                        handleChangeRole(
-                                            actionUser.id,
-                                            newRole
-                                        );
-                                        setActionUser((prev) =>
-                                            prev
-                                                ? { ...prev, role: newRole }
-                                                : prev
-                                        );
-                                    }}
-                                >
-                                    {isSudo && (
-                                        <option value='sudo'>Sudo</option>
-                                    )}
-                                    {(isSudo ||
-                                        actionUser.role === 'admin') && (
-                                        <option value='admin'>Admin</option>
-                                    )}
-                                    {!isSudo &&
-                                        actionUser.role !== 'admin' && (
+                            {(user?.role !== 'admin' ||
+                                user?.id !== actionUser.id) && (
+                                <div className='admin-users-modal-field'>
+                                    <label htmlFor='actionRoleSelect'>Rol</label>
+                                    <select
+                                        id='actionRoleSelect'
+                                        className='admin-users-role-select'
+                                        value={actionUser.role}
+                                        onChange={(e) => {
+                                            const newRole = e.target.value;
+                                            handleChangeRole(
+                                                actionUser.id,
+                                                newRole
+                                            );
+                                            setActionUser((prev) =>
+                                                prev
+                                                    ? { ...prev, role: newRole }
+                                                    : prev
+                                            );
+                                        }}
+                                    >
+                                        {isSudo && (
+                                            <option value='sudo'>Sudo</option>
+                                        )}
+                                        {(isSudo ||
+                                            actionUser.role === 'admin') && (
                                             <option value='admin'>Admin</option>
                                         )}
-                                    <option value='client'>Client</option>
-                                    <option value='employee'>Employee</option>
-                                </select>
-                            </div>
+                                        {!isSudo &&
+                                            actionUser.role !== 'admin' && (
+                                                <option value='admin'>Admin</option>
+                                            )}
+                                        <option value='client'>Client</option>
+                                        <option value='employee'>Employee</option>
+                                    </select>
+                                </div>
+                            )}
                             <div className='admin-users-modal-actions'>
                                 <button
                                     type='button'

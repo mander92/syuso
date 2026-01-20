@@ -1,9 +1,10 @@
 import jwt from 'jsonwebtoken';
 import generateErrorUtil from '../utils/generateErrorUtil.js';
+import selectUserByIdService from '../services/users/selectUserByIdService.js';
 
 import { SECRET } from '../../env.js';
 
-const authUser = (req, res, next) => {
+const authUser = async (req, res, next) => {
     try {
         const { authorization } = req.headers;
 
@@ -18,7 +19,15 @@ const authUser = (req, res, next) => {
             generateErrorUtil('Credenciales invalidas', 401);
         }
 
-        req.userLogged = tokenInfo;
+        const user = await selectUserByIdService(tokenInfo.id);
+
+        if (!user.active)
+            generateErrorUtil('Usuario pendiente de activacion', 403);
+
+        req.userLogged = {
+            id: user.id,
+            role: user.role,
+        };
 
         next();
     } catch (error) {
