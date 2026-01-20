@@ -142,17 +142,19 @@
 
 .admin-users-table-wrapper {
     width: 100%;
-    overflow: visible; /* 💥 Permite expandirse sin scroll */
+    overflow-x: auto;
+    overflow-y: hidden;
 }
 
-/* 💥 TABLA DE ANCHO REAL */
 .admin-users-table {
     width: 100%;
+    min-width: 960px;
     border-collapse: collapse;
     font-size: 0.85rem;
     background-color: #fff;
     border-radius: 0.75rem;
     overflow: hidden;
+    table-layout: fixed;
 }
 
 /* ENCABEZADOS */
@@ -165,6 +167,7 @@
 .admin-users-table td {
     padding: 0.7rem 0.6rem;
     border-bottom: 1px solid #e5e7eb;
+    word-break: break-word;
 }
 
 /* ZEBRA */
@@ -410,3 +413,6 @@
         justify-content: flex-start;
     }
 }
+
+
+

@@ -530,7 +530,7 @@ const AdminUsersSection = () => {
                     </div>
 
                     <div className='admin-users-filter'>
-                        <label htmlFor='filterCity'>Ciudad</label>
+                        <label htmlFor='filterCity'>Delegacion</label>
                         <input
                             id='filterCity'
                             type='text'
@@ -1011,8 +1011,7 @@ const AdminUsersSection = () => {
                                     <th>Rol</th>
                                     <th>Teléfono</th>
                                     <th>DNI</th>
-                                    <th>Ciudad / Trabajo</th>
-                                      <th>Delegacion</th>
+                                    <th>Delegacion / Trabajo</th>
                                     <th>Estado</th>
                                     <th>Acciones</th>
                                 </tr>
@@ -1070,15 +1069,14 @@ const AdminUsersSection = () => {
                                                 <td>{u.phone || '-'}</td>
                                                 <td>{u.dni || '-'}</td>
                                                 <td>
-                                                    {u.city || u.job
-                                                        ? `${u.city || ''}${
-                                                              u.city && u.job
+                                                    {u.delegations || u.city || u.job
+                                                        ? `${u.delegations || u.city || ''}${
+                                                              (u.delegations || u.city) && u.job
                                                                   ? ' · '
                                                                   : ''
                                                           }${u.job || ''}`
                                                         : '-'}
                                                 </td>
-                                                <td>{u.delegations || u.city || '-'}</td>
                                                 <td>
                                                     <span
                                                         className={
