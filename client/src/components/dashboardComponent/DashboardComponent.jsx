@@ -69,12 +69,41 @@ const DashboardComponent = () => {
 
     useEffect(() => {
         if (!sections.length) return;
+        const storedSection =
+            typeof window !== 'undefined'
+                ? sessionStorage.getItem('syuso_dashboard_section')
+                : null;
         const currentExists = sections.some(
             (section) => section.id === activeSection
         );
-        if (!hasSetDefault.current || !currentExists) {
-            setActiveSection(sections[0].id);
+        const storedExists = storedSection
+            ? sections.some((section) => section.id === storedSection)
+            : false;
+
+        if (!hasSetDefault.current) {
+            setActiveSection(
+                storedExists ? storedSection : sections[0].id
+            );
             hasSetDefault.current = true;
+            return;
+        }
+
+        if (!currentExists) {
+            setActiveSection(sections[0].id);
+        }
+    }, [sections, activeSection]);
+
+    useEffect(() => {
+        if (!sections.length || !activeSection) return;
+        if (typeof window === 'undefined') return;
+        const exists = sections.some(
+            (section) => section.id === activeSection
+        );
+        if (exists) {
+            sessionStorage.setItem(
+                'syuso_dashboard_section',
+                activeSection
+            );
         }
     }, [sections, activeSection]);
 

@@ -32,7 +32,7 @@ export const fetchAllTypeOfServicesServices = async (searchParamsToString) => {
 
 export const fetchEditTypeOfServiceServices = async (
     typeOfServiceId,
-    description,
+    payload,
     authToken
 ) => {
     const res = await fetch(
@@ -45,9 +45,7 @@ export const fetchEditTypeOfServiceServices = async (
                     'Content-Type': 'application/json',
                 }
                 : {},
-            body: JSON.stringify({
-                description,
-            }),
+            body: JSON.stringify(payload),
         }
     );
 

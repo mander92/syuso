@@ -1,29 +1,28 @@
 ﻿import { useContext, useEffect, useState } from 'react';
-import { useParams, Navigate, NavLink } from 'react-router-dom';
+import { useParams, Navigate, NavLink, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 import { AuthContext } from '../../context/AuthContext.jsx';
 import useUser from '../../hooks/useUser.js';
 import {
-    fetchEditImageTypeOfServicesService,
     fetchEditTypeOfServiceServices,
     fetchTypeOfServiceByIdServices,
 } from '../../services/typeOfServiceService.js';
-import { buildImageUrl } from '../../utils/imageUrl.js';
 
 import './TypeOfServiceEdit.css';
 
 const TypeOfServiceEdit = () => {
     const { id } = useParams();
+    const navigate = useNavigate();
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
 
     const [service, setService] = useState(null);
+    const [type, setType] = useState('');
+    const [city, setCity] = useState('');
     const [description, setDescription] = useState('');
-    const [imageFile, setImageFile] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [isSavingImage, setIsSavingImage] = useState(false);
 
     const loadService = async () => {
         if (!id) return;
@@ -32,6 +31,8 @@ const TypeOfServiceEdit = () => {
             setIsLoading(true);
             const data = await fetchTypeOfServiceByIdServices(id);
             setService(data);
+            setType(data?.type || '');
+            setCity(data?.city || '');
             setDescription(data?.description || '');
         } catch (error) {
             toast.error(error.message || 'No se pudo cargar el servicio', {
@@ -54,9 +55,13 @@ const TypeOfServiceEdit = () => {
                 <div className='type-service-edit-card'>
                     <h1>Acceso restringido</h1>
                     <p>Solo administradores pueden editar servicios.</p>
-                    <NavLink className='type-service-edit-back' to='/account'>
+                    <button
+                        type='button'
+                        className='type-service-edit-back'
+                        onClick={() => navigate(-1)}
+                    >
                         Volver
-                    </NavLink>
+                    </button>
                 </div>
             </div>
         );
@@ -65,12 +70,18 @@ const TypeOfServiceEdit = () => {
     const handleSaveDetails = async (e) => {
         e.preventDefault();
 
+        const trimmedType = type.trim();
+        const trimmedCity = city.trim();
         const trimmedDescription = description.trim();
         try {
             setIsSaving(true);
             const data = await fetchEditTypeOfServiceServices(
                 id,
-                trimmedDescription,
+                {
+                    type: trimmedType,
+                    city: trimmedCity,
+                    description: trimmedDescription,
+                },
                 authToken
             );
 
@@ -80,7 +91,12 @@ const TypeOfServiceEdit = () => {
 
             setService((prev) =>
                 prev
-                    ? { ...prev, description: trimmedDescription }
+                    ? {
+                        ...prev,
+                        type: trimmedType,
+                        city: trimmedCity,
+                        description: trimmedDescription,
+                    }
                     : prev
             );
         } catch (error) {
@@ -92,46 +108,21 @@ const TypeOfServiceEdit = () => {
         }
     };
 
-    const handleSaveImage = async (e) => {
-        e.preventDefault();
-
-        if (!imageFile) {
-            toast.error('Selecciona una imagen');
-            return;
-        }
-
-        try {
-            setIsSavingImage(true);
-            const data = await fetchEditImageTypeOfServicesService(
-                imageFile,
-                authToken,
-                id
-            );
-
-            toast.success(data.message || 'Imagen actualizada', {
-                id: 'type-service-image',
-            });
-            setImageFile(null);
-            await loadService();
-        } catch (error) {
-            toast.error(error.message || 'No se pudo actualizar la imagen', {
-                id: 'type-service-image-error',
-            });
-        } finally {
-            setIsSavingImage(false);
-        }
-    };
 
     return (
         <div className='type-service-edit-wrapper'>
             <div className='type-service-edit-header'>
                 <div>
                     <h1>Editar servicio</h1>
-                    <p>Actualiza descripcion, precio e imagen.</p>
+                    <p>Actualiza descripcion, tipo y ciudad.</p>
                 </div>
-                <NavLink className='type-service-edit-back' to='/account'>
+                <button
+                    type='button'
+                    className='type-service-edit-back'
+                    onClick={() => navigate(-1)}
+                >
                     Volver al panel
-                </NavLink>
+                </button>
             </div>
 
             {isLoading ? (
@@ -141,9 +132,13 @@ const TypeOfServiceEdit = () => {
             ) : !service ? (
                 <div className='type-service-edit-card'>
                     <p>No se encontro el servicio solicitado.</p>
-                    <NavLink className='type-service-edit-back' to='/account'>
+                    <button
+                        type='button'
+                        className='type-service-edit-back'
+                        onClick={() => navigate(-1)}
+                    >
                         Volver a servicios
-                    </NavLink>
+                    </button>
                 </div>
             ) : (
                 <div className='type-service-edit-grid'>
@@ -156,15 +151,17 @@ const TypeOfServiceEdit = () => {
                             <label htmlFor='type'>Tipo</label>
                             <input
                                 id='type'
-                                value={service.type || ''}
-                                disabled
+                                value={type}
+                                onChange={(e) => setType(e.target.value)}
+                                required
                             />
 
                             <label htmlFor='city'>Ciudad</label>
                             <input
                                 id='city'
-                                value={service.city || ''}
-                                disabled
+                                value={city}
+                                onChange={(e) => setCity(e.target.value)}
+                                required
                             />
 
 
@@ -183,42 +180,6 @@ const TypeOfServiceEdit = () => {
                         </form>
                     </section>
 
-                    <section className='type-service-edit-card'>
-                        <h2>Imagen</h2>
-                        {service.image ? (
-                            <img
-                                className='type-service-edit-image'
-                                src={buildImageUrl(service.image)}
-                                alt={service.type || 'Servicio'}
-                            />
-                        ) : (
-                            <div className='type-service-edit-image placeholder'>
-                                Sin imagen
-                            </div>
-                        )}
-
-                        <form
-                            className='type-service-edit-form'
-                            onSubmit={handleSaveImage}
-                        >
-                            <label htmlFor='image'>Nueva imagen</label>
-                            <input
-                                id='image'
-                                type='file'
-                                accept='image/png, image/jpg, image/jpeg, image/tiff'
-                                onChange={(e) => {
-                                    const file = e.target.files[0];
-                                    setImageFile(file || null);
-                                }}
-                            />
-
-                            <button type='submit' disabled={isSavingImage}>
-                                {isSavingImage
-                                    ? 'Actualizando...'
-                                    : 'Actualizar imagen'}
-                            </button>
-                        </form>
-                    </section>
                 </div>
             )}
         </div>

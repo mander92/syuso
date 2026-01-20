@@ -18,7 +18,7 @@ const editTypeOfServiceController = async (req, res, next) => {
 
         const { typeOfServiceId } = req.params;
 
-        const { description } = req.body;
+        const { description, type, city } = req.body;
 
         let imgName;
 
@@ -38,7 +38,13 @@ const editTypeOfServiceController = async (req, res, next) => {
             imgName = await savePictureUtil(req.files.image, 320, 240);
         }
 
-        await updateTypeOfServiceService(imgName, typeOfServiceId, description);
+        await updateTypeOfServiceService(
+            imgName,
+            typeOfServiceId,
+            description,
+            type,
+            city
+        );
 
         res.send({
             staus: 'ok',

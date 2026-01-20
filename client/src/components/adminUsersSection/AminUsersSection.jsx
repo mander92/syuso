@@ -81,7 +81,7 @@ const AdminUsersSection = () => {
 
             const params = new URLSearchParams();
 
-            if (filterRole !== 'all') {
+            if (filterRole !== 'all' && (isSudo || filterRole !== 'sudo')) {
                 params.append('role', filterRole);
             }
 
@@ -1061,16 +1061,20 @@ const AdminUsersSection = () => {
                                                     </button>
                                                 </td>
                                                 <td data-label='Acciones'>
-                                                    <button
-                                                        type='button'
-                                                        className='admin-users-action-menu'
-                                                        onClick={() =>
-                                                            setActionUser(u)
-                                                        }
-                                                        aria-label='Abrir acciones'
-                                                    >
-                                                        ...
-                                                    </button>
+                                                    {u.role !== 'sudo' || isSudo ? (
+                                                        <button
+                                                            type='button'
+                                                            className='admin-users-action-menu'
+                                                            onClick={() =>
+                                                                setActionUser(u)
+                                                            }
+                                                            aria-label='Abrir acciones'
+                                                        >
+                                                            ...
+                                                        </button>
+                                                    ) : (
+                                                        <span>-</span>
+                                                    )}
                                                 </td>
                                                 <td className='admin-users-mobile-extra-cell'>
                                                     {expandedUserId === u.id && (
