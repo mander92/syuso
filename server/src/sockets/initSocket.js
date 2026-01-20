@@ -12,6 +12,7 @@ import ensureGeneralChatAccessService from '../services/generalChat/ensureGenera
 import ensureGeneralChatWriteAccessService from '../services/generalChat/ensureGeneralChatWriteAccessService.js';
 import createGeneralChatMessageService from '../services/generalChat/createGeneralChatMessageService.js';
 import deleteGeneralChatMessageService from '../services/generalChat/deleteGeneralChatMessageService.js';
+import selectUserByIdService from '../services/users/selectUserByIdService.js';
 import generateErrorUtil from '../utils/generateErrorUtil.js';
 
 const initSocket = (httpServer) => {
@@ -30,7 +31,7 @@ const initSocket = (httpServer) => {
         });
     });
 
-    io.use((socket, next) => {
+    io.use(async (socket, next) => {
         try {
             const token = socket.handshake.auth?.token;
             if (!token) {
@@ -38,7 +39,16 @@ const initSocket = (httpServer) => {
             }
 
             const payload = jwt.verify(token, SECRET);
-            socket.user = payload;
+            const user = await selectUserByIdService(payload.id);
+
+            if (!user.active) {
+                return next(new Error('Usuario pendiente de activacion'));
+            }
+
+            socket.user = {
+                id: user.id,
+                role: user.role,
+            };
             return next();
         } catch (error) {
             return next(new Error('Token invalido'));
