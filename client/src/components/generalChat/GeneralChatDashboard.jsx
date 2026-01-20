@@ -43,6 +43,7 @@ const GeneralChatDashboard = () => {
     const [memberModalOpen, setMemberModalOpen] = useState(false);
     const [memberSearch, setMemberSearch] = useState('');
     const [memberRole, setMemberRole] = useState('');
+    const [memberDelegation, setMemberDelegation] = useState('');
 
     const isAdminLike = user?.role === 'admin' || user?.role === 'sudo';
 
@@ -115,6 +116,8 @@ const GeneralChatDashboard = () => {
         const query = normalizeText(memberSearch);
         return userOptions.filter((option) => {
             if (memberRole && option.role !== memberRole) return false;
+            if (memberDelegation && option.city !== memberDelegation)
+                return false;
             if (!query) return true;
             const name = normalizeText(
                 `${option.firstName || ''} ${option.lastName || ''}`
@@ -124,7 +127,12 @@ const GeneralChatDashboard = () => {
                 normalizeText(option.email || '').includes(query)
             );
         });
-    }, [memberSearch, memberRole, userOptions]);
+    }, [memberSearch, memberRole, memberDelegation, userOptions]);
+
+    const delegationOptions = useMemo(() => {
+        return [...new Set(userOptions.map((option) => option.city).filter(Boolean))]
+            .sort();
+    }, [userOptions]);
 
     const toggleMemberSelection = (memberId) => {
         setNewChatMembers((prev) =>
@@ -132,6 +140,11 @@ const GeneralChatDashboard = () => {
                 ? prev.filter((id) => id !== memberId)
                 : [...prev, memberId]
         );
+    };
+
+    const handleSelectAllMembers = () => {
+        const nextIds = filteredMemberOptions.map((option) => option.id);
+        setNewChatMembers(nextIds);
     };
 
     const toggleChat = (chatId) => {
@@ -171,6 +184,7 @@ const GeneralChatDashboard = () => {
             setNewChatMembers([]);
             setMemberSearch('');
             setMemberRole('');
+            setMemberDelegation('');
             setMemberModalOpen(false);
             await loadChats();
             toast.success('Chat creado');
@@ -304,6 +318,22 @@ const GeneralChatDashboard = () => {
                                 }
                             />
                             <select
+                                value={memberDelegation}
+                                onChange={(event) =>
+                                    setMemberDelegation(event.target.value)
+                                }
+                            >
+                                <option value=''>Todas las delegaciones</option>
+                                {delegationOptions.map((delegation) => (
+                                    <option
+                                        key={delegation}
+                                        value={delegation}
+                                    >
+                                        {delegation}
+                                    </option>
+                                ))}
+                            </select>
+                            <select
                                 value={memberRole}
                                 onChange={(event) =>
                                     setMemberRole(event.target.value)
@@ -314,6 +344,14 @@ const GeneralChatDashboard = () => {
                                 <option value='admin'>Admin</option>
                                 <option value='sudo'>Sudo</option>
                             </select>
+                        </div>
+                        <div className='general-chat-modal-toolbar'>
+                            <button
+                                type='button'
+                                onClick={handleSelectAllMembers}
+                            >
+                                Seleccionar todos
+                            </button>
                         </div>
                         <div className='general-chat-modal-list'>
                             {filteredMemberOptions.length ? (
