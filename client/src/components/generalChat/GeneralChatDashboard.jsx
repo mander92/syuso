@@ -40,6 +40,9 @@ const GeneralChatDashboard = () => {
     const [newChatType, setNewChatType] = useState('standard');
     const [newChatMembers, setNewChatMembers] = useState([]);
     const [creating, setCreating] = useState(false);
+    const [memberModalOpen, setMemberModalOpen] = useState(false);
+    const [memberSearch, setMemberSearch] = useState('');
+    const [memberRole, setMemberRole] = useState('');
 
     const isAdminLike = user?.role === 'admin' || user?.role === 'sudo';
 
@@ -108,6 +111,29 @@ const GeneralChatDashboard = () => {
         );
     }, [chats, searchText]);
 
+    const filteredMemberOptions = useMemo(() => {
+        const query = normalizeText(memberSearch);
+        return userOptions.filter((option) => {
+            if (memberRole && option.role !== memberRole) return false;
+            if (!query) return true;
+            const name = normalizeText(
+                `${option.firstName || ''} ${option.lastName || ''}`
+            );
+            return (
+                name.includes(query) ||
+                normalizeText(option.email || '').includes(query)
+            );
+        });
+    }, [memberSearch, memberRole, userOptions]);
+
+    const toggleMemberSelection = (memberId) => {
+        setNewChatMembers((prev) =>
+            prev.includes(memberId)
+                ? prev.filter((id) => id !== memberId)
+                : [...prev, memberId]
+        );
+    };
+
     const toggleChat = (chatId) => {
         setOpenChats((prev) => ({
             ...prev,
@@ -143,6 +169,9 @@ const GeneralChatDashboard = () => {
             );
             setNewChatName('');
             setNewChatMembers([]);
+            setMemberSearch('');
+            setMemberRole('');
+            setMemberModalOpen(false);
             await loadChats();
             toast.success('Chat creado');
         } catch (error) {
@@ -232,30 +261,107 @@ const GeneralChatDashboard = () => {
                     </div>
                     <div className='general-chat-create-field'>
                         <label htmlFor='general-chat-members'>Miembros</label>
-                        <select
-                            id='general-chat-members'
-                            multiple
-                            value={newChatMembers}
-                            onChange={(event) =>
-                                setNewChatMembers(
-                                    Array.from(
-                                        event.target.selectedOptions,
-                                        (option) => option.value
-                                    )
-                                )
-                            }
-                        >
-                            {userOptions.map((option) => (
-                                <option key={option.id} value={option.id}>
-                                    {option.firstName || ''} {option.lastName || ''} ({option.role})
-                                </option>
-                            ))}
-                        </select>
+                        <div className='general-chat-member-picker'>
+                            <button
+                                type='button'
+                                className='general-chat-member-btn'
+                                onClick={() => setMemberModalOpen(true)}
+                            >
+                                {newChatMembers.length
+                                    ? `${newChatMembers.length} seleccionados`
+                                    : 'Seleccionar miembros'}
+                            </button>
+                            <span className='general-chat-member-hint'>
+                                Solo empleados y admins segun permisos.
+                            </span>
+                        </div>
                     </div>
                     <button type='submit' disabled={creating}>
                         {creating ? 'Creando...' : 'Crear chat'}
                     </button>
                 </form>
+            )}
+
+            {memberModalOpen && (
+                <div className='general-chat-modal-overlay'>
+                    <div className='general-chat-modal'>
+                        <div className='general-chat-modal-header'>
+                            <h3>Seleccionar miembros</h3>
+                            <button
+                                type='button'
+                                onClick={() => setMemberModalOpen(false)}
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                        <div className='general-chat-modal-filters'>
+                            <input
+                                type='text'
+                                placeholder='Buscar por nombre o email'
+                                value={memberSearch}
+                                onChange={(event) =>
+                                    setMemberSearch(event.target.value)
+                                }
+                            />
+                            <select
+                                value={memberRole}
+                                onChange={(event) =>
+                                    setMemberRole(event.target.value)
+                                }
+                            >
+                                <option value=''>Todos los roles</option>
+                                <option value='employee'>Empleado</option>
+                                <option value='admin'>Admin</option>
+                                <option value='sudo'>Sudo</option>
+                            </select>
+                        </div>
+                        <div className='general-chat-modal-list'>
+                            {filteredMemberOptions.length ? (
+                                filteredMemberOptions.map((option) => (
+                                    <label
+                                        key={option.id}
+                                        className='general-chat-modal-item'
+                                    >
+                                        <input
+                                            type='checkbox'
+                                            checked={newChatMembers.includes(
+                                                option.id
+                                            )}
+                                            onChange={() =>
+                                                toggleMemberSelection(option.id)
+                                            }
+                                        />
+                                        <span>
+                                            {option.firstName || ''}{' '}
+                                            {option.lastName || ''} (
+                                            {option.role})
+                                        </span>
+                                    </label>
+                                ))
+                            ) : (
+                                <p className='general-chat-modal-empty'>
+                                    No hay usuarios con ese filtro.
+                                </p>
+                            )}
+                        </div>
+                        <div className='general-chat-modal-actions'>
+                            <button
+                                type='button'
+                                className='general-chat-modal-clear'
+                                onClick={() => setNewChatMembers([])}
+                            >
+                                Limpiar seleccion
+                            </button>
+                            <button
+                                type='button'
+                                className='general-chat-modal-apply'
+                                onClick={() => setMemberModalOpen(false)}
+                            >
+                                Aplicar
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {loading ? (
