@@ -4,7 +4,8 @@ import selectDelegationByIdService from '../../services/delegations/selectDelega
 
 const listAdminServicesController = async (req, res, next) => {
     try {
-        const { status, type, delegationId } = req.query;
+        const { status, type, delegationId, startDateFrom, startDateTo } =
+            req.query;
         const { id: userId, role } = req.userLogged;
 
         let allowedDelegations = [];
@@ -33,7 +34,9 @@ const listAdminServicesController = async (req, res, next) => {
         const data = await selectServiceService(
             status,
             type,
-            allowedDelegations
+            allowedDelegations,
+            startDateFrom,
+            startDateTo
         );
 
         res.send({

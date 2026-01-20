@@ -1,6 +1,12 @@
 import getPool from '../../db/getPool.js';
 
-const selectServiceService = async (status, type, delegationNames = []) => {
+const selectServiceService = async (
+    status,
+    type,
+    delegationNames = [],
+    startDateFrom,
+    startDateTo
+) => {
     const pool = await getPool();
 
     let sqlQuery = `
@@ -29,6 +35,16 @@ const selectServiceService = async (status, type, delegationNames = []) => {
             .map(() => '?')
             .join(', ')})`;
         sqlValues.push(...delegationNames);
+    }
+
+    if (startDateFrom) {
+        sqlQuery += ' AND DATE(s.startDateTime) >= ?';
+        sqlValues.push(startDateFrom);
+    }
+
+    if (startDateTo) {
+        sqlQuery += ' AND DATE(s.startDateTime) <= ?';
+        sqlValues.push(startDateTo);
     }
 
     const [service] = await pool.query(sqlQuery, sqlValues);

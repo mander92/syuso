@@ -18,6 +18,9 @@ const ServiceChatDashboard = () => {
     const [services, setServices] = useState([]);
     const [openChats, setOpenChats] = useState({});
     const [searchText, setSearchText] = useState('');
+    const [statusFilter, setStatusFilter] = useState('confirmed');
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
     const [loading, setLoading] = useState(false);
 
     const normalizeText = (value) =>
@@ -33,7 +36,24 @@ const ServiceChatDashboard = () => {
             try {
                 setLoading(true);
                 if (user.role === 'admin' || user.role === 'sudo') {
-                    const data = await fetchAllServicesServices('', authToken);
+                    const params = new URLSearchParams();
+
+                    if (statusFilter !== 'all') {
+                        params.append('status', statusFilter);
+                    }
+
+                    if (dateFrom) {
+                        params.append('startDateFrom', dateFrom);
+                    }
+
+                    if (dateTo) {
+                        params.append('startDateTo', dateTo);
+                    }
+
+                    const data = await fetchAllServicesServices(
+                        params.toString(),
+                        authToken
+                    );
                     setServices(data?.data || []);
                     return;
                 }
@@ -58,7 +78,7 @@ const ServiceChatDashboard = () => {
         };
 
         loadServices();
-    }, [authToken, user]);
+    }, [authToken, user, statusFilter, dateFrom, dateTo]);
 
     const normalizedServices = useMemo(
         () => {
@@ -104,19 +124,58 @@ const ServiceChatDashboard = () => {
                     <p>Habla con el equipo asignado a cada servicio.</p>
                 </div>
                 {(user?.role === 'admin' || user?.role === 'sudo') && (
-                    <div className='service-chat-dashboard-filter'>
-                        <label htmlFor='chat-search'>
-                            Buscar por servicio
-                        </label>
-                        <input
-                            id='chat-search'
-                            type='text'
-                            placeholder='Escribe el nombre...'
-                            value={searchText}
-                            onChange={(event) =>
-                                setSearchText(event.target.value)
-                            }
-                        />
+                    <div className='service-chat-dashboard-filters'>
+                        <div className='service-chat-dashboard-filter'>
+                            <label htmlFor='chat-status'>Estado</label>
+                            <select
+                                id='chat-status'
+                                value={statusFilter}
+                                onChange={(event) =>
+                                    setStatusFilter(event.target.value)
+                                }
+                            >
+                                <option value='confirmed'>Confirmados</option>
+                                <option value='pending'>Pendientes</option>
+                                <option value='completed'>Completados</option>
+                                <option value='all'>Todos</option>
+                            </select>
+                        </div>
+                        <div className='service-chat-dashboard-filter'>
+                            <label htmlFor='chat-date-from'>Desde</label>
+                            <input
+                                id='chat-date-from'
+                                type='date'
+                                value={dateFrom}
+                                onChange={(event) =>
+                                    setDateFrom(event.target.value)
+                                }
+                            />
+                        </div>
+                        <div className='service-chat-dashboard-filter'>
+                            <label htmlFor='chat-date-to'>Hasta</label>
+                            <input
+                                id='chat-date-to'
+                                type='date'
+                                value={dateTo}
+                                onChange={(event) =>
+                                    setDateTo(event.target.value)
+                                }
+                            />
+                        </div>
+                        <div className='service-chat-dashboard-filter'>
+                            <label htmlFor='chat-search'>
+                                Buscar por servicio
+                            </label>
+                            <input
+                                id='chat-search'
+                                type='text'
+                                placeholder='Escribe el nombre...'
+                                value={searchText}
+                                onChange={(event) =>
+                                    setSearchText(event.target.value)
+                                }
+                            />
+                        </div>
                     </div>
                 )}
             </div>

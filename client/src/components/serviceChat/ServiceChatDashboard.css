@@ -22,12 +22,20 @@
     margin-top: 12px;
 }
 
+.service-chat-dashboard-filters {
+    display: grid;
+    gap: 12px;
+    margin-top: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
 .service-chat-dashboard-filter label {
     font-size: 0.85rem;
     color: #475569;
 }
 
-.service-chat-dashboard-filter input {
+.service-chat-dashboard-filter input,
+.service-chat-dashboard-filter select {
     border-radius: 10px;
     border: 1px solid #e2e8f0;
     padding: 10px 12px;
