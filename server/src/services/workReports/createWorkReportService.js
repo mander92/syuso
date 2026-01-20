@@ -64,7 +64,6 @@ const buildReportSvg = (payload, signatureDataUrl) => {
         `Lugar: ${payload.location}`,
         `Vigilante: ${payload.guardFullName}`,
         `Numero empleado: ${payload.guardEmployeeNumber}`,
-        `Turno: ${payload.guardShift}`,
         `Empresa de seguridad: ${payload.securityCompany}`,
         `Tipo incidencia: ${payload.incidentType}`,
         `Gravedad: ${payload.severity}`,
@@ -179,7 +178,6 @@ const createPdfWithIncidents = async (
         doc.text(`Lugar: ${sanitizeText(reportData.location)}`);
         doc.text(`Vigilante: ${sanitizeText(reportData.guardFullName)}`);
         doc.text(`TIP: ${sanitizeText(reportData.guardEmployeeNumber)}`);
-        doc.text(`Turno: ${sanitizeText(reportData.guardShift)}`);
         doc.text(`Empresa: ${sanitizeText(reportData.securityCompany)}`);
 
         doc.moveDown(0.6);

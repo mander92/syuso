@@ -70,7 +70,7 @@ export default function Footer() {
                     <h4>Contacto</h4>
                     <ul>
                         <li>
-                            Sevilla, Espana
+                            Av. de la Innovación, 6, Edificio Convención, 2 planta, puerta 210, 41020 Sevilla
                         </li>
                         <li>
                             +34 621 00 84 48
@@ -84,7 +84,7 @@ export default function Footer() {
 
             <div className='footer-bottom'>
                 <p>
-                    ? {new Date().getFullYear()} SYUSO Seguridad. Todos los
+                    © {new Date().getFullYear()} SYUSO Seguridad. Todos los
                     derechos reservados.
                 </p>
             </div>
