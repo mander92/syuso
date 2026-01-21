@@ -8,9 +8,27 @@ const madridDateTimeFormatter = new Intl.DateTimeFormat('es-ES', {
     hour12: false,
 });
 
+const normalizeDateValue = (value) => {
+    if (!value) return value;
+    if (value instanceof Date) return value;
+    if (typeof value !== 'string') return value;
+
+    const trimmed = value.trim();
+    const hasTimezone = /[zZ]|[+\-]\d{2}:\d{2}$/.test(trimmed);
+    if (hasTimezone) return trimmed;
+
+    const normalized = trimmed.replace(' ', 'T');
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(normalized)) {
+        return `${normalized}Z`;
+    }
+
+    return trimmed;
+};
+
 const toValidDate = (value) => {
     if (!value) return null;
-    const date = new Date(value);
+    const normalized = normalizeDateValue(value);
+    const date = new Date(normalized);
     if (Number.isNaN(date.getTime())) return null;
     return date;
 };
