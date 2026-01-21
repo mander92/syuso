@@ -7,7 +7,7 @@ const editServiceController = async (req, res, next) => {
     try {
         /*const schema = Joi.object().keys({
             startDateTime: Joi.date().min('now').required(),
-            hours: Joi.number().min(1).max(8).required(),
+            hours: Joi.number().min(1).max(24).required(),
             comments: Joi.string().max(250).required(),
             address: Joi.string().max(255).required(),
             city: Joi.string().max(40).required(),

@@ -27,10 +27,17 @@ const startShiftRecordService = async (
     // Insertar nuevo turno
     await pool.query(
         `
-    INSERT INTO shiftRecords (id, clockIn, employeeId, serviceId, latitudeIn, longitudeIn)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO shiftRecords (id, clockIn, realClockIn, employeeId, serviceId, latitudeIn, longitudeIn)
+    VALUES (?, ?, UTC_TIMESTAMP(), ?, ?, ?, ?)
     `,
-        [id, startDateTime, employeeId, serviceId, latitudeIn, longitudeIn]
+        [
+            id,
+            startDateTime,
+            employeeId,
+            serviceId,
+            latitudeIn,
+            longitudeIn,
+        ]
     );
 
     return id;

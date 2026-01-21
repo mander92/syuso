@@ -59,7 +59,11 @@ const endShiftRecordService = async (
     const [result] = await pool.query(
         `
       UPDATE shiftRecords
-      SET clockOut = ?, latitudeOut = ?, longitudeOut = ?
+      SET
+        clockOut = ?,
+        realClockOut = COALESCE(realClockOut, UTC_TIMESTAMP()),
+        latitudeOut = ?,
+        longitudeOut = ?
       WHERE id = ? AND clockOut IS NULL
     `,
         [endDateTime, latitudeOut, longitudeOut, shiftId]

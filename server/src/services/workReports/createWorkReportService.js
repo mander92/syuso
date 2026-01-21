@@ -319,7 +319,7 @@ const createWorkReportService = async ({
 
     const [shiftRows] = await pool.query(
         `
-        SELECT id, serviceId, employeeId, clockOut
+        SELECT id, serviceId, employeeId, clockOut, clockIn, realClockIn, realClockOut
         FROM shiftRecords
         WHERE id = ?
         `,
@@ -401,14 +401,22 @@ const createWorkReportService = async ({
     const longitudeOut = Array.isArray(locationCoords)
         ? locationCoords[1]
         : null;
+    const realClockInValue = shift.realClockIn || shift.clockIn || null;
 
     await pool.query(
         `
         UPDATE shiftRecords
-        SET clockIn = ?, clockOut = ?, latitudeOut = ?, longitudeOut = ?
+        SET
+            realClockIn = COALESCE(realClockIn, ?),
+            realClockOut = COALESCE(realClockOut, UTC_TIMESTAMP()),
+            clockIn = ?,
+            clockOut = ?,
+            latitudeOut = ?,
+            longitudeOut = ?
         WHERE id = ?
         `,
         [
+            realClockInValue,
             normalizedIncidentStart,
             normalizedIncidentEnd,
             latitudeOut,

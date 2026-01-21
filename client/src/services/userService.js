@@ -350,3 +350,26 @@ export const fetchAdminUpdateUserServices = async (
 
     return body;
 };
+
+export const fetchAdminSetUserPasswordServices = async (
+    authToken,
+    userId,
+    newPassword
+) => {
+    const res = await fetch(`${VITE_API_URL}/user/admin/password/${userId}`, {
+        method: 'PUT',
+        headers: {
+            Authorization: authToken,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ newPassword }),
+    });
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body;
+};

@@ -11,6 +11,7 @@ import deleteUserController from './deleteUserController.js';
 import editUserAvatarController from './editUserAvatarController.js';
 import editUserPasswordController from './editUserPasswordController.js';
 import getUserProfileController from './getUserProfileController.js';
+import adminSetUserPasswordController from './adminSetUserPasswordController.js';
 
 export {
     registerUserController,
@@ -26,4 +27,5 @@ export {
     editUserAvatarController,
     editUserPasswordController,
     getUserProfileController,
+    adminSetUserPasswordController,
 };

@@ -19,10 +19,13 @@ const selectShiftRecordsService = async (
     let sqlQueryDetails = `
         SELECT 
         s.id, s.serviceId, s.employeeId, u.firstName, u.lastName, s.clockIn, s.clockOut,
+        s.realClockIn, s.realClockOut,
         s.latitudeIn, s.longitudeIn, s.latitudeOut, s.longitudeOut,
         wr.id AS reportId, wr.reportDate, se.name AS serviceName, se.status, se.hours, se.startDateTime, a.city, a.address, t.type, t.city AS province,
         TIMESTAMPDIFF(HOUR, s.clockIn, s.clockOut) AS hoursWorked,
-        MOD(TIMESTAMPDIFF(MINUTE, s.clockIn, s.clockOut), 60) AS minutesWorked
+        MOD(TIMESTAMPDIFF(MINUTE, s.clockIn, s.clockOut), 60) AS minutesWorked,
+        TIMESTAMPDIFF(HOUR, s.realClockIn, s.realClockOut) AS realHoursWorked,
+        MOD(TIMESTAMPDIFF(MINUTE, s.realClockIn, s.realClockOut), 60) AS realMinutesWorked
         FROM shiftRecords s 
         INNER JOIN users u 
         ON u.id = s.employeeId
@@ -76,7 +79,7 @@ const selectShiftRecordsService = async (
         sqlValuesDetails.push(...delegationNames);
     }
 
-    sqlQueryDetails += ' ORDER BY s.clockIn ASC';
+    sqlQueryDetails += ' ORDER BY s.clockIn DESC';
 
     const [rowsDetails] = await pool.query(
         sqlQueryDetails,
@@ -87,7 +90,9 @@ const selectShiftRecordsService = async (
         SELECT 
         s.employeeId, u.firstName, u.lastName, se.name AS serviceName,
         SUM(TIMESTAMPDIFF(HOUR, s.clockIn, s.clockOut)) AS totalHoursWorked,
-        SUM(MOD(TIMESTAMPDIFF(MINUTE, s.clockIn, s.clockOut), 60)) AS totalMinutesWorked
+        SUM(MOD(TIMESTAMPDIFF(MINUTE, s.clockIn, s.clockOut), 60)) AS totalMinutesWorked,
+        SUM(TIMESTAMPDIFF(HOUR, s.realClockIn, s.realClockOut)) AS totalRealHoursWorked,
+        SUM(MOD(TIMESTAMPDIFF(MINUTE, s.realClockIn, s.realClockOut), 60)) AS totalRealMinutesWorked
         FROM shiftRecords s 
         INNER JOIN users u 
         ON u.id = s.employeeId
@@ -149,22 +154,55 @@ const selectShiftRecordsService = async (
     const data = { details: rowsDetails, totals: rowsTotal };
 
     if (generateExcel) {
-        const detailRows = rowsDetails.map((row) => ({
-            day: formatDateMadrid(row.clockIn),
-            firstName: row.firstName || '',
-            lastName: row.lastName || '',
-            serviceName: row.serviceName || '',
-            hoursWorked: row.hoursWorked ?? 0,
-            minutesWorked: row.minutesWorked ?? 0,
-        }));
+        const toNumber = (value) => Number(value || 0);
+        const formatDiff = (minutes) => {
+            const total = Number(minutes || 0);
+            const sign = total < 0 ? '-' : '';
+            const abs = Math.abs(total);
+            const diffHours = Math.floor(abs / 60);
+            const diffMinutes = abs % 60;
+            return `${sign}${diffHours}h ${diffMinutes}m`;
+        };
+
+        const detailRows = rowsDetails.map((row) => {
+            const partMinutes =
+                toNumber(row.hoursWorked) * 60 + toNumber(row.minutesWorked);
+            const realMinutes =
+                toNumber(row.realHoursWorked) * 60 +
+                toNumber(row.realMinutesWorked);
+            const diffMinutes = partMinutes - realMinutes;
+
+            return {
+                day: formatDateMadrid(row.realClockIn || row.clockIn),
+                firstName: row.firstName || '',
+                lastName: row.lastName || '',
+                serviceName: row.serviceName || '',
+                hoursWorked: row.hoursWorked ?? 0,
+                minutesWorked: row.minutesWorked ?? 0,
+                realHoursWorked: row.realHoursWorked ?? 0,
+                realMinutesWorked: row.realMinutesWorked ?? 0,
+                diffWorked: formatDiff(diffMinutes),
+            };
+        });
 
         const totalRows = rowsTotal.map((row) => {
+            const partMinutes =
+                toNumber(row.totalHoursWorked) * 60 +
+                toNumber(row.totalMinutesWorked);
+            const realMinutes =
+                toNumber(row.totalRealHoursWorked) * 60 +
+                toNumber(row.totalRealMinutesWorked);
+            const diffMinutes = partMinutes - realMinutes;
+
             return {
                 firstName: row.firstName || '',
                 lastName: row.lastName || '',
                 serviceName: row.serviceName || '',
-                totalHoursWorked: Number(row.totalHoursWorked || 0),
-                totalMinutesWorked: Number(row.totalMinutesWorked || 0),
+                totalHoursWorked: toNumber(row.totalHoursWorked),
+                totalMinutesWorked: toNumber(row.totalMinutesWorked),
+                totalRealHoursWorked: toNumber(row.totalRealHoursWorked),
+                totalRealMinutesWorked: toNumber(row.totalRealMinutesWorked),
+                diffWorked: formatDiff(diffMinutes),
             };
         });
 
@@ -178,6 +216,13 @@ const selectShiftRecordsService = async (
                     { header: 'Servicio', key: 'serviceName', width: 30 },
                     { header: 'Horas', key: 'hoursWorked', width: 12 },
                     { header: 'Minutos', key: 'minutesWorked', width: 12 },
+                    { header: 'Horas reales', key: 'realHoursWorked', width: 14 },
+                    {
+                        header: 'Minutos reales',
+                        key: 'realMinutesWorked',
+                        width: 16,
+                    },
+                    { header: 'Diferencia', key: 'diffWorked', width: 14 },
                 ],
                 rows: detailRows,
             },
@@ -197,6 +242,17 @@ const selectShiftRecordsService = async (
                         key: 'totalMinutesWorked',
                         width: 16,
                     },
+                    {
+                        header: 'Total horas reales',
+                        key: 'totalRealHoursWorked',
+                        width: 16,
+                    },
+                    {
+                        header: 'Total minutos reales',
+                        key: 'totalRealMinutesWorked',
+                        width: 18,
+                    },
+                    { header: 'Diferencia', key: 'diffWorked', width: 14 },
                 ],
                 rows: totalRows,
             },

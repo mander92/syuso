@@ -267,12 +267,12 @@ const ShiftComponent = () => {
         return details
             .filter((record) => {
                 if (locationMode === 'punches') {
-                    if (!record.clockIn && !record.clockOut) {
+                    if (!record.realClockIn && !record.realClockOut) {
                         return false;
                     }
                 }
                 if (locationMode === 'clockin') {
-                    if (!record.clockIn) {
+                    if (!record.realClockIn) {
                         return false;
                     }
                 }
@@ -282,13 +282,20 @@ const ShiftComponent = () => {
                 if (employeeId && record.employeeId !== employeeId) {
                     return false;
                 }
-                if (startDate && endDate) {
-                    const start = new Date(`${startDate}T00:00:00`);
-                    const end = new Date(`${endDate}T23:59:59`);
-                    const recordDate = record.clockIn
-                        ? new Date(record.clockIn)
-                        : new Date(record.startDateTime);
-                    if (recordDate < start || recordDate > end) return false;
+                if (startDate || endDate) {
+                    const start = startDate
+                        ? new Date(`${startDate}T00:00:00`)
+                        : null;
+                    const end = endDate
+                        ? new Date(`${endDate}T23:59:59`)
+                        : null;
+                    const recordDate = record.realClockIn
+                        ? new Date(record.realClockIn)
+                        : record.clockIn
+                          ? new Date(record.clockIn)
+                          : new Date(record.startDateTime);
+                    if (start && recordDate < start) return false;
+                    if (end && recordDate > end) return false;
                 }
                 if (textPerson) {
                     const person = normalizeText(
@@ -304,6 +311,8 @@ const ShiftComponent = () => {
                 service: record.serviceName || record.type,
                 clockIn: record.clockIn,
                 clockOut: record.clockOut,
+                realClockIn: record.realClockIn,
+                realClockOut: record.realClockOut,
                 latitudeIn: record.latitudeIn,
                 longitudeIn: record.longitudeIn,
                 latitudeOut: record.latitudeOut,
@@ -627,6 +636,10 @@ const ShiftComponent = () => {
                                     row.latitudeIn && row.longitudeIn;
                                 const hasOut =
                                     row.latitudeOut && row.longitudeOut;
+                                const entryTime =
+                                    row.realClockIn || row.clockIn;
+                                const exitTime =
+                                    row.realClockOut || row.clockOut;
                                 const punchCoords =
                                     locationMode === 'clockin'
                                         ? hasIn
@@ -648,18 +661,23 @@ const ShiftComponent = () => {
                                             : null;
                                 return (
                                     <div
-                                        key={`${row.id}-${row.clockIn || 'na'}-${row.clockOut || 'na'}-${index}`}
+                                        key={`${row.id}-${row.realClockIn || row.clockIn || 'na'}-${row.realClockOut || row.clockOut || 'na'}-${index}`}
                                         className='shift-location-item'
                                     >
                                         <div>
                                             <strong>{row.service}</strong>
                                             <span>
                                                 {row.employee} -{' '}
-                                                {row.clockIn
-                                                    ? formatDateTimeMadrid(
-                                                          row.clockIn
-                                                      )
+                                                {entryTime
+                                                    ? `Entrada: ${formatDateTimeMadrid(
+                                                          entryTime
+                                                      )}`
                                                     : 'Sin entrada'}
+                                                {exitTime
+                                                    ? ` | Salida: ${formatDateTimeMadrid(
+                                                          exitTime
+                                                      )}`
+                                                    : ''}
                                             </span>
                                         </div>
                                         <div className='shift-location-links'>

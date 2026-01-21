@@ -7,6 +7,7 @@ import {
     fetchAdminUpdateUserServices,
     fetchSendRecoverPasswordUserServices,
     fetchRegisterAdminUserServices,
+    fetchAdminSetUserPasswordServices,
 } from '../../services/userService.js';
 import {
     createDelegation,
@@ -48,6 +49,10 @@ const AdminUsersSection = () => {
     const [savingEdit, setSavingEdit] = useState(false);
     const [actionUser, setActionUser] = useState(null);
     const [expandedUserId, setExpandedUserId] = useState(null);
+    const [passwordUser, setPasswordUser] = useState(null);
+    const [passwordValue, setPasswordValue] = useState('');
+    const [passwordConfirm, setPasswordConfirm] = useState('');
+    const [savingPassword, setSavingPassword] = useState(false);
 
     // Crear usuario nuevo
     const [creating, setCreating] = useState(false);
@@ -334,6 +339,50 @@ const AdminUsersSection = () => {
 
     const closeActionModal = () => {
         setActionUser(null);
+    };
+
+    const openPasswordModal = (user) => {
+        setPasswordUser(user);
+        setPasswordValue('');
+        setPasswordConfirm('');
+    };
+
+    const closePasswordModal = () => {
+        setPasswordUser(null);
+        setPasswordValue('');
+        setPasswordConfirm('');
+    };
+
+    const handleSavePassword = async (e) => {
+        e.preventDefault();
+
+        if (!passwordUser || !authToken) return;
+
+        if (!passwordValue.trim()) {
+            alert('Introduce una contraseña.');
+            return;
+        }
+
+        if (passwordValue.trim() !== passwordConfirm.trim()) {
+            alert('Las contraseñas no coinciden.');
+            return;
+        }
+
+        setSavingPassword(true);
+        try {
+            await fetchAdminSetUserPasswordServices(
+                authToken,
+                passwordUser.id,
+                passwordValue.trim()
+            );
+            alert('Contraseña actualizada correctamente.');
+            closePasswordModal();
+        } catch (error) {
+            console.error(error);
+            alert(error.message || 'Error actualizando la contraseña');
+        } finally {
+            setSavingPassword(false);
+        }
     };
 
     // ===============================
@@ -1499,8 +1548,108 @@ const AdminUsersSection = () => {
                                 >
                                     Reset pass
                                 </button>
+                                {isSudo && (
+                                    <button
+                                        type='button'
+                                        className='admin-users-btn admin-users-btn--ghost'
+                                        onClick={() => {
+                                            openPasswordModal(actionUser);
+                                            closeActionModal();
+                                        }}
+                                    >
+                                        Cambiar contraseña
+                                    </button>
+                                )}
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+            {passwordUser && (
+                <div
+                    className='admin-users-modal-overlay'
+                    role='presentation'
+                    onClick={closePasswordModal}
+                >
+                    <div
+                        className='admin-users-modal'
+                        role='dialog'
+                        aria-modal='true'
+                        aria-label='Cambiar contraseña'
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className='admin-users-modal-header'>
+                            <div>
+                                <h3>Actualizar contraseña</h3>
+                                <p>
+                                    {passwordUser.firstName || ''}{' '}
+                                    {passwordUser.lastName || ''}
+                                </p>
+                            </div>
+                            <button
+                                type='button'
+                                className='admin-users-btn admin-users-btn--ghost'
+                                onClick={closePasswordModal}
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                        <form
+                            className='admin-users-modal-body'
+                            onSubmit={handleSavePassword}
+                        >
+                            <div className='admin-users-modal-field'>
+                                <label htmlFor='adminPasswordNew'>
+                                    Nueva contraseña
+                                </label>
+                                <input
+                                    id='adminPasswordNew'
+                                    type='password'
+                                    value={passwordValue}
+                                    onChange={(e) =>
+                                        setPasswordValue(e.target.value)
+                                    }
+                                    minLength={8}
+                                    maxLength={25}
+                                    required
+                                />
+                            </div>
+                            <div className='admin-users-modal-field'>
+                                <label htmlFor='adminPasswordConfirm'>
+                                    Repetir contraseña
+                                </label>
+                                <input
+                                    id='adminPasswordConfirm'
+                                    type='password'
+                                    value={passwordConfirm}
+                                    onChange={(e) =>
+                                        setPasswordConfirm(e.target.value)
+                                    }
+                                    minLength={8}
+                                    maxLength={25}
+                                    required
+                                />
+                            </div>
+                            <div className='admin-users-modal-actions'>
+                                <button
+                                    type='button'
+                                    className='admin-users-btn admin-users-btn--ghost'
+                                    onClick={closePasswordModal}
+                                    disabled={savingPassword}
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type='submit'
+                                    className='admin-users-btn'
+                                    disabled={savingPassword}
+                                >
+                                    {savingPassword
+                                        ? 'Guardando...'
+                                        : 'Guardar'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

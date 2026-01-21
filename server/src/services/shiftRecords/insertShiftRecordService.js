@@ -26,10 +26,26 @@ const insertShiftRecordService = async (
     if (clockIn) {
         await pool.query(
             `
-            INSERT INTO shiftRecords(id, employeeId, serviceId, clockIn, clockOut)
-            VALUES(?, ?, ?, STR_TO_DATE(?, '%Y-%m-%d %H:%i:%s'), STR_TO_DATE(?, '%Y-%m-%d %H:%i:%s'))
+            INSERT INTO shiftRecords(
+                id,
+                employeeId,
+                serviceId,
+                clockIn,
+                realClockIn,
+                clockOut,
+                realClockOut
+            )
+            VALUES(
+                ?,
+                ?,
+                ?,
+                STR_TO_DATE(?, '%Y-%m-%d %H:%i:%s'),
+                STR_TO_DATE(?, '%Y-%m-%d %H:%i:%s'),
+                STR_TO_DATE(?, '%Y-%m-%d %H:%i:%s'),
+                STR_TO_DATE(?, '%Y-%m-%d %H:%i:%s')
+            )
             `,
-            [id, employeeId, serviceId, clockIn, clockOut]
+            [id, employeeId, serviceId, clockIn, clockIn, clockOut, clockOut]
         );
     } else {
         await pool.query(

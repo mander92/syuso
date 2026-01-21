@@ -89,7 +89,7 @@ const initDb = async () => {
                 name VARCHAR(30) NOT NULL,
                 startDateTime TIMESTAMP NOT NULL,
                 endDateTime TIMESTAMP,
-                hours INT UNSIGNED NOT NULL CHECK (hours BETWEEN 1 AND 8),
+                hours INT UNSIGNED NOT NULL CHECK (hours BETWEEN 1 AND 24),
                 numberOfPeople INT UNSIGNED NOT NULL,
                 comments VARCHAR(250),
                 reportEmail VARCHAR(255),
@@ -117,7 +117,9 @@ const initDb = async () => {
             CREATE TABLE IF NOT EXISTS shiftRecords(
                 id CHAR(36) PRIMARY KEY NOT NULL,
                 clockIn TIMESTAMP,
+                realClockIn TIMESTAMP,
                 clockOut TIMESTAMP,
+                realClockOut TIMESTAMP,
                 latitudeIn DECIMAL(10,8),
                 longitudeIn DECIMAL(11,8),
                 latitudeOut DECIMAL(10,8),

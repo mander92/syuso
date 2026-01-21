@@ -2,6 +2,7 @@ import express from 'express';
 
 import authUser from '../middleware/authUser.js';
 import isAdmin from '../middleware/isAdmin.js';
+import isSudo from '../middleware/isSudo.js';
 import userExists from '../middleware/userExists.js';
 
 import {
@@ -18,6 +19,7 @@ import {
     editUserAvatarController,
     editUserPasswordController,
     getUserProfileController,
+    adminSetUserPasswordController,
 } from '../controllers/users/index.js';
 
 const router = express.Router();
@@ -65,6 +67,14 @@ router.put(
     authUser,
     userExists,
     editUserPasswordController
+);
+
+router.put(
+    '/user/admin/password/:userId',
+    authUser,
+    isSudo,
+    userExists,
+    adminSetUserPasswordController
 );
 
 router.delete('/user/:userId', authUser, userExists, deleteUserController);
