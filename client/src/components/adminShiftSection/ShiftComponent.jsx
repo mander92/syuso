@@ -53,6 +53,25 @@ const ShiftComponent = () => {
             .toLowerCase()
             .trim();
 
+    const parseLocalDateTime = (value) => {
+        if (!value) return null;
+        if (value instanceof Date) return value;
+        if (typeof value !== 'string') return null;
+
+        const trimmed = value.trim();
+        const withoutTimezone = trimmed.replace(/[zZ]|[+\-]\d{2}:\d{2}$/g, '');
+        const normalized = withoutTimezone.replace(' ', 'T');
+        const [datePart, timePart = '00:00:00'] = normalized.split('T');
+        const [year, month, day] = datePart.split('-').map(Number);
+        const [hour = 0, minute = 0, second = 0] = timePart
+            .split(':')
+            .map(Number);
+
+        if (!year || !month || !day) return null;
+
+        return new Date(year, month - 1, day, hour, minute, second);
+    };
+
     useEffect(() => {
         const loadEmployees = async () => {
             if (!authToken || !isAdminLike) return;
@@ -229,12 +248,13 @@ const ShiftComponent = () => {
     const calendarEvents = useMemo(
         () =>
             details.map((record) => {
-                const start = record.clockIn
-                    ? new Date(record.clockIn)
-                    : new Date(record.startDateTime);
+                const start =
+                    parseLocalDateTime(record.clockIn) ||
+                    parseLocalDateTime(record.startDateTime) ||
+                    new Date();
 
                 let end = record.clockOut
-                    ? new Date(record.clockOut)
+                    ? parseLocalDateTime(record.clockOut)
                     : new Date(start);
 
                 if (!record.clockOut) {
