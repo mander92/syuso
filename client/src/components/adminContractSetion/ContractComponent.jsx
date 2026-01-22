@@ -120,7 +120,64 @@ const ContractsComponent = () => {
                 authToken,
                 delegationId
             );
-            setActiveServices(data || []);
+            const services = data || [];
+            setActiveServices(services);
+            if (!services.length) {
+                setExpandedActive({});
+                setActiveShifts({});
+                setActiveShiftLoading({});
+                return;
+            }
+
+            const expandedMap = services.reduce((acc, service) => {
+                const serviceId = service.serviceId || service.id;
+                if (serviceId) acc[serviceId] = true;
+                return acc;
+            }, {});
+            setExpandedActive(expandedMap);
+
+            const loadingMap = services.reduce((acc, service) => {
+                const serviceId = service.serviceId || service.id;
+                if (serviceId) acc[serviceId] = true;
+                return acc;
+            }, {});
+            setActiveShiftLoading(loadingMap);
+
+            const results = await Promise.all(
+                services.map(async (service) => {
+                    const serviceId = service.serviceId || service.id;
+                    if (!serviceId) return null;
+                    try {
+                        const rows = await fetchActiveServiceShifts(
+                            authToken,
+                            serviceId
+                        );
+                        return { serviceId, rows: rows || [] };
+                    } catch (error) {
+                        toast.error(
+                            error.message ||
+                                'No se pudieron cargar los turnos abiertos'
+                        );
+                        return { serviceId, rows: [] };
+                    }
+                })
+            );
+
+            const shiftMap = results.reduce((acc, item) => {
+                if (item?.serviceId) {
+                    acc[item.serviceId] = item.rows || [];
+                }
+                return acc;
+            }, {});
+            setActiveShifts(shiftMap);
+
+            const doneMap = results.reduce((acc, item) => {
+                if (item?.serviceId) {
+                    acc[item.serviceId] = false;
+                }
+                return acc;
+            }, {});
+            setActiveShiftLoading((prev) => ({ ...prev, ...doneMap }));
         } catch (error) {
             toast.error(
                 error.message || 'No se pudieron cargar los servicios'

@@ -104,10 +104,29 @@ const EmployeeServicesComponent = () => {
     const [openChats, setOpenChats] = useState({});
     const [readingNfc, setReadingNfc] = useState({});
     const [expandedAddress, setExpandedAddress] = useState({});
+    const [locationWarning, setLocationWarning] = useState('');
     const scrollRestoreRef = useRef(0);
     const nfcSupported = typeof window !== 'undefined' && 'NDEFReader' in window;
     const [loading, setLoading] = useState(false);
     const { unreadByService } = useChatNotifications();
+
+    const openLocationSettings = () => {
+        if (typeof window === 'undefined') return;
+
+        const userAgent = navigator.userAgent || '';
+        if (/Android/i.test(userAgent)) {
+            window.location.href =
+                'intent://settings/location#Intent;scheme=android-app;end';
+            return;
+        }
+
+        if (/iPhone|iPad|iPod/i.test(userAgent)) {
+            window.location.href = 'app-settings:';
+            return;
+        }
+
+        window.open('chrome://settings/content/location', '_blank');
+    };
 
     useEffect(() => {
         const loadServices = async () => {
@@ -169,6 +188,7 @@ const EmployeeServicesComponent = () => {
 
     const handleStart = async (serviceId) => {
         try {
+            setLocationWarning('');
             const location = await getLocation();
             const shiftId = await fetchStartShiftRecord(
                 authToken,
@@ -180,6 +200,9 @@ const EmployeeServicesComponent = () => {
             setOpenShifts((prev) => ({ ...prev, [serviceId]: shiftId }));
             toast.success('Inicio de servicio registrado');
         } catch (error) {
+            setLocationWarning(
+                'Activa la ubicacion del movil para poder fichar.'
+            );
             toast.error(error.message || 'No se pudo iniciar el servicio');
         }
     };
@@ -301,6 +324,14 @@ const EmployeeServicesComponent = () => {
 
     return (
         <section className='employee-services'>
+            {locationWarning && (
+                <div className='employee-services-location-warning'>
+                    <span>{locationWarning}</span>
+                    <button type='button' onClick={openLocationSettings}>
+                        Activar ubicacion
+                    </button>
+                </div>
+            )}
             <div className='employee-services-header'>
                 <div>
                     <h1>Servicios asignados</h1>

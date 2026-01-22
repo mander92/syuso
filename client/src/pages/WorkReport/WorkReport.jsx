@@ -107,6 +107,7 @@ const WorkReport = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [serviceInfo, setServiceInfo] = useState(null);
+    const [locationWarning, setLocationWarning] = useState('');
 
     const [formData, setFormData] = useState({
         folio: '',
@@ -135,6 +136,24 @@ const WorkReport = () => {
     const isDrawingRef = useRef(false);
     const [hasSignature, setHasSignature] = useState(false);
     const signatureDataRef = useRef('');
+
+    const openLocationSettings = () => {
+        if (typeof window === 'undefined') return;
+
+        const userAgent = navigator.userAgent || '';
+        if (/Android/i.test(userAgent)) {
+            window.location.href =
+                'intent://settings/location#Intent;scheme=android-app;end';
+            return;
+        }
+
+        if (/iPhone|iPad|iPod/i.test(userAgent)) {
+            window.location.href = 'app-settings:';
+            return;
+        }
+
+        window.open('chrome://settings/content/location', '_blank');
+    };
 
     useEffect(() => {
         const initCanvas = () => {
@@ -625,7 +644,20 @@ const WorkReport = () => {
 
         try {
             setSaving(true);
-            const locationCoords = await getLocation();
+            let locationCoords;
+            try {
+                setLocationWarning('');
+                locationCoords = await getLocation();
+            } catch (error) {
+                setLocationWarning(
+                    'Activa la ubicacion del movil para poder enviar el parte.'
+                );
+                toast.error(
+                    error.message || 'No se pudo obtener la ubicacion'
+                );
+                setSaving(false);
+                return;
+            }
             const cleanIncidents = incidents
                 .filter(
                     (incident) =>
@@ -740,6 +772,15 @@ const WorkReport = () => {
                     Volver al panel
                 </NavLink>
             </div>
+
+            {locationWarning && (
+                <div className='work-report-location-warning'>
+                    <span>{locationWarning}</span>
+                    <button type='button' onClick={openLocationSettings}>
+                        Activar ubicacion
+                    </button>
+                </div>
+            )}
 
             <form className='work-report-card' onSubmit={handleSubmit}>
                 <div className='work-report-section'>

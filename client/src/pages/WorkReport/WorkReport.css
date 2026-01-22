@@ -12,6 +12,34 @@
     gap: 16px;
 }
 
+.work-report-location-warning {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1rem;
+    border-radius: 12px;
+    border: 1px solid #facc15;
+    background: #fef9c3;
+    color: #92400e;
+    font-size: 0.92rem;
+}
+
+.work-report-location-warning button {
+    border: none;
+    border-radius: 999px;
+    padding: 0.4rem 0.9rem;
+    background: #0f172a;
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.work-report-location-warning button:hover {
+    background: #111827;
+}
+
 .work-report-header h1 {
     margin-bottom: 6px;
 }
