@@ -4,6 +4,12 @@
     padding: 24px 18px 48px;
 }
 
+.service-detail-page--wide {
+    max-width: none;
+    padding-left: clamp(24px, 6vw, 160px);
+    padding-right: clamp(24px, 6vw, 160px);
+}
+
 .service-detail-header {
     display: flex;
     justify-content: space-between;
@@ -172,6 +178,11 @@
     gap: 8px;
 }
 
+.service-detail-section--schedule {
+    width: 100%;
+    overflow: visible;
+}
+
 .service-detail-section-header {
     display: flex;
     justify-content: space-between;
@@ -287,6 +298,21 @@
 
 .service-detail-summary-field--wide {
     grid-column: 1 / -1;
+}
+
+.service-detail-summary-field--toggle {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 18px;
+}
+
+.service-detail-summary-field--toggle input {
+    width: 20px;
+    height: 20px;
+    accent-color: #1d4ed8;
+    cursor: pointer;
 }
 
 .service-detail-summary-block {

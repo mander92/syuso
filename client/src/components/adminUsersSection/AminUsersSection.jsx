@@ -8,6 +8,11 @@ import {
     fetchSendRecoverPasswordUserServices,
     fetchRegisterAdminUserServices,
     fetchAdminSetUserPasswordServices,
+    fetchEmployeeRules,
+    updateEmployeeRules,
+    fetchEmployeeAbsences,
+    createEmployeeAbsence,
+    deleteEmployeeAbsence,
 } from '../../services/userService.js';
 import {
     createDelegation,
@@ -53,6 +58,16 @@ const AdminUsersSection = () => {
     const [passwordValue, setPasswordValue] = useState('');
     const [passwordConfirm, setPasswordConfirm] = useState('');
     const [savingPassword, setSavingPassword] = useState(false);
+    const [editingRules, setEditingRules] = useState(null);
+    const [rulesLoading, setRulesLoading] = useState(false);
+    const [editingAbsences, setEditingAbsences] = useState([]);
+    const [absenceForm, setAbsenceForm] = useState({
+        startDate: '',
+        endDate: '',
+        type: 'vacation',
+        notes: '',
+    });
+    const [savingAbsence, setSavingAbsence] = useState(false);
 
     // Crear usuario nuevo
     const [creating, setCreating] = useState(false);

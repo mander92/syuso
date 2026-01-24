@@ -217,6 +217,49 @@
     font-size: 0.9rem;
 }
 
+.shift-schedule-card {
+    background: #ffffff;
+    border-radius: 1rem;
+    padding: 1.2rem 1.3rem;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    border: 1px solid #e5e7eb;
+}
+
+.shift-schedule-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.shift-schedule-header h2 {
+    margin: 0 0 0.4rem 0;
+    font-size: 1.2rem;
+    color: #0f172a;
+}
+
+.shift-schedule-header p {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.shift-schedule-select {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.shift-schedule-select select {
+    border-radius: 0.55rem;
+    border: 1px solid #e2e8f0;
+    padding: 0.45rem 0.7rem;
+    font-size: 0.9rem;
+    background-color: #ffffff;
+    min-width: 220px;
+}
+
 @media (max-width: 720px) {
     .shift-filters {
         display: grid;

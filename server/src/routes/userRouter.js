@@ -21,6 +21,11 @@ import {
     getUserProfileController,
     adminSetUserPasswordController,
 } from '../controllers/users/index.js';
+import getEmployeeRulesController from '../controllers/schedules/getEmployeeRulesController.js';
+import updateEmployeeRulesController from '../controllers/schedules/updateEmployeeRulesController.js';
+import listEmployeeAbsencesController from '../controllers/schedules/listEmployeeAbsencesController.js';
+import createEmployeeAbsenceController from '../controllers/schedules/createEmployeeAbsenceController.js';
+import deleteEmployeeAbsenceController from '../controllers/schedules/deleteEmployeeAbsenceController.js';
 
 const router = express.Router();
 
@@ -61,6 +66,46 @@ router.post(
 router.patch('/users/password', changeUserPasswordController);
 
 router.put('/user/:userId', authUser, userExists, editUserController);
+
+router.get(
+    '/users/:userId/rules',
+    authUser,
+    isAdmin,
+    userExists,
+    getEmployeeRulesController
+);
+
+router.put(
+    '/users/:userId/rules',
+    authUser,
+    isAdmin,
+    userExists,
+    updateEmployeeRulesController
+);
+
+router.get(
+    '/users/:userId/absences',
+    authUser,
+    isAdmin,
+    userExists,
+    listEmployeeAbsencesController
+);
+
+router.post(
+    '/users/:userId/absences',
+    authUser,
+    isAdmin,
+    userExists,
+    createEmployeeAbsenceController
+);
+
+router.delete(
+    '/users/:userId/absences/:absenceId',
+    authUser,
+    isAdmin,
+    userExists,
+    deleteEmployeeAbsenceController
+);
 
 router.put(
     '/user/password/:userId',

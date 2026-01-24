@@ -6,6 +6,7 @@ import { AuthContext } from '../../context/AuthContext.jsx';
 import useUser from '../../hooks/useUser.js';
 import {
     fetchEmployeeAllServicesServices,
+    fetchEmployeeScheduleShifts,
 } from '../../services/serviceService.js';
 import {
     fetchShiftRecordsEmployee,
@@ -14,6 +15,7 @@ import {
 import { createServiceNfcLog } from '../../services/nfcService.js';
 import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 import ServiceChat from '../serviceChat/ServiceChat.jsx';
+import ServiceScheduleGrid from '../serviceSchedule/ServiceScheduleGrid.jsx';
 import './EmployeeServicesComponent.css';
 
 const LOCATION_CACHE_KEY = 'syuso_last_location';
@@ -109,6 +111,12 @@ const EmployeeServicesComponent = () => {
     const nfcSupported = typeof window !== 'undefined' && 'NDEFReader' in window;
     const [loading, setLoading] = useState(false);
     const { unreadByService } = useChatNotifications();
+    const [scheduleModal, setScheduleModal] = useState(null);
+    const [scheduleMonth] = useState(() =>
+        new Date().toISOString().slice(0, 7)
+    );
+    const [scheduleShifts, setScheduleShifts] = useState([]);
+    const [scheduleLoading, setScheduleLoading] = useState(false);
 
     const openLocationSettings = () => {
         if (typeof window === 'undefined') return;
@@ -231,6 +239,22 @@ const EmployeeServicesComponent = () => {
         }));
     };
 
+    const openScheduleModal = (service) => {
+        const serviceId = service?.serviceId || service?.id;
+        if (!serviceId) return;
+        setScheduleModal({
+            serviceId,
+            serviceName: service?.name || service?.type || 'Servicio',
+            scheduleImage: service?.scheduleImage || '',
+            scheduleView: service?.scheduleView || 'grid',
+        });
+    };
+
+    const closeScheduleModal = () => {
+        setScheduleModal(null);
+        setScheduleShifts([]);
+    };
+
     const handleReadNfc = async (serviceId) => {
         if (!('NDEFReader' in window)) {
             toast.error('NFC no disponible en este dispositivo');
@@ -321,6 +345,47 @@ const EmployeeServicesComponent = () => {
             );
         };
     }, []);
+
+    useEffect(() => {
+        const loadScheduleShifts = async () => {
+            if (!authToken || !scheduleModal?.serviceId || !user?.id) return;
+            try {
+                setScheduleLoading(true);
+                const data = await fetchEmployeeScheduleShifts(
+                    authToken,
+                    scheduleMonth,
+                    false,
+                    scheduleModal.serviceId
+                );
+                const normalized = (Array.isArray(data) ? data : []).map(
+                    (shift) => ({
+                        ...shift,
+                        employeeId: user.id,
+                    })
+                );
+                setScheduleShifts(normalized);
+            } catch (error) {
+                toast.error(
+                    error.message || 'No se pudieron cargar los turnos'
+                );
+            } finally {
+                setScheduleLoading(false);
+            }
+        };
+
+        loadScheduleShifts();
+    }, [authToken, scheduleModal, scheduleMonth, user?.id]);
+
+    const scheduleEmployees = useMemo(() => {
+        if (!user?.id) return [];
+        return [
+            {
+                id: user.id,
+                firstName: user.firstName || 'Empleado',
+                lastName: user.lastName || '',
+            },
+        ];
+    }, [user]);
 
     return (
         <section className='employee-services'>
@@ -483,17 +548,17 @@ const EmployeeServicesComponent = () => {
                                         ) : null}
                                     </div>
                                 </div>
-                                {service.scheduleImage && (
-                                    <div className='employee-card-schedule'>
-                                        <a
-                                            href={`${import.meta.env.VITE_API_URL}/uploads/${service.scheduleImage}`}
-                                            target='_blank'
-                                            rel='noreferrer'
-                                        >
-                                            Ver cuadrante
-                                        </a>
-                                    </div>
-                                )}
+                                <div className='employee-card-schedule'>
+                                    <button
+                                        type='button'
+                                        className='employee-card-schedule-btn'
+                                        onClick={() =>
+                                            openScheduleModal(service)
+                                        }
+                                    >
+                                        Ver cuadrante
+                                    </button>
+                                </div>
                                 {openChats[serviceId] && (
                                     <ServiceChat
                                         serviceId={serviceId}
@@ -505,6 +570,61 @@ const EmployeeServicesComponent = () => {
                         );
                     })}
                 </ul>
+            )}
+            {scheduleModal && (
+                <div
+                    className='employee-schedule-modal-overlay'
+                    onClick={closeScheduleModal}
+                >
+                    <div
+                        className='employee-schedule-modal'
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <div className='employee-schedule-modal-header'>
+                            <div>
+                                <h3>
+                                    Cuadrante: {scheduleModal.serviceName}
+                                </h3>
+                                <p>{scheduleMonth}</p>
+                            </div>
+                            <button
+                                type='button'
+                                className='employee-schedule-modal-close'
+                                onClick={closeScheduleModal}
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                        <div className='employee-schedule-modal-body'>
+                            {scheduleModal.scheduleView === 'image' &&
+                            scheduleModal.scheduleImage ? (
+                                <div className='employee-schedule-image'>
+                                    <a
+                                        href={`${import.meta.env.VITE_API_URL}/uploads/${scheduleModal.scheduleImage}`}
+                                        target='_blank'
+                                        rel='noreferrer'
+                                    >
+                                        Ver cuadrante actual
+                                    </a>
+                                </div>
+                            ) : scheduleLoading ? (
+                                <p>Cargando turnos...</p>
+                            ) : scheduleShifts.length ? (
+                                <ServiceScheduleGrid
+                                    month={scheduleMonth}
+                                    shifts={scheduleShifts}
+                                    employees={scheduleEmployees}
+                                    absencesByEmployee={{}}
+                                    onShiftUpdate={() => {}}
+                                    readOnly
+                                    showUnassigned={false}
+                                />
+                            ) : (
+                                <p>Sin turnos para este mes.</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
             )}
         </section>
     );

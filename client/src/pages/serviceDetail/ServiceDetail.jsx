@@ -16,6 +16,7 @@ import { fetchAllTypeOfServicesServices } from '../../services/typeOfServiceServ
 import ListEmployeeComponent from '../../components/adminServiceSection/listEmployeeComponent/ListEmployeeComponent.jsx';
 import ServiceChat from '../../components/serviceChat/ServiceChat.jsx';
 import NfcTagsManager from '../../components/nfcTags/NfcTagsManager.jsx';
+import ServiceSchedulePanel from '../../components/serviceSchedule/ServiceSchedulePanel.jsx';
 import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 import './ServiceDetail.css';
 
@@ -54,6 +55,7 @@ const ServiceDetail = () => {
         endDateTime: '',
         hours: '',
         numberOfPeople: '',
+        allowUnscheduledClockIn: false,
         address: '',
         city: '',
         postCode: '',
@@ -119,6 +121,7 @@ const ServiceDetail = () => {
                     rows[0]?.numberOfPeople != null
                         ? String(rows[0].numberOfPeople)
                         : '',
+                allowUnscheduledClockIn: !!rows[0]?.allowUnscheduledClockIn,
                 address: rows[0]?.address || '',
                 city: rows[0]?.city || '',
                 postCode: rows[0]?.postCode || '',
@@ -352,8 +355,11 @@ const ServiceDetail = () => {
     };
 
     const handleSummaryChange = (field) => (event) => {
-        const { value } = event.target;
-        setSummaryForm((prev) => ({ ...prev, [field]: value }));
+        const { type, checked, value } = event.target;
+        setSummaryForm((prev) => ({
+            ...prev,
+            [field]: type === 'checkbox' ? checked : value,
+        }));
     };
 
     const handleSaveSummary = async (event) => {
@@ -371,6 +377,7 @@ const ServiceDetail = () => {
                 postCode: summaryForm.postCode,
                 comments: summaryForm.comments,
                 locationLink: summaryForm.locationLink,
+                allowUnscheduledClockIn: summaryForm.allowUnscheduledClockIn,
                 clientId: summaryForm.clientId,
                 typeOfServicesId: summaryForm.typeOfServicesId,
                 ...(summaryForm.startDateTime
@@ -419,7 +426,11 @@ const ServiceDetail = () => {
 
     if (user && user.role !== 'admin' && user.role !== 'sudo') {
         return (
-            <div className='service-detail-page'>
+            <div
+                className={`service-detail-page${
+                    activeTab === 'schedule' ? ' service-detail-page--wide' : ''
+                }`}
+            >
                 <div className='service-detail-card'>
                     <h2>Acceso restringido</h2>
                     <p>Solo administradores pueden ver este detalle.</p>
@@ -432,7 +443,11 @@ const ServiceDetail = () => {
     }
 
     return (
-        <div className='service-detail-page'>
+        <div
+            className={`service-detail-page${
+                activeTab === 'schedule' ? ' service-detail-page--wide' : ''
+            }`}
+        >
             <div className='service-detail-header'>
                 <div>
                     <h1>Detalle del servicio</h1>
@@ -509,6 +524,15 @@ const ServiceDetail = () => {
                                 onClick={() => setActiveTab('nfc')}
                             >
                                 NFC
+                            </button>
+                        )}
+                        {(user?.role === 'admin' || user?.role === 'sudo') && (
+                            <button
+                                type='button'
+                                className={activeTab === 'schedule' ? 'is-active' : ''}
+                                onClick={() => setActiveTab('schedule')}
+                            >
+                                Cuadrante
                             </button>
                         )}
                         {(user?.role === 'admin' || user?.role === 'sudo') && (
@@ -627,6 +651,23 @@ const ServiceDetail = () => {
                                             value={summaryForm.numberOfPeople}
                                             onChange={handleSummaryChange(
                                                 'numberOfPeople'
+                                            )}
+                                        />
+                                    </div>
+                                    <div className='service-detail-summary-field service-detail-summary-field--toggle'>
+                                        <label
+                                            htmlFor='allowUnscheduledClockIn'
+                                        >
+                                            Fichaje sin cuadrante
+                                        </label>
+                                        <input
+                                            id='allowUnscheduledClockIn'
+                                            type='checkbox'
+                                            checked={
+                                                summaryForm.allowUnscheduledClockIn
+                                            }
+                                            onChange={handleSummaryChange(
+                                                'allowUnscheduledClockIn'
                                             )}
                                         />
                                     </div>
@@ -766,6 +807,21 @@ const ServiceDetail = () => {
                                     </button>
                                 </div>
                             </form>
+                        </section>
+                    )}
+
+                    {activeTab === 'schedule' && (
+                        <section className='service-detail-card service-detail-section service-detail-section--schedule'>
+                            <ServiceSchedulePanel
+                                serviceId={serviceId}
+                                authToken={authToken}
+                                allowUnscheduledClockIn={
+                                    summaryForm.allowUnscheduledClockIn
+                                }
+                                scheduleImage={detail?.scheduleImage || ''}
+                                scheduleView={detail?.scheduleView || 'grid'}
+                                onServiceUpdate={loadService}
+                            />
                         </section>
                     )}
 

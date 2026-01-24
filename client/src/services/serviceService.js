@@ -306,3 +306,308 @@ export const uploadServiceScheduleImage = async (
 
     return body.data;
 };
+
+export const fetchServiceScheduleTemplates = async (
+    authToken,
+    serviceId,
+    month
+) => {
+    const res = await fetch(
+        `${VITE_API_URL}/services/${serviceId}/schedule/templates?month=${encodeURIComponent(
+            month
+        )}`,
+        {
+            headers: {
+                Authorization: authToken,
+            },
+        }
+    );
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};
+
+export const fetchServiceShiftTypes = async (authToken, serviceId) => {
+    const res = await fetch(
+        `${VITE_API_URL}/services/${serviceId}/shift-types`,
+        {
+            headers: {
+                Authorization: authToken,
+            },
+        }
+    );
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};
+
+export const createServiceShiftType = async (
+    authToken,
+    serviceId,
+    payload
+) => {
+    const res = await fetch(
+        `${VITE_API_URL}/services/${serviceId}/shift-types`,
+        {
+            method: 'POST',
+            headers: {
+                Authorization: authToken,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        }
+    );
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};
+
+export const updateServiceShiftType = async (
+    authToken,
+    serviceId,
+    shiftTypeId,
+    payload
+) => {
+    const res = await fetch(
+        `${VITE_API_URL}/services/${serviceId}/shift-types/${shiftTypeId}`,
+        {
+            method: 'PATCH',
+            headers: {
+                Authorization: authToken,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        }
+    );
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};
+
+export const deleteServiceShiftType = async (
+    authToken,
+    serviceId,
+    shiftTypeId
+) => {
+    const res = await fetch(
+        `${VITE_API_URL}/services/${serviceId}/shift-types/${shiftTypeId}`,
+        {
+            method: 'DELETE',
+            headers: {
+                Authorization: authToken,
+            },
+        }
+    );
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body;
+};
+
+export const saveServiceScheduleTemplates = async (
+    authToken,
+    serviceId,
+    month,
+    templates
+) => {
+    const res = await fetch(
+        `${VITE_API_URL}/services/${serviceId}/schedule/templates`,
+        {
+            method: 'PUT',
+            headers: {
+                Authorization: authToken,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ month, templates }),
+        }
+    );
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};
+
+export const applyServiceScheduleTemplate = async (
+    authToken,
+    serviceId,
+    month,
+    startDate
+) => {
+    const res = await fetch(
+        `${VITE_API_URL}/services/${serviceId}/schedule/apply-template`,
+        {
+            method: 'POST',
+            headers: {
+                Authorization: authToken,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ month, startDate }),
+        }
+    );
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};
+
+export const fetchServiceScheduleShifts = async (
+    authToken,
+    serviceId,
+    month
+) => {
+    const url = month
+        ? `${VITE_API_URL}/services/${serviceId}/schedule/shifts?month=${encodeURIComponent(
+              month
+          )}`
+        : `${VITE_API_URL}/services/${serviceId}/schedule/shifts`;
+    const res = await fetch(url, {
+        headers: {
+            Authorization: authToken,
+        },
+    });
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};
+
+export const createServiceScheduleShift = async (
+    authToken,
+    serviceId,
+    payload
+) => {
+    const res = await fetch(
+        `${VITE_API_URL}/services/${serviceId}/schedule/shifts`,
+        {
+            method: 'POST',
+            headers: {
+                Authorization: authToken,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        }
+    );
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};
+
+export const updateServiceScheduleShift = async (
+    authToken,
+    serviceId,
+    shiftId,
+    payload
+) => {
+    const res = await fetch(
+        `${VITE_API_URL}/services/${serviceId}/schedule/shifts/${shiftId}`,
+        {
+            method: 'PATCH',
+            headers: {
+                Authorization: authToken,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        }
+    );
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};
+
+export const deleteServiceScheduleShift = async (
+    authToken,
+    serviceId,
+    shiftId
+) => {
+    const res = await fetch(
+        `${VITE_API_URL}/services/${serviceId}/schedule/shifts/${shiftId}`,
+        {
+            method: 'DELETE',
+            headers: {
+                Authorization: authToken,
+            },
+        }
+    );
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body;
+};
+
+export const fetchEmployeeScheduleShifts = async (
+    authToken,
+    month,
+    generateExcel = false,
+    serviceId = ''
+) => {
+    const params = new URLSearchParams();
+    if (month) params.append('month', month);
+    if (generateExcel) params.append('generateExcel', '1');
+    if (serviceId) params.append('serviceId', serviceId);
+    const url = params.toString()
+        ? `${VITE_API_URL}/services/employee/schedule?${params.toString()}`
+        : `${VITE_API_URL}/services/employee/schedule`;
+    const res = await fetch(url, {
+        headers: {
+            Authorization: authToken,
+        },
+    });
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};

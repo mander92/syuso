@@ -31,6 +31,18 @@ import listServiceNfcTagsController from '../controllers/nfcTags/listServiceNfcT
 import createServiceNfcTagController from '../controllers/nfcTags/createServiceNfcTagController.js';
 import deleteServiceNfcTagController from '../controllers/nfcTags/deleteServiceNfcTagController.js';
 import createServiceNfcLogController from '../controllers/nfcTags/createServiceNfcLogController.js';
+import listServiceScheduleTemplatesController from '../controllers/schedules/listServiceScheduleTemplatesController.js';
+import replaceServiceScheduleTemplatesController from '../controllers/schedules/replaceServiceScheduleTemplatesController.js';
+import applyServiceScheduleTemplateController from '../controllers/schedules/applyServiceScheduleTemplateController.js';
+import listServiceScheduleShiftsController from '../controllers/schedules/listServiceScheduleShiftsController.js';
+import createServiceScheduleShiftController from '../controllers/schedules/createServiceScheduleShiftController.js';
+import updateServiceScheduleShiftController from '../controllers/schedules/updateServiceScheduleShiftController.js';
+import deleteServiceScheduleShiftController from '../controllers/schedules/deleteServiceScheduleShiftController.js';
+import listEmployeeScheduleShiftsController from '../controllers/schedules/listEmployeeScheduleShiftsController.js';
+import listServiceShiftTypesController from '../controllers/schedules/listServiceShiftTypesController.js';
+import createServiceShiftTypeController from '../controllers/schedules/createServiceShiftTypeController.js';
+import updateServiceShiftTypeController from '../controllers/schedules/updateServiceShiftTypeController.js';
+import deleteServiceShiftTypeController from '../controllers/schedules/deleteServiceShiftTypeController.js';
 
 const router = express.Router();
 
@@ -45,6 +57,13 @@ router.get(
     listEmployeeServiceController
 );
 
+router.get(
+    '/services/employee/schedule',
+    authUser,
+    isEmployee,
+    listEmployeeScheduleShiftsController
+);
+
 router.get('/services/in-progress', authUser, listInProgressServicesController);
 
 router.get(
@@ -53,6 +72,94 @@ router.get(
     isAdmin,
     serviceExists,
     listActiveServiceShiftsController
+);
+
+router.get(
+    '/services/:serviceId/schedule/templates',
+    authUser,
+    isAdmin,
+    serviceExists,
+    listServiceScheduleTemplatesController
+);
+
+router.put(
+    '/services/:serviceId/schedule/templates',
+    authUser,
+    isAdmin,
+    serviceExists,
+    replaceServiceScheduleTemplatesController
+);
+
+router.post(
+    '/services/:serviceId/schedule/apply-template',
+    authUser,
+    isAdmin,
+    serviceExists,
+    applyServiceScheduleTemplateController
+);
+
+router.get(
+    '/services/:serviceId/schedule/shifts',
+    authUser,
+    isAdmin,
+    serviceExists,
+    listServiceScheduleShiftsController
+);
+
+router.get(
+    '/services/:serviceId/shift-types',
+    authUser,
+    isAdmin,
+    serviceExists,
+    listServiceShiftTypesController
+);
+
+router.post(
+    '/services/:serviceId/shift-types',
+    authUser,
+    isAdmin,
+    serviceExists,
+    createServiceShiftTypeController
+);
+
+router.patch(
+    '/services/:serviceId/shift-types/:shiftTypeId',
+    authUser,
+    isAdmin,
+    serviceExists,
+    updateServiceShiftTypeController
+);
+
+router.delete(
+    '/services/:serviceId/shift-types/:shiftTypeId',
+    authUser,
+    isAdmin,
+    serviceExists,
+    deleteServiceShiftTypeController
+);
+
+router.post(
+    '/services/:serviceId/schedule/shifts',
+    authUser,
+    isAdmin,
+    serviceExists,
+    createServiceScheduleShiftController
+);
+
+router.patch(
+    '/services/:serviceId/schedule/shifts/:shiftId',
+    authUser,
+    isAdmin,
+    serviceExists,
+    updateServiceScheduleShiftController
+);
+
+router.delete(
+    '/services/:serviceId/schedule/shifts/:shiftId',
+    authUser,
+    isAdmin,
+    serviceExists,
+    deleteServiceScheduleShiftController
 );
 
 router.get(

@@ -1,5 +1,7 @@
 import getPool from '../../db/getPool.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
+import selectScheduledShiftForClockInService from '../schedules/selectScheduledShiftForClockInService.js';
+import { getMadridDateTimeParts } from '../../utils/scheduleTimeUtil.js';
 
 const endShiftRecordService = async (
     shiftRecordId,
@@ -74,7 +76,39 @@ const endShiftRecordService = async (
         return;
     }
 
-    // 3) Marcar el servicio como completado (si aplica a tu lógica de negocio)
+    const [shiftTimeRows] = await pool.query(
+        `
+        SELECT realClockIn
+        FROM shiftRecords
+        WHERE id = ?
+        `,
+        [shiftId]
+    );
+
+    if (shiftTimeRows.length && shiftTimeRows[0].realClockIn) {
+        const { date: localDate, time: localTime } = getMadridDateTimeParts(
+            new Date(shiftTimeRows[0].realClockIn)
+        );
+
+        const scheduledShift = await selectScheduledShiftForClockInService(
+            serviceId,
+            employeeId,
+            localDate,
+            localTime
+        );
+
+        if (scheduledShift) {
+            await pool.query(
+                `
+                UPDATE serviceScheduleShifts
+                SET status = 'completed'
+                WHERE id = ?
+                `,
+                [scheduledShift.id]
+            );
+        }
+    }
+
     return;
 
 };

@@ -15,6 +15,8 @@ const updateServiceByIdService = async (
     numberOfPeople,
     reportEmail,
     locationLink,
+    allowUnscheduledClockIn,
+    scheduleView,
     clientId,
     typeOfServicesId,
     role
@@ -25,6 +27,8 @@ const updateServiceByIdService = async (
         `
         SELECT s.id, s.status, s.startDateTime, s.hours, s.numberOfPeople, s.comments,
                s.reportEmail, s.locationLink, s.name, s.endDateTime, s.clientId,
+               s.allowUnscheduledClockIn,
+               s.scheduleView,
                s.addressId, s.typeOfServicesId,
                a.address, a.postCode, a.city
         FROM services s
@@ -82,6 +86,14 @@ const updateServiceByIdService = async (
         locationLink !== undefined && locationLink !== null
             ? String(locationLink).trim()
             : current.locationLink;
+    const resolvedAllowUnscheduledClockIn =
+        typeof allowUnscheduledClockIn === 'boolean'
+            ? allowUnscheduledClockIn
+            : current.allowUnscheduledClockIn;
+    const resolvedScheduleView =
+        scheduleView === 'image' || scheduleView === 'grid'
+            ? scheduleView
+            : current.scheduleView;
     const resolvedClientId =
         clientId && clientId.trim() !== ''
             ? clientId.trim()
@@ -107,6 +119,8 @@ const updateServiceByIdService = async (
         'numberOfPeople = ?',
         'reportEmail = ?',
         'locationLink = ?',
+        'allowUnscheduledClockIn = ?',
+        'scheduleView = ?',
         'clientId = ?',
         'typeOfServicesId = ?',
     ];
@@ -118,6 +132,8 @@ const updateServiceByIdService = async (
         resolvedNumberOfPeople,
         resolvedReportEmail,
         resolvedLocationLink,
+        resolvedAllowUnscheduledClockIn,
+        resolvedScheduleView,
         resolvedClientId,
         resolvedTypeOfServicesId,
     ];
@@ -173,6 +189,8 @@ const updateServiceByIdService = async (
         `
         SELECT s.startDateTime, s.hours, s.numberOfPeople, s.reportEmail,
                s.locationLink, s.name, s.status, s.endDateTime, s.clientId,
+               s.allowUnscheduledClockIn,
+               s.scheduleView,
                s.typeOfServicesId,
                a.address, a.city, a.postCode
         FROM services s

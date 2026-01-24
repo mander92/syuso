@@ -79,7 +79,7 @@ const selectShiftRecordsService = async (
         sqlValuesDetails.push(...delegationNames);
     }
 
-    sqlQueryDetails += ' ORDER BY s.clockIn DESC';
+    sqlQueryDetails += ' ORDER BY COALESCE(s.realClockIn, s.clockIn) DESC';
 
     const [rowsDetails] = await pool.query(
         sqlQueryDetails,

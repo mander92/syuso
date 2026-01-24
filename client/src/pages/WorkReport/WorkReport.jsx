@@ -31,7 +31,6 @@ const toLocalInputDateTime = (value) => {
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 
-const nowDate = () => toLocalInputDate(new Date());
 const nowDateTime = () => toLocalInputDateTime(new Date());
 
 const toApiDateTime = (value) => {
@@ -40,6 +39,25 @@ const toApiDateTime = (value) => {
     if (parts.length !== 2) return value;
     const time = parts[1].length === 5 ? `${parts[1]}:00` : parts[1];
     return `${parts[0]}T${time}`;
+};
+
+const calculateTotalHours = (startValue, endValue) => {
+    if (!startValue || !endValue) return '';
+    const start = new Date(startValue);
+    const end = new Date(endValue);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        return '';
+    }
+    let diffMs = end.getTime() - start.getTime();
+    if (diffMs < 0) {
+        const nextEnd = new Date(end);
+        nextEnd.setDate(nextEnd.getDate() + 1);
+        diffMs = nextEnd.getTime() - start.getTime();
+    }
+    if (diffMs < 0) return '';
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs / (1000 * 60)) % 60);
+    return `${hours}h ${minutes}m`;
 };
 
 const LOCATION_CACHE_KEY = 'syuso_last_location';
@@ -111,7 +129,6 @@ const WorkReport = () => {
 
     const [formData, setFormData] = useState({
         folio: '',
-        reportDate: nowDate(),
         incidentStart: '',
         incidentEnd: '',
         totalHours: '',
@@ -121,7 +138,6 @@ const WorkReport = () => {
         securityCompany: 'Syuso',
         description: '',
     });
-    const [totalHoursManual, setTotalHoursManual] = useState(false);
     const [incidents, setIncidents] = useState([
         { id: Date.now(), text: '', photoPaths: [], newPhotos: [] },
     ]);
@@ -300,27 +316,31 @@ const WorkReport = () => {
         return serviceInfo.type || '';
     }, [serviceInfo]);
 
-    const computedTotalHours = useMemo(() => {
-        if (!formData.incidentStart || !formData.incidentEnd) return '';
-        const start = new Date(formData.incidentStart);
-        const end = new Date(formData.incidentEnd);
-        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-            return '';
-        }
-        const diffMs = end.getTime() - start.getTime();
-        if (diffMs < 0) return '';
-        const hours = Math.floor(diffMs / (1000 * 60 * 60));
-        const minutes = Math.floor((diffMs / (1000 * 60)) % 60);
-        return `${hours}h ${minutes}m`;
-    }, [formData.incidentStart, formData.incidentEnd]);
+    const minIncidentStart = useMemo(() => {
+        if (!serviceInfo?.startDateTime) return '';
+        return toLocalInputDateTime(serviceInfo.startDateTime);
+    }, [serviceInfo]);
+
+    const minIncidentEnd = useMemo(() => {
+        if (formData.incidentStart) return formData.incidentStart;
+        return minIncidentStart;
+    }, [formData.incidentStart, minIncidentStart]);
+
+    const computedTotalHours = useMemo(
+        () =>
+            calculateTotalHours(
+                formData.incidentStart,
+                formData.incidentEnd
+            ),
+        [formData.incidentStart, formData.incidentEnd]
+    );
 
     useEffect(() => {
-        if (totalHoursManual) return;
         setFormData((prev) => ({
             ...prev,
             totalHours: computedTotalHours,
         }));
-    }, [computedTotalHours, totalHoursManual]);
+    }, [computedTotalHours]);
 
     useEffect(() => {
         if (!serviceInfo || !shiftRecordId) return;
@@ -344,7 +364,6 @@ const WorkReport = () => {
         setFormData((prev) => ({
             ...prev,
             folio,
-            reportDate: startDate ? toLocalInputDate(startDate) : prev.reportDate,
             incidentEnd: endDate
                 ? toLocalInputDateTime(endDate)
                 : prev.incidentEnd,
@@ -370,8 +389,26 @@ const WorkReport = () => {
 
     const handleChange = (event) => {
         const { name, value } = event.target;
-        if (name === 'totalHours') {
-            setTotalHoursManual(true);
+        if (name === 'incidentStart' && minIncidentStart && value < minIncidentStart) {
+            setFormData((prev) => ({ ...prev, incidentStart: minIncidentStart }));
+            return;
+        }
+        if (name === 'incidentEnd' && minIncidentEnd && value < minIncidentEnd) {
+            setFormData((prev) => ({ ...prev, incidentEnd: minIncidentEnd }));
+            return;
+        }
+        if (name === 'incidentStart' || name === 'incidentEnd') {
+            setFormData((prev) => {
+                const next = { ...prev, [name]: value };
+                return {
+                    ...next,
+                    totalHours: calculateTotalHours(
+                        next.incidentStart,
+                        next.incidentEnd
+                    ),
+                };
+            });
+            return;
         }
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
@@ -526,7 +563,6 @@ const WorkReport = () => {
             const formDataPayload = new FormData();
             formDataPayload.append('serviceId', resolvedServiceId);
             formDataPayload.append('folio', formData.folio.trim());
-            formDataPayload.append('reportDate', formData.reportDate || '');
             formDataPayload.append(
                 'incidentStart',
                 toApiDateTime(formData.incidentStart || '')
@@ -535,7 +571,7 @@ const WorkReport = () => {
                 'incidentEnd',
                 toApiDateTime(formData.incidentEnd || '')
             );
-            formDataPayload.append('totalHours', formData.totalHours || '');
+            formDataPayload.append('totalHours', computedTotalHours || '');
             formDataPayload.append('location', formData.location || '');
             formDataPayload.append(
                 'guardFullName',
@@ -674,7 +710,6 @@ const WorkReport = () => {
             const formDataPayload = new FormData();
             formDataPayload.append('serviceId', resolvedServiceId);
             formDataPayload.append('folio', formData.folio.trim());
-            formDataPayload.append('reportDate', formData.reportDate);
             formDataPayload.append(
                 'incidentStart',
                 toApiDateTime(formData.incidentStart)
@@ -682,6 +717,10 @@ const WorkReport = () => {
             formDataPayload.append(
                 'incidentEnd',
                 toApiDateTime(formData.incidentEnd)
+            );
+            formDataPayload.append(
+                'totalHours',
+                computedTotalHours || ''
             );
             formDataPayload.append('location', formData.location.trim());
             formDataPayload.append(
@@ -791,21 +830,13 @@ const WorkReport = () => {
                             <input name='folio' value={formData.folio} readOnly />
                         </label>
                         <label>
-                            Fecha del reporte
-                            <input
-                                type='date'
-                                name='reportDate'
-                                value={formData.reportDate}
-                                readOnly
-                            />
-                        </label>
-                        <label>
                             Hora inicio
                             <input
                                 type='datetime-local'
                                 name='incidentStart'
                                 value={formData.incidentStart}
                                 onChange={handleChange}
+                                min={minIncidentStart || undefined}
                                 required
                             />
                         </label>
@@ -816,6 +847,7 @@ const WorkReport = () => {
                                 name='incidentEnd'
                                 value={formData.incidentEnd}
                                 onChange={handleChange}
+                                min={minIncidentEnd || undefined}
                                 required
                             />
                         </label>
@@ -823,8 +855,8 @@ const WorkReport = () => {
                             Total de horas
                             <input
                                 name='totalHours'
-                                value={formData.totalHours}
-                                onChange={handleChange}
+                                value={computedTotalHours}
+                                readOnly
                             />
                         </label>
                         <label className='work-report-span'>
@@ -833,6 +865,7 @@ const WorkReport = () => {
                                 name='location'
                                 value={formData.location}
                                 onChange={handleChange}
+                                readOnly={Boolean(serviceInfo?.address)}
                                 required
                             />
                         </label>

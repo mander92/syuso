@@ -1,0 +1,577 @@
+.service-schedule-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.service-schedule-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.service-schedule-header h2 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.service-schedule-header p {
+    margin: 6px 0 0;
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.service-schedule-month {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.service-schedule-month input {
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    padding: 6px 10px;
+}
+
+.service-schedule-section {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px;
+    background: #fff;
+}
+
+.service-schedule-section--wide {
+    width: 100%;
+    max-width: 2000px;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 12px;
+}
+
+.service-schedule-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.service-schedule-section-header--split {
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.service-schedule-section-header button {
+    background: #0f172a;
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 6px 12px;
+    cursor: pointer;
+}
+
+.service-schedule-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+}
+
+.service-schedule-upload {
+    position: relative;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #1d4ed8;
+    color: #fff;
+    border-radius: 999px;
+    padding: 6px 14px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.service-schedule-upload input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.service-schedule-upload[disabled],
+.service-schedule-upload input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.service-schedule-view-toggle {
+    display: inline-flex;
+    border-radius: 999px;
+    border: 1px solid #cbd5f5;
+    overflow: hidden;
+}
+
+.service-schedule-view-toggle button {
+    border-radius: 0;
+    padding: 6px 12px;
+    background: #f8fafc;
+    color: #1e3a8a;
+}
+
+.service-schedule-view-toggle button.is-active {
+    background: #1d4ed8;
+    color: #fff;
+}
+
+.service-schedule-image-preview {
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #64748b;
+}
+
+.service-schedule-image-preview a {
+    color: #1d4ed8;
+    font-weight: 600;
+}
+
+.service-schedule-open-grid {
+    background: #1d4ed8;
+    color: #fff;
+}
+
+.service-schedule-help {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.service-schedule-template-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.service-schedule-template-row {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1fr 0.6fr 1fr auto;
+    gap: 10px;
+    align-items: center;
+}
+
+.service-schedule-template-row select,
+.service-schedule-template-row input {
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    padding: 6px 8px;
+}
+
+.service-schedule-row-delete {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.service-schedule-apply {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.service-schedule-apply input {
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    padding: 6px 10px;
+}
+
+.service-schedule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.service-schedule-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px;
+    background: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.service-schedule-card-main {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.service-schedule-card-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.service-schedule-card-controls select,
+.service-schedule-card-controls input {
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    padding: 6px 8px;
+}
+
+.service-schedule-card-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.service-schedule-card-actions button {
+    background: #0f172a;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+}
+
+.service-schedule-card-actions button.danger {
+    background: #dc2626;
+}
+
+.service-schedule-new {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.service-schedule-new-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+}
+
+.service-schedule-new input,
+.service-schedule-new select {
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    padding: 6px 8px;
+}
+
+.service-schedule-new button {
+    align-self: flex-start;
+    background: #1d4ed8;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    cursor: pointer;
+}
+
+.service-schedule-grid-wrapper {
+    width: 100%;
+    overflow-x: visible;
+    padding-bottom: 8px;
+    padding-left: 16px;
+    padding-right: 16px;
+    max-width: 100%;
+}
+
+.service-schedule-grid-wrapper::-webkit-scrollbar {
+    height: 8px;
+}
+
+.service-schedule-grid-wrapper::-webkit-scrollbar-thumb {
+    background: #cbd5f5;
+    border-radius: 999px;
+}
+
+.service-schedule-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 2000;
+}
+
+.service-schedule-modal {
+    background: #ffffff;
+    border-radius: 16px;
+    width: min(720px, 96vw);
+    padding: 20px;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.service-schedule-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.service-schedule-modal-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.service-schedule-modal-header p {
+    margin: 4px 0 0;
+    color: #64748b;
+}
+
+.service-schedule-modal-close {
+    border: none;
+    background: #e2e8f0;
+    color: #0f172a;
+    border-radius: 999px;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+}
+
+.service-schedule-modal-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+}
+
+.service-schedule-modal-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: #475569;
+}
+
+.service-schedule-modal-grid input,
+.service-schedule-modal-grid select {
+    border-radius: 10px;
+    border: 1px solid #d1d5db;
+    padding: 8px 10px;
+    font-size: 0.9rem;
+}
+
+.service-schedule-modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.service-schedule-grid-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.service-schedule-grid-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    border: none;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.service-schedule-grid-modal__panel {
+    position: relative;
+    width: min(96vw, 2000px);
+    max-height: 92vh;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.service-schedule-grid-modal__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.service-schedule-grid-modal__header h3 {
+    margin: 0;
+}
+
+.service-schedule-grid-modal__header p {
+    margin: 4px 0 0;
+    color: #64748b;
+}
+
+.service-schedule-grid-modal__close {
+    border: none;
+    background: #e2e8f0;
+    color: #0f172a;
+    border-radius: 999px;
+    padding: 6px 14px;
+    cursor: pointer;
+}
+
+.service-schedule-grid-modal__body {
+    padding: 16px 20px 24px;
+    overflow: auto;
+}
+
+@media (max-width: 720px) {
+    .service-schedule-grid-modal {
+        padding: 0;
+    }
+
+    .service-schedule-grid-modal__panel {
+        width: 100%;
+        max-height: 100vh;
+        height: 100vh;
+        border-radius: 0;
+    }
+
+    .service-schedule-grid-modal__body {
+        padding: 12px;
+    }
+}
+
+.service-schedule-btn {
+    border: none;
+    border-radius: 999px;
+    padding: 8px 16px;
+    background: #1d4ed8;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+.service-schedule-btn--ghost {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.service-schedule-btn--danger {
+    background: #dc2626;
+}
+
+.service-schedule-types {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.service-schedule-type-row {
+    display: grid;
+    grid-template-columns: 1fr 60px auto;
+    gap: 10px;
+    align-items: center;
+}
+
+.service-schedule-type-name {
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    padding: 6px 8px;
+}
+
+.service-schedule-type-color {
+    border: none;
+    background: transparent;
+    width: 44px;
+    height: 36px;
+    padding: 0;
+}
+
+.service-schedule-type-delete {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+}
+
+.service-schedule-type-new {
+    margin-top: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.service-schedule-type-new input[type='text'] {
+    flex: 1;
+    min-width: 180px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    padding: 6px 8px;
+}
+
+.service-schedule-type-new input[type='color'] {
+    width: 44px;
+    height: 36px;
+    border: none;
+    background: transparent;
+    padding: 0;
+}
+
+.service-schedule-type-new button {
+    background: #0f172a;
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 6px 14px;
+    cursor: pointer;
+}
+
+.service-schedule-shift-type {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin-top: 6px;
+}
+
+.service-schedule-empty {
+    color: #64748b;
+}
+
+@media (max-width: 720px) {
+    .service-schedule-template-row {
+        grid-template-columns: 1fr;
+    }
+
+    .service-schedule-card-controls {
+        width: 100%;
+    }
+
+    .service-schedule-card-controls select,
+    .service-schedule-card-controls input {
+        flex: 1;
+        min-width: 140px;
+    }
+}

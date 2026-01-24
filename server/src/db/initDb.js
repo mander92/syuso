@@ -19,7 +19,7 @@ const initDb = async () => {
 
         await pool.query(
             `
-            DROP TABLE IF EXISTS serviceNfcTagLogs, workReportIncidentPhotos, workReportPhotos, workReportIncidents, workReportDrafts, workReports, serviceChatMessages, serviceChatReads, generalChatMessages, generalChatReads, generalChatMembers, generalChats, personsAssigned, serviceNfcTags, shiftRecords, adminDelegations, delegations, services, typeOfServices, users, addresses, consulting_requests, job_applications
+            DROP TABLE IF EXISTS serviceNfcTagLogs, workReportIncidentPhotos, workReportPhotos, workReportIncidents, workReportDrafts, workReports, generalChatMessages, generalChatReads, generalChatMembers, generalChats, serviceChatMessages, serviceChatReads, serviceScheduleShifts, serviceScheduleTemplates, serviceShiftTypes, employeeAbsences, employeeRules, personsAssigned, serviceNfcTags, shiftRecords, adminDelegations, delegations, services, typeOfServices, users, addresses, consulting_requests, job_applications
             `
         );
 
@@ -93,10 +93,12 @@ const initDb = async () => {
                 numberOfPeople INT UNSIGNED NOT NULL,
                 comments VARCHAR(250),
                 reportEmail VARCHAR(255),
-                locationLink VARCHAR(255),
-                scheduleImage VARCHAR(255),
-                chatPaused BOOLEAN DEFAULT false,
+                  locationLink VARCHAR(255),
+                  scheduleImage VARCHAR(255),
+                  scheduleView ENUM('grid', 'image') DEFAULT 'grid',
+                  chatPaused BOOLEAN DEFAULT false,
                 status ENUM ('accepted', 'rejected', 'pending', 'completed', 'confirmed', 'canceled') DEFAULT 'pending',
+                allowUnscheduledClockIn BOOLEAN DEFAULT false,
                 validationCode VARCHAR(30),
                 clientId CHAR(36) NOT NULL,
                 addressId CHAR(36) NOT NULL,
@@ -135,6 +137,108 @@ const initDb = async () => {
         );
 
         console.log('shiftRecord creada');
+
+        await pool.query(
+            `
+            CREATE TABLE IF NOT EXISTS employeeRules (
+                employeeId CHAR(36) PRIMARY KEY NOT NULL,
+                minMonthlyHours INT UNSIGNED DEFAULT 0,
+                maxMonthlyHours INT UNSIGNED DEFAULT 0,
+                minRestHours INT UNSIGNED DEFAULT 0,
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                modifiedAt TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (employeeId) REFERENCES users(id) ON DELETE CASCADE
+            )
+            `
+        );
+
+        console.log('employeeRules creada');
+
+        await pool.query(
+            `
+            CREATE TABLE IF NOT EXISTS employeeAbsences (
+                id CHAR(36) PRIMARY KEY NOT NULL,
+                employeeId CHAR(36) NOT NULL,
+                startDate DATE NOT NULL,
+                endDate DATE NOT NULL,
+                type ENUM('vacation', 'off') NOT NULL,
+                notes VARCHAR(255),
+                createdBy CHAR(36),
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                modifiedAt TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (employeeId) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE SET NULL
+            )
+            `
+        );
+
+        console.log('employeeAbsences creada');
+
+        await pool.query(
+            `
+            CREATE TABLE IF NOT EXISTS serviceShiftTypes (
+                id CHAR(36) PRIMARY KEY NOT NULL,
+                serviceId CHAR(36) NOT NULL,
+                name VARCHAR(80) NOT NULL,
+                color VARCHAR(20) NOT NULL,
+                createdBy CHAR(36),
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                modifiedAt TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (serviceId) REFERENCES services(id) ON DELETE CASCADE,
+                FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE SET NULL
+            )
+            `
+        );
+
+        console.log('serviceShiftTypes creada');
+
+        await pool.query(
+            `
+            CREATE TABLE IF NOT EXISTS serviceScheduleTemplates (
+                id CHAR(36) PRIMARY KEY NOT NULL,
+                serviceId CHAR(36) NOT NULL,
+                month CHAR(7) NOT NULL,
+                shiftTypeId CHAR(36),
+                weekday TINYINT UNSIGNED NOT NULL,
+                startTime TIME NOT NULL,
+                endTime TIME NOT NULL,
+                slots INT UNSIGNED NOT NULL DEFAULT 1,
+                createdBy CHAR(36),
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (serviceId) REFERENCES services(id) ON DELETE CASCADE,
+                FOREIGN KEY (shiftTypeId) REFERENCES serviceShiftTypes(id) ON DELETE SET NULL,
+                FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE SET NULL
+            )
+            `
+        );
+
+        console.log('serviceScheduleTemplates creada');
+
+        await pool.query(
+            `
+            CREATE TABLE IF NOT EXISTS serviceScheduleShifts (
+                id CHAR(36) PRIMARY KEY NOT NULL,
+                serviceId CHAR(36) NOT NULL,
+                employeeId CHAR(36),
+                shiftTypeId CHAR(36),
+                scheduleDate DATE NOT NULL,
+                startTime TIME NOT NULL,
+                endTime TIME NOT NULL,
+                hours DECIMAL(5,2),
+                status ENUM('scheduled', 'completed', 'canceled') DEFAULT 'scheduled',
+                createdBy CHAR(36),
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                modifiedAt TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                deletedAt TIMESTAMP,
+                FOREIGN KEY (serviceId) REFERENCES services(id) ON DELETE CASCADE,
+                FOREIGN KEY (employeeId) REFERENCES users(id) ON DELETE SET NULL,
+                FOREIGN KEY (shiftTypeId) REFERENCES serviceShiftTypes(id) ON DELETE SET NULL,
+                FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE SET NULL
+            )
+            `
+        );
+
+        console.log('serviceScheduleShifts creada');
 
         await pool.query(
             `

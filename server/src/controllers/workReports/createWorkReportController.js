@@ -35,9 +35,10 @@ const createWorkReportController = async (req, res, next) => {
         const schema = Joi.object().keys({
             serviceId: Joi.string().length(36).required(),
             folio: Joi.string().required(),
-            reportDate: Joi.date().required(),
+            reportDate: Joi.date().optional(),
             incidentStart: Joi.date().required(),
             incidentEnd: Joi.date().required(),
+            totalHours: Joi.string().allow('', null),
             location: Joi.string().required(),
             guardFullName: Joi.string().required(),
             guardEmployeeNumber: Joi.string().required(),
@@ -82,7 +83,7 @@ const createWorkReportController = async (req, res, next) => {
             incidentFiles: req.files || {},
             reportData: {
                 folio: req.body.folio,
-                reportDate: req.body.reportDate,
+                reportDate: req.body.reportDate || new Date().toISOString(),
                 incidentStart: req.body.incidentStart,
                 incidentEnd: req.body.incidentEnd,
                 location: req.body.location,

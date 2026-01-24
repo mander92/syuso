@@ -408,12 +408,17 @@
     padding: 1.25rem;
     box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
     border: 1px solid #e5e7eb;
+    width: 100%;
+    max-width: 520px;
+    box-sizing: border-box;
 }
 
 .admin-users-edit-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 0.75rem;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 @media (max-width: 800px) {
@@ -426,6 +431,8 @@
     border-radius: 0.55rem;
     padding: 0.45rem 0.7rem;
     border: 1px solid #e2e8f0;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .admin-users-edit-field select {
@@ -433,6 +440,8 @@
     padding: 0.45rem 0.7rem;
     border: 1px solid #e2e8f0;
     background: #fff;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* === DELEGACIONES === */
@@ -619,6 +628,42 @@
 
     .admin-users-actions {
         justify-content: flex-start;
+    }
+
+    .admin-users-table tr.admin-users-edit-row {
+        display: block;
+        width: 100%;
+        align-self: stretch;
+        padding: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .admin-users-edit-row td {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+        flex: 0 0 100%;
+    }
+
+    .admin-users-edit-card {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 auto;
+        box-sizing: border-box;
+    }
+
+    .admin-users-edit-form {
+        width: 100%;
+    }
+}
+
+@media (max-width: 640px) {
+    .admin-users-modal {
+        width: 100%;
+        max-width: 420px;
+        margin: 0 auto;
     }
 }
 

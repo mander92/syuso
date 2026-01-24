@@ -12,9 +12,11 @@ import {
     fetchUpdateShiftRecord,
     fetchDeleteShiftRecord,
 } from '../../services/shiftRecordService.js';
+import { fetchAllServicesServices } from '../../services/serviceService.js';
 import { fetchDelegations } from '../../services/delegationService.js';
 import CalendarComponent from '../calendarComponent/CalendarComponent.jsx';
-import { formatDateTimeMadrid } from '../../utils/dateTimeMadrid.js';
+import ServiceSchedulePanel from '../serviceSchedule/ServiceSchedulePanel.jsx';
+import { formatDateTimeMadrid, toMadridDate } from '../../utils/dateTimeMadrid.js';
 import './ShiftComponent.css';
 
 const { VITE_API_URL } = import.meta.env;
@@ -43,6 +45,9 @@ const ShiftComponent = () => {
     const [modalSaving, setModalSaving] = useState(false);
     const [modalClockIn, setModalClockIn] = useState('');
     const [modalClockOut, setModalClockOut] = useState('');
+    const [scheduleServices, setScheduleServices] = useState([]);
+    const [scheduleServiceId, setScheduleServiceId] = useState('');
+    const [scheduleLoading, setScheduleLoading] = useState(false);
 
     const locationsPerPage = 10;
 
@@ -111,6 +116,30 @@ const ShiftComponent = () => {
         };
 
         loadDelegations();
+    }, [authToken, isAdminLike]);
+
+    useEffect(() => {
+        const loadScheduleServices = async () => {
+            if (!authToken || !isAdminLike) return;
+            try {
+                setScheduleLoading(true);
+                const params = new URLSearchParams();
+                params.append('status', 'confirmed');
+                const data = await fetchAllServicesServices(
+                    params.toString(),
+                    authToken
+                );
+                setScheduleServices(data?.data || []);
+            } catch (error) {
+                toast.error(
+                    error.message || 'No se pudieron cargar servicios'
+                );
+            } finally {
+                setScheduleLoading(false);
+            }
+        };
+
+        loadScheduleServices();
     }, [authToken, isAdminLike]);
 
     const loadShiftRecords = async () => {
@@ -250,14 +279,17 @@ const ShiftComponent = () => {
             details.map((record) => {
                 const start =
                     parseLocalDateTime(record.clockIn) ||
+                    toMadridDate(record.realClockIn) ||
                     parseLocalDateTime(record.startDateTime) ||
                     new Date();
 
                 let end = record.clockOut
                     ? parseLocalDateTime(record.clockOut)
-                    : new Date(start);
+                    : record.realClockOut
+                      ? toMadridDate(record.realClockOut)
+                      : new Date(start);
 
-                if (!record.clockOut) {
+                if (!record.clockOut && !record.realClockOut) {
                     const hours = Number(record.hours) || 1;
                     end.setHours(end.getHours() + hours);
                 }
@@ -774,6 +806,48 @@ const ShiftComponent = () => {
                                 Siguiente
                             </button>
                         </div>
+                    )}
+                </div>
+            )}
+
+            {isAdminLike && (
+                <div className='shift-schedule-card'>
+                    <div className='shift-schedule-header'>
+                        <div>
+                            <h2>Cuadrante por servicio</h2>
+                            <p>Selecciona un servicio para editar el mes.</p>
+                        </div>
+                        <div className='shift-schedule-select'>
+                            <label htmlFor='scheduleService'>Servicio</label>
+                            <select
+                                id='scheduleService'
+                                value={scheduleServiceId}
+                                onChange={(event) =>
+                                    setScheduleServiceId(event.target.value)
+                                }
+                            >
+                                <option value=''>
+                                    {scheduleLoading
+                                        ? 'Cargando...'
+                                        : 'Selecciona un servicio'}
+                                </option>
+                                {scheduleServices.map((service) => (
+                                    <option key={service.id} value={service.id}>
+                                        {service.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                    {scheduleServiceId ? (
+                        <ServiceSchedulePanel
+                            serviceId={scheduleServiceId}
+                            authToken={authToken}
+                        />
+                    ) : (
+                        <p className='shift-loading'>
+                            Selecciona un servicio para ver el cuadrante.
+                        </p>
                     )}
                 </div>
             )}

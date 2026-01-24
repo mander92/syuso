@@ -1,0 +1,95 @@
+.service-schedule-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-bottom: 8px;
+    width: 100%;
+}
+
+.service-schedule-grid-head,
+.service-schedule-grid-row {
+    display: grid;
+    grid-template-columns: minmax(160px, 220px) repeat(var(--days), minmax(0, 1fr));
+    width: 100%;
+    min-width: 0;
+}
+
+.service-schedule-grid-corner,
+.service-schedule-grid-employee,
+.service-schedule-grid-weekday,
+.service-schedule-grid-day {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #0f172a;
+    padding: 6px 4px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    text-align: center;
+}
+
+.service-schedule-grid-employee {
+    text-align: left;
+    background: #f1f5f9;
+}
+
+.service-schedule-grid-weekday {
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.02em;
+}
+
+.service-schedule-grid-head--numbers .service-schedule-grid-corner {
+    background: #f8fafc;
+}
+
+.service-schedule-grid-cell {
+    min-height: 56px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    padding: 3px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    justify-content: flex-start;
+}
+
+.service-schedule-grid-absence {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.service-schedule-grid-shift {
+    border-radius: 8px;
+    padding: 4px 6px;
+    font-size: 0.7rem;
+    color: #0f172a;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    cursor: grab;
+}
+
+.service-schedule-grid-shift:active {
+    cursor: grabbing;
+}
+
+.service-schedule-grid-shift-time {
+    font-weight: 600;
+}
+
+.service-schedule-grid-shift-type {
+    font-size: 0.65rem;
+    opacity: 0.85;
+}
+
+@media (max-width: 768px) {
+    .service-schedule-grid-head,
+    .service-schedule-grid-row {
+        grid-template-columns: minmax(120px, 180px) repeat(var(--days), minmax(0, 1fr));
+    }
+
+    .service-schedule-grid-employee {
+        font-size: 0.7rem;
+    }
+}

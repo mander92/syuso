@@ -373,3 +373,87 @@ export const fetchAdminSetUserPasswordServices = async (
 
     return body;
 };
+
+export const fetchEmployeeRules = async (authToken, userId) => {
+    const res = await fetch(`${VITE_API_URL}/users/${userId}/rules`, {
+        headers: { Authorization: authToken },
+    });
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};
+
+export const updateEmployeeRules = async (authToken, userId, rules) => {
+    const res = await fetch(`${VITE_API_URL}/users/${userId}/rules`, {
+        method: 'PUT',
+        headers: {
+            Authorization: authToken,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(rules),
+    });
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};
+
+export const fetchEmployeeAbsences = async (authToken, userId) => {
+    const res = await fetch(`${VITE_API_URL}/users/${userId}/absences`, {
+        headers: { Authorization: authToken },
+    });
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};
+
+export const createEmployeeAbsence = async (authToken, userId, payload) => {
+    const res = await fetch(`${VITE_API_URL}/users/${userId}/absences`, {
+        method: 'POST',
+        headers: {
+            Authorization: authToken,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+    });
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};
+
+export const deleteEmployeeAbsence = async (authToken, userId, absenceId) => {
+    const res = await fetch(
+        `${VITE_API_URL}/users/${userId}/absences/${absenceId}`,
+        {
+            method: 'DELETE',
+            headers: { Authorization: authToken },
+        }
+    );
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body;
+};

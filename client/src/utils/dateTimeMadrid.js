@@ -8,6 +8,17 @@ const madridDateTimeFormatter = new Intl.DateTimeFormat('es-ES', {
     hour12: false,
 });
 
+const madridDateTimePartsFormatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Madrid',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+});
+
 const normalizeDateValue = (value) => {
     if (!value) return value;
     if (value instanceof Date) return value;
@@ -37,4 +48,26 @@ export const formatDateTimeMadrid = (value) => {
     const date = toValidDate(value);
     if (!date) return '';
     return madridDateTimeFormatter.format(date);
+};
+
+export const toMadridDate = (value) => {
+    const date = toValidDate(value);
+    if (!date) return null;
+
+    const parts = madridDateTimePartsFormatter.formatToParts(date);
+    const map = parts.reduce((acc, part) => {
+        if (part.type !== 'literal') {
+            acc[part.type] = part.value;
+        }
+        return acc;
+    }, {});
+
+    return new Date(
+        Number(map.year),
+        Number(map.month) - 1,
+        Number(map.day),
+        Number(map.hour),
+        Number(map.minute),
+        Number(map.second)
+    );
 };

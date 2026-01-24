@@ -34,6 +34,8 @@ const editServiceController = async (req, res, next) => {
             numberOfPeople,
             reportEmail,
             locationLink,
+            allowUnscheduledClockIn,
+            scheduleView,
             clientId,
             typeOfServicesId,
         } = req.body;
@@ -54,6 +56,8 @@ const editServiceController = async (req, res, next) => {
             numberOfPeople,
             reportEmail,
             locationLink,
+            allowUnscheduledClockIn,
+            scheduleView,
             clientId,
             typeOfServicesId,
             role
