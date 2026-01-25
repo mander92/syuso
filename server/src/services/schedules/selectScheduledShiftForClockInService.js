@@ -1,17 +1,45 @@
 import getPool from '../../db/getPool.js';
 
+const toSeconds = (value) => {
+    const [hours, minutes, seconds = '0'] = String(value).split(':');
+    return (
+        Number(hours) * 3600 +
+        Number(minutes) * 60 +
+        Number(seconds)
+    );
+};
+
+const subtractMinutes = (time, minutes) => {
+    const total = toSeconds(time) - minutes * 60;
+    if (total >= 0) return total;
+    return 24 * 3600 + total;
+};
+
+const secondsToTime = (totalSeconds) => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const pad = (value) => String(value).padStart(2, '0');
+    return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+};
+
 const isTimeBetween = (time, startTime, endTime) => {
-    if (endTime >= startTime) {
-        return time >= startTime && time <= endTime;
+    const timeSec = toSeconds(time);
+    const startSec = toSeconds(startTime);
+    const endSec = toSeconds(endTime);
+
+    if (endSec >= startSec) {
+        return timeSec >= startSec && timeSec <= endSec;
     }
-    return time >= startTime || time <= endTime;
+    return timeSec >= startSec || timeSec <= endSec;
 };
 
 const selectScheduledShiftForClockInService = async (
     serviceId,
     employeeId,
     localDate,
-    localTime
+    localTime,
+    clockInEarlyMinutes = 15
 ) => {
     const pool = await getPool();
 
@@ -41,7 +69,14 @@ const selectScheduledShiftForClockInService = async (
                 : row.scheduleDate.toISOString().slice(0, 10);
 
         if (rowDate === localDate) {
-            return isTimeBetween(localTime, row.startTime, row.endTime);
+            const earlyMinutes =
+                Number.isFinite(clockInEarlyMinutes) && clockInEarlyMinutes >= 0
+                    ? clockInEarlyMinutes
+                    : 15;
+            const startWindowSec = subtractMinutes(row.startTime, earlyMinutes);
+            const windowString = secondsToTime(startWindowSec);
+
+            return isTimeBetween(localTime, windowString, row.endTime);
         }
 
         if (rowDate === prevDateString) {

@@ -56,6 +56,7 @@ const ServiceDetail = () => {
         hours: '',
         numberOfPeople: '',
         allowUnscheduledClockIn: false,
+        clockInEarlyMinutes: '15',
         address: '',
         city: '',
         postCode: '',
@@ -122,6 +123,10 @@ const ServiceDetail = () => {
                         ? String(rows[0].numberOfPeople)
                         : '',
                 allowUnscheduledClockIn: !!rows[0]?.allowUnscheduledClockIn,
+                clockInEarlyMinutes:
+                    rows[0]?.clockInEarlyMinutes != null
+                        ? String(rows[0].clockInEarlyMinutes)
+                        : '15',
                 address: rows[0]?.address || '',
                 city: rows[0]?.city || '',
                 postCode: rows[0]?.postCode || '',
@@ -378,6 +383,7 @@ const ServiceDetail = () => {
                 comments: summaryForm.comments,
                 locationLink: summaryForm.locationLink,
                 allowUnscheduledClockIn: summaryForm.allowUnscheduledClockIn,
+                clockInEarlyMinutes: summaryForm.clockInEarlyMinutes,
                 clientId: summaryForm.clientId,
                 typeOfServicesId: summaryForm.typeOfServicesId,
                 ...(summaryForm.startDateTime
@@ -668,6 +674,20 @@ const ServiceDetail = () => {
                                             }
                                             onChange={handleSummaryChange(
                                                 'allowUnscheduledClockIn'
+                                            )}
+                                        />
+                                    </div>
+                                    <div className='service-detail-summary-field'>
+                                        <label htmlFor='clockInEarlyMinutes'>
+                                            Minutos antes para fichar
+                                        </label>
+                                        <input
+                                            id='clockInEarlyMinutes'
+                                            type='number'
+                                            min='0'
+                                            value={summaryForm.clockInEarlyMinutes}
+                                            onChange={handleSummaryChange(
+                                                'clockInEarlyMinutes'
                                             )}
                                         />
                                     </div>

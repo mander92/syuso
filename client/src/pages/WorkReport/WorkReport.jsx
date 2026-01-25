@@ -634,6 +634,7 @@ const WorkReport = () => {
                     setDraftSavedAt(new Date());
                 }
                 setDraftSavedAt(new Date());
+                toast.success('Borrador guardado');
             } catch (error) {
                 toast.error(error.message || 'No se pudo guardar el borrador');
             } finally {

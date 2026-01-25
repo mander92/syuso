@@ -6,6 +6,7 @@ import './DashboardComponent.css';
 import AdminUsersSection from '../adminUsersSection/AminUsersSection.jsx';
 import ContractsComponent from '../adminContractSetion/ContractComponent.jsx';
 import ServicesComponent from '../adminServiceSection/ServiceComponent/ServiceComponent.jsx';
+import ScheduleComponent from '../adminScheduleSection/ScheduleComponent.jsx';
 import ShiftComponent from '../adminShiftSection/ShiftComponent.jsx';
 import WorkReportsComponent from '../adminWorkReportsSection/WorkReportsComponent.jsx';
 import AdminCleanupSection from '../adminCleanupSection/AdminCleanupSection.jsx';
@@ -30,6 +31,7 @@ const DashboardComponent = () => {
         if (isAdminLike) {
             const adminSections = [
                 { id: 'contracts', label: 'Servicios' },
+                { id: 'schedules', label: 'Cuadrantes' },
                 { id: 'shifts', label: 'Turnos' },
                 { id: 'chats', label: 'Chats' },
                 { id: 'workReports', label: 'Partes de trabajo' },
@@ -130,6 +132,8 @@ const DashboardComponent = () => {
 
             case 'shifts':
                 return <ShiftComponent />;
+            case 'schedules':
+                return <ScheduleComponent />;
 
             case 'users':
                 return <AdminUsersSection />;

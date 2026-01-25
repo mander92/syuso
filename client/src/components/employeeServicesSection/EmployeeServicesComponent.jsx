@@ -117,6 +117,7 @@ const EmployeeServicesComponent = () => {
     );
     const [scheduleShifts, setScheduleShifts] = useState([]);
     const [scheduleLoading, setScheduleLoading] = useState(false);
+    const [nextShiftByService, setNextShiftByService] = useState({});
 
     const openLocationSettings = () => {
         if (typeof window === 'undefined') return;
@@ -162,6 +163,84 @@ const EmployeeServicesComponent = () => {
 
         loadServices();
     }, [authToken, type]);
+
+    useEffect(() => {
+        const loadNextShifts = async () => {
+            if (!authToken || !services.length) {
+                setNextShiftByService({});
+                return;
+            }
+
+            const now = new Date();
+            const formatter = new Intl.DateTimeFormat('es-ES', {
+                timeZone: 'Europe/Madrid',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+            });
+
+            try {
+                const results = await Promise.all(
+                    services.map(async (service) => {
+                        const serviceId = service.serviceId || service.id;
+                        if (!serviceId) return [serviceId, null];
+
+                        const data = await fetchEmployeeScheduleShifts(
+                            authToken,
+                            scheduleMonth,
+                            false,
+                            serviceId
+                        );
+
+                        const shifts = Array.isArray(data) ? data : [];
+                        const nextShift = shifts
+                            .map((shift) => {
+                                if (!shift.scheduleDate || !shift.startTime) {
+                                    return null;
+                                }
+                                const dateKey = String(
+                                    shift.scheduleDate
+                                ).slice(0, 10);
+                                const dateTime = new Date(
+                                    `${dateKey}T${shift.startTime}`
+                                );
+                                return {
+                                    ...shift,
+                                    dateTime,
+                                };
+                            })
+                            .filter(
+                                (shift) =>
+                                    shift &&
+                                    shift.dateTime instanceof Date &&
+                                    !Number.isNaN(shift.dateTime.getTime()) &&
+                                    shift.dateTime >= now
+                            )
+                            .sort(
+                                (a, b) =>
+                                    a.dateTime.getTime() -
+                                    b.dateTime.getTime()
+                            )[0];
+
+                        if (!nextShift) return [serviceId, null];
+
+                        return [
+                            serviceId,
+                            formatter.format(nextShift.dateTime),
+                        ];
+                    })
+                );
+
+                setNextShiftByService(Object.fromEntries(results));
+            } catch (error) {
+                // silent fail to avoid blocking the list
+            }
+        };
+
+        loadNextShifts();
+    }, [authToken, services, scheduleMonth]);
 
     useEffect(() => {
         const loadOpenShifts = async () => {
@@ -483,6 +562,12 @@ const EmployeeServicesComponent = () => {
                                                         {service.city}
                                                     </>
                                                 )}
+                                            </p>
+                                        ) : null}
+                                        {nextShiftByService[serviceId] ? (
+                                            <p className='employee-card-next-shift'>
+                                                Tu proximo turno es:{' '}
+                                                {nextShiftByService[serviceId]}
                                             </p>
                                         ) : null}
                                     </div>

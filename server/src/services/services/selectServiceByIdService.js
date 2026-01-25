@@ -22,6 +22,7 @@ const selectServiceByIdService = async (serviceId) => {
                 s.endDateTime,
                 s.scheduleImage,
                 s.scheduleView,
+                s.clockInEarlyMinutes,
                 s.allowUnscheduledClockIn,
                 s.reportEmail,
                 s.locationLink,

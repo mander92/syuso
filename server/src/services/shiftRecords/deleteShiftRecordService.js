@@ -5,6 +5,13 @@ const deleteShiftRecordService = async (shiftRecordId) => {
 
     await pool.query(
         `
+        DELETE FROM workReportDrafts WHERE shiftRecordId = ?
+        `,
+        [shiftRecordId]
+    );
+
+    await pool.query(
+        `
         DELETE FROM shiftRecords WHERE id = ?
         `,
         [shiftRecordId]

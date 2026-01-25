@@ -16,6 +16,7 @@ const updateServiceByIdService = async (
     reportEmail,
     locationLink,
     allowUnscheduledClockIn,
+    clockInEarlyMinutes,
     scheduleView,
     clientId,
     typeOfServicesId,
@@ -28,6 +29,7 @@ const updateServiceByIdService = async (
         SELECT s.id, s.status, s.startDateTime, s.hours, s.numberOfPeople, s.comments,
                s.reportEmail, s.locationLink, s.name, s.endDateTime, s.clientId,
                s.allowUnscheduledClockIn,
+               s.clockInEarlyMinutes,
                s.scheduleView,
                s.addressId, s.typeOfServicesId,
                a.address, a.postCode, a.city
@@ -90,6 +92,12 @@ const updateServiceByIdService = async (
         typeof allowUnscheduledClockIn === 'boolean'
             ? allowUnscheduledClockIn
             : current.allowUnscheduledClockIn;
+    const resolvedClockInEarlyMinutes =
+        clockInEarlyMinutes !== undefined &&
+        clockInEarlyMinutes !== null &&
+        clockInEarlyMinutes !== ''
+            ? Number(clockInEarlyMinutes)
+            : current.clockInEarlyMinutes;
     const resolvedScheduleView =
         scheduleView === 'image' || scheduleView === 'grid'
             ? scheduleView
@@ -120,6 +128,7 @@ const updateServiceByIdService = async (
         'reportEmail = ?',
         'locationLink = ?',
         'allowUnscheduledClockIn = ?',
+        'clockInEarlyMinutes = ?',
         'scheduleView = ?',
         'clientId = ?',
         'typeOfServicesId = ?',
@@ -133,6 +142,7 @@ const updateServiceByIdService = async (
         resolvedReportEmail,
         resolvedLocationLink,
         resolvedAllowUnscheduledClockIn,
+        resolvedClockInEarlyMinutes,
         resolvedScheduleView,
         resolvedClientId,
         resolvedTypeOfServicesId,
@@ -190,6 +200,7 @@ const updateServiceByIdService = async (
         SELECT s.startDateTime, s.hours, s.numberOfPeople, s.reportEmail,
                s.locationLink, s.name, s.status, s.endDateTime, s.clientId,
                s.allowUnscheduledClockIn,
+               s.clockInEarlyMinutes,
                s.scheduleView,
                s.typeOfServicesId,
                a.address, a.city, a.postCode

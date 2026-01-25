@@ -20,7 +20,7 @@ const startShiftRecordService = async (
 
     const [serviceRows] = await pool.query(
         `
-        SELECT allowUnscheduledClockIn
+        SELECT allowUnscheduledClockIn, clockInEarlyMinutes
         FROM services
         WHERE id = ?
         `,
@@ -32,6 +32,10 @@ const startShiftRecordService = async (
     }
 
     const allowUnscheduled = !!serviceRows[0].allowUnscheduledClockIn;
+    const clockInEarlyMinutes =
+        serviceRows[0].clockInEarlyMinutes != null
+            ? Number(serviceRows[0].clockInEarlyMinutes)
+            : 15;
     const absence = await selectEmployeeAbsenceForDateService(
         employeeId,
         localDate
@@ -46,11 +50,51 @@ const startShiftRecordService = async (
             serviceId,
             employeeId,
             localDate,
-            localTime
+            localTime,
+            clockInEarlyMinutes
         );
 
         if (!scheduledShift) {
-            generateErrorUtil('No tienes un turno programado', 403);
+            const [todayRows] = await pool.query(
+                `
+                SELECT startTime
+                FROM serviceScheduleShifts
+                WHERE serviceId = ?
+                  AND employeeId = ?
+                  AND status = 'scheduled'
+                  AND deletedAt IS NULL
+                  AND scheduleDate = ?
+                ORDER BY startTime ASC
+                `,
+                [serviceId, employeeId, localDate]
+            );
+
+            if (todayRows.length) {
+                const [startH, startM, startS = '0'] = String(
+                    todayRows[0].startTime
+                ).split(':');
+                const [nowH, nowM, nowS = '0'] = String(localTime).split(':');
+                const startSeconds =
+                    Number(startH) * 3600 +
+                    Number(startM) * 60 +
+                    Number(startS);
+                const nowSeconds =
+                    Number(nowH) * 3600 +
+                    Number(nowM) * 60 +
+                    Number(nowS);
+                const diffMinutes = Math.ceil(
+                    (startSeconds - nowSeconds) / 60
+                );
+
+                if (diffMinutes > clockInEarlyMinutes) {
+                    generateErrorUtil(
+                        `Inicio demasiado pronto, espera ${clockInEarlyMinutes} min antes del comienzo de tu turno`,
+                        403
+                    );
+                }
+            }
+
+            generateErrorUtil('No hay turno programado', 403);
         }
     }
 
