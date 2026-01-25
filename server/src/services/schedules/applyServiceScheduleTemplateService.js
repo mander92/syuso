@@ -22,7 +22,7 @@ const applyServiceScheduleTemplateService = async (
 ) => {
     const pool = await getPool();
 
-    const [templates] = await pool.query(
+    const [monthTemplates] = await pool.query(
         `
         SELECT weekday, startTime, endTime, slots, shiftTypeId
         FROM serviceScheduleTemplates
@@ -30,6 +30,20 @@ const applyServiceScheduleTemplateService = async (
         `,
         [serviceId, month]
     );
+
+    let templates = monthTemplates;
+
+    if (!templates.length) {
+        const [defaultTemplates] = await pool.query(
+            `
+            SELECT weekday, startTime, endTime, slots, shiftTypeId
+            FROM serviceScheduleTemplates
+            WHERE serviceId = ? AND month = ''
+            `,
+            [serviceId]
+        );
+        templates = defaultTemplates;
+    }
 
     if (!templates.length) return [];
 

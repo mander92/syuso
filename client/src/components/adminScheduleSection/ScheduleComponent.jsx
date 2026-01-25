@@ -9,10 +9,16 @@ import {
     fetchAllServicesServices,
     fetchServiceScheduleShifts,
     fetchServiceScheduleTemplates,
+    downloadServiceSchedulePdf,
+    downloadServiceScheduleZip,
+    downloadEmployeeSchedulePdf,
+    downloadEmployeeScheduleZip,
 } from '../../services/serviceService.js';
 import ServiceSchedulePanel from '../serviceSchedule/ServiceSchedulePanel.jsx';
 import ServiceScheduleGrid from '../serviceSchedule/ServiceScheduleGrid.jsx';
+import '../button/Button.css';
 import './ScheduleComponent.css';
+import '../serviceSchedule/ServiceSchedulePanel.css';
 
 const ScheduleComponent = () => {
     const { authToken } = useContext(AuthContext);
@@ -43,6 +49,11 @@ const ScheduleComponent = () => {
     const [scheduleCards, setScheduleCards] = useState([]);
     const [scheduleShiftMap, setScheduleShiftMap] = useState({});
     const [personalModal, setPersonalModal] = useState(null);
+    const [scheduleViewMode, setScheduleViewMode] = useState('services');
+    const [isDownloadingServicePdf, setIsDownloadingServicePdf] = useState(false);
+    const [isDownloadingServiceZip, setIsDownloadingServiceZip] = useState(false);
+    const [isDownloadingPersonalZip, setIsDownloadingPersonalZip] = useState(false);
+    const [downloadingPersonalId, setDownloadingPersonalId] = useState('');
 
     const schedulePanelRef = useRef(null);
 
@@ -272,6 +283,7 @@ const ScheduleComponent = () => {
         );
     }, [scheduleServices]);
 
+
     const personalScheduleRows = useMemo(() => {
         const shiftRows = Object.values(scheduleShiftMap).flat();
         const employeeMap = new Map();
@@ -314,6 +326,95 @@ const ScheduleComponent = () => {
         setScheduleEmployeeFilter('');
         setScheduleServiceFilter('');
         setScheduleDelegationFilter('');
+    };
+
+    const triggerDownload = ({ blob, fileName }) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName || 'archivo.pdf';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+    };
+
+    const handleServicePdfDownload = async () => {
+        if (!authToken || !scheduleServiceId) return;
+        try {
+            setIsDownloadingServicePdf(true);
+            const data = await downloadServiceSchedulePdf(
+                authToken,
+                scheduleServiceId,
+                scheduleMonth
+            );
+            triggerDownload(data);
+        } catch (error) {
+            toast.error(error.message || 'No se pudo descargar el PDF');
+        } finally {
+            setIsDownloadingServicePdf(false);
+        }
+    };
+
+    const handleServiceZipDownload = async () => {
+        if (!authToken) return;
+        const serviceIds = scheduleCards.map((card) => card.id).filter(Boolean);
+        if (!serviceIds.length) {
+            toast.error('No hay cuadrantes para descargar');
+            return;
+        }
+        try {
+            setIsDownloadingServiceZip(true);
+            const data = await downloadServiceScheduleZip(
+                authToken,
+                serviceIds,
+                scheduleMonth
+            );
+            triggerDownload(data);
+        } catch (error) {
+            toast.error(error.message || 'No se pudo descargar el ZIP');
+        } finally {
+            setIsDownloadingServiceZip(false);
+        }
+    };
+
+    const handlePersonalZipDownload = async () => {
+        if (!authToken) return;
+        const employeeIds = personalScheduleRows.map((row) => row.id).filter(Boolean);
+        if (!employeeIds.length) {
+            toast.error('No hay cuadrantes personales para descargar');
+            return;
+        }
+        try {
+            setIsDownloadingPersonalZip(true);
+            const data = await downloadEmployeeScheduleZip(
+                authToken,
+                scheduleMonth,
+                employeeIds
+            );
+            triggerDownload(data);
+        } catch (error) {
+            toast.error(error.message || 'No se pudo descargar el ZIP');
+        } finally {
+            setIsDownloadingPersonalZip(false);
+        }
+    };
+
+    const handlePersonalPdfDownload = async (employeeId) => {
+        if (!authToken || !employeeId) return;
+        try {
+            setDownloadingPersonalId(employeeId);
+            const data = await downloadEmployeeSchedulePdf(
+                authToken,
+                scheduleMonth,
+                employeeId
+            );
+            triggerDownload(data);
+        } catch (error) {
+            toast.error(error.message || 'No se pudo descargar el PDF');
+        } finally {
+            setDownloadingPersonalId('');
+        }
     };
 
     if (!isAdminLike) {
@@ -464,149 +565,222 @@ const ScheduleComponent = () => {
                 </div>
             </div>
 
-            <div className='schedule-cards'>
-                {scheduleOverviewLoading ? (
-                    <p className='schedule-empty'>Cargando cuadrantes...</p>
-                ) : scheduleCards.length ? (
-                    scheduleCards.map((card) => (
-                        <div key={card.id} className='schedule-card'>
-                            <div>
-                                <h3>{card.name}</h3>
-                                <p>Mes: {card.month}</p>
-                            </div>
-                            <div className='schedule-card-meta'>
-                                <span>Turnos: {card.shiftCount}</span>
-                                <span>Empleados: {card.employeeCount}</span>
-                                <span>
-                                    Horas: {card.totalHours.toFixed(2)}
-                                </span>
-                                <span>
-                                    Plantilla:{' '}
-                                    {card.templateApplied
-                                        ? 'Aplicada'
-                                        : 'Sin plantilla'}
-                                </span>
-                            </div>
-                            <button
-                                type='button'
-                                className='schedule-btn schedule-btn--ghost'
-                                onClick={() => {
-                                    setScheduleServiceId(card.id);
-                                    schedulePanelRef.current?.scrollIntoView({
-                                        behavior: 'smooth',
-                                        block: 'start',
-                                    });
-                                }}
-                            >
-                                Ver cuadrante
-                            </button>
-                        </div>
-                    ))
-                ) : (
-                    <p className='schedule-empty'>
-                        Sin cuadrantes disponibles.
-                    </p>
-                )}
+            <div className='schedule-toggle'>
+                <button
+                    type='button'
+                    className={`btn schedule-toggle-btn ${
+                        scheduleViewMode === 'services'
+                            ? 'btn-primary'
+                            : 'btn-secondary'
+                    }`}
+                    onClick={() => setScheduleViewMode('services')}
+                >
+                    Cuadrantes por servicio
+                </button>
+                <button
+                    type='button'
+                    className={`btn schedule-toggle-btn ${
+                        scheduleViewMode === 'personal'
+                            ? 'btn-primary'
+                            : 'btn-secondary'
+                    }`}
+                    onClick={() => setScheduleViewMode('personal')}
+                >
+                    Cuadrantes personales
+                </button>
             </div>
 
-            <div className='schedule-personal'>
-                <div className='schedule-personal-header'>
-                    <div>
-                        <h2>Cuadrantes personales</h2>
-                        <p>Revisa el cuadrante individual del mes.</p>
-                    </div>
-                </div>
-                {personalScheduleRows.length ? (
-                    <div className='schedule-personal-list'>
-                        {personalScheduleRows.map((item) => (
-                            <div key={item.id} className='schedule-personal-row'>
-                                <div>
-                                    <strong>{item.name}</strong>
-                                    <span>
-                                        Turnos: {item.shifts.length} | Horas:{' '}
-                                        {item.totalHours.toFixed(2)}
-                                    </span>
-                                </div>
-                                <button
-                                    type='button'
-                                    className='schedule-btn'
-                                    onClick={() => setPersonalModal(item)}
-                                >
-                                    Ver cuadrante
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <p className='schedule-empty'>
-                        Sin cuadrantes personales.
-                    </p>
-                )}
-            </div>
-
-            <div className='schedule-panel' ref={schedulePanelRef}>
-                <div className='schedule-panel-header'>
-                    <div>
-                        <h2>Cuadrante por servicio</h2>
-                        <p>Selecciona un servicio para editar el mes.</p>
-                    </div>
-                    <div className='schedule-panel-select'>
-                        <label htmlFor='scheduleService'>Servicio</label>
-                        <select
-                            id='scheduleService'
-                            value={scheduleServiceId}
-                            onChange={(event) =>
-                                setScheduleServiceId(event.target.value)
-                            }
+            <div className='schedule-downloads'>
+                {scheduleViewMode === 'services' ? (
+                    <>
+                        <button
+                            type='button'
+                            className='schedule-btn schedule-btn--ghost'
+                            onClick={handleServicePdfDownload}
+                            disabled={!scheduleServiceId || isDownloadingServicePdf}
                         >
-                            <option value=''>
-                                {scheduleLoading
-                                    ? 'Cargando...'
-                                    : 'Selecciona un servicio'}
-                            </option>
-                            {scheduleServices.map((service) => (
-                                <option key={service.id} value={service.id}>
-                                    {service.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
-                {scheduleServiceId ? (
-                    <ServiceSchedulePanel
-                        serviceId={scheduleServiceId}
-                        authToken={authToken}
-                    />
+                            {isDownloadingServicePdf ? 'Generando...' : 'PDF servicio'}
+                        </button>
+                        <button
+                            type='button'
+                            className='schedule-btn'
+                            onClick={handleServiceZipDownload}
+                            disabled={!scheduleCards.length || isDownloadingServiceZip}
+                        >
+                            {isDownloadingServiceZip ? 'Generando...' : 'ZIP servicios'}
+                        </button>
+                    </>
                 ) : (
-                    <p className='schedule-empty'>
-                        Selecciona un servicio para ver el cuadrante.
-                    </p>
-                )}
-            </div>
-
-            {personalModal && (
-                <div className='schedule-modal'>
                     <button
                         type='button'
-                        className='schedule-modal__backdrop'
+                        className='schedule-btn schedule-btn--ghost'
+                        onClick={handlePersonalZipDownload}
+                        disabled={!personalScheduleRows.length || isDownloadingPersonalZip}
+                    >
+                        {isDownloadingPersonalZip ? 'Generando...' : 'ZIP personales'}
+                    </button>
+                )}
+            </div>
+
+            {scheduleViewMode === 'services' ? (
+                <>
+                    <div className='schedule-cards'>
+                        {scheduleOverviewLoading ? (
+                            <p className='schedule-empty'>Cargando cuadrantes...</p>
+                        ) : scheduleCards.length ? (
+                            scheduleCards.map((card) => (
+                                <div key={card.id} className='schedule-card'>
+                                    <div>
+                                        <h3>{card.name}</h3>
+                                        <p>Mes: {card.month}</p>
+                                    </div>
+                                    <div className='schedule-card-meta'>
+                                        <span>Turnos: {card.shiftCount}</span>
+                                        <span>Empleados: {card.employeeCount}</span>
+                                        <span>
+                                            Horas: {card.totalHours.toFixed(2)}
+                                        </span>
+                                        <span>
+                                            Plantilla:{' '}
+                                            {card.templateApplied
+                                                ? 'Aplicada'
+                                                : 'Sin plantilla'}
+                                        </span>
+                                    </div>
+                                    <button
+                                        type='button'
+                                        className='schedule-btn schedule-btn--ghost'
+                                        onClick={() => {
+                                            setScheduleServiceId(card.id);
+                                            schedulePanelRef.current?.scrollIntoView({
+                                                behavior: 'smooth',
+                                                block: 'start',
+                                            });
+                                        }}
+                                    >
+                                        Ver cuadrante
+                                    </button>
+                                </div>
+                            ))
+                        ) : (
+                            <p className='schedule-empty'>
+                                Sin cuadrantes disponibles.
+                            </p>
+                        )}
+                    </div>
+
+                    <div className='schedule-panel' ref={schedulePanelRef}>
+                        <div className='schedule-panel-header'>
+                            <div>
+                                <h2>Cuadrante por servicio</h2>
+                                <p>Selecciona un servicio para editar el mes.</p>
+                            </div>
+                            <div className='schedule-panel-select'>
+                                <label htmlFor='scheduleService'>Servicio</label>
+                                <select
+                                    id='scheduleService'
+                                    value={scheduleServiceId}
+                                    onChange={(event) =>
+                                        setScheduleServiceId(event.target.value)
+                                    }
+                                >
+                                    <option value=''>
+                                        {scheduleLoading
+                                            ? 'Cargando...'
+                                            : 'Selecciona un servicio'}
+                                    </option>
+                                    {scheduleServices.map((service) => (
+                                        <option key={service.id} value={service.id}>
+                                            {service.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        {scheduleServiceId ? (
+                            <ServiceSchedulePanel
+                                serviceId={scheduleServiceId}
+                                authToken={authToken}
+                            />
+                        ) : (
+                            <p className='schedule-empty'>
+                                Selecciona un servicio para ver el cuadrante.
+                            </p>
+                        )}
+                    </div>
+                </>
+            ) : (
+                <div className='schedule-personal'>
+                    <div className='schedule-personal-header'>
+                        <div>
+                            <h2>Cuadrantes personales</h2>
+                            <p>Revisa el cuadrante individual del mes.</p>
+                        </div>
+                    </div>
+                    {personalScheduleRows.length ? (
+                        <div className='schedule-personal-list'>
+                            {personalScheduleRows.map((item) => (
+                                <div key={item.id} className='schedule-personal-row'>
+                                    <div>
+                                        <strong>{item.name}</strong>
+                                        <span>
+                                            Turnos: {item.shifts.length} | Horas:{' '}
+                                            {item.totalHours.toFixed(2)}
+                                        </span>
+                                    </div>
+                                    <div className='schedule-personal-actions'>
+                                        <button
+                                            type='button'
+                                            className='schedule-btn schedule-btn--ghost'
+                                            onClick={() => handlePersonalPdfDownload(item.id)}
+                                            disabled={downloadingPersonalId === item.id}
+                                        >
+                                            {downloadingPersonalId === item.id
+                                                ? 'Generando...'
+                                                : 'PDF'}
+                                        </button>
+                                        <button
+                                            type='button'
+                                            className='schedule-btn'
+                                            onClick={() => setPersonalModal(item)}
+                                        >
+                                            Ver cuadrante
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className='schedule-empty'>
+                            Sin cuadrantes personales.
+                        </p>
+                    )}
+                </div>
+            )}
+
+            {personalModal && (
+                <div className='service-schedule-grid-modal'>
+                    <button
+                        type='button'
+                        className='service-schedule-grid-modal__backdrop'
                         onClick={() => setPersonalModal(null)}
                         aria-label='Cerrar cuadrante'
                     />
-                    <div className='schedule-modal__panel'>
-                        <div className='schedule-modal__header'>
+                    <div className='service-schedule-grid-modal__panel'>
+                        <div className='service-schedule-grid-modal__header'>
                             <div>
                                 <h3>Cuadrante personal</h3>
                                 <p>{personalModal.name}</p>
                             </div>
                             <button
                                 type='button'
-                                className='schedule-btn schedule-btn--ghost'
+                                className='service-schedule-grid-modal__close'
                                 onClick={() => setPersonalModal(null)}
                             >
                                 Cerrar
                             </button>
                         </div>
-                        <div className='schedule-modal__body'>
+                        <div className='service-schedule-grid-modal__body'>
                             <ServiceScheduleGrid
                                 month={scheduleMonth}
                                 shifts={personalModal.shifts.map((shift) => ({
@@ -630,7 +804,9 @@ const ScheduleComponent = () => {
                                                 id: shift.serviceId,
                                                 firstName:
                                                     shift.serviceName ||
-                                                    serviceNameMap.get(shift.serviceId) ||
+                                                    serviceNameMap.get(
+                                                        shift.serviceId
+                                                    ) ||
                                                     '',
                                                 lastName: '',
                                             },

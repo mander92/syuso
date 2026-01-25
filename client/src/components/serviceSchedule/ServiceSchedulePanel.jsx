@@ -91,12 +91,31 @@ const ServiceSchedulePanel = ({
         setScheduleView(initialScheduleView === 'image' ? 'image' : 'grid');
     }, [initialScheduleView]);
 
+    const visibleEmployees = useMemo(() => {
+        const map = new Map();
+        assignedEmployees.forEach((employee) => {
+            if (!employee?.id) return;
+            map.set(employee.id, employee);
+        });
+        (shifts || []).forEach((shift) => {
+            if (!shift?.employeeId) return;
+            if (map.has(shift.employeeId)) return;
+            const fallback = employees.find(
+                (employee) => employee.id === shift.employeeId
+            );
+            if (fallback) {
+                map.set(shift.employeeId, fallback);
+            }
+        });
+        return [...map.values()];
+    }, [assignedEmployees, shifts, employees]);
+
     const employeeOptions = useMemo(() => {
-        return assignedEmployees.map((employee) => ({
+        return visibleEmployees.map((employee) => ({
             value: employee.id,
             label: `${employee.firstName || ''} ${employee.lastName || ''}`.trim(),
         }));
-    }, [assignedEmployees]);
+    }, [visibleEmployees]);
 
     const shiftTypeOptions = useMemo(() => {
         return shiftTypes.map((type) => ({
@@ -215,7 +234,7 @@ const ServiceSchedulePanel = ({
     }, [authToken, serviceId]);
 
     useEffect(() => {
-        if (!assignedEmployees.length || !authToken) {
+        if (!visibleEmployees.length || !authToken) {
             setAbsencesByEmployee({});
             return;
         }
@@ -223,7 +242,7 @@ const ServiceSchedulePanel = ({
         const loadAbsences = async () => {
             try {
                 const results = await Promise.all(
-                    assignedEmployees.map(async (employee) => {
+                    visibleEmployees.map(async (employee) => {
                         const data = await fetchEmployeeAbsences(authToken, employee.id);
                         return [employee.id, Array.isArray(data) ? data : []];
                     })
@@ -235,7 +254,7 @@ const ServiceSchedulePanel = ({
         };
 
         loadAbsences();
-    }, [authToken, assignedEmployees, month]);
+    }, [authToken, visibleEmployees, month]);
 
     useEffect(() => {
         if (!defaultShiftTypeId) return;
@@ -866,11 +885,11 @@ const ServiceSchedulePanel = ({
                             <ServiceScheduleGrid
                                 month={month}
                                 shifts={shifts}
-                                employees={assignedEmployees}
+                                employees={visibleEmployees}
                                 absencesByEmployee={absencesByEmployee}
                                 onShiftUpdate={handleShiftUpdate}
                                 onSelectShift={setSelectedShift}
-                                showUnassigned={false}
+                                showUnassigned={shifts.some((shift) => !shift.employeeId)}
                             />
                         </div>
                     </div>

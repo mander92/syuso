@@ -39,6 +39,10 @@ import createServiceScheduleShiftController from '../controllers/schedules/creat
 import updateServiceScheduleShiftController from '../controllers/schedules/updateServiceScheduleShiftController.js';
 import deleteServiceScheduleShiftController from '../controllers/schedules/deleteServiceScheduleShiftController.js';
 import listEmployeeScheduleShiftsController from '../controllers/schedules/listEmployeeScheduleShiftsController.js';
+import downloadServiceSchedulePdfController from '../controllers/schedules/downloadServiceSchedulePdfController.js';
+import downloadServiceScheduleZipController from '../controllers/schedules/downloadServiceScheduleZipController.js';
+import downloadEmployeeSchedulePdfController from '../controllers/schedules/downloadEmployeeSchedulePdfController.js';
+import downloadEmployeeScheduleZipController from '../controllers/schedules/downloadEmployeeScheduleZipController.js';
 import listServiceShiftTypesController from '../controllers/schedules/listServiceShiftTypesController.js';
 import createServiceShiftTypeController from '../controllers/schedules/createServiceShiftTypeController.js';
 import updateServiceShiftTypeController from '../controllers/schedules/updateServiceShiftTypeController.js';
@@ -62,6 +66,18 @@ router.get(
     authUser,
     isEmployee,
     listEmployeeScheduleShiftsController
+);
+
+router.get(
+    '/services/employee/schedule/pdf',
+    authUser,
+    downloadEmployeeSchedulePdfController
+);
+
+router.get(
+    '/services/employee/schedule/zip',
+    authUser,
+    downloadEmployeeScheduleZipController
 );
 
 router.get('/services/in-progress', authUser, listInProgressServicesController);
@@ -104,6 +120,21 @@ router.get(
     isAdmin,
     serviceExists,
     listServiceScheduleShiftsController
+);
+
+router.get(
+    '/services/:serviceId/schedule/pdf',
+    authUser,
+    isAdmin,
+    serviceExists,
+    downloadServiceSchedulePdfController
+);
+
+router.get(
+    '/services/schedule/zip',
+    authUser,
+    isAdmin,
+    downloadServiceScheduleZipController
 );
 
 router.get(

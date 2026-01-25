@@ -27,9 +27,17 @@
     text-align: center;
 }
 
+.service-schedule-grid-day-label {
+    display: none;
+}
+
 .service-schedule-grid-employee {
     text-align: left;
     background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
 }
 
 .service-schedule-grid-weekday {
@@ -83,13 +91,69 @@
     opacity: 0.85;
 }
 
+.service-schedule-grid-toggle {
+    margin-left: auto;
+    border: none;
+    background: #ffffff;
+    color: #0f172a;
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    border: 1px solid #e2e8f0;
+    cursor: pointer;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.service-schedule-grid-row--collapsed .service-schedule-grid-cell {
+    display: none;
+}
+
 @media (max-width: 768px) {
-    .service-schedule-grid-head,
+    .service-schedule-grid {
+        gap: 12px;
+    }
+
+    .service-schedule-grid-head {
+        display: none;
+    }
+
     .service-schedule-grid-row {
-        grid-template-columns: minmax(120px, 180px) repeat(var(--days), minmax(0, 1fr));
+        grid-template-columns: 1fr;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        overflow: hidden;
     }
 
     .service-schedule-grid-employee {
-        font-size: 0.7rem;
+        font-size: 0.8rem;
+        padding: 10px;
+        background: #0f172a;
+        color: #ffffff;
+        border: none;
+    }
+
+    .service-schedule-grid-cell {
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+        min-height: 44px;
+        padding: 6px 10px;
+        border-left: none;
+        border-right: none;
+    }
+
+    .service-schedule-grid-day-label {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 58px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #0f172a;
+        background: #f1f5f9;
+        border-radius: 6px;
+        padding: 2px 6px;
+        text-transform: uppercase;
     }
 }

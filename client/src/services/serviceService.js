@@ -507,6 +507,92 @@ export const fetchServiceScheduleShifts = async (
     return body.data;
 };
 
+const getDownloadFileName = (contentDisposition, fallback) => {
+    if (!contentDisposition) return fallback;
+    const match = contentDisposition.match(/filename="([^"]+)"/i);
+    return match?.[1] || fallback;
+};
+
+const downloadScheduleFile = async (authToken, url, fallbackName) => {
+    const res = await fetch(url, {
+        headers: {
+            Authorization: authToken,
+        },
+    });
+
+    if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || 'No se pudo descargar el archivo');
+    }
+
+    const blob = await res.blob();
+    const fileName = getDownloadFileName(
+        res.headers.get('content-disposition'),
+        fallbackName
+    );
+
+    return { blob, fileName };
+};
+
+export const downloadServiceSchedulePdf = async (
+    authToken,
+    serviceId,
+    month
+) => {
+    const params = new URLSearchParams();
+    if (month) params.append('month', month);
+    const url = params.toString()
+        ? `${VITE_API_URL}/services/${serviceId}/schedule/pdf?${params.toString()}`
+        : `${VITE_API_URL}/services/${serviceId}/schedule/pdf`;
+    return downloadScheduleFile(authToken, url, 'cuadrante_servicio.pdf');
+};
+
+export const downloadServiceScheduleZip = async (
+    authToken,
+    serviceIds,
+    month
+) => {
+    const params = new URLSearchParams();
+    if (month) params.append('month', month);
+    if (Array.isArray(serviceIds) && serviceIds.length) {
+        params.append('serviceIds', serviceIds.join(','));
+    }
+    const url = params.toString()
+        ? `${VITE_API_URL}/services/schedule/zip?${params.toString()}`
+        : `${VITE_API_URL}/services/schedule/zip`;
+    return downloadScheduleFile(authToken, url, 'cuadrantes_servicios.zip');
+};
+
+export const downloadEmployeeSchedulePdf = async (
+    authToken,
+    month,
+    employeeId = ''
+) => {
+    const params = new URLSearchParams();
+    if (month) params.append('month', month);
+    if (employeeId) params.append('employeeId', employeeId);
+    const url = params.toString()
+        ? `${VITE_API_URL}/services/employee/schedule/pdf?${params.toString()}`
+        : `${VITE_API_URL}/services/employee/schedule/pdf`;
+    return downloadScheduleFile(authToken, url, 'cuadrante_personal.pdf');
+};
+
+export const downloadEmployeeScheduleZip = async (
+    authToken,
+    month,
+    employeeIds = []
+) => {
+    const params = new URLSearchParams();
+    if (month) params.append('month', month);
+    if (Array.isArray(employeeIds) && employeeIds.length) {
+        params.append('employeeIds', employeeIds.join(','));
+    }
+    const url = params.toString()
+        ? `${VITE_API_URL}/services/employee/schedule/zip?${params.toString()}`
+        : `${VITE_API_URL}/services/employee/schedule/zip`;
+    return downloadScheduleFile(authToken, url, 'cuadrantes_personales.zip');
+};
+
 export const createServiceScheduleShift = async (
     authToken,
     serviceId,

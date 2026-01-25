@@ -12,7 +12,7 @@ const replaceServiceScheduleTemplatesService = async (
     await pool.query(
         `
         DELETE FROM serviceScheduleTemplates
-        WHERE serviceId = ? AND month = ?
+        WHERE serviceId = ? AND (month = ? OR month = '')
         `,
         [serviceId, month]
     );
@@ -24,7 +24,7 @@ const replaceServiceScheduleTemplatesService = async (
     const values = templates.map((item) => [
         uuid(),
         serviceId,
-        month,
+        '',
         item.shiftTypeId || null,
         item.weekday,
         item.startTime,
@@ -43,10 +43,10 @@ const replaceServiceScheduleTemplatesService = async (
     );
 
     return values.map(
-        ([id, , , shiftTypeId, weekday, startTime, endTime, slots]) => ({
+        ([id, , templateMonth, shiftTypeId, weekday, startTime, endTime, slots]) => ({
             id,
             serviceId,
-            month,
+            month: templateMonth,
             shiftTypeId,
             weekday,
             startTime,

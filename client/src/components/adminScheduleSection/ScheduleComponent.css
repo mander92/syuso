@@ -268,3 +268,46 @@
         border-radius: 12px;
     }
 }
+
+.schedule-toggle {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.schedule-toggle-btn {
+    padding: 0.55rem 1.2rem;
+    border-radius: 999px;
+    border: 1.5px solid var(--color-primary);
+    background: #ffffff;
+    color: var(--color-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.schedule-toggle-btn.btn-primary {
+    background: var(--color-primary);
+    color: #ffffff;
+    border-color: var(--color-primary);
+}
+
+.schedule-toggle-btn.btn-secondary {
+    background: #ffffff;
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+.schedule-downloads {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    align-items: center;
+}
+
+.schedule-personal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}

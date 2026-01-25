@@ -69,7 +69,8 @@ const ServiceScheduleGrid = ({
     showUnassigned = true,
 }) => {
     const [draggedShiftId, setDraggedShiftId] = useState(null);
-
+    const [collapsedRows, setCollapsedRows] = useState(() => new Set());
+    
     const { days, year, monthIndex } = useMemo(() => {
         if (!month) {
             return { days: [], year: 0, monthIndex: 0 };
@@ -112,6 +113,7 @@ const ServiceScheduleGrid = ({
         }));
         return showUnassigned ? [{ id: null, label: 'Sin asignar' }, ...base] : base;
     }, [employees, showUnassigned]);
+
 
     const handleDragStart = (event, shiftId) => {
         setDraggedShiftId(shiftId);
@@ -170,15 +172,44 @@ const ServiceScheduleGrid = ({
                 ))}
             </div>
             {rows.map((row) => {
+                const rowKey = row.id || 'unassigned';
+                const isCollapsed = collapsedRows.has(rowKey);
                 const rowAbsences = row.id ? absencesByEmployee[row.id] || [] : [];
                 return (
                     <div
-                        className='service-schedule-grid-row'
-                        key={row.id || 'unassigned'}
+                        className={`service-schedule-grid-row ${
+                            isCollapsed ? 'service-schedule-grid-row--collapsed' : ''
+                        }`}
+                        key={rowKey}
                         style={gridStyle}
                     >
-                        <div className='service-schedule-grid-employee'>{row.label}</div>
-                        {days.map((day) => {
+                        <div className='service-schedule-grid-employee'>
+                            <span>{row.label}</span>
+                            <button
+                                type='button'
+                                className='service-schedule-grid-toggle'
+                                onClick={() => {
+                                    setCollapsedRows((prev) => {
+                                        const next = new Set(prev);
+                                        if (next.has(rowKey)) {
+                                            next.delete(rowKey);
+                                        } else {
+                                            next.add(rowKey);
+                                        }
+                                        return next;
+                                    });
+                                }}
+                                aria-label={
+                                    isCollapsed
+                                        ? 'Mostrar cuadrante'
+                                        : 'Ocultar cuadrante'
+                                }
+                            >
+                                {isCollapsed ? '+' : '-'}
+                            </button>
+                        </div>
+                        {!isCollapsed &&
+                            days.map((day) => {
                             const dateKey = toDateKey(year, monthIndex, day);
                             const bucketKey = `${row.id || 'unassigned'}_${dateKey}`;
                             const shiftsForDay = bucketed.get(bucketKey) || [];
@@ -201,6 +232,9 @@ const ServiceScheduleGrid = ({
                                             : undefined
                                     }
                                 >
+                                    <span className='service-schedule-grid-day-label'>
+                                        {weekdayLabel(dateObj)} {day}
+                                    </span>
                                     {absence && !shiftsForDay.length && (
                                         <span className='service-schedule-grid-absence'>
                                             {absence.type === 'vacation' ? 'Vacaciones' : 'Libre'}
@@ -235,7 +269,7 @@ const ServiceScheduleGrid = ({
                                     ))}
                                 </div>
                             );
-                        })}
+                            })}
                     </div>
                 );
             })}
