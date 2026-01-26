@@ -7,7 +7,27 @@ const createEmployeeAbsenceController = async (req, res, next) => {
         const { startDate, endDate, type, notes } = req.body;
         const { id: createdBy } = req.userLogged;
 
-        if (!startDate || !endDate || !type) {
+        const normalizeAbsenceType = (value) => {
+            if (!value) return value;
+            const normalized = String(value).trim().toLowerCase();
+            const map = {
+                free: 'off',
+                libre: 'off',
+                off: 'off',
+                vacation: 'vacation',
+                vacaciones: 'vacation',
+                vacacion: 'vacation',
+                sick: 'sick',
+                baja: 'sick',
+                available: 'available',
+                disponible: 'available',
+            };
+            return map[normalized] || value;
+        };
+
+        const normalizedType = normalizeAbsenceType(type);
+
+        if (!startDate || !endDate || !normalizedType) {
             generateErrorUtil('Datos de ausencia incompletos', 400);
         }
 
@@ -15,7 +35,7 @@ const createEmployeeAbsenceController = async (req, res, next) => {
             userId,
             startDate,
             endDate,
-            type,
+            normalizedType,
             notes,
             createdBy
         );
