@@ -33,6 +33,16 @@ const parseDateKey = (value) => {
     return new Date(year, month - 1, day);
 };
 
+const getAbsenceRange = (absence) => {
+    if (!absence) return { start: null, end: null };
+    const startKey = normalizeDateKey(absence.startDate);
+    const endKey = normalizeDateKey(absence.endDate);
+    return {
+        start: parseDateKey(startKey),
+        end: parseDateKey(endKey),
+    };
+};
+
 const isDateInRange = (date, start, end) => {
     if (!date || !start) return false;
     if (!end) return date.getTime() === start.getTime();
@@ -41,9 +51,26 @@ const isDateInRange = (date, start, end) => {
 
 const absenceColor = (type) => {
     if (type === 'vacation') return '#fde68a';
-    if (type === 'free') return '#c7d2fe';
+    if (type === 'free' || type === 'leave') return '#c7d2fe';
     if (type === 'sick') return '#fecaca';
+    if (type === 'available') return '#bbf7d0';
     return '#e2e8f0';
+};
+
+const absenceLabel = (type) => {
+    if (type === 'vacation') return 'Vacaciones';
+    if (type === 'free' || type === 'leave') return 'Libre';
+    if (type === 'sick') return 'Baja';
+    if (type === 'available') return 'Disponible';
+    return 'Ausencia';
+};
+
+const absenceShort = (type) => {
+    if (type === 'vacation') return 'V';
+    if (type === 'free' || type === 'leave') return 'L';
+    if (type === 'sick') return 'B';
+    if (type === 'available') return 'D';
+    return 'A';
 };
 
 const weekdayLabel = (date) => {
@@ -215,8 +242,7 @@ const ServiceScheduleGrid = ({
                             const shiftsForDay = bucketed.get(bucketKey) || [];
                             const dateObj = new Date(year, monthIndex, day);
                             const absence = rowAbsences.find((item) => {
-                                const start = parseDateKey(item.startDate);
-                                const end = parseDateKey(item.endDate);
+                                const { start, end } = getAbsenceRange(item);
                                 return isDateInRange(dateObj, start, end);
                             });
 
@@ -237,7 +263,7 @@ const ServiceScheduleGrid = ({
                                     </span>
                                     {absence && !shiftsForDay.length && (
                                         <span className='service-schedule-grid-absence'>
-                                            {absence.type === 'vacation' ? 'Vacaciones' : 'Libre'}
+                                            {absenceShort(absence.type)}
                                         </span>
                                     )}
                                     {shiftsForDay.map((shift) => (

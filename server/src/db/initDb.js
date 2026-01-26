@@ -145,6 +145,8 @@ const initDb = async () => {
                 minMonthlyHours INT UNSIGNED DEFAULT 0,
                 maxMonthlyHours INT UNSIGNED DEFAULT 0,
                 minRestHours INT UNSIGNED DEFAULT 0,
+                restWeekendType ENUM('short', 'long') DEFAULT 'short',
+                restWeekendCount INT UNSIGNED DEFAULT 0,
                 createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 modifiedAt TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 FOREIGN KEY (employeeId) REFERENCES users(id) ON DELETE CASCADE

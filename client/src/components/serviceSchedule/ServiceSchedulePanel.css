@@ -563,6 +563,33 @@
     color: #64748b;
 }
 
+.service-schedule-simulate {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.service-schedule-simulate-btn {
+    border: none;
+    border-radius: 999px;
+    padding: 8px 16px;
+    background: #e2e8f0;
+    color: #0f172a;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.service-schedule-simulate-btn--primary {
+    background: #1d4ed8;
+    color: #ffffff;
+}
+
+.service-schedule-simulate-btn--ghost {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
 @media (max-width: 720px) {
     .service-schedule-template-row {
         grid-template-columns: 1fr;

@@ -3,13 +3,21 @@ import upsertEmployeeRulesService from '../../services/schedules/upsertEmployeeR
 const updateEmployeeRulesController = async (req, res, next) => {
     try {
         const { userId } = req.params;
-        const { minMonthlyHours, maxMonthlyHours, minRestHours } = req.body;
+        const {
+            minMonthlyHours,
+            maxMonthlyHours,
+            minRestHours,
+            restWeekendType,
+            restWeekendCount,
+        } = req.body;
 
         const data = await upsertEmployeeRulesService(
             userId,
             minMonthlyHours,
             maxMonthlyHours,
-            minRestHours
+            minRestHours,
+            restWeekendType,
+            restWeekendCount
         );
 
         res.send({

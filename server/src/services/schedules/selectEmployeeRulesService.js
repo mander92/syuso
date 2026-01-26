@@ -5,7 +5,7 @@ const selectEmployeeRulesService = async (employeeId) => {
 
     const [rows] = await pool.query(
         `
-        SELECT employeeId, minMonthlyHours, maxMonthlyHours, minRestHours
+        SELECT employeeId, minMonthlyHours, maxMonthlyHours, minRestHours, restWeekendType, restWeekendCount
         FROM employeeRules
         WHERE employeeId = ?
         `,
@@ -17,6 +17,8 @@ const selectEmployeeRulesService = async (employeeId) => {
         minMonthlyHours: 0,
         maxMonthlyHours: 0,
         minRestHours: 0,
+        restWeekendType: 'short',
+        restWeekendCount: 0,
     };
 };
 

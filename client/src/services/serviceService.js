@@ -482,6 +482,55 @@ export const applyServiceScheduleTemplate = async (
     return body.data;
 };
 
+export const simulateServiceSchedule = async (authToken, serviceId, month) => {
+    const res = await fetch(
+        `${VITE_API_URL}/services/${serviceId}/schedule/simulate`,
+        {
+            method: 'POST',
+            headers: {
+                Authorization: authToken,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ month }),
+        }
+    );
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};
+
+export const applyServiceScheduleSimulation = async (
+    authToken,
+    serviceId,
+    month,
+    shifts
+) => {
+    const res = await fetch(
+        `${VITE_API_URL}/services/${serviceId}/schedule/apply-simulation`,
+        {
+            method: 'POST',
+            headers: {
+                Authorization: authToken,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ month, shifts }),
+        }
+    );
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};
+
 export const fetchServiceScheduleShifts = async (
     authToken,
     serviceId,

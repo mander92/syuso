@@ -16,6 +16,8 @@ import {
     deleteServiceShiftType,
     updateServiceScheduleShift,
     uploadServiceScheduleImage,
+    simulateServiceSchedule,
+    applyServiceScheduleSimulation,
 } from '../../services/serviceService.js';
 import { fetchAllUsersServices, fetchEmployeeAbsences } from '../../services/userService.js';
 import ServiceScheduleGrid from './ServiceScheduleGrid.jsx';
@@ -74,6 +76,9 @@ const ServiceSchedulePanel = ({
     const [selectedShift, setSelectedShift] = useState(null);
     const [isSavingShift, setIsSavingShift] = useState(false);
     const [isGridOpen, setIsGridOpen] = useState(false);
+    const [isSimulationActive, setIsSimulationActive] = useState(false);
+    const [isSimulating, setIsSimulating] = useState(false);
+    const [isApplyingSimulation, setIsApplyingSimulation] = useState(false);
     const [newShift, setNewShift] = useState({
         scheduleDate: toLocalDateInput(),
         startTime: '18:00',
@@ -168,6 +173,12 @@ const ServiceSchedulePanel = ({
         loadTemplates();
         loadShifts();
     }, [loadTemplates, loadShifts]);
+
+    useEffect(() => {
+        if (isSimulationActive) {
+            setIsSimulationActive(false);
+        }
+    }, [month]);
 
     useEffect(() => {
         if (!authToken) return;
@@ -365,6 +376,14 @@ const ServiceSchedulePanel = ({
     };
 
     const handleShiftUpdate = async (shiftId, updates) => {
+        if (isSimulationActive) {
+            setShifts((prev) =>
+                prev.map((shift) =>
+                    shift.id === shiftId ? { ...shift, ...updates } : shift
+                )
+            );
+            return;
+        }
         try {
             const data = await updateServiceScheduleShift(
                 authToken,
@@ -382,6 +401,13 @@ const ServiceSchedulePanel = ({
     };
 
     const handleShiftDelete = async (shiftId) => {
+        if (isSimulationActive) {
+            setShifts((prev) => prev.filter((shift) => shift.id !== shiftId));
+            if (selectedShift?.id === shiftId) {
+                setSelectedShift(null);
+            }
+            return;
+        }
         try {
             await deleteServiceScheduleShift(authToken, serviceId, shiftId);
             setShifts((prev) => prev.filter((shift) => shift.id !== shiftId));
@@ -396,6 +422,10 @@ const ServiceSchedulePanel = ({
 
     const handleCreateShift = async (event) => {
         event.preventDefault();
+        if (isSimulationActive) {
+            toast.error('Desactiva la simulacion para crear turnos nuevos.');
+            return;
+        }
         try {
             const data = await createServiceScheduleShift(authToken, serviceId, newShift);
             setShifts((prev) => [data, ...prev]);
@@ -407,6 +437,15 @@ const ServiceSchedulePanel = ({
 
     const handleSelectedShiftUpdate = async () => {
         if (!selectedShift?.id) return;
+        if (isSimulationActive) {
+            setShifts((prev) =>
+                prev.map((shift) =>
+                    shift.id === selectedShift.id ? { ...shift, ...selectedShift } : shift
+                )
+            );
+            toast.success('Turno actualizado');
+            return;
+        }
         try {
             setIsSavingShift(true);
             const data = await updateServiceScheduleShift(
@@ -439,6 +478,42 @@ const ServiceSchedulePanel = ({
     const handleSelectedShiftDelete = async () => {
         if (!selectedShift?.id) return;
         await handleShiftDelete(selectedShift.id);
+    };
+
+    const handleSimulateSchedule = async () => {
+        if (!authToken || !serviceId) return;
+        try {
+            setIsSimulating(true);
+            const data = await simulateServiceSchedule(authToken, serviceId, month);
+            setShifts(Array.isArray(data?.shifts) ? data.shifts : []);
+            setIsSimulationActive(true);
+            setIsGridOpen(true);
+            toast.success('Simulacion generada');
+        } catch (error) {
+            toast.error(error.message || 'No se pudo simular el cuadrante');
+        } finally {
+            setIsSimulating(false);
+        }
+    };
+
+    const handleApplySimulation = async () => {
+        if (!authToken || !serviceId || !isSimulationActive) return;
+        try {
+            setIsApplyingSimulation(true);
+            await applyServiceScheduleSimulation(authToken, serviceId, month, shifts);
+            toast.success('Cuadrante aplicado');
+            setIsSimulationActive(false);
+            await loadShifts();
+        } catch (error) {
+            toast.error(error.message || 'No se pudo aplicar la simulacion');
+        } finally {
+            setIsApplyingSimulation(false);
+        }
+    };
+
+    const handleCancelSimulation = async () => {
+        setIsSimulationActive(false);
+        await loadShifts();
     };
 
     const handleShiftTypeCreate = async () => {
@@ -686,6 +761,36 @@ const ServiceSchedulePanel = ({
                         </button>
                     </div>
                 </div>
+                <div className='service-schedule-simulate'>
+                    <button
+                        type='button'
+                        className='service-schedule-simulate-btn'
+                        onClick={handleSimulateSchedule}
+                        disabled={isSimulating}
+                    >
+                        {isSimulating ? 'Simulando...' : 'Simular cuadrante'}
+                    </button>
+                    {isSimulationActive && (
+                        <>
+                            <button
+                                type='button'
+                                className='service-schedule-simulate-btn service-schedule-simulate-btn--primary'
+                                onClick={handleApplySimulation}
+                                disabled={isApplyingSimulation}
+                            >
+                                {isApplyingSimulation ? 'Aplicando...' : 'Aplicar cuadrante'}
+                            </button>
+                            <button
+                                type='button'
+                                className='service-schedule-simulate-btn service-schedule-simulate-btn--ghost'
+                                onClick={handleCancelSimulation}
+                                disabled={isApplyingSimulation}
+                            >
+                                Cancelar simulacion
+                            </button>
+                        </>
+                    )}
+                </div>
             </div>
 
             <form className='service-schedule-new' onSubmit={handleCreateShift}>
@@ -700,6 +805,7 @@ const ServiceSchedulePanel = ({
                                 scheduleDate: event.target.value,
                             }))
                         }
+                        disabled={isSimulationActive}
                     />
                     <input
                         type='time'
@@ -710,6 +816,7 @@ const ServiceSchedulePanel = ({
                                 startTime: event.target.value,
                             }))
                         }
+                        disabled={isSimulationActive}
                     />
                     <input
                         type='time'
@@ -720,6 +827,7 @@ const ServiceSchedulePanel = ({
                                 endTime: event.target.value,
                             }))
                         }
+                        disabled={isSimulationActive}
                     />
                     <input
                         type='number'
@@ -732,6 +840,7 @@ const ServiceSchedulePanel = ({
                                 hours: event.target.value,
                             }))
                         }
+                        disabled={isSimulationActive}
                     />
                     <select
                         value={newShift.employeeId}
@@ -741,6 +850,7 @@ const ServiceSchedulePanel = ({
                                 employeeId: event.target.value,
                             }))
                         }
+                        disabled={isSimulationActive}
                     >
                         <option value=''>Sin asignar</option>
                         {employeeOptions.map((option) => (
@@ -757,6 +867,7 @@ const ServiceSchedulePanel = ({
                                 shiftTypeId: event.target.value,
                             }))
                         }
+                        disabled={isSimulationActive}
                     >
                         <option value=''>Sin tipo</option>
                         {shiftTypeOptions.map((option) => (
@@ -766,7 +877,9 @@ const ServiceSchedulePanel = ({
                         ))}
                     </select>
                 </div>
-                <button type='submit'>Crear turno</button>
+                <button type='submit' disabled={isSimulationActive}>
+                    Crear turno
+                </button>
             </form>
 
             <div className='service-schedule-section service-schedule-section--wide'>

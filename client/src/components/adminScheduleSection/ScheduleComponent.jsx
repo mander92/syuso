@@ -3,7 +3,14 @@ import toast from 'react-hot-toast';
 
 import { AuthContext } from '../../context/AuthContext.jsx';
 import useUser from '../../hooks/useUser.js';
-import { fetchAllUsersServices } from '../../services/userService.js';
+import {
+    fetchAllUsersServices,
+    fetchEmployeeAbsences,
+    fetchEmployeeRules,
+    updateEmployeeRules,
+    createEmployeeAbsence,
+    deleteEmployeeAbsence,
+} from '../../services/userService.js';
 import { fetchDelegations } from '../../services/delegationService.js';
 import {
     fetchAllServicesServices,
@@ -54,6 +61,12 @@ const ScheduleComponent = () => {
     const [isDownloadingServiceZip, setIsDownloadingServiceZip] = useState(false);
     const [isDownloadingPersonalZip, setIsDownloadingPersonalZip] = useState(false);
     const [downloadingPersonalId, setDownloadingPersonalId] = useState('');
+    const [employeeRulesMap, setEmployeeRulesMap] = useState({});
+    const [employeeAbsencesMap, setEmployeeAbsencesMap] = useState({});
+    const [employeePanelsOpen, setEmployeePanelsOpen] = useState({});
+    const [rulesSavingId, setRulesSavingId] = useState('');
+    const [absenceSavingId, setAbsenceSavingId] = useState('');
+    const [absenceDrafts, setAbsenceDrafts] = useState({});
 
     const schedulePanelRef = useRef(null);
 
@@ -283,6 +296,137 @@ const ScheduleComponent = () => {
         );
     }, [scheduleServices]);
 
+    const filteredEmployees = useMemo(() => {
+        if (!employees.length) return [];
+        if (!scheduleEmployeeFilter) return employees;
+        return employees.filter((employee) => employee.id === scheduleEmployeeFilter);
+    }, [employees, scheduleEmployeeFilter]);
+
+    const getMonthRange = () => {
+        if (!scheduleMonth) return null;
+        const [year, monthValue] = scheduleMonth.split('-').map(Number);
+        const start = new Date(Date.UTC(year, monthValue - 1, 1));
+        const end = new Date(Date.UTC(year, monthValue, 0, 23, 59, 59));
+        return { start, end };
+    };
+
+    const isWithinMonth = (dateValue, range) => {
+        if (!dateValue || !range) return false;
+        const date = new Date(dateValue);
+        return date >= range.start && date <= range.end;
+    };
+
+    const isAbsenceInRange = (absence, range) => {
+        if (!absence || !range) return false;
+        const start = absence.startDate ? new Date(absence.startDate) : null;
+        const end = absence.endDate ? new Date(absence.endDate) : null;
+        if (!start && !end) return false;
+        const startDate = start || end;
+        const endDate = end || start;
+        return startDate <= range.end && endDate >= range.start;
+    };
+
+    const monthRange = useMemo(() => getMonthRange(), [scheduleMonth]);
+
+    const countAbsenceDays = (absences, type, range) => {
+        if (!range || !Array.isArray(absences)) return 0;
+        return absences.reduce((total, absence) => {
+            if (!absence) return total;
+            const normalizedType =
+                absence.type === 'leave' ? 'free' : absence.type;
+            if (normalizedType !== type) return total;
+            const start = absence.startDate ? new Date(absence.startDate) : null;
+            const end = absence.endDate ? new Date(absence.endDate) : null;
+            if (!start && !end) return total;
+            const startDate = start || end;
+            const endDate = end || start;
+            const rangeStart = new Date(
+                Date.UTC(
+                    range.start.getUTCFullYear(),
+                    range.start.getUTCMonth(),
+                    range.start.getUTCDate()
+                )
+            );
+            const rangeEnd = new Date(
+                Date.UTC(
+                    range.end.getUTCFullYear(),
+                    range.end.getUTCMonth(),
+                    range.end.getUTCDate()
+                )
+            );
+            const absStart = new Date(
+                Date.UTC(
+                    startDate.getUTCFullYear(),
+                    startDate.getUTCMonth(),
+                    startDate.getUTCDate()
+                )
+            );
+            const absEnd = new Date(
+                Date.UTC(
+                    endDate.getUTCFullYear(),
+                    endDate.getUTCMonth(),
+                    endDate.getUTCDate()
+                )
+            );
+            const overlapStart = absStart > rangeStart ? absStart : rangeStart;
+            const overlapEnd = absEnd < rangeEnd ? absEnd : rangeEnd;
+            if (overlapStart > overlapEnd) return total;
+            const diffDays =
+                Math.floor(
+                    (overlapEnd.getTime() - overlapStart.getTime()) /
+                        (24 * 60 * 60 * 1000)
+                ) + 1;
+            return total + diffDays;
+        }, 0);
+    };
+
+    useEffect(() => {
+        const loadRulesAndAbsences = async () => {
+            if (!authToken || !isAdminLike || scheduleViewMode !== 'personal')
+                return;
+
+            const list = filteredEmployees;
+            if (!list.length) return;
+
+            try {
+                const rulesEntries = await Promise.all(
+                    list.map(async (employee) => {
+                        try {
+                            const rules = await fetchEmployeeRules(
+                                authToken,
+                                employee.id
+                            );
+                            return [employee.id, rules];
+                        } catch (error) {
+                            return [employee.id, null];
+                        }
+                    })
+                );
+
+                const absencesEntries = await Promise.all(
+                    list.map(async (employee) => {
+                        try {
+                            const absences = await fetchEmployeeAbsences(
+                                authToken,
+                                employee.id
+                            );
+                            return [employee.id, absences || []];
+                        } catch (error) {
+                            return [employee.id, []];
+                        }
+                    })
+                );
+
+                setEmployeeRulesMap(Object.fromEntries(rulesEntries));
+                setEmployeeAbsencesMap(Object.fromEntries(absencesEntries));
+            } catch (error) {
+                toast.error(error.message || 'No se pudieron cargar reglas');
+            }
+        };
+
+        loadRulesAndAbsences();
+    }, [authToken, isAdminLike, scheduleViewMode, filteredEmployees, scheduleMonth]);
+
 
     const personalScheduleRows = useMemo(() => {
         const shiftRows = Object.values(scheduleShiftMap).flat();
@@ -291,31 +435,143 @@ const ScheduleComponent = () => {
         shiftRows.forEach((shift) => {
             if (!shift.employeeId) return;
             if (!employeeMap.has(shift.employeeId)) {
-                const employee = employees.find(
-                    (item) => item.id === shift.employeeId
-                );
-                employeeMap.set(shift.employeeId, {
-                    id: shift.employeeId,
-                    name: employee
-                        ? `${employee.firstName} ${employee.lastName}`
-                        : 'Empleado',
-                    shifts: [],
-                });
+                employeeMap.set(shift.employeeId, []);
             }
-            employeeMap.get(shift.employeeId).shifts.push(shift);
+            employeeMap.get(shift.employeeId).push(shift);
         });
 
-        return Array.from(employeeMap.values()).map((item) => {
-            const totalHours = item.shifts.reduce(
+        return filteredEmployees.map((employee) => {
+            const shifts = employeeMap.get(employee.id) || [];
+            const totalHours = shifts.reduce(
                 (acc, shift) => acc + (Number(shift.hours) || 0),
                 0
             );
             return {
-                ...item,
+                id: employee.id,
+                name: `${employee.firstName} ${employee.lastName}`,
+                shifts,
                 totalHours,
             };
         });
-    }, [scheduleShiftMap, employees]);
+    }, [scheduleShiftMap, filteredEmployees]);
+
+    const handleRuleChange = (employeeId, field, value) => {
+        setEmployeeRulesMap((prev) => ({
+            ...prev,
+            [employeeId]: {
+                ...(prev[employeeId] || {}),
+                [field]: value,
+            },
+        }));
+    };
+
+    const handleRulesSave = async (employeeId) => {
+        if (!authToken || !employeeId) return;
+        const currentRules = employeeRulesMap[employeeId] || {};
+        const payload = {
+            minMonthlyHours:
+                currentRules.minMonthlyHours === ''
+                    ? null
+                    : Number(currentRules.minMonthlyHours) || null,
+            maxMonthlyHours:
+                currentRules.maxMonthlyHours === ''
+                    ? null
+                    : Number(currentRules.maxMonthlyHours) || null,
+            minRestHours:
+                currentRules.minRestHours === ''
+                    ? null
+                    : Number(currentRules.minRestHours) || null,
+            restWeekendType: currentRules.restWeekendType || 'short',
+            restWeekendCount:
+                currentRules.restWeekendCount === ''
+                    ? null
+                    : Number(currentRules.restWeekendCount) || null,
+        };
+
+        try {
+            setRulesSavingId(employeeId);
+            const saved = await updateEmployeeRules(authToken, employeeId, payload);
+            setEmployeeRulesMap((prev) => ({
+                ...prev,
+                [employeeId]: {
+                    ...prev[employeeId],
+                    ...saved,
+                },
+            }));
+            toast.success('Reglas guardadas');
+        } catch (error) {
+            toast.error(error.message || 'No se pudieron guardar las reglas');
+        } finally {
+            setRulesSavingId('');
+        }
+    };
+
+    const handleAbsenceDraftChange = (employeeId, field, value) => {
+        setAbsenceDrafts((prev) => ({
+            ...prev,
+            [employeeId]: {
+                type: 'free',
+                startDate: '',
+                endDate: '',
+                notes: '',
+                ...(prev[employeeId] || {}),
+                [field]: value,
+            },
+        }));
+    };
+
+    const handleCreateAbsence = async (employeeId) => {
+        if (!authToken || !employeeId) return;
+        const draft = absenceDrafts[employeeId] || {};
+        if (!draft.startDate || !draft.endDate) {
+            toast.error('Selecciona fecha inicio y fin');
+            return;
+        }
+
+        try {
+            setAbsenceSavingId(employeeId);
+            const created = await createEmployeeAbsence(authToken, employeeId, {
+                startDate: draft.startDate,
+                endDate: draft.endDate,
+                type: draft.type || 'free',
+                notes: draft.notes || '',
+            });
+            setEmployeeAbsencesMap((prev) => ({
+                ...prev,
+                [employeeId]: [...(prev[employeeId] || []), created],
+            }));
+            setAbsenceDrafts((prev) => ({
+                ...prev,
+                [employeeId]: {
+                    type: draft.type || 'free',
+                    startDate: '',
+                    endDate: '',
+                    notes: '',
+                },
+            }));
+            toast.success('Ausencia guardada');
+        } catch (error) {
+            toast.error(error.message || 'No se pudo guardar la ausencia');
+        } finally {
+            setAbsenceSavingId('');
+        }
+    };
+
+    const handleDeleteAbsence = async (employeeId, absenceId) => {
+        if (!authToken || !employeeId || !absenceId) return;
+        try {
+            await deleteEmployeeAbsence(authToken, employeeId, absenceId);
+            setEmployeeAbsencesMap((prev) => ({
+                ...prev,
+                [employeeId]: (prev[employeeId] || []).filter(
+                    (absence) => absence.id !== absenceId
+                ),
+            }));
+            toast.success('Ausencia eliminada');
+        } catch (error) {
+            toast.error(error.message || 'No se pudo eliminar la ausencia');
+        }
+    };
 
     const handleScheduleReset = () => {
         setScheduleMonth(new Date().toISOString().slice(0, 7));
@@ -719,13 +975,53 @@ const ScheduleComponent = () => {
                     </div>
                     {personalScheduleRows.length ? (
                         <div className='schedule-personal-list'>
-                            {personalScheduleRows.map((item) => (
+                            {personalScheduleRows.map((item) => {
+                                const rules = employeeRulesMap[item.id] || {};
+                                const absences = employeeAbsencesMap[item.id] || [];
+                                const monthAbsences = absences.filter((absence) =>
+                                    isAbsenceInRange(absence, monthRange)
+                                );
+                                const draft = absenceDrafts[item.id] || {
+                                    type: 'free',
+                                    startDate: '',
+                                    endDate: '',
+                                    notes: '',
+                                };
+                                const panelOpen =
+                                    employeePanelsOpen[item.id] !== undefined
+                                        ? employeePanelsOpen[item.id]
+                                        : true;
+                                const freeDays = countAbsenceDays(
+                                    monthAbsences,
+                                    'free',
+                                    monthRange
+                                );
+                                const vacationDays = countAbsenceDays(
+                                    monthAbsences,
+                                    'vacation',
+                                    monthRange
+                                );
+                                const sickDays = countAbsenceDays(
+                                    monthAbsences,
+                                    'sick',
+                                    monthRange
+                                );
+                                const availableDays = countAbsenceDays(
+                                    monthAbsences,
+                                    'available',
+                                    monthRange
+                                );
+
+                                return (
                                 <div key={item.id} className='schedule-personal-row'>
-                                    <div>
+                                    <div className='schedule-personal-summary'>
                                         <strong>{item.name}</strong>
                                         <span>
                                             Turnos: {item.shifts.length} | Horas:{' '}
                                             {item.totalHours.toFixed(2)}
+                                        </span>
+                                        <span>
+                                            Ausencias: {freeDays + vacationDays + sickDays} dias
                                         </span>
                                     </div>
                                     <div className='schedule-personal-actions'>
@@ -746,9 +1042,285 @@ const ScheduleComponent = () => {
                                         >
                                             Ver cuadrante
                                         </button>
+                                        <button
+                                            type='button'
+                                            className='schedule-btn schedule-btn--ghost'
+                                            onClick={() =>
+                                                setEmployeePanelsOpen((prev) => ({
+                                                    ...prev,
+                                                    [item.id]: !panelOpen,
+                                                }))
+                                            }
+                                        >
+                                            {panelOpen
+                                                ? 'Ocultar reglas'
+                                                : 'Reglas y ausencias'}
+                                        </button>
                                     </div>
+                                    {panelOpen ? (
+                                        <div className='schedule-personal-panel'>
+                                            <div className='schedule-personal-block'>
+                                                <div className='schedule-personal-block__header'>
+                                                    <h4>Reglas mensuales</h4>
+                                                    <button
+                                                        type='button'
+                                                        className='schedule-btn'
+                                                        onClick={() =>
+                                                            handleRulesSave(item.id)
+                                                        }
+                                                        disabled={rulesSavingId === item.id}
+                                                    >
+                                                        {rulesSavingId === item.id
+                                                            ? 'Guardando...'
+                                                            : 'Guardar reglas'}
+                                                    </button>
+                                                </div>
+                                                <div className='schedule-personal-rule-grid'>
+                                                    <label>
+                                                        Min. horas/mes
+                                                        <input
+                                                            type='number'
+                                                            min='0'
+                                                            value={
+                                                                rules.minMonthlyHours ?? ''
+                                                            }
+                                                            onChange={(event) =>
+                                                                handleRuleChange(
+                                                                    item.id,
+                                                                    'minMonthlyHours',
+                                                                    event.target.value
+                                                                )
+                                                            }
+                                                        />
+                                                    </label>
+                                                    <label>
+                                                        Max. horas/mes
+                                                        <input
+                                                            type='number'
+                                                            min='0'
+                                                            value={
+                                                                rules.maxMonthlyHours ?? ''
+                                                            }
+                                                            onChange={(event) =>
+                                                                handleRuleChange(
+                                                                    item.id,
+                                                                    'maxMonthlyHours',
+                                                                    event.target.value
+                                                                )
+                                                            }
+                                                        />
+                                                    </label>
+                                                    <label>
+                                                        Descanso minimo (h)
+                                                        <input
+                                                            type='number'
+                                                            min='0'
+                                                            value={rules.minRestHours ?? ''}
+                                                            onChange={(event) =>
+                                                                handleRuleChange(
+                                                                    item.id,
+                                                                    'minRestHours',
+                                                                    event.target.value
+                                                                )
+                                                            }
+                                                        />
+                                                    </label>
+                                                    <label>
+                                                        Fin de semana descanso
+                                                        <select
+                                                            value={
+                                                                rules.restWeekendType ||
+                                                                'short'
+                                                            }
+                                                            onChange={(event) =>
+                                                                handleRuleChange(
+                                                                    item.id,
+                                                                    'restWeekendType',
+                                                                    event.target.value
+                                                                )
+                                                            }
+                                                        >
+                                                            <option value='short'>
+                                                                Corto (S-D)
+                                                            </option>
+                                                            <option value='long'>
+                                                                Largo (V-S-D)
+                                                            </option>
+                                                        </select>
+                                                    </label>
+                                                    <label>
+                                                        Cantidad/mes
+                                                        <input
+                                                            type='number'
+                                                            min='0'
+                                                            value={
+                                                                rules.restWeekendCount ?? ''
+                                                            }
+                                                            onChange={(event) =>
+                                                                handleRuleChange(
+                                                                    item.id,
+                                                                    'restWeekendCount',
+                                                                    event.target.value
+                                                                )
+                                                            }
+                                                        />
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <div className='schedule-personal-block'>
+                                                <div className='schedule-personal-block__header'>
+                                                    <h4>Vacaciones y libres</h4>
+                                                    <div className='schedule-personal-block__meta'>
+                                                        <span>
+                                                            Mes: {scheduleMonth || '—'}
+                                                        </span>
+                                                        <span>Libres: {freeDays}</span>
+                                                        <span>
+                                                            Vacaciones: {vacationDays}
+                                                        </span>
+                                                        <span>Bajas: {sickDays}</span>
+                                                        <span>
+                                                            Disponibles: {availableDays}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                {monthAbsences.length ? (
+                                                    <div className='schedule-personal-absence-list'>
+                                                        {monthAbsences.map((absence) => (
+                                                            <div
+                                                                key={absence.id}
+                                                                className='schedule-personal-absence-item'
+                                                            >
+                                                                <div>
+                                                                    <strong>
+                                                                        {absence.type ===
+                                                                        'vacation'
+                                                                            ? 'Vacaciones'
+                                                                            : absence.type ===
+                                                                              'sick'
+                                                                            ? 'Baja'
+                                                                            : absence.type ===
+                                                                              'available'
+                                                                            ? 'Disponible'
+                                                                            : 'Libre'}
+                                                                    </strong>
+                                                                    <span>
+                                                                        {absence.startDate} →{' '}
+                                                                        {absence.endDate}
+                                                                    </span>
+                                                                    {absence.notes ? (
+                                                                        <span className='schedule-personal-absence-notes'>
+                                                                            {absence.notes}
+                                                                        </span>
+                                                                    ) : null}
+                                                                </div>
+                                                                <button
+                                                                    type='button'
+                                                                    className='schedule-btn schedule-btn--ghost'
+                                                                    onClick={() =>
+                                                                        handleDeleteAbsence(
+                                                                            item.id,
+                                                                            absence.id
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    Eliminar
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <p className='schedule-personal-empty'>
+                                                        Sin ausencias este mes.
+                                                    </p>
+                                                )}
+
+                                                <div className='schedule-personal-absence-form'>
+                                                    <label>
+                                                        Inicio
+                                                        <input
+                                                            type='date'
+                                                            value={draft.startDate || ''}
+                                                            onChange={(event) =>
+                                                                handleAbsenceDraftChange(
+                                                                    item.id,
+                                                                    'startDate',
+                                                                    event.target.value
+                                                                )
+                                                            }
+                                                        />
+                                                    </label>
+                                                    <label>
+                                                        Fin
+                                                        <input
+                                                            type='date'
+                                                            value={draft.endDate || ''}
+                                                            onChange={(event) =>
+                                                                handleAbsenceDraftChange(
+                                                                    item.id,
+                                                                    'endDate',
+                                                                    event.target.value
+                                                                )
+                                                            }
+                                                        />
+                                                    </label>
+                                                    <label>
+                                                        Tipo
+                                                        <select
+                                                            value={draft.type || 'free'}
+                                                            onChange={(event) =>
+                                                                handleAbsenceDraftChange(
+                                                                    item.id,
+                                                                    'type',
+                                                                    event.target.value
+                                                                )
+                                                            }
+                                                        >
+                                                            <option value='free'>Libre</option>
+                                                            <option value='vacation'>
+                                                                Vacaciones
+                                                            </option>
+                                                            <option value='sick'>Baja</option>
+                                                            <option value='available'>
+                                                                Disponible
+                                                            </option>
+                                                        </select>
+                                                    </label>
+                                                    <label className='schedule-personal-absence-notes-input'>
+                                                        Nota
+                                                        <input
+                                                            type='text'
+                                                            value={draft.notes || ''}
+                                                            onChange={(event) =>
+                                                                handleAbsenceDraftChange(
+                                                                    item.id,
+                                                                    'notes',
+                                                                    event.target.value
+                                                                )
+                                                            }
+                                                            placeholder='Opcional'
+                                                        />
+                                                    </label>
+                                                    <button
+                                                        type='button'
+                                                        className='schedule-btn'
+                                                        onClick={() =>
+                                                            handleCreateAbsence(item.id)
+                                                        }
+                                                        disabled={absenceSavingId === item.id}
+                                                    >
+                                                        {absenceSavingId === item.id
+                                                            ? 'Guardando...'
+                                                            : 'Anadir ausencia'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : null}
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     ) : (
                         <p className='schedule-empty'>
@@ -781,19 +1353,16 @@ const ScheduleComponent = () => {
                             </button>
                         </div>
                         <div className='service-schedule-grid-modal__body'>
-                            <ServiceScheduleGrid
-                                month={scheduleMonth}
-                                shifts={personalModal.shifts.map((shift) => ({
-                                    ...shift,
-                                    employeeId: shift.serviceId,
-                                }))}
-                                employees={personalModal.shifts.reduce(
+                            {(() => {
+                                const absences =
+                                    employeeAbsencesMap[personalModal.id] || [];
+                                const absenceRowId = `absences-${personalModal.id}`;
+                                const serviceRows = personalModal.shifts.reduce(
                                     (acc, shift) => {
                                         if (!shift.serviceId) return acc;
                                         if (
                                             acc.some(
-                                                (row) =>
-                                                    row.id === shift.serviceId
+                                                (row) => row.id === shift.serviceId
                                             )
                                         ) {
                                             return acc;
@@ -813,12 +1382,37 @@ const ScheduleComponent = () => {
                                         ];
                                     },
                                     []
-                                )}
-                                absencesByEmployee={{}}
-                                onShiftUpdate={() => {}}
-                                readOnly
-                                showUnassigned={false}
-                            />
+                                );
+                                const employees = [
+                                    {
+                                        id: absenceRowId,
+                                        firstName: 'Ausencias',
+                                        lastName: '',
+                                    },
+                                    ...serviceRows,
+                                ];
+                                const serviceAbsenceMap = serviceRows.reduce(
+                                    (acc, row) => {
+                                        acc[row.id] = absences;
+                                        return acc;
+                                    },
+                                    { [absenceRowId]: absences }
+                                );
+                                return (
+                                    <ServiceScheduleGrid
+                                        month={scheduleMonth}
+                                        shifts={personalModal.shifts.map((shift) => ({
+                                            ...shift,
+                                            employeeId: shift.serviceId,
+                                        }))}
+                                        employees={employees}
+                                        absencesByEmployee={serviceAbsenceMap}
+                                        onShiftUpdate={() => {}}
+                                        readOnly
+                                        showUnassigned={false}
+                                    />
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>
