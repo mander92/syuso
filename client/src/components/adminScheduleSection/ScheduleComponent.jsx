@@ -990,7 +990,7 @@ const ScheduleComponent = () => {
                                 const panelOpen =
                                     employeePanelsOpen[item.id] !== undefined
                                         ? employeePanelsOpen[item.id]
-                                        : true;
+                                        : false;
                                 const freeDays = countAbsenceDays(
                                     monthAbsences,
                                     'free',
