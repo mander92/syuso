@@ -81,6 +81,27 @@
     background-color: #f8fafc;
 }
 
+@media (max-width: 720px) {
+    .admin-users-filters {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+        align-items: start;
+    }
+
+    .admin-users-filter label {
+        margin-bottom: 0.2rem;
+        font-size: 0.75rem;
+    }
+
+    .admin-users-filter select,
+    .admin-users-filter input {
+        min-width: 0;
+        padding: 0.35rem 0.6rem;
+        font-size: 0.82rem;
+    }
+}
+
 /* === CARD GENERAL === */
 
 .admin-users-card {
