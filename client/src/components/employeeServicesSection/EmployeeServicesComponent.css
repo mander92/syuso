@@ -312,6 +312,54 @@
     gap: 1px;
 }
 
+/* Fuerza versión vertical (como sudo/admin) dentro del modal de empleado */
+.employee-schedule-modal .service-schedule-grid {
+    gap: 12px;
+}
+
+.employee-schedule-modal .service-schedule-grid-head {
+    display: none;
+}
+
+.employee-schedule-modal .service-schedule-grid-row {
+    grid-template-columns: 1fr;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.employee-schedule-modal .service-schedule-grid-employee {
+    font-size: 0.8rem;
+    padding: 10px;
+    background: #0f172a;
+    color: #ffffff;
+    border: none;
+}
+
+.employee-schedule-modal .service-schedule-grid-cell {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 6px 10px;
+    border-left: none;
+    border-right: none;
+}
+
+.employee-schedule-modal .service-schedule-grid-day-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 58px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #0f172a;
+    background: #f1f5f9;
+    border-radius: 6px;
+    padding: 2px 6px;
+    text-transform: uppercase;
+}
+
 .employee-schedule-image {
     padding: 8px 0;
 }
