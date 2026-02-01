@@ -148,6 +148,18 @@
     gap: 1px;
 }
 
+@media (min-width: 769px) {
+    .employee-schedule-modal {
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+    }
+
+    .employee-schedule-modal__panel {
+        margin: 0 auto;
+    }
+}
+
 /* Fuerza versión vertical del grid en el modal de empleado */
 @media (max-width: 768px) {
     .employee-schedule-modal__panel .service-schedule-grid {
