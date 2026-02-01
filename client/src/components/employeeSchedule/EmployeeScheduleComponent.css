@@ -90,6 +90,13 @@
     padding: 20px 22px;
 }
 
+@media (min-width: 1024px) {
+    .employee-schedule-modal__panel {
+        width: calc(100vw - 48px);
+        max-width: 1600px;
+    }
+}
+
 .employee-schedule-modal__header {
     display: flex;
     justify-content: space-between;
