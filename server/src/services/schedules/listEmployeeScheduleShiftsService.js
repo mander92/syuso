@@ -45,7 +45,7 @@ const listEmployeeScheduleShiftsService = async (
           AND ss.deletedAt IS NULL
           ${monthFilter}
           ${serviceFilter}
-        ORDER BY ss.scheduleDate DESC, ss.startTime DESC
+        ORDER BY ss.scheduleDate ASC, ss.startTime ASC
         `,
         params
     );
