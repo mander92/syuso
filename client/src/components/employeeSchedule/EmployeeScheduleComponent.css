@@ -62,7 +62,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 24px;
+    padding: 0;
     background: rgba(15, 23, 42, 0.45);
 }
 
@@ -78,14 +78,16 @@
 
 .employee-schedule-modal__panel {
     position: relative;
-    width: min(96vw, 1200px);
-    max-height: 88vh;
+    width: min(980px, 100%);
+    max-height: 90vh;
     background: #ffffff;
-    border-radius: 16px;
-    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
+    border-radius: 14px;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+    border: 1px solid #e5e7eb;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    padding: 20px 22px;
 }
 
 .employee-schedule-modal__header {
@@ -93,7 +95,7 @@
     justify-content: space-between;
     align-items: center;
     gap: 16px;
-    padding: 16px 20px;
+    padding: 0 0 12px 0;
     border-bottom: 1px solid #e2e8f0;
 }
 
@@ -116,7 +118,8 @@
 }
 
 .employee-schedule-modal__body {
-    padding: 16px 20px 24px;
+    margin-top: 12px;
+    padding: 0;
     overflow: auto;
 }
 

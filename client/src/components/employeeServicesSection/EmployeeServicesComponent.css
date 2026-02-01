@@ -234,16 +234,17 @@
     align-items: center;
     justify-content: center;
     z-index: 60;
-    padding: 24px;
+    padding: 0;
 }
 
 .employee-schedule-modal {
     background: #fff;
-    border-radius: 16px;
-    width: min(96vw, 1200px);
-    max-height: 88vh;
+    border-radius: 14px;
+    width: min(980px, 100%);
+    max-height: 90vh;
     overflow: hidden;
-    box-shadow: 0 30px 60px rgba(15, 23, 42, 0.35);
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+    border: 1px solid #e5e7eb;
     display: flex;
     flex-direction: column;
 }
@@ -252,7 +253,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 20px 24px;
+    padding: 16px 18px;
     border-bottom: 1px solid #e2e8f0;
 }
 
@@ -270,15 +271,15 @@
 
 .employee-schedule-modal-close {
     border: none;
-    background: #0f172a;
-    color: #fff;
+    background: #e2e8f0;
+    color: #0f172a;
     padding: 6px 14px;
     border-radius: 999px;
     cursor: pointer;
 }
 
 .employee-schedule-modal-body {
-    padding: 20px 24px;
+    padding: 16px 18px 20px;
     overflow: auto;
 }
 
@@ -315,7 +316,7 @@
     .employee-schedule-modal-overlay {
         align-items: center;
         justify-content: center;
-        padding: 24px;
+        padding: 0;
     }
 
     .employee-schedule-modal {
