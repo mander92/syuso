@@ -172,14 +172,15 @@ const EmployeeServicesComponent = () => {
             }
 
             const now = new Date();
-            const formatter = new Intl.DateTimeFormat('es-ES', {
-                timeZone: 'Europe/Madrid',
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-            });
+            const formatNextShift = (date) =>
+                new Intl.DateTimeFormat('es-ES', {
+                    timeZone: 'Europe/Madrid',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                }).format(date);
 
             try {
                 const results = await Promise.all(
@@ -228,7 +229,7 @@ const EmployeeServicesComponent = () => {
 
                         return [
                             serviceId,
-                            formatter.format(nextShift.dateTime),
+                            formatNextShift(nextShift.dateTime),
                         ];
                     })
                 );
@@ -535,10 +536,8 @@ const EmployeeServicesComponent = () => {
                                                         : 'false'
                                                 }
                                             >
-                                                {expandedAddress[
-                                                    serviceId
-                                                ]
-                                                    ? '–'
+                                                {expandedAddress[serviceId]
+                                                    ? '-'
                                                     : '+'}
                                             </button>
                                         </div>
@@ -716,4 +715,5 @@ const EmployeeServicesComponent = () => {
 };
 
 export default EmployeeServicesComponent;
+
 
