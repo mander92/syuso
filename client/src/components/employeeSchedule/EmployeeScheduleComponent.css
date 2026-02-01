@@ -63,6 +63,7 @@
     align-items: center;
     justify-content: center;
     padding: 24px;
+    background: rgba(15, 23, 42, 0.45);
 }
 
 .employee-schedule-modal__backdrop {
@@ -77,7 +78,7 @@
 
 .employee-schedule-modal__panel {
     position: relative;
-    width: min(92vw, 1200px);
+    width: min(96vw, 1200px);
     max-height: 88vh;
     background: #ffffff;
     border-radius: 16px;

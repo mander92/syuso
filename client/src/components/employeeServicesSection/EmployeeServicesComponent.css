@@ -229,7 +229,7 @@
 .employee-schedule-modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(15, 23, 42, 0.5);
+    background: rgba(15, 23, 42, 0.45);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -240,8 +240,8 @@
 .employee-schedule-modal {
     background: #fff;
     border-radius: 16px;
-    width: min(92vw, 1200px);
-    max-height: 90vh;
+    width: min(96vw, 1200px);
+    max-height: 88vh;
     overflow: hidden;
     box-shadow: 0 30px 60px rgba(15, 23, 42, 0.35);
     display: flex;
