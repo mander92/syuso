@@ -283,6 +283,35 @@
     overflow: auto;
 }
 
+.employee-schedule-modal-body .service-schedule-grid {
+    font-size: 0.66rem;
+}
+
+.employee-schedule-modal-body .service-schedule-grid-head,
+.employee-schedule-modal-body .service-schedule-grid-row {
+    grid-template-columns: minmax(110px, 150px) repeat(var(--days), minmax(0, 1fr));
+}
+
+.employee-schedule-modal-body .service-schedule-grid-corner,
+.employee-schedule-modal-body .service-schedule-grid-employee,
+.employee-schedule-modal-body .service-schedule-grid-weekday,
+.employee-schedule-modal-body .service-schedule-grid-day {
+    font-size: 0.6rem;
+    padding: 4px 2px;
+}
+
+.employee-schedule-modal-body .service-schedule-grid-cell {
+    min-height: 38px;
+    padding: 2px;
+    gap: 2px;
+}
+
+.employee-schedule-modal-body .service-schedule-grid-shift {
+    padding: 2px 4px;
+    font-size: 0.58rem;
+    gap: 1px;
+}
+
 .employee-schedule-image {
     padding: 8px 0;
 }
@@ -324,11 +353,28 @@
         width: auto;
     }
 
+    .employee-schedule-modal-overlay {
+        padding: 0;
+        align-items: flex-start;
+    }
+
     .employee-schedule-modal {
-        max-height: 90vh;
+        width: 100%;
+        max-width: 100%;
+        height: 100vh;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+
+    .employee-schedule-modal-header {
+        position: sticky;
+        top: 0;
+        background: #fff;
+        z-index: 1;
+        padding: 16px 18px;
     }
 
     .employee-schedule-modal-body {
-        padding: 16px;
+        padding: 12px;
     }
 }
