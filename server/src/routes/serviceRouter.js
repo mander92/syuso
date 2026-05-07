@@ -49,6 +49,7 @@ import updateServiceShiftTypeController from '../controllers/schedules/updateSer
 import deleteServiceShiftTypeController from '../controllers/schedules/deleteServiceShiftTypeController.js';
 import simulateServiceScheduleController from '../controllers/schedules/simulateServiceScheduleController.js';
 import applyServiceScheduleSimulationController from '../controllers/schedules/applyServiceScheduleSimulationController.js';
+import importServiceScheduleExcelController from '../controllers/schedules/importServiceScheduleExcelController.js';
 
 const router = express.Router();
 
@@ -119,7 +120,6 @@ router.post(
 router.get(
     '/services/:serviceId/schedule/shifts',
     authUser,
-    isAdmin,
     serviceExists,
     listServiceScheduleShiftsController
 );
@@ -138,6 +138,14 @@ router.post(
     isAdmin,
     serviceExists,
     applyServiceScheduleSimulationController
+);
+
+router.post(
+    '/services/:serviceId/schedule/import-excel',
+    authUser,
+    isAdmin,
+    serviceExists,
+    importServiceScheduleExcelController
 );
 
 router.get(

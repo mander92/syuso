@@ -1,7 +1,11 @@
 import getPool from '../../db/getPool.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 
-const rejectShiftSwapRequestService = async ({ requestId, adminId, reason }) => {
+const rejectCounterpartShiftSwapRequestService = async ({
+    requestId,
+    userId,
+    reason,
+}) => {
     const pool = await getPool();
     const conn = await pool.getConnection();
 
@@ -12,35 +16,41 @@ const rejectShiftSwapRequestService = async ({ requestId, adminId, reason }) => 
             'SELECT * FROM shiftSwapRequests WHERE id = ? FOR UPDATE',
             [requestId]
         );
+
         if (!rows.length) generateErrorUtil('Solicitud no encontrada', 404);
 
-        const req = rows[0];
-        if (req.status !== 'pending_admin' && req.status !== 'pending') {
-            generateErrorUtil('La solicitud ya fue resuelta', 409);
+        const request = rows[0];
+
+        if (request.counterpartId !== userId) {
+            generateErrorUtil('Solo el compañero puede rechazar esta solicitud', 403);
         }
 
-        const finalReason = reason || req.reason || null;
+        if (request.status !== 'pending_counterpart') {
+            generateErrorUtil('La solicitud no está pendiente de confirmación', 409);
+        }
+
+        const finalReason = reason || request.reason || null;
 
         await conn.query(
             'UPDATE shiftSwapRequests SET status = "rejected", reason = ?, decidedBy = ?, decidedAt = NOW() WHERE id = ?',
-            [finalReason, adminId, requestId]
+            [finalReason, userId, requestId]
         );
 
         await conn.commit();
 
         return {
-            ...req,
+            ...request,
             status: 'rejected',
             reason: finalReason,
-            decidedBy: adminId,
+            decidedBy: userId,
             decidedAt: new Date(),
         };
-    } catch (err) {
+    } catch (error) {
         await conn.rollback();
-        throw err;
+        throw error;
     } finally {
         conn.release();
     }
 };
 
-export default rejectShiftSwapRequestService;
+export default rejectCounterpartShiftSwapRequestService;

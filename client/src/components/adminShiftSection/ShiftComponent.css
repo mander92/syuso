@@ -302,8 +302,54 @@
     border-radius: 14px;
     padding: 20px 22px;
     width: min(420px, 100%);
+    max-height: 90vh;
+    overflow: auto;
     box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
     border: 1px solid #e5e7eb;
+}
+
+.shift-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.shift-modal:has(.shift-form-grid) {
+    width: min(760px, 100%);
+}
+
+.shift-modal textarea {
+    border-radius: 0.55rem;
+    border: 1px solid #e2e8f0;
+    padding: 0.55rem 0.7rem;
+    font: inherit;
+    resize: vertical;
+}
+
+.shift-signature-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.shift-signature-field__head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+    color: #475569;
+    font-size: 0.85rem;
+}
+
+.shift-signature-canvas {
+    width: 100%;
+    height: 160px;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.65rem;
+    background: #ffffff;
+    touch-action: none;
 }
 
 .shift-modal h3 {

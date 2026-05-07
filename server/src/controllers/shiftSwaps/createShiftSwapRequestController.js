@@ -4,8 +4,11 @@ import generateErrorUtil from '../../utils/generateErrorUtil.js';
 
 const bodySchema = Joi.object({
     serviceId: Joi.string().uuid().required(),
-    fromShiftId: Joi.string().uuid().required(),
-    toShiftId: Joi.string().uuid().required(),
+    requestType: Joi.string().valid('swap', 'transfer', 'request').default('swap'),
+    fromShiftId: Joi.string().uuid(),
+    toShiftId: Joi.string().uuid(),
+    fromShiftIds: Joi.array().items(Joi.string().uuid()).default([]),
+    toShiftIds: Joi.array().items(Joi.string().uuid()).default([]),
     counterpartId: Joi.string().uuid().required(),
     reason: Joi.string().max(255).allow('', null),
 });

@@ -642,6 +642,41 @@ export const downloadEmployeeScheduleZip = async (
     return downloadScheduleFile(authToken, url, 'cuadrantes_personales.zip');
 };
 
+export const importServiceScheduleExcel = async (
+    authToken,
+    serviceId,
+    month,
+    file,
+    { apply = false, replace = true, employeeMappings = {} } = {}
+) => {
+    const params = new URLSearchParams({ month });
+    params.append('apply', apply ? '1' : '0');
+    params.append('replace', replace ? '1' : '0');
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('employeeMappings', JSON.stringify(employeeMappings));
+
+    const res = await fetch(
+        `${VITE_API_URL}/services/${serviceId}/schedule/import-excel?${params.toString()}`,
+        {
+            method: 'POST',
+            headers: {
+                Authorization: authToken,
+            },
+            body: formData,
+        }
+    );
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};
+
 export const createServiceScheduleShift = async (
     authToken,
     serviceId,

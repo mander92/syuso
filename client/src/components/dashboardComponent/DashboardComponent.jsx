@@ -23,11 +23,13 @@ const DashboardComponent = () => {
     const { unreadTotal } = useChatNotifications();
     const [activeSection, setActiveSection] = useState('profile');
     const hasSetDefault = useRef(false);
+    const userRole = String(user?.role || '').trim().toLowerCase();
+    const isAdminLike = userRole === 'admin' || userRole === 'sudo';
+    const isEmployeeLike = userRole === 'employee' || userRole === 'empleado';
+    const isClient = userRole === 'client';
 
     const sections = useMemo(() => {
         if (!user) return [];
-
-        const isAdminLike = user.role === 'admin' || user.role === 'sudo';
 
         if (isAdminLike) {
             const adminSections = [
@@ -41,7 +43,7 @@ const DashboardComponent = () => {
                 { id: 'services', label: 'Tipos de servicios' },
                 { id: 'profile', label: 'Mi perfil' },
             ];
-            if (user.role === 'sudo') {
+            if (userRole === 'sudo') {
                 adminSections.splice(
                     adminSections.length - 1,
                     0,
@@ -56,7 +58,7 @@ const DashboardComponent = () => {
             return adminSections;
         }
 
-        if (user.role === 'employee') {
+        if (isEmployeeLike) {
             return [
                 { id: 'services', label: 'Mis servicios' },
                 { id: 'schedule', label: 'Mi cuadrante' },
@@ -66,13 +68,22 @@ const DashboardComponent = () => {
             ];
         }
 
-        // client por defecto
+        if (!isClient) {
+            return [
+                { id: 'services', label: 'Mis servicios' },
+                { id: 'schedule', label: 'Mi cuadrante' },
+                { id: 'shiftSwaps', label: 'Cambios de turno' },
+                { id: 'chats', label: 'Chats' },
+                { id: 'profile', label: 'Mi perfil' },
+            ];
+        }
+
         return [
             { id: 'profile', label: 'Mi perfil' },
             { id: 'contracts', label: 'Mis contratos' },
             { id: 'services', label: 'Servicios activos' },
         ];
-    }, [user]);
+    }, [isAdminLike, isClient, isEmployeeLike, user, userRole]);
 
     useEffect(() => {
         if (!sections.length) return;
@@ -125,10 +136,10 @@ const DashboardComponent = () => {
                 return <ContractsComponent />;
 
             case 'services':
-                if (user.role === 'employee') {
+                if (isEmployeeLike || (!isAdminLike && !isClient)) {
                     return <EmployeeServicesComponent />;
                 }
-                if (user.role === 'client') {
+                if (isClient) {
                     return <ClientServicesComponent />;
                 }
                 return <ServicesComponent />;
@@ -185,11 +196,12 @@ const DashboardComponent = () => {
                                 {user.firstName} {user.lastName}
                             </p>
                             <p className='dashboard-userrole'>
-                                {user.role === 'sudo'
+                                {userRole === 'sudo'
                                     ? 'Superusuario'
-                                    : user.role === 'admin'
+                                    : userRole === 'admin'
                                       ? 'Administrador'
-                                      : user.role === 'employee'
+                                      : isEmployeeLike ||
+                                          (!isAdminLike && !isClient)
                                         ? 'Empleado'
                                         : 'Cliente'}
                             </p>

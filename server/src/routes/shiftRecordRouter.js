@@ -11,6 +11,7 @@ import selectWorkReportDraftController from '../controllers/workReports/selectWo
 import downloadWorkReportsZipController from '../controllers/workReports/downloadWorkReportsZipController.js';
 import downloadWorkReportPdfController from '../controllers/workReports/downloadWorkReportPdfController.js';
 import deleteWorkReportsController from '../controllers/workReports/deleteWorkReportsController.js';
+import createAdminWorkReportController from '../controllers/workReports/createAdminWorkReportController.js';
 
 import {
     newShiftRecordController,
@@ -53,6 +54,13 @@ router.delete(
     authUser,
     isAdmin,
     deleteWorkReportsController
+);
+
+router.post(
+    '/workReports/admin',
+    authUser,
+    isAdmin,
+    createAdminWorkReportController
 );
 
 router.get(

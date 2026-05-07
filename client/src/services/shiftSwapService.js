@@ -47,6 +47,38 @@ export const approveShiftSwapRequest = async (authToken, requestId) => {
     return handleResponse(res);
 };
 
+export const confirmShiftSwapRequest = async (authToken, requestId) => {
+    const res = await fetch(
+        `${VITE_API_URL}/shift-swaps/${requestId}/confirm`,
+        {
+            method: 'POST',
+            headers: {
+                Authorization: authToken,
+            },
+        }
+    );
+    return handleResponse(res);
+};
+
+export const rejectCounterpartShiftSwapRequest = async (
+    authToken,
+    requestId,
+    reason = ''
+) => {
+    const res = await fetch(
+        `${VITE_API_URL}/shift-swaps/${requestId}/counterpart-reject`,
+        {
+            method: 'POST',
+            headers: {
+                Authorization: authToken,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ reason }),
+        }
+    );
+    return handleResponse(res);
+};
+
 export const rejectShiftSwapRequest = async (
     authToken,
     requestId,

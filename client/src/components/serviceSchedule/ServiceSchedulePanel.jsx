@@ -18,6 +18,7 @@ import {
     uploadServiceScheduleImage,
     simulateServiceSchedule,
     applyServiceScheduleSimulation,
+    importServiceScheduleExcel,
 } from '../../services/serviceService.js';
 import { fetchAllUsersServices, fetchEmployeeAbsences } from '../../services/userService.js';
 import ServiceScheduleGrid from './ServiceScheduleGrid.jsx';
@@ -44,6 +45,34 @@ const formatTime = (value) => {
     const [hours, minutes] = String(value).split(':');
     if (hours == null || minutes == null) return value;
     return `${hours}:${minutes}`;
+};
+
+const calculateShiftHours = (startTime, endTime) => {
+    if (!startTime || !endTime) return '';
+    const [startHours, startMinutes] = startTime.split(':').map(Number);
+    const [endHours, endMinutes] = endTime.split(':').map(Number);
+    if (
+        [startHours, startMinutes, endHours, endMinutes].some((value) =>
+            Number.isNaN(value)
+        )
+    ) {
+        return '';
+    }
+
+    const startTotal = startHours * 60 + startMinutes;
+    const endTotal = endHours * 60 + endMinutes;
+    const diffMinutes =
+        endTotal >= startTotal
+            ? endTotal - startTotal
+            : endTotal + 24 * 60 - startTotal;
+    return Math.round((diffMinutes / 60) * 100) / 100;
+};
+
+const formatDateEs = (value) => {
+    if (!value) return '';
+    const [year, month, day] = String(value).slice(0, 10).split('-');
+    if (!year || !month || !day) return value;
+    return `${day}/${month}/${year}`;
 };
 
 const ServiceSchedulePanel = ({
@@ -79,6 +108,12 @@ const ServiceSchedulePanel = ({
     const [isSimulationActive, setIsSimulationActive] = useState(false);
     const [isSimulating, setIsSimulating] = useState(false);
     const [isApplyingSimulation, setIsApplyingSimulation] = useState(false);
+    const [scheduleImportFile, setScheduleImportFile] = useState(null);
+    const [scheduleImportPreview, setScheduleImportPreview] = useState(null);
+    const [isPreviewingImport, setIsPreviewingImport] = useState(false);
+    const [isApplyingImport, setIsApplyingImport] = useState(false);
+    const [replaceImportedMonth, setReplaceImportedMonth] = useState(true);
+    const [employeeImportMappings, setEmployeeImportMappings] = useState({});
     const [newShift, setNewShift] = useState({
         scheduleDate: toLocalDateInput(),
         startTime: '18:00',
@@ -273,6 +308,13 @@ const ServiceSchedulePanel = ({
             prev.shiftTypeId ? prev : { ...prev, shiftTypeId: defaultShiftTypeId }
         );
     }, [defaultShiftTypeId]);
+
+    useEffect(() => {
+        const hours = calculateShiftHours(newShift.startTime, newShift.endTime);
+        setNewShift((prev) =>
+            String(prev.hours) === String(hours) ? prev : { ...prev, hours }
+        );
+    }, [newShift.startTime, newShift.endTime]);
 
     const handleTemplateChange = (index, field, value) => {
         setTemplateRows((prev) =>
@@ -514,6 +556,77 @@ const ServiceSchedulePanel = ({
     const handleCancelSimulation = async () => {
         setIsSimulationActive(false);
         await loadShifts();
+    };
+
+    const handleExcelPreview = async () => {
+        if (!scheduleImportFile) {
+            toast.error('Selecciona un archivo Excel.');
+            return;
+        }
+
+        try {
+            setIsPreviewingImport(true);
+            const data = await importServiceScheduleExcel(
+                authToken,
+                serviceId,
+                month,
+                scheduleImportFile,
+                {
+                    apply: false,
+                    replace: replaceImportedMonth,
+                    employeeMappings: employeeImportMappings,
+                }
+            );
+            setScheduleImportPreview(data);
+            const nextMappings = { ...employeeImportMappings };
+            (data.unmatchedEmployees || []).forEach((item) => {
+                if (nextMappings[item.excelName]) return;
+                const suggestion = item.suggestions?.[0];
+                if (suggestion) nextMappings[item.excelName] = suggestion.id;
+            });
+            setEmployeeImportMappings(nextMappings);
+            toast.success('Excel leido correctamente');
+        } catch (error) {
+            toast.error(error.message || 'No se pudo leer el Excel');
+        } finally {
+            setIsPreviewingImport(false);
+        }
+    };
+
+    const handleExcelApply = async () => {
+        if (!scheduleImportFile) {
+            toast.error('Selecciona un archivo Excel.');
+            return;
+        }
+
+        const missingMappings = (scheduleImportPreview?.unmatchedEmployees || [])
+            .filter((item) => !employeeImportMappings[item.excelName]);
+        if (missingMappings.length) {
+            toast.error('Asigna los trabajadores sin emparejar.');
+            return;
+        }
+
+        try {
+            setIsApplyingImport(true);
+            const data = await importServiceScheduleExcel(
+                authToken,
+                serviceId,
+                month,
+                scheduleImportFile,
+                {
+                    apply: true,
+                    replace: replaceImportedMonth,
+                    employeeMappings: employeeImportMappings,
+                }
+            );
+            setScheduleImportPreview(data);
+            toast.success(`Cuadrante importado: ${data.shiftCount} turnos`);
+            await loadShifts();
+        } catch (error) {
+            toast.error(error.message || 'No se pudo importar el Excel');
+        } finally {
+            setIsApplyingImport(false);
+        }
     };
 
     const handleShiftTypeCreate = async () => {
@@ -793,6 +906,191 @@ const ServiceSchedulePanel = ({
                 </div>
             </div>
 
+            <div className='service-schedule-section'>
+                <div className='service-schedule-section-header'>
+                    <div>
+                        <h3>Importar Excel</h3>
+                        <p>
+                            Sube un cuadrante con formato SYUSO para convertirlo
+                            en turnos del mes seleccionado.
+                        </p>
+                    </div>
+                </div>
+                <div className='service-schedule-import'>
+                    <input
+                        type='file'
+                        accept='.xlsx'
+                        onChange={(event) => {
+                            setScheduleImportFile(event.target.files?.[0] || null);
+                            setScheduleImportPreview(null);
+                            setEmployeeImportMappings({});
+                        }}
+                    />
+                    <label className='service-schedule-import-replace'>
+                        <input
+                            type='checkbox'
+                            checked={replaceImportedMonth}
+                            onChange={(event) =>
+                                setReplaceImportedMonth(event.target.checked)
+                            }
+                        />
+                        Reemplazar turnos programados del mes
+                    </label>
+                    <div className='service-schedule-actions'>
+                        <button
+                            type='button'
+                            onClick={handleExcelPreview}
+                            disabled={!scheduleImportFile || isPreviewingImport}
+                        >
+                            {isPreviewingImport ? 'Leyendo...' : 'Previsualizar'}
+                        </button>
+                        <button
+                            type='button'
+                            onClick={handleExcelApply}
+                            disabled={
+                                !scheduleImportFile ||
+                                isApplyingImport ||
+                                (scheduleImportPreview?.unmatchedEmployees || [])
+                                    .some(
+                                        (item) =>
+                                            !employeeImportMappings[
+                                                item.excelName
+                                            ]
+                                    )
+                            }
+                        >
+                            {isApplyingImport ? 'Importando...' : 'Aplicar Excel'}
+                        </button>
+                    </div>
+                </div>
+                {scheduleImportPreview ? (
+                    <div className='service-schedule-import-preview'>
+                        <div>
+                            <strong>
+                                {scheduleImportPreview.shiftCount} turnos
+                                detectados
+                            </strong>
+                            <span>
+                                Hoja: {scheduleImportPreview.worksheetName} ·
+                                Servicio Excel:{' '}
+                                {scheduleImportPreview.serviceName || '—'}
+                            </span>
+                        </div>
+                        {scheduleImportPreview.unmatchedEmployees?.length ? (
+                            <div className='service-schedule-import-warning'>
+                                <strong>Asigna estos nombres del Excel:</strong>
+                                {scheduleImportPreview.unmatchedEmployees.map(
+                                    (item) => (
+                                        <label
+                                            className='service-schedule-import-match'
+                                            key={item.excelName}
+                                        >
+                                            <span>
+                                                En el Excel pone:{' '}
+                                                <strong>{item.excelName}</strong>{' '}
+                                                · {item.shiftCount} turnos
+                                            </span>
+                                            <select
+                                                value={
+                                                    employeeImportMappings[
+                                                        item.excelName
+                                                    ] || ''
+                                                }
+                                                onChange={(event) =>
+                                                    setEmployeeImportMappings(
+                                                        (prev) => ({
+                                                            ...prev,
+                                                            [item.excelName]:
+                                                                event.target
+                                                                    .value,
+                                                        })
+                                                    )
+                                                }
+                                            >
+                                                <option value=''>
+                                                    Asignar esos turnos a...
+                                                </option>
+                                                {item.suggestions?.length ? (
+                                                    <optgroup label='Sugeridos'>
+                                                        {item.suggestions.map(
+                                                            (employee) => (
+                                                                <option
+                                                                    key={
+                                                                        employee.id
+                                                                    }
+                                                                    value={
+                                                                        employee.id
+                                                                    }
+                                                                >
+                                                                    ¿Quieres decir{' '}
+                                                                    {
+                                                                        employee.name
+                                                                    }
+                                                                    ?
+                                                                </option>
+                                                            )
+                                                        )}
+                                                    </optgroup>
+                                                ) : null}
+                                                <optgroup label='Todos'>
+                                                    {employees.map(
+                                                        (employee) => (
+                                                            <option
+                                                                key={
+                                                                    employee.id
+                                                                }
+                                                                value={
+                                                                    employee.id
+                                                                }
+                                                            >
+                                                                {`${employee.firstName || ''} ${
+                                                                    employee.lastName ||
+                                                                    ''
+                                                                }`.trim() ||
+                                                                    employee.email}
+                                                            </option>
+                                                        )
+                                                    )}
+                                                </optgroup>
+                                            </select>
+                                        </label>
+                                    )
+                                )}
+                            </div>
+                        ) : (
+                            <span className='service-schedule-import-ok'>
+                                Trabajadores emparejados correctamente.
+                            </span>
+                        )}
+                        {scheduleImportPreview.shifts?.length ? (
+                            <div className='service-schedule-import-list'>
+                                {scheduleImportPreview.shifts
+                                    .slice(0, 10)
+                                    .map((shift, index) => (
+                                        <span
+                                            key={`${shift.employeeId}-${shift.scheduleDate}-${index}`}
+                                        >
+                                            {shift.employeeName} ·{' '}
+                                            {formatDateEs(
+                                                shift.scheduleDate
+                                            )}{' '}
+                                            ·{' '}
+                                            {formatTime(shift.startTime)}-
+                                            {formatTime(shift.endTime)}
+                                        </span>
+                                    ))}
+                                {scheduleImportPreview.shifts.length > 10 ? (
+                                    <span>
+                                        +{scheduleImportPreview.shifts.length - 10}{' '}
+                                        turnos mas
+                                    </span>
+                                ) : null}
+                            </div>
+                        ) : null}
+                    </div>
+                ) : null}
+            </div>
+
             <form className='service-schedule-new' onSubmit={handleCreateShift}>
                 <h3>Crear turno manual</h3>
                 <div className='service-schedule-new-grid'>
@@ -834,12 +1132,7 @@ const ServiceSchedulePanel = ({
                         step='0.25'
                         placeholder='Horas'
                         value={newShift.hours}
-                        onChange={(event) =>
-                            setNewShift((prev) => ({
-                                ...prev,
-                                hours: event.target.value,
-                            }))
-                        }
+                        readOnly
                         disabled={isSimulationActive}
                     />
                     <select

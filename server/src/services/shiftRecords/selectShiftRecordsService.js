@@ -67,9 +67,16 @@ const selectShiftRecordsService = async (
         sqlValuesDetails.push(serviceName);
     }
 
-    if (startDate && endDate) {
-        sqlQueryDetails += ' AND se.startDateTime BETWEEN ? AND ?';
-        sqlValuesDetails.push(startDate, endDate);
+    if (startDate) {
+        sqlQueryDetails +=
+            ' AND COALESCE(wr.reportDate, s.realClockIn, s.clockIn, se.startDateTime) >= ?';
+        sqlValuesDetails.push(startDate);
+    }
+
+    if (endDate) {
+        sqlQueryDetails +=
+            ' AND COALESCE(wr.reportDate, s.realClockIn, s.clockIn, se.startDateTime) <= ?';
+        sqlValuesDetails.push(endDate);
     }
 
     if (delegationNames.length) {
@@ -132,9 +139,16 @@ const selectShiftRecordsService = async (
         sqlValuesTotal.push(serviceName);
     }
 
-    if (startDate && endDate) {
-        sqlQueryTotal += ' AND se.startDateTime BETWEEN ? AND ?';
-        sqlValuesTotal.push(startDate, endDate);
+    if (startDate) {
+        sqlQueryTotal +=
+            ' AND COALESCE(s.realClockIn, s.clockIn, se.startDateTime) >= ?';
+        sqlValuesTotal.push(startDate);
+    }
+
+    if (endDate) {
+        sqlQueryTotal +=
+            ' AND COALESCE(s.realClockIn, s.clockIn, se.startDateTime) <= ?';
+        sqlValuesTotal.push(endDate);
     }
 
     if (delegationNames.length) {

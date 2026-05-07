@@ -194,6 +194,94 @@
     padding: 6px 10px;
 }
 
+.service-schedule-import {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+}
+
+.service-schedule-import input[type='file'] {
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 6px 8px;
+    background: #ffffff;
+}
+
+.service-schedule-import-replace {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #475569;
+    font-size: 0.9rem;
+}
+
+.service-schedule-import-preview {
+    margin-top: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px;
+    background: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.service-schedule-import-preview > div:first-child {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.service-schedule-import-preview span {
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.service-schedule-import-warning {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: #991b1b;
+}
+
+.service-schedule-import-warning span {
+    color: #991b1b;
+}
+
+.service-schedule-import-match {
+    display: grid;
+    grid-template-columns: minmax(180px, 1fr) minmax(220px, 1fr);
+    gap: 8px;
+    align-items: center;
+}
+
+.service-schedule-import-match select {
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 7px 9px;
+    background: #ffffff;
+}
+
+.service-schedule-import-ok {
+    color: #166534 !important;
+    font-weight: 600;
+}
+
+.service-schedule-import-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.service-schedule-import-list span {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #0f172a;
+    padding: 6px 8px;
+}
+
 .service-schedule-list {
     display: flex;
     flex-direction: column;
