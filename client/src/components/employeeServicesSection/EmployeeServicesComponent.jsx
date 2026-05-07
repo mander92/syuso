@@ -119,6 +119,11 @@ const EmployeeServicesComponent = () => {
     const [scheduleLoading, setScheduleLoading] = useState(false);
     const [nextShiftByService, setNextShiftByService] = useState({});
 
+    const compareText = (a, b) =>
+        String(a || '').localeCompare(String(b || ''), 'es', {
+            sensitivity: 'base',
+        });
+
     const openLocationSettings = () => {
         if (typeof window === 'undefined') return;
 
@@ -270,7 +275,7 @@ const EmployeeServicesComponent = () => {
         () =>
             [...new Set(services.map((item) => item.name))]
                 .filter(Boolean)
-                .sort((a, b) => a.localeCompare(b)),
+                .sort(compareText),
         [services]
     );
 

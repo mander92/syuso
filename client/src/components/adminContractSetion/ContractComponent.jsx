@@ -50,6 +50,11 @@ const ContractsComponent = () => {
         setDelegationId('');
     };
 
+    const compareText = (a, b) =>
+        String(a || '').localeCompare(String(b || ''), 'es', {
+            sensitivity: 'base',
+        });
+
     useEffect(() => {
         const getServices = async () => {
             try {
@@ -197,7 +202,7 @@ const ContractsComponent = () => {
         () =>
             [...new Set(data.map((item) => item.type))]
                 .filter(Boolean)
-                .sort((a, b) => a.localeCompare(b)),
+                .sort(compareText),
         [data]
     );
 

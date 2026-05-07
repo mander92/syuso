@@ -61,6 +61,11 @@ const WorkReportsComponent = () => {
             .toLowerCase()
             .trim();
 
+    const compareText = (a, b) =>
+        String(a || '').localeCompare(String(b || ''), 'es', {
+            sensitivity: 'base',
+        });
+
     const toApiDateTime = (value) => {
         if (!value) return '';
         const [datePart, timePart = ''] = value.split('T');
@@ -263,7 +268,7 @@ const WorkReportsComponent = () => {
         () =>
             [...new Set(details.map((item) => item.city))]
                 .filter(Boolean)
-                .sort((a, b) => a.localeCompare(b)),
+                .sort(compareText),
         [details]
     );
 
@@ -271,7 +276,7 @@ const WorkReportsComponent = () => {
         () =>
             [...new Set(details.map((item) => item.serviceName))]
                 .filter(Boolean)
-                .sort((a, b) => a.localeCompare(b)),
+                .sort(compareText),
         [details]
     );
 
@@ -289,7 +294,7 @@ const WorkReportsComponent = () => {
                     city: service.city || service.province || '',
                 }))
                 .filter((service) => service.id)
-                .sort((a, b) => a.name.localeCompare(b.name)),
+                .sort((a, b) => compareText(a.name, b.name)),
         [services]
     );
 

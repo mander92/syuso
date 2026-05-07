@@ -58,6 +58,11 @@ const ShiftComponent = () => {
             .toLowerCase()
             .trim();
 
+    const compareText = (a, b) =>
+        String(a || '').localeCompare(String(b || ''), 'es', {
+            sensitivity: 'base',
+        });
+
     const parseLocalDateTime = (value) => {
         if (!value) return null;
         if (value instanceof Date) return value;
@@ -261,7 +266,7 @@ const ShiftComponent = () => {
         () =>
             [...new Set(details.map((item) => item.city))]
                 .filter(Boolean)
-                .sort((a, b) => a.localeCompare(b)),
+                .sort(compareText),
         [details]
     );
 
@@ -270,7 +275,7 @@ const ShiftComponent = () => {
         () =>
             [...new Set(details.map((item) => item.serviceName))]
                 .filter(Boolean)
-                .sort((a, b) => a.localeCompare(b)),
+                .sort(compareText),
         [details]
     );
 

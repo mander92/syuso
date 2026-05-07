@@ -100,12 +100,17 @@ const ListEmployeeComponent = ({
         }
     };
 
-    const citiesNoRepeated = [...new Set(data.map((item) => item.city))].sort(
-        (a, b) => a.localeCompare(b)
-    );
-    const jobNoRepeated = [...new Set(data.map((item) => item.job))].sort(
-        (a, b) => a.localeCompare(b)
-    );
+    const compareText = (a, b) =>
+        String(a || '').localeCompare(String(b || ''), 'es', {
+            sensitivity: 'base',
+        });
+
+    const citiesNoRepeated = [
+        ...new Set(data.map((item) => item.city).filter(Boolean)),
+    ].sort(compareText);
+    const jobNoRepeated = [
+        ...new Set(data.map((item) => item.job).filter(Boolean)),
+    ].sort(compareText);
 
     const filteredData = data.filter((item) => {
         if (!search.trim()) return true;
