@@ -19,7 +19,7 @@ const initDb = async () => {
 
         await pool.query(
             `
-            DROP TABLE IF EXISTS serviceNfcTagLogs, workReportIncidentPhotos, workReportPhotos, workReportIncidents, workReportDrafts, workReports, generalChatMessages, generalChatReads, generalChatMembers, generalChats, serviceChatMessages, serviceChatReads, serviceScheduleShifts, serviceScheduleTemplates, serviceShiftTypes, employeeAbsences, employeeRules, personsAssigned, serviceNfcTags, shiftRecords, adminDelegations, delegations, services, typeOfServices, users, addresses, consulting_requests, job_applications
+            DROP TABLE IF EXISTS serviceNfcTagLogs, workReportIncidentPhotos, workReportPhotos, workReportIncidents, workReportDrafts, workReports, shiftSwapRequests, generalChatMessages, generalChatReads, generalChatMembers, generalChats, serviceChatMessages, serviceChatReads, serviceScheduleShifts, serviceScheduleTemplates, serviceShiftTypes, employeeAbsences, employeeRules, personsAssigned, serviceNfcTags, shiftRecords, adminDelegations, delegations, services, typeOfServices, users, addresses, consulting_requests, job_applications
             `
         );
 
@@ -241,6 +241,37 @@ const initDb = async () => {
         );
 
         console.log('serviceScheduleShifts creada');
+
+        await pool.query(
+            `
+            CREATE TABLE IF NOT EXISTS shiftSwapRequests (
+                id CHAR(36) PRIMARY KEY NOT NULL,
+                serviceId CHAR(36) NOT NULL,
+                fromShiftId CHAR(36) NOT NULL,
+                toShiftId CHAR(36) NOT NULL,
+                requestorId CHAR(36) NOT NULL,
+                counterpartId CHAR(36) NOT NULL,
+                status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+                reason VARCHAR(255),
+                decidedBy CHAR(36),
+                decidedAt TIMESTAMP,
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                modifiedAt TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_shift_swap_shifts (serviceId, fromShiftId, toShiftId),
+                INDEX idx_shift_swap_requestor (requestorId),
+                INDEX idx_shift_swap_counterpart (counterpartId),
+                INDEX idx_shift_swap_status_created (status, createdAt),
+                FOREIGN KEY (serviceId) REFERENCES services(id) ON DELETE CASCADE,
+                FOREIGN KEY (fromShiftId) REFERENCES serviceScheduleShifts(id) ON DELETE CASCADE,
+                FOREIGN KEY (toShiftId) REFERENCES serviceScheduleShifts(id) ON DELETE CASCADE,
+                FOREIGN KEY (requestorId) REFERENCES users(id),
+                FOREIGN KEY (counterpartId) REFERENCES users(id),
+                FOREIGN KEY (decidedBy) REFERENCES users(id) ON DELETE SET NULL
+            )
+            `
+        );
+
+        console.log('shiftSwapRequests creada');
 
         await pool.query(
             `

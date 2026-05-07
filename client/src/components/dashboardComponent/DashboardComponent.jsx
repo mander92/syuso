@@ -11,6 +11,7 @@ import ShiftComponent from '../adminShiftSection/ShiftComponent.jsx';
 import WorkReportsComponent from '../adminWorkReportsSection/WorkReportsComponent.jsx';
 import AdminCleanupSection from '../adminCleanupSection/AdminCleanupSection.jsx';
 import AdminCvSection from '../adminCvSection/AdminCvSection.jsx';
+import ShiftSwapsComponent from '../shiftSwaps/ShiftSwapsComponent.jsx';
 import EmployeeServicesComponent from '../employeeServicesSection/EmployeeServicesComponent.jsx';
 import ClientServicesComponent from '../clientServicesSection/ClientServicesComponent.jsx';
 import ChatHub from '../chatHub/ChatHub.jsx';
@@ -33,6 +34,7 @@ const DashboardComponent = () => {
                 { id: 'contracts', label: 'Servicios' },
                 { id: 'schedules', label: 'Cuadrantes' },
                 { id: 'shifts', label: 'Turnos' },
+                { id: 'shiftSwaps', label: 'Cambios de turno' },
                 { id: 'chats', label: 'Chats' },
                 { id: 'workReports', label: 'Partes de trabajo' },
                 { id: 'users', label: 'Usuarios' },
@@ -58,6 +60,7 @@ const DashboardComponent = () => {
             return [
                 { id: 'services', label: 'Mis servicios' },
                 { id: 'schedule', label: 'Mi cuadrante' },
+                { id: 'shiftSwaps', label: 'Cambios de turno' },
                 { id: 'chats', label: 'Chats' },
                 { id: 'profile', label: 'Mi perfil' },
             ];
@@ -148,6 +151,8 @@ const DashboardComponent = () => {
                 return <AdminCleanupSection />;
             case 'cv':
                 return <AdminCvSection />;
+            case 'shiftSwaps':
+                return <ShiftSwapsComponent />;
 
             default:
                 return null;
