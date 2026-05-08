@@ -1230,15 +1230,7 @@ const ServiceSchedulePanel = ({
                     </div>
                 </div>
                 <div className='service-schedule-image-preview'>
-                    {scheduleView === 'grid' ? (
-                        <button
-                            type='button'
-                            className='service-schedule-image-preview-link'
-                            onClick={() => setIsGridOpen(true)}
-                        >
-                            Ver cuadrante actual
-                        </button>
-                    ) : scheduleImage ? (
+                    {scheduleView === 'image' && scheduleImage ? (
                         <a
                             href={`${import.meta.env.VITE_API_URL}/uploads/${scheduleImage}`}
                             target='_blank'
@@ -1247,7 +1239,13 @@ const ServiceSchedulePanel = ({
                             Ver foto actual
                         </a>
                     ) : (
-                        <p>No hay foto subida.</p>
+                        <button
+                            type='button'
+                            className='service-schedule-image-preview-link'
+                            onClick={() => setIsGridOpen(true)}
+                        >
+                            Ver cuadrante actual
+                        </button>
                     )}
                 </div>
                 <div className='service-schedule-section-header'>

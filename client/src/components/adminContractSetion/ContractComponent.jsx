@@ -511,7 +511,17 @@ const ContractsComponent = () => {
                                 >
                                     <div className='contracts-active-card-row'>
                                         <div className='contracts-active-card-top'>
-                                            {service.scheduleView !== 'image' ? (
+                                            {service.scheduleView === 'image' &&
+                                            service.scheduleImage ? (
+                                                <a
+                                                    className='contracts-active-top-link'
+                                                    href={`${import.meta.env.VITE_API_URL}/uploads/${service.scheduleImage}`}
+                                                    target='_blank'
+                                                    rel='noreferrer'
+                                                >
+                                                    Ver foto actual
+                                                </a>
+                                            ) : (
                                                 <button
                                                     type='button'
                                                     className='contracts-active-top-link'
@@ -523,17 +533,6 @@ const ContractsComponent = () => {
                                                 >
                                                     Ver cuadrante actual
                                                 </button>
-                                            ) : service.scheduleImage ? (
-                                                <a
-                                                    className='contracts-active-top-link'
-                                                    href={`${import.meta.env.VITE_API_URL}/uploads/${service.scheduleImage}`}
-                                                    target='_blank'
-                                                    rel='noreferrer'
-                                                >
-                                                    Ver foto actual
-                                                </a>
-                                            ) : (
-                                                <span className='contracts-active-top-placeholder' />
                                             )}
                                             <button
                                                 type='button'
