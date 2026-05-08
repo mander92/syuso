@@ -4,11 +4,10 @@ const selectServiceByClientIdService = async (clientId, status, city, type) => {
     const pool = await getPool();
 
     let sqlQuery = `
-        SELECT s.id, s.name, s.status, s.validationCode, s.comments, s.hours, s.startDateTime, s.endDateTime, s.scheduleImage, t.type, t.city AS province, a.address, a.postCode, a.city
+        SELECT s.id, s.name, s.status, s.validationCode, s.comments, s.hours, s.startDateTime, s.endDateTime, s.scheduleImage, s.type, s.province, a.address, a.postCode, a.city
         FROM addresses a
         INNER JOIN services s ON a.id = s.addressId
         INNER JOIN users u ON u.id = s.clientId
-        INNER JOIN typeOfServices t ON s.typeOfServicesId = t.id
         WHERE u.id = ? AND s.deletedAt IS NULL
     `;
 
@@ -25,7 +24,7 @@ const selectServiceByClientIdService = async (clientId, status, city, type) => {
     }
 
     if (type) {
-        sqlQuery += ' AND t.type = ?';
+        sqlQuery += ' AND s.type = ?';
         sqlValues.push(type);
     }
 

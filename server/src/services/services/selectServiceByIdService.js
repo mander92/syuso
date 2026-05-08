@@ -12,9 +12,11 @@ const selectServiceByIdService = async (serviceId) => {
                 us.email AS clientEmail,
                 s.clientId,
                 s.status, 
-                t.type, 
-                t.id AS typeOfServicesId,
-                t.city AS province, 
+                s.type, 
+                s.typeOfServicesId,
+                s.description,
+                s.province,
+                s.image,
                 s.hours, 
                 s.numberOfPeople,
                 s.name, 
@@ -41,7 +43,6 @@ const selectServiceByIdService = async (serviceId) => {
             LEFT JOIN personsAssigned pa ON s.id = pa.serviceId
             LEFT JOIN users u ON u.id = pa.employeeId
             LEFT JOIN users ue ON pa.employeeId = ue.id
-            INNER JOIN typeOfServices t ON s.typeOfServicesId = t.id
             INNER JOIN users us ON us.id = s.clientId
             WHERE s.id = ?
         `,

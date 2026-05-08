@@ -16,9 +16,14 @@ const insertServiceService = async (
     comments,
     address,
     city,
-    postCode
+    postCode,
+    serviceType = {}
 ) => {
     const pool = await getPool();
+    const resolvedType = serviceType.type || name || 'Servicio';
+    const resolvedDescription = serviceType.description || comments || null;
+    const resolvedProvince = serviceType.province || city || null;
+    const resolvedImage = serviceType.image || null;
 
     const [verify] = await pool.query(
         `
@@ -41,9 +46,9 @@ const insertServiceService = async (
 
     const [existService] = await pool.query(
         `
-        SELECT id FROM services WHERE typeOfServicesId = ? AND clientId = ? AND startDateTime = ? AND hours = ? AND deletedAt IS NULL
+        SELECT id FROM services WHERE type = ? AND clientId = ? AND startDateTime = ? AND hours = ? AND deletedAt IS NULL
         `,
-        [typeOfServiceId, userId, startDateTime, hours]
+        [resolvedType, userId, startDateTime, hours]
     );
 
     if (existAddress.length && existService.length)
@@ -69,12 +74,12 @@ const insertServiceService = async (
         await pool.query(
             `
   INSERT INTO services(
-    id, name, startDateTime, endDateTime,
+    id, name, type, description, province, image, startDateTime, endDateTime,
     hours, numberOfPeople, comments, validationCode,
     clientId, addressId, typeOfServicesId
   )
   VALUES (
-    ?, ?, 
+    ?, ?, ?, ?, ?, ?,
     STR_TO_DATE(?, '%Y-%m-%dT%H:%i:%sZ'),
     STR_TO_DATE(?, '%Y-%m-%dT%H:%i:%sZ'),
     ?, ?, ?, ?, ?, ?, ?
@@ -83,6 +88,10 @@ const insertServiceService = async (
             [
                 serviceId,
                 name,
+                resolvedType,
+                resolvedDescription,
+                resolvedProvince,
+                resolvedImage,
                 startDateTime,
                 endDateTime,
                 hours,
@@ -91,19 +100,19 @@ const insertServiceService = async (
                 validationCode,
                 userId,
                 addressId,
-                typeOfServiceId,
+                typeOfServiceId || null,
             ]
         );
     } else {
         await pool.query(
             `
   INSERT INTO services(
-    id, name, startDateTime, endDateTime,
+    id, name, type, description, province, image, startDateTime, endDateTime,
     hours, numberOfPeople, comments, validationCode,
     clientId, addressId, typeOfServicesId
   )
   VALUES (
-    ?, ?, 
+    ?, ?, ?, ?, ?, ?,
     STR_TO_DATE(?, '%Y-%m-%dT%H:%i:%sZ'),
     NULL,
     ?, ?, ?, ?, ?, ?, ?
@@ -112,6 +121,10 @@ const insertServiceService = async (
             [
                 serviceId,
                 name,
+                resolvedType,
+                resolvedDescription,
+                resolvedProvince,
+                resolvedImage,
                 startDateTime,
                 hours,
                 numberOfPeople,
@@ -119,7 +132,7 @@ const insertServiceService = async (
                 validationCode,
                 userId,
                 addressId,
-                typeOfServiceId,
+                typeOfServiceId || null,
             ]
         );
     }
@@ -127,14 +140,12 @@ const insertServiceService = async (
     const [data] = await pool.query(
         `
         SELECT s.status,
-        t.type, t.city AS province, s.hours, s.startDateTime, a.address, a.postCode, a.city, s.comments, u.email, u.firstName, u.lastName, u.phone
+        s.type, s.province, s.hours, s.startDateTime, a.address, a.postCode, a.city, s.comments, u.email, u.firstName, u.lastName, u.phone
         FROM addresses a
         INNER JOIN services s
         ON a.id = s.addressId
         INNER JOIN users u
         ON u.id = s.clientId
-        INNER JOIN typeOfServices t
-        ON s.typeOfServicesId = t.id
         WHERE u.id = ? AND s.id = ?
         `,
         [userId, serviceId]

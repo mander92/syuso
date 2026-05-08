@@ -39,6 +39,10 @@ const editServiceController = async (req, res, next) => {
             scheduleView,
             clientId,
             typeOfServicesId,
+            type,
+            description,
+            province,
+            image,
         } = req.body;
 
         await ensureServiceDelegationAccessService(serviceId, userId, role);
@@ -62,6 +66,10 @@ const editServiceController = async (req, res, next) => {
             scheduleView,
             clientId,
             typeOfServicesId,
+            type,
+            description,
+            province,
+            image,
             role
         );
 

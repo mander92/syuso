@@ -21,7 +21,7 @@ const selectShiftRecordsService = async (
         s.id, s.serviceId, s.employeeId, u.firstName, u.lastName, s.clockIn, s.clockOut,
         s.realClockIn, s.realClockOut,
         s.latitudeIn, s.longitudeIn, s.latitudeOut, s.longitudeOut,
-        wr.id AS reportId, wr.reportDate, se.name AS serviceName, se.status, se.hours, se.startDateTime, a.city, a.address, t.type, t.city AS province,
+        wr.id AS reportId, wr.reportDate, se.name AS serviceName, se.status, se.hours, se.startDateTime, a.city, a.address, se.type, se.province,
         TIMESTAMPDIFF(HOUR, s.clockIn, s.clockOut) AS hoursWorked,
         MOD(TIMESTAMPDIFF(MINUTE, s.clockIn, s.clockOut), 60) AS minutesWorked,
         TIMESTAMPDIFF(HOUR, s.realClockIn, s.realClockOut) AS realHoursWorked,
@@ -35,15 +35,13 @@ const selectShiftRecordsService = async (
         ON se.id = s.serviceId
         INNER JOIN addresses a 
         ON a.id = se.addressId
-        INNER JOIN typeOfServices t 
-        ON t.id = se.typeOfServicesId
         WHERE 1=1
     `;
 
     const sqlValuesDetails = [];
 
     if (typeOfService) {
-        sqlQueryDetails += ' AND t.type = ?';
+        sqlQueryDetails += ' AND se.type = ?';
         sqlValuesDetails.push(typeOfService);
     }
 
@@ -80,7 +78,7 @@ const selectShiftRecordsService = async (
     }
 
     if (delegationNames.length) {
-        sqlQueryDetails += ` AND t.city IN (${delegationNames
+        sqlQueryDetails += ` AND se.province IN (${delegationNames
             .map(() => '?')
             .join(', ')})`;
         sqlValuesDetails.push(...delegationNames);
@@ -107,15 +105,13 @@ const selectShiftRecordsService = async (
         ON se.id = s.serviceId
         INNER JOIN addresses a 
         ON a.id = se.addressId
-        INNER JOIN typeOfServices t 
-        ON t.id = se.typeOfServicesId
         WHERE 1=1
     `;
 
     const sqlValuesTotal = [];
 
     if (typeOfService) {
-        sqlQueryTotal += ' AND t.type = ?';
+        sqlQueryTotal += ' AND se.type = ?';
         sqlValuesTotal.push(typeOfService);
     }
 
@@ -152,7 +148,7 @@ const selectShiftRecordsService = async (
     }
 
     if (delegationNames.length) {
-        sqlQueryTotal += ` AND t.city IN (${delegationNames
+        sqlQueryTotal += ` AND se.province IN (${delegationNames
             .map(() => '?')
             .join(', ')})`;
         sqlValuesTotal.push(...delegationNames);

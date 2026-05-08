@@ -15,17 +15,17 @@ const selectInProgressServicesService = async (
             s.endDateTime,
             s.hours,
             s.scheduleImage,
+            s.type,
+            s.province,
             a.address,
             a.city,
             a.postCode,
-            t.type,
             pa.id AS assignmentId,
             pa.employeeId,
             u.firstName,
             u.lastName
         FROM services s
         INNER JOIN addresses a ON a.id = s.addressId
-        INNER JOIN typeOfServices t ON t.id = s.typeOfServicesId
         LEFT JOIN personsAssigned pa ON pa.serviceId = s.id
         LEFT JOIN users u ON u.id = pa.employeeId
         WHERE s.deletedAt IS NULL
@@ -40,7 +40,7 @@ const selectInProgressServicesService = async (
     }
 
     if (delegationNames.length) {
-        sqlQuery += ` AND t.city IN (${delegationNames
+        sqlQuery += ` AND s.province IN (${delegationNames
             .map(() => '?')
             .join(', ')})`;
         sqlValues.push(...delegationNames);

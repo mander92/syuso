@@ -66,6 +66,11 @@ const App = () => {
                     element={<CreateContract />}
                 />
 
+                <Route
+                    path='/services/createcontract'
+                    element={<CreateContract />}
+                />
+
                 <Route path='*' element={<NotFound />} />
             </Routes>
         </Layout>

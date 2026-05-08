@@ -20,9 +20,8 @@ const ensureServiceDelegationAccessService = async (
 
     const [rows] = await pool.query(
         `
-        SELECT t.city AS province
+        SELECT province
         FROM services s
-        INNER JOIN typeOfServices t ON t.id = s.typeOfServicesId
         WHERE s.id = ?
         `,
         [serviceId]

@@ -38,8 +38,8 @@ const deleteDelegationService = async (delegationId) => {
     const [[serviceUsage]] = await pool.query(
         `
         SELECT COUNT(*) AS total
-        FROM typeOfServices
-        WHERE city = ? AND deletedAt IS NULL
+        FROM services
+        WHERE province = ? AND deletedAt IS NULL
         `,
         [delegationName]
     );

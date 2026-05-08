@@ -22,8 +22,8 @@ const deletePersonFormService = async (serviceId, employeeId) => {
                     sr.latitudeIn, 
                     sr.longitudeIn, 
                     s.status, 
-                    t.type, 
-                    t.city AS province, 
+                    s.type, 
+                    s.province, 
                     s.hours, 
                     s.numberOfPeople, 
                     s.startDateTime, 
@@ -45,7 +45,6 @@ const deletePersonFormService = async (serviceId, employeeId) => {
                 LEFT JOIN personsAssigned pa ON s.id = pa.serviceId
                 LEFT JOIN users u ON u.id = pa.employeeId
                 LEFT JOIN users ue ON sr.employeeId = ue.id
-                INNER JOIN typeOfServices t ON s.typeOfServicesId = t.id
                 INNER JOIN users us ON us.id = s.clientId
                 WHERE s.id = ? AND s.deletedAt IS NULL;
             `,

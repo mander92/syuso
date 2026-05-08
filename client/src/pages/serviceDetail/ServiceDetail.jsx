@@ -12,7 +12,6 @@ import {
 import { fetchUpdateServiceStatus } from '../../services/serviceService.js';
 import { fetchDeleteEmployeeService } from '../../services/personAssigned.js';
 import { fetchAllUsersServices } from '../../services/userService.js';
-import { fetchAllTypeOfServicesServices } from '../../services/typeOfServiceService.js';
 import ListEmployeeComponent from '../../components/adminServiceSection/listEmployeeComponent/ListEmployeeComponent.jsx';
 import ServiceChat from '../../components/serviceChat/ServiceChat.jsx';
 import NfcTagsManager from '../../components/nfcTags/NfcTagsManager.jsx';
@@ -46,10 +45,12 @@ const ServiceDetail = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [assignedEmployees, setAssignedEmployees] = useState([]);
     const [clients, setClients] = useState([]);
-    const [typeOptions, setTypeOptions] = useState([]);
     const [summaryForm, setSummaryForm] = useState({
         name: '',
         typeOfServicesId: '',
+        type: '',
+        description: '',
+        province: '',
         status: '',
         startDateTime: '',
         endDateTime: '',
@@ -113,6 +114,9 @@ const ServiceDetail = () => {
             setSummaryForm({
                 name: rows[0]?.name || '',
                 typeOfServicesId: rows[0]?.typeOfServicesId || '',
+                type: rows[0]?.type || '',
+                description: rows[0]?.description || '',
+                province: rows[0]?.province || '',
                 status: rows[0]?.status || '',
                 startDateTime: formatDateTimeInput(rows[0]?.startDateTime),
                 endDateTime: formatDateTimeInput(rows[0]?.endDateTime),
@@ -161,12 +165,11 @@ const ServiceDetail = () => {
 
         const loadOptions = async () => {
             try {
-                const [clientRows, typeRows] = await Promise.all([
-                    fetchAllUsersServices('role=client&active=1', authToken),
-                    fetchAllTypeOfServicesServices(''),
-                ]);
+                const clientRows = await fetchAllUsersServices(
+                    'role=client&active=1',
+                    authToken
+                );
                 setClients(Array.isArray(clientRows) ? clientRows : []);
-                setTypeOptions(Array.isArray(typeRows) ? typeRows : []);
             } catch (error) {
                 toast.error(
                     error.message || 'No se pudieron cargar los datos',
@@ -181,12 +184,6 @@ const ServiceDetail = () => {
     const selectedClient = useMemo(() => {
         return clients.find((client) => client.id === summaryForm.clientId);
     }, [clients, summaryForm.clientId]);
-
-    const selectedType = useMemo(() => {
-        return typeOptions.find(
-            (typeItem) => typeItem.id === summaryForm.typeOfServicesId
-        );
-    }, [typeOptions, summaryForm.typeOfServicesId]);
 
     const handleUnassign = async (employeeId) => {
         try {
@@ -386,6 +383,9 @@ const ServiceDetail = () => {
                 clockInEarlyMinutes: summaryForm.clockInEarlyMinutes,
                 clientId: summaryForm.clientId,
                 typeOfServicesId: summaryForm.typeOfServicesId,
+                type: summaryForm.type,
+                description: summaryForm.description,
+                province: summaryForm.province,
                 ...(summaryForm.startDateTime
                     ? { startDateTime: toIsoFromInput(summaryForm.startDateTime) }
                     : {}),
@@ -590,23 +590,33 @@ const ServiceDetail = () => {
                                     </div>
                                     <div className='service-detail-summary-field'>
                                         <label htmlFor='serviceType'>Tipo</label>
-                                        <select
+                                        <input
                                             id='serviceType'
-                                            value={summaryForm.typeOfServicesId}
-                                            onChange={handleSummaryChange(
-                                                'typeOfServicesId'
-                                            )}
-                                        >
-                                            <option value=''>Selecciona un tipo</option>
-                                            {typeOptions.map((typeItem) => (
-                                                <option
-                                                    key={typeItem.id}
-                                                    value={typeItem.id}
-                                                >
-                                                    {typeItem.type} - {typeItem.city}
-                                                </option>
-                                            ))}
-                                        </select>
+                                            type='text'
+                                            onChange={handleSummaryChange('type')}
+                                            value={summaryForm.type}
+                                            placeholder='Tipo de servicio'
+                                        />
+                                    </div>
+                                    <div className='service-detail-summary-field'>
+                                        <label htmlFor='serviceProvince'>Delegacion</label>
+                                        <input
+                                            id='serviceProvince'
+                                            type='text'
+                                            value={summaryForm.province}
+                                            onChange={handleSummaryChange('province')}
+                                            placeholder='Delegacion'
+                                        />
+                                    </div>
+                                    <div className='service-detail-summary-field'>
+                                        <label htmlFor='serviceDescription'>Descripcion</label>
+                                        <input
+                                            id='serviceDescription'
+                                            type='text'
+                                            value={summaryForm.description}
+                                            onChange={handleSummaryChange('description')}
+                                            placeholder='Descripcion'
+                                        />
                                     </div>
                                     <div className='service-detail-summary-field'>
                                         <label htmlFor='serviceStatus'>Estado</label>
@@ -703,19 +713,6 @@ const ServiceDetail = () => {
                                                 type='text'
                                                 value={summaryForm.city}
                                                 onChange={handleSummaryChange('city')}
-                                            />
-                                        </div>
-                                        <div className='service-detail-summary-field'>
-                                            <label htmlFor='serviceProvince'>Provincia</label>
-                                            <input
-                                                id='serviceProvince'
-                                                type='text'
-                                                value={
-                                                    selectedType?.city ||
-                                                    detail.province ||
-                                                    ''
-                                                }
-                                                disabled
                                             />
                                         </div>
                                         <div className='service-detail-summary-field'>

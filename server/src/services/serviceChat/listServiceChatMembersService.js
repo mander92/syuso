@@ -23,8 +23,7 @@ const listServiceChatMembersService = async (serviceId) => {
 
             SELECT u.id, u.firstName, u.lastName, u.role
             FROM services s
-            INNER JOIN typeOfServices t ON t.id = s.typeOfServicesId
-            INNER JOIN delegations d ON d.name = t.city
+            INNER JOIN delegations d ON d.name = s.province
             INNER JOIN adminDelegations ad ON ad.delegationId = d.id
             INNER JOIN users u ON u.id = ad.adminId
             WHERE s.id = ? AND u.role = 'admin' AND u.deletedAt IS NULL

@@ -11,6 +11,10 @@ const newServiceController = async (req, res, next) => {
         if (role === 'admin' || role === 'sudo') {
             const { typeOfServiceId } = req.params;
             const {
+                type,
+                description,
+                province,
+                image,
                 startDateTime,
                 endDateTime,
                 hours,
@@ -23,15 +27,20 @@ const newServiceController = async (req, res, next) => {
                 name,
             } = req.body;
 
-            if (role === 'admin') {
-                const typeOfService =
+            let legacyTypeOfService = null;
+            if (typeOfServiceId) {
+                legacyTypeOfService =
                     await selectTypeOfServiceByIdService(typeOfServiceId);
+            }
+
+            if (role === 'admin') {
                 const delegations =
                     await selectAdminDelegationNamesService(req.userLogged.id);
+                const serviceProvince = province || legacyTypeOfService?.city;
 
                 if (
                     !delegations.length ||
-                    !delegations.includes(typeOfService.city)
+                    !delegations.includes(serviceProvince)
                 ) {
                     generateErrorUtil('Acceso denegado', 403);
                 }
@@ -48,7 +57,14 @@ const newServiceController = async (req, res, next) => {
                 city,
                 postCode,
                 clientId,
-                name
+                name,
+                {
+                    type: type || legacyTypeOfService?.type,
+                    description: description || legacyTypeOfService?.description,
+                    province: province || legacyTypeOfService?.city,
+                    image: image || legacyTypeOfService?.image,
+                    typeOfServiceId: typeOfServiceId || null,
+                }
             );
             res.send({
                 status: 'ok',
@@ -61,6 +77,10 @@ const newServiceController = async (req, res, next) => {
 
             const {
                 userId,
+                type,
+                description,
+                province,
+                image,
                 startDateTime,
                 endDateTime,
                 name,
@@ -72,8 +92,12 @@ const newServiceController = async (req, res, next) => {
                 postCode,
             } = req.body;
 
+            const legacyTypeOfService = typeOfServiceId
+                ? await selectTypeOfServiceByIdService(typeOfServiceId)
+                : null;
+
             const data = await insertServiceService(
-                typeOfServiceId,
+                typeOfServiceId || null,
                 userId,
                 startDateTime,
                 endDateTime,
@@ -83,7 +107,13 @@ const newServiceController = async (req, res, next) => {
                 comments,
                 address,
                 city,
-                postCode
+                postCode,
+                {
+                    type: type || legacyTypeOfService?.type,
+                    description: description || legacyTypeOfService?.description,
+                    province: province || legacyTypeOfService?.city,
+                    image: image || legacyTypeOfService?.image,
+                }
             );
             res.send({
                 status: 'ok',

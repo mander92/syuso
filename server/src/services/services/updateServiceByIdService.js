@@ -20,6 +20,10 @@ const updateServiceByIdService = async (
     scheduleView,
     clientId,
     typeOfServicesId,
+    type,
+    description,
+    province,
+    image,
     role
 ) => {
     const pool = await getPool();
@@ -32,6 +36,7 @@ const updateServiceByIdService = async (
                s.clockInEarlyMinutes,
                s.scheduleView,
                s.addressId, s.typeOfServicesId,
+               s.type, s.description, s.province, s.image,
                a.address, a.postCode, a.city
         FROM services s
         INNER JOIN addresses a ON a.id = s.addressId
@@ -110,6 +115,16 @@ const updateServiceByIdService = async (
         typeOfServicesId && typeOfServicesId.trim() !== ''
             ? typeOfServicesId.trim()
             : current.typeOfServicesId;
+    const resolvedType =
+        type && type.trim() !== '' ? type.trim() : current.type;
+    const resolvedDescription =
+        description !== undefined && description !== null
+            ? String(description).trim()
+            : current.description;
+    const resolvedProvince =
+        province && province.trim() !== '' ? province.trim() : current.province;
+    const resolvedImage =
+        image !== undefined && image !== null ? String(image).trim() : current.image;
 
     await pool.query(
         `
@@ -132,6 +147,10 @@ const updateServiceByIdService = async (
         'scheduleView = ?',
         'clientId = ?',
         'typeOfServicesId = ?',
+        'type = ?',
+        'description = ?',
+        'province = ?',
+        'image = ?',
     ];
     const values = [
         resolvedName,
@@ -146,6 +165,10 @@ const updateServiceByIdService = async (
         resolvedScheduleView,
         resolvedClientId,
         resolvedTypeOfServicesId,
+        resolvedType,
+        resolvedDescription,
+        resolvedProvince,
+        resolvedImage,
     ];
 
     if (startDateTime && startDateTime !== '') {
@@ -203,6 +226,10 @@ const updateServiceByIdService = async (
                s.clockInEarlyMinutes,
                s.scheduleView,
                s.typeOfServicesId,
+               s.type,
+               s.description,
+               s.province,
+               s.image,
                a.address, a.city, a.postCode
         FROM services s
         INNER JOIN addresses a

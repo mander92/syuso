@@ -20,6 +20,9 @@ const CreateContract = () => {
     const [postCode, setPostCode] = useState('');
     const [clientId, setClientId] = useState('');
     const [name, setName] = useState('');
+    const [type, setType] = useState('');
+    const [description, setDescription] = useState('');
+    const [province, setProvince] = useState('');
 
     const formatDate = (dateTime) => {
         if (dateTime) {
@@ -33,11 +36,10 @@ const CreateContract = () => {
         e.preventDefault();
         const formattedStartDateTime = formatDate(startDateTime);
         const formattedEndDateTime = formatDate(endDateTime) || null;
-        console.log(typeOfServiceId);
         try {
             const res = await fetchNewContractAdmin(
                 authToken,
-                typeOfServiceId,
+                typeOfServiceId || '',
                 formattedStartDateTime,
                 formattedEndDateTime,
                 hours,
@@ -47,7 +49,10 @@ const CreateContract = () => {
                 city,
                 postCode,
                 clientId,
-                name
+                name,
+                type,
+                description,
+                province
             );
 
             toast.success(res.message);
@@ -69,6 +74,32 @@ const CreateContract = () => {
                         onChange={(e) => {
                             setName(e.target.value);
                         }}
+                    />
+                    <label htmlFor='type'>Tipo de servicio</label>
+                    <input
+                        required
+                        type='text'
+                        id='type'
+                        name='type'
+                        value={type}
+                        onChange={(e) => setType(e.target.value)}
+                    />
+                    <label htmlFor='province'>Delegacion</label>
+                    <input
+                        required
+                        type='text'
+                        id='province'
+                        name='province'
+                        value={province}
+                        onChange={(e) => setProvince(e.target.value)}
+                    />
+                    <label htmlFor='description'>Descripcion</label>
+                    <input
+                        type='text'
+                        id='description'
+                        name='description'
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
                     />
                     <label htmlFor='startDateTime'>Fecha de inicio</label>
                     <input

@@ -51,7 +51,7 @@ const newAssingPersonToServiceService = async (employeeId, serviceId) => {
     const [serviceInfo] = await pool.query(
         `
             SELECT s.status,
-            t.type, t.city AS province, s.validationCode, s.startDateTime, a.address, a.postCode, a.city, u.email, u.firstName
+            s.type, s.province, s.validationCode, s.startDateTime, a.address, a.postCode, a.city, u.email, u.firstName
             FROM addresses a
             INNER JOIN services s
             ON a.id = s.addressId
@@ -59,8 +59,6 @@ const newAssingPersonToServiceService = async (employeeId, serviceId) => {
             ON s.id = pa.serviceId
             INNER JOIN users u
             ON u.id = pa.employeeId
-            INNER JOIN typeOfServices t
-            ON s.typeOfServicesId = t.id
             WHERE s.id = ? AND pa.employeeId = ?
             `,
         [serviceId, employeeId]
@@ -90,14 +88,12 @@ const newAssingPersonToServiceService = async (employeeId, serviceId) => {
     const [data] = await pool.query(
         `
         SELECT s.status,
-        t.type, t.city AS province, s.hours, s.startDateTime, s.comments, u.email, u.firstName, u.lastName, u.phone
+        s.type, s.province, s.hours, s.startDateTime, s.comments, u.email, u.firstName, u.lastName, u.phone
         FROM users u
         INNER JOIN personsAssigned pa
         ON u.id = pa.employeeId
         INNER JOIN services s
         ON s.id = pa.serviceId
-        INNER JOIN typeOfServices t
-        ON s.typeOfServicesId = t.id
         WHERE u.id = ? AND s.id = ?
     `,
         [employeeId, serviceId]

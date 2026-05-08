@@ -9,9 +9,15 @@ export const fetchNewServiceServices = async (
     address,
     postCode,
     city,
-    comments
+    comments,
+    type = '',
+    description = '',
+    province = ''
 ) => {
-    const res = await fetch(`${VITE_API_URL}/services/${typeOfServiceId}`, {
+    const url = typeOfServiceId
+        ? `${VITE_API_URL}/services/${typeOfServiceId}`
+        : `${VITE_API_URL}/services`;
+    const res = await fetch(url, {
         method: 'POST',
         headers: {
             Authorization: authToken,
@@ -25,6 +31,9 @@ export const fetchNewServiceServices = async (
             postCode,
             city,
             comments,
+            type,
+            description,
+            province,
         }),
     });
 
@@ -49,9 +58,15 @@ export const fetchNewContractAdmin = async (
     city,
     postCode,
     clientId,
-    name
+    name,
+    type = '',
+    description = '',
+    province = ''
 ) => {
-    const res = await fetch(`${VITE_API_URL}/services/${typeOfServiceId}`, {
+    const url = typeOfServiceId
+        ? `${VITE_API_URL}/services/${typeOfServiceId}`
+        : `${VITE_API_URL}/services`;
+    const res = await fetch(url, {
         method: 'POST',
         headers: {
             Authorization: authToken,
@@ -67,7 +82,10 @@ export const fetchNewContractAdmin = async (
             city,
             postCode,
             clientId,
-            name
+            name,
+            type,
+            description,
+            province,
         }),
     });
 

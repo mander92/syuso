@@ -10,12 +10,11 @@ const selectServiceService = async (
     const pool = await getPool();
 
     let sqlQuery = `
-    SELECT s.id AS serviceId, s.name, s.status, t.type, t.city AS province, s.startDateTime, s.endDateTime, s.hours, s.scheduleImage, a.city, a.address, a.postCode
+    SELECT s.id AS serviceId, s.name, s.status, s.type, s.province, s.startDateTime, s.endDateTime, s.hours, s.scheduleImage, a.city, a.address, a.postCode
     FROM addresses a
     INNER JOIN services s
     ON a.id = s.addressId
-    INNER JOIN typeOfServices t
-    ON s.typeOfServicesId = t.id WHERE s.deletedAt IS NULL
+    WHERE s.deletedAt IS NULL
     `;
 
     let sqlValues = [];
@@ -26,12 +25,12 @@ const selectServiceService = async (
     }
 
     if (type) {
-        sqlQuery += ' AND type = ?';
+        sqlQuery += ' AND s.type = ?';
         sqlValues.push(type);
     }
 
     if (delegationNames.length) {
-        sqlQuery += ` AND t.city IN (${delegationNames
+        sqlQuery += ` AND s.province IN (${delegationNames
             .map(() => '?')
             .join(', ')})`;
         sqlValues.push(...delegationNames);

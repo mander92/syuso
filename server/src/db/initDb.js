@@ -87,6 +87,10 @@ const initDb = async () => {
             CREATE TABLE IF NOT EXISTS services (
                 id CHAR(36) PRIMARY KEY NOT NULL,
                 name VARCHAR(30) NOT NULL,
+                type VARCHAR(255),
+                description VARCHAR(250),
+                province VARCHAR(30),
+                image CHAR(40),
                 startDateTime TIMESTAMP NOT NULL,
                 endDateTime TIMESTAMP,
                 hours INT UNSIGNED NOT NULL CHECK (hours BETWEEN 1 AND 24),
@@ -102,10 +106,9 @@ const initDb = async () => {
                 validationCode VARCHAR(30),
                 clientId CHAR(36) NOT NULL,
                 addressId CHAR(36) NOT NULL,
-                typeOfServicesId CHAR(36) NOT NULL,
+                typeOfServicesId CHAR(36),
                 FOREIGN KEY (clientId) REFERENCES users(id),
                 FOREIGN KEY (addressId) REFERENCES addresses(id),
-                FOREIGN KEY (typeOfServicesId) REFERENCES typeOfServices(id),
                 createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 modifiedAt TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 deletedAt TIMESTAMP )

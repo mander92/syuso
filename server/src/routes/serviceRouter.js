@@ -302,6 +302,8 @@ router.post(
 
 router.get('/services/validate/:validationCode', validateServiceController);
 
+router.post('/services', authUser, newServiceController);
+
 router.post(
     '/services/:typeOfServiceId',
     authUser,

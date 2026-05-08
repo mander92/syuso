@@ -21,10 +21,11 @@ const ServicesComponent = () => {
     return (
         <>
             <div className='services-header'>
-                <h1 className='services-title'>Tipos de servicios</h1>
+                <h1 className='services-title'>Servicios</h1>
                 <p className='services-subtitle'>
-                    Gestiona las categorias disponibles para los servicios.
+                    Crea servicios sin depender de una categoria previa.
                 </p>
+                <NavLink to='/services/createcontract'>Nuevo servicio</NavLink>
             </div>
             <div className='manager-tabs'>
                 <NavLink

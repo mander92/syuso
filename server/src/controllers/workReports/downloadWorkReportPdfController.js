@@ -21,10 +21,9 @@ const downloadWorkReportPdfController = async (req, res, next) => {
 
         const [rows] = await pool.query(
             `
-            SELECT wr.id, wr.reportDate, se.name AS serviceName, t.type
+            SELECT wr.id, wr.reportDate, se.name AS serviceName, se.type
             FROM workReports wr
             INNER JOIN services se ON se.id = wr.serviceId
-            INNER JOIN typeOfServices t ON t.id = se.typeOfServicesId
             WHERE wr.id = ?
             `,
             [reportId]

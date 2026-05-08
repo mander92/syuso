@@ -45,9 +45,9 @@ const updateDelegationService = async (delegationId, name) => {
     if (currentName !== nextName) {
         await pool.query(
             `
-            UPDATE typeOfServices
-            SET city = ?
-            WHERE city = ?
+            UPDATE services
+            SET province = ?
+            WHERE province = ?
             `,
             [nextName, currentName]
         );

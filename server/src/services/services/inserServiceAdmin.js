@@ -17,9 +17,14 @@ const insertServiceAdmin = async (
     city,
     postCode,
     clientId,
-    name
+    name,
+    serviceType = {}
 ) => {
     const pool = await getPool();
+    const resolvedType = serviceType.type || name || 'Servicio';
+    const resolvedDescription = serviceType.description || comments || null;
+    const resolvedProvince = serviceType.province || city || null;
+    const resolvedImage = serviceType.image || null;
 
     const [verify] = await pool.query(
         `
@@ -67,10 +72,19 @@ const insertServiceAdmin = async (
 
     await pool.query(
         `
-            INSERT INTO services(id, startDateTime, endDateTime, hours, numberOfPeople, comments, validationCode, clientId, addressId, typeOfServicesId, name) VALUES (?,?,?,?,?,?,?,?,?,?,?)
+            INSERT INTO services(
+                id, type, description, province, image,
+                startDateTime, endDateTime, hours, numberOfPeople,
+                comments, validationCode, clientId, addressId,
+                typeOfServicesId, name
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             `,
         [
             serviceId,
+            resolvedType,
+            resolvedDescription,
+            resolvedProvince,
+            resolvedImage,
             startDateTime,
             normalizedEndDateTime,
             hours,
@@ -79,7 +93,7 @@ const insertServiceAdmin = async (
             validationCode,
             clientId,
             addressId,
-            typeOfServiceId,
+            typeOfServiceId || null,
             name
         ]
     );
@@ -87,14 +101,12 @@ const insertServiceAdmin = async (
     const [data] = await pool.query(
         `
         SELECT s.status, s.name,
-        t.type, t.city AS province, s.hours, s.startDateTime, a.address, a.postCode, a.city, s.comments, u.email, u.firstName, u.lastName, u.phone
+        s.type, s.province, s.hours, s.startDateTime, a.address, a.postCode, a.city, s.comments, u.email, u.firstName, u.lastName, u.phone
         FROM addresses a
         INNER JOIN services s
         ON a.id = s.addressId
         INNER JOIN users u
         ON u.id = s.clientId
-        INNER JOIN typeOfServices t
-        ON s.typeOfServicesId = t.id
         WHERE u.id = ? AND s.id = ?
         `,
         [clientId, serviceId]
