@@ -301,8 +301,8 @@ const ContractsComponent = () => {
 
     const handleScheduleUpload = async (serviceId, file) => {
         if (!file) return;
-        if (file.type !== 'image/png') {
-            toast.error('El cuadrante debe ser PNG');
+        if (!['image/png', 'image/jpeg'].includes(file.type)) {
+            toast.error('La foto del cuadrante debe ser PNG o JPG');
             return;
         }
 
@@ -511,14 +511,26 @@ const ContractsComponent = () => {
                                 >
                                     <div className='contracts-active-card-row'>
                                         <div className='contracts-active-card-top'>
-                                            {service.scheduleImage ? (
+                                            {service.scheduleView !== 'image' ? (
+                                                <button
+                                                    type='button'
+                                                    className='contracts-active-top-link'
+                                                    onClick={() =>
+                                                        navigate(
+                                                            `/services/${service.serviceId}?tab=schedule`
+                                                        )
+                                                    }
+                                                >
+                                                    Ver cuadrante actual
+                                                </button>
+                                            ) : service.scheduleImage ? (
                                                 <a
                                                     className='contracts-active-top-link'
                                                     href={`${import.meta.env.VITE_API_URL}/uploads/${service.scheduleImage}`}
                                                     target='_blank'
                                                     rel='noreferrer'
                                                 >
-                                                    Ver cuadrante actual
+                                                    Ver foto actual
                                                 </a>
                                             ) : (
                                                 <span className='contracts-active-top-placeholder' />
@@ -562,10 +574,10 @@ const ContractsComponent = () => {
                                                     : 'Turnos abiertos'}
                                             </button>
                                             <label className='contracts-upload contracts-btn contracts-btn--ghost'>
-                                                Subir cuadrante
+                                                Subir foto
                                                 <input
                                                     type='file'
-                                                    accept='image/png'
+                                                    accept='image/png,image/jpeg'
                                                     onChange={(event) =>
                                                         Promise.resolve(
                                                             handleScheduleUpload(

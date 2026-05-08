@@ -78,7 +78,6 @@ const formatDateEs = (value) => {
 const ServiceSchedulePanel = ({
     serviceId,
     authToken,
-    allowUnscheduledClockIn = false,
     scheduleImage: initialScheduleImage = '',
     scheduleView: initialScheduleView = 'grid',
     onServiceUpdate,
@@ -1176,77 +1175,81 @@ const ServiceSchedulePanel = ({
             </form>
 
             <div className='service-schedule-section service-schedule-section--wide'>
-                {(allowUnscheduledClockIn || scheduleImage) && (
-                    <div className='service-schedule-section-header service-schedule-section-header--split'>
-                        <div>
-                            <h3>Cuadrante (foto)</h3>
-                            <p>
-                                Muestra la imagen del cuadrante cuando el servicio
-                                permite fichar sin cuadrante.
-                            </p>
-                        </div>
-                        <div className='service-schedule-actions'>
-                            <label className='service-schedule-upload'>
-                                {isUploadingImage ? 'Subiendo...' : 'Subir cuadrante'}
-                                <input
-                                    type='file'
-                                    accept='image/png,image/jpeg'
-                                    onChange={(event) =>
-                                        Promise.resolve(
-                                            handleScheduleImageUpload(
-                                                event.target.files?.[0]
-                                            )
-                                        ).finally(() => {
-                                            event.target.value = '';
-                                        })
-                                    }
-                                    disabled={!allowUnscheduledClockIn || isUploadingImage}
-                                />
-                            </label>
-                            <div className='service-schedule-view-toggle'>
-                                <button
-                                    type='button'
-                                    className={
-                                        scheduleView === 'grid'
-                                            ? 'is-active'
-                                            : ''
-                                    }
-                                    onClick={() => handleScheduleViewChange('grid')}
-                                    disabled={isSavingScheduleView}
-                                >
-                                    Mostrar cuadrante
-                                </button>
-                                <button
-                                    type='button'
-                                    className={
-                                        scheduleView === 'image'
-                                            ? 'is-active'
-                                            : ''
-                                    }
-                                    onClick={() => handleScheduleViewChange('image')}
-                                    disabled={isSavingScheduleView}
-                                >
-                                    Mostrar foto
-                                </button>
-                            </div>
-                        </div>
+                <div className='service-schedule-section-header service-schedule-section-header--split'>
+                    <div>
+                        <h3>Cuadrante (foto)</h3>
+                        <p>
+                            Sube una imagen del cuadrante y elige si los
+                            empleados veran la foto o el cuadrante generado.
+                        </p>
                     </div>
-                )}
-                {(allowUnscheduledClockIn || scheduleImage) && (
-                    <div className='service-schedule-image-preview'>
-                        {scheduleImage ? (
-                            <a
-                                href={`${import.meta.env.VITE_API_URL}/uploads/${scheduleImage}`}
-                                target='_blank'
-                                rel='noreferrer'
+                    <div className='service-schedule-actions'>
+                        <label className='service-schedule-upload'>
+                            {isUploadingImage ? 'Subiendo...' : 'Subir foto'}
+                            <input
+                                type='file'
+                                accept='image/png,image/jpeg'
+                                onChange={(event) =>
+                                    Promise.resolve(
+                                        handleScheduleImageUpload(
+                                            event.target.files?.[0]
+                                        )
+                                    ).finally(() => {
+                                        event.target.value = '';
+                                    })
+                                }
+                                disabled={isUploadingImage}
+                            />
+                        </label>
+                        <div className='service-schedule-view-toggle'>
+                            <button
+                                type='button'
+                                className={
+                                    scheduleView === 'grid'
+                                        ? 'is-active'
+                                        : ''
+                                }
+                                onClick={() => handleScheduleViewChange('grid')}
+                                disabled={isSavingScheduleView}
                             >
-                                Ver cuadrante actual
-                            </a>
-                        ) : (
-                            <p>No hay cuadrante subido.</p>
-                        )}
+                                Mostrar cuadrante
+                            </button>
+                            <button
+                                type='button'
+                                className={
+                                    scheduleView === 'image'
+                                        ? 'is-active'
+                                        : ''
+                                }
+                                onClick={() => handleScheduleViewChange('image')}
+                                disabled={isSavingScheduleView}
+                            >
+                                Mostrar foto
+                            </button>
+                        </div>
                     </div>
-                )}
+                </div>
+                <div className='service-schedule-image-preview'>
+                    {scheduleView === 'grid' ? (
+                        <button
+                            type='button'
+                            className='service-schedule-image-preview-link'
+                            onClick={() => setIsGridOpen(true)}
+                        >
+                            Ver cuadrante actual
+                        </button>
+                    ) : scheduleImage ? (
+                        <a
+                            href={`${import.meta.env.VITE_API_URL}/uploads/${scheduleImage}`}
+                            target='_blank'
+                            rel='noreferrer'
+                        >
+                            Ver foto actual
+                        </a>
+                    ) : (
+                        <p>No hay foto subida.</p>
+                    )}
+                </div>
                 <div className='service-schedule-section-header'>
                     <div>
                         <h3>Vista mensual</h3>

@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { NavLink, Navigate, useParams } from 'react-router-dom';
+import { NavLink, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 import { AuthContext } from '../../context/AuthContext.jsx';
@@ -38,6 +38,7 @@ const toIsoFromInput = (value) => {
 
 const ServiceDetail = () => {
     const { serviceId } = useParams();
+    const [searchParams] = useSearchParams();
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
 
@@ -86,6 +87,23 @@ const ServiceDetail = () => {
     useEffect(() => {
         window.scrollTo(0, 0);
     }, [serviceId]);
+
+    useEffect(() => {
+        const tab = searchParams.get('tab');
+        const allowedTabs = [
+            'summary',
+            'chat',
+            'shifts',
+            'employees',
+            'nfc',
+            'schedule',
+            'status',
+            'reports',
+        ];
+        if (allowedTabs.includes(tab)) {
+            setActiveTab(tab);
+        }
+    }, [searchParams]);
 
     const loadService = useCallback(async () => {
         try {

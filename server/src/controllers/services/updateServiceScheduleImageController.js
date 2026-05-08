@@ -12,7 +12,7 @@ const updateServiceScheduleImageController = async (req, res, next) => {
         await ensureServiceDelegationAccessService(serviceId, userId, role);
 
         if (!req.files || !req.files.image) {
-            generateErrorUtil('Debes seleccionar un PNG', 400);
+            generateErrorUtil('Debes seleccionar una imagen', 400);
         }
 
         const service = await selectServiceByIdService(serviceId);

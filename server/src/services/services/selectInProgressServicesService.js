@@ -15,6 +15,7 @@ const selectInProgressServicesService = async (
             s.endDateTime,
             s.hours,
             s.scheduleImage,
+            s.scheduleView,
             s.type,
             s.province,
             a.address,

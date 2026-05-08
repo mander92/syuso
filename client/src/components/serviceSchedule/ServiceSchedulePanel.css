@@ -136,9 +136,16 @@
     color: #64748b;
 }
 
-.service-schedule-image-preview a {
+.service-schedule-image-preview a,
+.service-schedule-image-preview-link {
+    background: transparent;
+    border: 0;
     color: #1d4ed8;
+    cursor: pointer;
+    font: inherit;
     font-weight: 600;
+    padding: 0;
+    text-decoration: underline;
 }
 
 .service-schedule-open-grid {

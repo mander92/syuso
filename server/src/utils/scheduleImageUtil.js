@@ -19,8 +19,14 @@ export const saveScheduleImageUtil = async (file) => {
             generateErrorUtil('Debes seleccionar una imagen', 400);
         }
 
-        if (file.mimetype !== 'image/png') {
-            generateErrorUtil('El cuadrante debe ser PNG', 400);
+        const extensionByMime = {
+            'image/png': 'png',
+            'image/jpeg': 'jpg',
+        };
+        const extension = extensionByMime[file.mimetype];
+
+        if (!extension) {
+            generateErrorUtil('La foto del cuadrante debe ser PNG o JPG', 400);
         }
 
         const uploadsRoot = path.join(process.cwd(), UPLOADS_DIR);
@@ -28,7 +34,7 @@ export const saveScheduleImageUtil = async (file) => {
 
         await ensureDir(scheduleDir);
 
-        const fileName = `${uuidv4()}.png`;
+        const fileName = `${uuidv4()}.${extension}`;
         const finalPath = path.join(scheduleDir, fileName);
 
         if (file.tempFilePath) {
@@ -41,6 +47,7 @@ export const saveScheduleImageUtil = async (file) => {
 
         return `services/schedules/${fileName}`;
     } catch (error) {
+        if (error.httpStatus) throw error;
         generateErrorUtil('Error al guardar el cuadrante', 500);
     }
 };

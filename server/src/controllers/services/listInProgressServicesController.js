@@ -49,6 +49,7 @@ const listInProgressServicesController = async (req, res, next) => {
                     endDateTime: row.endDateTime,
                     hours: row.hours,
                     scheduleImage: row.scheduleImage,
+                    scheduleView: row.scheduleView || 'grid',
                     address: row.address,
                     city: row.city,
                     postCode: row.postCode,
