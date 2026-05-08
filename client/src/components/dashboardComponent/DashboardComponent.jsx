@@ -12,6 +12,7 @@ import WorkReportsComponent from '../adminWorkReportsSection/WorkReportsComponen
 import AdminCleanupSection from '../adminCleanupSection/AdminCleanupSection.jsx';
 import AdminCvSection from '../adminCvSection/AdminCvSection.jsx';
 import ShiftSwapsComponent from '../shiftSwaps/ShiftSwapsComponent.jsx';
+import EmployeeRequestsComponent from '../employeeRequests/EmployeeRequestsComponent.jsx';
 import EmployeeServicesComponent from '../employeeServicesSection/EmployeeServicesComponent.jsx';
 import ClientServicesComponent from '../clientServicesSection/ClientServicesComponent.jsx';
 import ChatHub from '../chatHub/ChatHub.jsx';
@@ -20,7 +21,13 @@ import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx
 
 const DashboardComponent = () => {
     const { user } = useUser();
-    const { unreadTotal, shiftSwapUnread, resetShiftSwapUnread } =
+    const {
+        unreadTotal,
+        shiftSwapUnread,
+        employeeRequestUnread,
+        resetShiftSwapUnread,
+        resetEmployeeRequestUnread,
+    } =
         useChatNotifications();
     const [activeSection, setActiveSection] = useState('profile');
     const hasSetDefault = useRef(false);
@@ -38,6 +45,7 @@ const DashboardComponent = () => {
                 { id: 'schedules', label: 'Cuadrantes' },
                 { id: 'shifts', label: 'Turnos' },
                 { id: 'shiftSwaps', label: 'Cambios de turno' },
+                { id: 'employeeRequests', label: 'Peticiones' },
                 { id: 'chats', label: 'Chats' },
                 { id: 'workReports', label: 'Partes de trabajo' },
                 { id: 'users', label: 'Usuarios' },
@@ -63,6 +71,7 @@ const DashboardComponent = () => {
                 { id: 'services', label: 'Mis servicios' },
                 { id: 'schedule', label: 'Mi cuadrante' },
                 { id: 'shiftSwaps', label: 'Cambios de turno' },
+                { id: 'employeeRequests', label: 'Peticiones' },
                 { id: 'chats', label: 'Chats' },
                 { id: 'profile', label: 'Mi perfil' },
             ];
@@ -73,6 +82,7 @@ const DashboardComponent = () => {
                 { id: 'services', label: 'Mis servicios' },
                 { id: 'schedule', label: 'Mi cuadrante' },
                 { id: 'shiftSwaps', label: 'Cambios de turno' },
+                { id: 'employeeRequests', label: 'Peticiones' },
                 { id: 'chats', label: 'Chats' },
                 { id: 'profile', label: 'Mi perfil' },
             ];
@@ -129,7 +139,10 @@ const DashboardComponent = () => {
         if (activeSection === 'shiftSwaps') {
             resetShiftSwapUnread();
         }
-    }, [activeSection]);
+        if (activeSection === 'employeeRequests') {
+            resetEmployeeRequestUnread();
+        }
+    }, [activeSection, resetEmployeeRequestUnread, resetShiftSwapUnread]);
 
     const renderSectionContent = () => {
         if (!user) return null;
@@ -170,6 +183,8 @@ const DashboardComponent = () => {
                 return <AdminCvSection />;
             case 'shiftSwaps':
                 return <ShiftSwapsComponent />;
+            case 'employeeRequests':
+                return <EmployeeRequestsComponent />;
 
             default:
                 return null;
@@ -239,6 +254,12 @@ const DashboardComponent = () => {
                                 shiftSwapUnread > 0 ? (
                                     <span className='dashboard-nav-badge'>
                                         {shiftSwapUnread}
+                                    </span>
+                                ) : null}
+                                {section.id === 'employeeRequests' &&
+                                employeeRequestUnread > 0 ? (
+                                    <span className='dashboard-nav-badge'>
+                                        {employeeRequestUnread}
                                     </span>
                                 ) : null}
                             </button>

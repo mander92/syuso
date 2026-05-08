@@ -1,0 +1,216 @@
+.employee-requests {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.employee-requests__header,
+.employee-requests-form,
+.employee-requests-item,
+.employee-requests-empty {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.employee-requests__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.1rem 1.25rem;
+}
+
+.employee-requests__eyebrow {
+    color: #0f766e;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: uppercase;
+}
+
+.employee-requests__header h2 {
+    color: #111827;
+    font-size: 1.3rem;
+    margin: 0.15rem 0 0;
+}
+
+.employee-requests-counter {
+    background: #ecfdf5;
+    border: 1px solid #bbf7d0;
+    border-radius: 999px;
+    color: #166534;
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 0.35rem 0.7rem;
+    white-space: nowrap;
+}
+
+.employee-requests-form {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.9rem;
+    padding: 1rem;
+}
+
+.employee-requests-form label {
+    color: #374151;
+    display: flex;
+    flex-direction: column;
+    font-size: 0.84rem;
+    font-weight: 700;
+    gap: 0.35rem;
+}
+
+.employee-requests-form select,
+.employee-requests-form input,
+.employee-requests-form textarea,
+.employee-requests-admin input {
+    border: 1px solid #d1d5db;
+    border-radius: 0.45rem;
+    color: #111827;
+    font: inherit;
+    padding: 0.58rem 0.7rem;
+}
+
+.employee-requests-form textarea {
+    min-height: 82px;
+    resize: vertical;
+}
+
+.employee-requests-form__notes {
+    grid-column: 1 / -1;
+}
+
+.employee-requests-form button,
+.employee-requests-admin button {
+    align-self: end;
+    background: #111827;
+    border: none;
+    border-radius: 0.45rem;
+    color: #ffffff;
+    cursor: pointer;
+    font-weight: 700;
+    padding: 0.68rem 0.9rem;
+}
+
+.employee-requests-form button:disabled,
+.employee-requests-admin button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.employee-requests-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.employee-requests-item {
+    padding: 1rem;
+}
+
+.employee-requests-item__head {
+    align-items: flex-start;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.employee-requests-type {
+    color: #111827;
+    font-size: 1rem;
+    font-weight: 800;
+    margin: 0;
+}
+
+.employee-requests-meta,
+.employee-requests-date,
+.employee-requests-created,
+.employee-requests-resolution {
+    color: #6b7280;
+    font-size: 0.86rem;
+    margin: 0.25rem 0 0;
+}
+
+.employee-requests-notes {
+    background: #f9fafb;
+    border-left: 3px solid #0f766e;
+    color: #374151;
+    margin: 0.8rem 0 0;
+    padding: 0.7rem 0.8rem;
+}
+
+.employee-requests-status {
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    padding: 0.32rem 0.62rem;
+    white-space: nowrap;
+}
+
+.employee-requests-status--pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.employee-requests-status--approved {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.employee-requests-status--rejected {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.employee-requests-admin {
+    border-top: 1px solid #e5e7eb;
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 0.9rem;
+    padding-top: 0.9rem;
+}
+
+.employee-requests-admin__actions {
+    display: flex;
+    gap: 0.6rem;
+    justify-content: flex-end;
+}
+
+.employee-requests-admin button {
+    background: #f3f4f6;
+    color: #111827;
+}
+
+.employee-requests-admin .employee-requests-btn--primary {
+    background: #0f766e;
+    color: #ffffff;
+}
+
+.employee-requests-empty {
+    color: #6b7280;
+    padding: 1rem;
+}
+
+@media (max-width: 760px) {
+    .employee-requests__header,
+    .employee-requests-item__head,
+    .employee-requests-admin__actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .employee-requests-form {
+        grid-template-columns: 1fr;
+    }
+
+    .employee-requests-counter,
+    .employee-requests-status {
+        width: fit-content;
+    }
+}

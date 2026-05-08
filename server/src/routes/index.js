@@ -11,6 +11,7 @@ import delegationRouter from './delegationRouter.js';
 import cleanupRouter from './cleanupRouter.js';
 import generalChatRouter from './generalChatRouter.js';
 import shiftSwapRouter from './shiftSwapRouter.js';
+import employeeRequestRouter from './employeeRequestRouter.js';
 
 const router = express.Router();
 
@@ -25,5 +26,6 @@ router.use(delegationRouter);
 router.use(cleanupRouter);
 router.use(generalChatRouter);
 router.use(shiftSwapRouter);
+router.use(employeeRequestRouter);
 
 export default router;

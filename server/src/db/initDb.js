@@ -19,7 +19,7 @@ const initDb = async () => {
 
         await pool.query(
             `
-            DROP TABLE IF EXISTS serviceNfcTagLogs, workReportIncidentPhotos, workReportPhotos, workReportIncidents, workReportDrafts, workReports, shiftSwapRequests, generalChatMessages, generalChatReads, generalChatMembers, generalChats, serviceChatMessages, serviceChatReads, serviceScheduleShifts, serviceScheduleTemplates, serviceShiftTypes, employeeAbsences, employeeRules, personsAssigned, serviceNfcTags, shiftRecords, adminDelegations, delegations, services, typeOfServices, users, addresses, consulting_requests, job_applications
+            DROP TABLE IF EXISTS serviceNfcTagLogs, workReportIncidentPhotos, workReportPhotos, workReportIncidents, workReportDrafts, workReports, employeeRequests, shiftSwapRequests, generalChatMessages, generalChatReads, generalChatMembers, generalChats, serviceChatMessages, serviceChatReads, serviceScheduleShifts, serviceScheduleTemplates, serviceShiftTypes, employeeAbsences, employeeRules, personsAssigned, serviceNfcTags, shiftRecords, adminDelegations, delegations, services, typeOfServices, users, addresses, consulting_requests, job_applications
             `
         );
 
@@ -166,7 +166,7 @@ const initDb = async () => {
                 employeeId CHAR(36) NOT NULL,
                 startDate DATE NOT NULL,
                 endDate DATE NOT NULL,
-                type ENUM('vacation', 'off') NOT NULL,
+                type ENUM('vacation', 'off', 'available', 'sick') NOT NULL,
                 notes VARCHAR(255),
                 createdBy CHAR(36),
                 createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -278,6 +278,33 @@ const initDb = async () => {
         );
 
         console.log('shiftSwapRequests creada');
+
+        await pool.query(
+            `
+            CREATE TABLE IF NOT EXISTS employeeRequests (
+                id CHAR(36) PRIMARY KEY NOT NULL,
+                employeeId CHAR(36) NOT NULL,
+                requestType ENUM('vacation', 'days_off', 'weekend_rest', 'availability', 'other') NOT NULL,
+                startDate DATE NOT NULL,
+                endDate DATE NOT NULL,
+                notes VARCHAR(500),
+                status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+                decidedBy CHAR(36),
+                decidedAt TIMESTAMP,
+                decisionNotes VARCHAR(500),
+                absenceId CHAR(36),
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                modifiedAt TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_employee_requests_employee (employeeId),
+                INDEX idx_employee_requests_status (status, createdAt),
+                FOREIGN KEY (employeeId) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (decidedBy) REFERENCES users(id) ON DELETE SET NULL,
+                FOREIGN KEY (absenceId) REFERENCES employeeAbsences(id) ON DELETE SET NULL
+            )
+            `
+        );
+
+        console.log('employeeRequests creada');
 
         await pool.query(
             `

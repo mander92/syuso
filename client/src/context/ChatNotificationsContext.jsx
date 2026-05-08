@@ -16,18 +16,24 @@ import {
     fetchAdminShiftSwapRequests,
     fetchMyShiftSwapRequests,
 } from '../services/shiftSwapService.js';
+import {
+    fetchAdminEmployeeRequests,
+    fetchMyEmployeeRequests,
+} from '../services/employeeRequestService.js';
 import { getChatSocket } from '../services/chatSocket.js';
 
 const ChatNotificationsContext = createContext({
     unreadByService: {},
     unreadByGeneral: {},
     shiftSwapUnread: 0,
+    employeeRequestUnread: 0,
     unreadTotal: 0,
     notificationTotal: 0,
     resetServiceUnread: () => {},
     resetGeneralUnread: () => {},
     resetAllUnread: () => {},
     resetShiftSwapUnread: () => {},
+    resetEmployeeRequestUnread: () => {},
     syncGeneralChats: () => {},
 });
 
@@ -40,6 +46,7 @@ export const ChatNotificationsProvider = ({ children }) => {
     const [generalChats, setGeneralChats] = useState([]);
     const [unreadByGeneral, setUnreadByGeneral] = useState({});
     const [shiftSwapUnread, setShiftSwapUnread] = useState(0);
+    const [employeeRequestUnread, setEmployeeRequestUnread] = useState(0);
     const [trackedGeneralChatIds, setTrackedGeneralChatIds] = useState([]);
     const joinedServiceRooms = useRef(new Set());
     const joinedGeneralRooms = useRef(new Set());
@@ -51,6 +58,9 @@ export const ChatNotificationsProvider = ({ children }) => {
         : null;
     const shiftSwapStorageKey = user?.id
         ? `syuso_shift_swap_unread_${user.id}`
+        : null;
+    const employeeRequestStorageKey = user?.id
+        ? `syuso_employee_request_unread_${user.id}`
         : null;
 
     const socket = useMemo(
@@ -105,6 +115,7 @@ export const ChatNotificationsProvider = ({ children }) => {
             setGeneralChats([]);
             setUnreadByGeneral({});
             setShiftSwapUnread(0);
+            setEmployeeRequestUnread(0);
             setTrackedGeneralChatIds([]);
             return;
         }
@@ -115,6 +126,7 @@ export const ChatNotificationsProvider = ({ children }) => {
             setGeneralChats([]);
             setUnreadByGeneral({});
             setShiftSwapUnread(0);
+            setEmployeeRequestUnread(0);
             return;
         }
 
@@ -226,6 +238,17 @@ export const ChatNotificationsProvider = ({ children }) => {
     }, [shiftSwapStorageKey]);
 
     useEffect(() => {
+        if (!employeeRequestStorageKey) return;
+        try {
+            const raw = localStorage.getItem(employeeRequestStorageKey);
+            if (!raw) return;
+            setEmployeeRequestUnread(Number(raw) || 0);
+        } catch {
+            // ignore storage errors
+        }
+    }, [employeeRequestStorageKey]);
+
+    useEffect(() => {
         if (!authToken || !user) return;
         if (user.role === 'client') return;
 
@@ -281,6 +304,32 @@ export const ChatNotificationsProvider = ({ children }) => {
         if (!authToken || !user) return;
         if (user.role === 'client') return;
 
+        const loadEmployeeRequestUnread = async () => {
+            try {
+                const isAdmin =
+                    user.role === 'admin' || user.role === 'sudo';
+                const rows = isAdmin
+                    ? await fetchAdminEmployeeRequests(authToken)
+                    : await fetchMyEmployeeRequests(authToken);
+                const list = Array.isArray(rows) ? rows : rows?.data || [];
+                const actionable = isAdmin
+                    ? list.filter((request) => request.status === 'pending')
+                          .length
+                    : list.filter((request) => request.status === 'pending')
+                          .length;
+                setEmployeeRequestUnread(actionable);
+            } catch {
+                // ignore errors to avoid blocking
+            }
+        };
+
+        loadEmployeeRequestUnread();
+    }, [authToken, user]);
+
+    useEffect(() => {
+        if (!authToken || !user) return;
+        if (user.role === 'client') return;
+
         const loadGeneralUnread = async () => {
             try {
                 const data = await fetchGeneralChatUnreadCounts(authToken);
@@ -330,6 +379,18 @@ export const ChatNotificationsProvider = ({ children }) => {
             // ignore storage errors
         }
     }, [shiftSwapStorageKey, shiftSwapUnread]);
+
+    useEffect(() => {
+        if (!employeeRequestStorageKey) return;
+        try {
+            localStorage.setItem(
+                employeeRequestStorageKey,
+                String(employeeRequestUnread || 0)
+            );
+        } catch {
+            // ignore storage errors
+        }
+    }, [employeeRequestStorageKey, employeeRequestUnread]);
 
     useEffect(() => {
         if (!socket || !user) return;
@@ -412,6 +473,14 @@ export const ChatNotificationsProvider = ({ children }) => {
             });
         };
 
+        const handleEmployeeRequestEvent = (request) => {
+            if (!request?.id) return;
+            setEmployeeRequestUnread((prev) => (prev || 0) + 1);
+            toast('Peticiones: nueva alerta', {
+                id: `employee-request-${request.id}-${request.status || 'event'}`,
+            });
+        };
+
         socket.on('connect', handleConnect);
         socket.on('chat:message', handleMessage);
         socket.on('generalChat:message', handleGeneralMessage);
@@ -419,6 +488,9 @@ export const ChatNotificationsProvider = ({ children }) => {
         socket.on('shiftSwap:confirmed', handleShiftSwapEvent);
         socket.on('shiftSwap:approved', handleShiftSwapEvent);
         socket.on('shiftSwap:rejected', handleShiftSwapEvent);
+        socket.on('employeeRequest:created', handleEmployeeRequestEvent);
+        socket.on('employeeRequest:approved', handleEmployeeRequestEvent);
+        socket.on('employeeRequest:rejected', handleEmployeeRequestEvent);
 
         return () => {
             socket.off('connect', handleConnect);
@@ -428,6 +500,9 @@ export const ChatNotificationsProvider = ({ children }) => {
             socket.off('shiftSwap:confirmed', handleShiftSwapEvent);
             socket.off('shiftSwap:approved', handleShiftSwapEvent);
             socket.off('shiftSwap:rejected', handleShiftSwapEvent);
+            socket.off('employeeRequest:created', handleEmployeeRequestEvent);
+            socket.off('employeeRequest:approved', handleEmployeeRequestEvent);
+            socket.off('employeeRequest:rejected', handleEmployeeRequestEvent);
             joinServiceIds.forEach((serviceId) => {
                 if (!joinedServiceRooms.current.has(serviceId)) return;
                 socket.emit('chat:leave', { serviceId });
@@ -470,10 +545,15 @@ export const ChatNotificationsProvider = ({ children }) => {
         setUnreadByService({});
         setUnreadByGeneral({});
         setShiftSwapUnread(0);
+        setEmployeeRequestUnread(0);
     };
 
     const resetShiftSwapUnread = () => {
         setShiftSwapUnread(0);
+    };
+
+    const resetEmployeeRequestUnread = () => {
+        setEmployeeRequestUnread(0);
     };
 
     const syncGeneralChats = (nextChats) => {
@@ -495,6 +575,8 @@ export const ChatNotificationsProvider = ({ children }) => {
     );
 
     const notificationTotal = unreadTotal + (shiftSwapUnread || 0);
+    const totalNotifications =
+        notificationTotal + (employeeRequestUnread || 0);
 
     return (
         <ChatNotificationsContext.Provider
@@ -502,12 +584,14 @@ export const ChatNotificationsProvider = ({ children }) => {
                 unreadByService,
                 unreadByGeneral,
                 shiftSwapUnread,
+                employeeRequestUnread,
                 unreadTotal,
-                notificationTotal,
+                notificationTotal: totalNotifications,
                 resetServiceUnread,
                 resetGeneralUnread,
                 resetAllUnread,
                 resetShiftSwapUnread,
+                resetEmployeeRequestUnread,
                 syncGeneralChats,
             }}
         >
