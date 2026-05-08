@@ -614,6 +614,19 @@ export const downloadServiceSchedulePdf = async (
     return downloadScheduleFile(authToken, url, 'cuadrante_servicio.pdf');
 };
 
+export const downloadServiceScheduleExcel = async (
+    authToken,
+    serviceId,
+    month
+) => {
+    const params = new URLSearchParams();
+    if (month) params.append('month', month);
+    const url = params.toString()
+        ? `${VITE_API_URL}/services/${serviceId}/schedule/excel?${params.toString()}`
+        : `${VITE_API_URL}/services/${serviceId}/schedule/excel`;
+    return downloadScheduleFile(authToken, url, 'cuadrante_servicio.xlsx');
+};
+
 export const downloadServiceScheduleZip = async (
     authToken,
     serviceIds,
@@ -628,6 +641,22 @@ export const downloadServiceScheduleZip = async (
         ? `${VITE_API_URL}/services/schedule/zip?${params.toString()}`
         : `${VITE_API_URL}/services/schedule/zip`;
     return downloadScheduleFile(authToken, url, 'cuadrantes_servicios.zip');
+};
+
+export const downloadServiceScheduleExcelZip = async (
+    authToken,
+    serviceIds,
+    month
+) => {
+    const params = new URLSearchParams();
+    if (month) params.append('month', month);
+    if (Array.isArray(serviceIds) && serviceIds.length) {
+        params.append('serviceIds', serviceIds.join(','));
+    }
+    const url = params.toString()
+        ? `${VITE_API_URL}/services/schedule/excel-zip?${params.toString()}`
+        : `${VITE_API_URL}/services/schedule/excel-zip`;
+    return downloadScheduleFile(authToken, url, 'cuadrantes_servicios_excel.zip');
 };
 
 export const downloadEmployeeSchedulePdf = async (

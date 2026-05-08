@@ -17,7 +17,9 @@ import {
     fetchServiceScheduleShifts,
     fetchServiceScheduleTemplates,
     downloadServiceSchedulePdf,
+    downloadServiceScheduleExcel,
     downloadServiceScheduleZip,
+    downloadServiceScheduleExcelZip,
     downloadEmployeeSchedulePdf,
     downloadEmployeeScheduleZip,
 } from '../../services/serviceService.js';
@@ -58,7 +60,11 @@ const ScheduleComponent = () => {
     const [personalModal, setPersonalModal] = useState(null);
     const [scheduleViewMode, setScheduleViewMode] = useState('services');
     const [isDownloadingServicePdf, setIsDownloadingServicePdf] = useState(false);
+    const [isDownloadingServiceExcel, setIsDownloadingServiceExcel] =
+        useState(false);
     const [isDownloadingServiceZip, setIsDownloadingServiceZip] = useState(false);
+    const [isDownloadingServiceExcelZip, setIsDownloadingServiceExcelZip] =
+        useState(false);
     const [isDownloadingPersonalZip, setIsDownloadingPersonalZip] = useState(false);
     const [downloadingPersonalId, setDownloadingPersonalId] = useState('');
     const [employeeRulesMap, setEmployeeRulesMap] = useState({});
@@ -634,6 +640,45 @@ const ScheduleComponent = () => {
         }
     };
 
+    const handleServiceExcelDownload = async () => {
+        if (!authToken || !scheduleServiceId) return;
+        try {
+            setIsDownloadingServiceExcel(true);
+            const data = await downloadServiceScheduleExcel(
+                authToken,
+                scheduleServiceId,
+                scheduleMonth
+            );
+            triggerDownload(data);
+        } catch (error) {
+            toast.error(error.message || 'No se pudo descargar el Excel');
+        } finally {
+            setIsDownloadingServiceExcel(false);
+        }
+    };
+
+    const handleServiceExcelZipDownload = async () => {
+        if (!authToken) return;
+        const serviceIds = scheduleCards.map((card) => card.id).filter(Boolean);
+        if (!serviceIds.length) {
+            toast.error('No hay cuadrantes para descargar');
+            return;
+        }
+        try {
+            setIsDownloadingServiceExcelZip(true);
+            const data = await downloadServiceScheduleExcelZip(
+                authToken,
+                serviceIds,
+                scheduleMonth
+            );
+            triggerDownload(data);
+        } catch (error) {
+            toast.error(error.message || 'No se pudo descargar el ZIP Excel');
+        } finally {
+            setIsDownloadingServiceExcelZip(false);
+        }
+    };
+
     const handlePersonalZipDownload = async () => {
         if (!authToken) return;
         const employeeIds = personalScheduleRows.map((row) => row.id).filter(Boolean);
@@ -859,11 +904,35 @@ const ScheduleComponent = () => {
                         </button>
                         <button
                             type='button'
+                            className='schedule-btn schedule-btn--ghost'
+                            onClick={handleServiceExcelDownload}
+                            disabled={
+                                !scheduleServiceId || isDownloadingServiceExcel
+                            }
+                        >
+                            {isDownloadingServiceExcel
+                                ? 'Generando...'
+                                : 'Excel servicio'}
+                        </button>
+                        <button
+                            type='button'
                             className='schedule-btn'
                             onClick={handleServiceZipDownload}
                             disabled={!scheduleCards.length || isDownloadingServiceZip}
                         >
                             {isDownloadingServiceZip ? 'Generando...' : 'ZIP servicios'}
+                        </button>
+                        <button
+                            type='button'
+                            className='schedule-btn'
+                            onClick={handleServiceExcelZipDownload}
+                            disabled={
+                                !scheduleCards.length || isDownloadingServiceExcelZip
+                            }
+                        >
+                            {isDownloadingServiceExcelZip
+                                ? 'Generando...'
+                                : 'ZIP Excel'}
                         </button>
                     </>
                 ) : (

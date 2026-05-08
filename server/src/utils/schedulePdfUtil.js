@@ -89,6 +89,19 @@ const formatTimeRange = (timeValue) => {
     return `${parts[0]}:${parts[1]}`;
 };
 
+const splitShiftText = (shiftText, part) =>
+    String(shiftText || '')
+        .split('\n')
+        .map((value) => value.split('-')[part]?.trim() || '')
+        .filter(Boolean)
+        .join('\n');
+
+const getStartText = (row, dateKey) =>
+    row.startsByDay?.[dateKey] || splitShiftText(row.shifts?.[dateKey], 0);
+
+const getEndText = (row, dateKey) =>
+    row.endsByDay?.[dateKey] || splitShiftText(row.shifts?.[dateKey], 1);
+
 const drawGrid = (doc, days, rows) => {
     const startX = doc.page.margins.left;
     let y = doc.y + 8;
@@ -99,8 +112,8 @@ const drawGrid = (doc, days, rows) => {
 
     const headerHeight = 18;
     const dayHeight = 20;
-    const rowHeight = 28;
-    const hoursRowHeight = 18;
+    const lineHeight = 18;
+    const rowHeight = lineHeight * 3;
 
     doc.font('Helvetica-Bold').fontSize(8).fillColor('#0f172a');
 
@@ -148,19 +161,46 @@ const drawGrid = (doc, days, rows) => {
     rows.forEach((row) => {
         doc.rect(startX, y, nameColWidth, rowHeight).stroke('#cbd5f1');
         doc.font('Helvetica-Bold').text(row.name, startX + 4, y + 6, {
-            width: nameColWidth - 8,
+            width: nameColWidth - 44,
+        });
+        doc.font('Helvetica').text('Entrada', startX + nameColWidth - 40, y + 4, {
+            width: 36,
+            align: 'right',
+        });
+        doc.text('Salida', startX + nameColWidth - 40, y + lineHeight + 4, {
+            width: 36,
+            align: 'right',
+        });
+        doc.text('Horas', startX + nameColWidth - 40, y + lineHeight * 2 + 4, {
+            width: 36,
+            align: 'right',
         });
 
         days.forEach((day, index) => {
             const x = startX + nameColWidth + index * dayColWidth;
             doc.rect(x, y, dayColWidth, rowHeight).stroke('#cbd5f1');
-            const shiftText = row.shifts[day.dateKey] || '';
+            doc
+                .moveTo(x, y + lineHeight)
+                .lineTo(x + dayColWidth, y + lineHeight)
+                .stroke('#e5e7eb');
+            doc
+                .moveTo(x, y + lineHeight * 2)
+                .lineTo(x + dayColWidth, y + lineHeight * 2)
+                .stroke('#e5e7eb');
             doc
                 .font('Helvetica')
-                .text(shiftText, x + 2, y + 6, {
+                .text(getStartText(row, day.dateKey), x + 2, y + 4, {
                     width: dayColWidth - 4,
                     align: 'center',
                 });
+            doc.text(getEndText(row, day.dateKey), x + 2, y + lineHeight + 4, {
+                width: dayColWidth - 4,
+                align: 'center',
+            });
+            doc.text(row.hoursByDay[day.dateKey] || '', x + 2, y + lineHeight * 2 + 4, {
+                width: dayColWidth - 4,
+                align: 'center',
+            });
         });
 
         doc
@@ -175,29 +215,7 @@ const drawGrid = (doc, days, rows) => {
 
         y += rowHeight;
 
-        doc.rect(startX, y, nameColWidth, hoursRowHeight).stroke('#cbd5f1');
-        doc.font('Helvetica').text('Horas', startX + 4, y + 4, {
-            width: nameColWidth - 8,
-        });
-
-        days.forEach((day, index) => {
-            const x = startX + nameColWidth + index * dayColWidth;
-            doc.rect(x, y, dayColWidth, hoursRowHeight).stroke('#cbd5f1');
-            const hoursText = row.hoursByDay[day.dateKey] || '-';
-            doc
-                .font('Helvetica')
-                .text(hoursText, x + 2, y + 4, {
-                    width: dayColWidth - 4,
-                    align: 'center',
-                });
-        });
-
-        doc
-            .rect(totalX, y, totalColWidth, hoursRowHeight)
-            .stroke('#cbd5f1');
-        y += hoursRowHeight;
-
-        if (y + rowHeight + hoursRowHeight > doc.page.height - 40) {
+        if (y + rowHeight > doc.page.height - 40) {
             doc.addPage({ layout: 'landscape' });
             y = doc.page.margins.top;
         }

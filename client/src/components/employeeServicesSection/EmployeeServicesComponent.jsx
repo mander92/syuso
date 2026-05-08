@@ -434,6 +434,13 @@ const EmployeeServicesComponent = () => {
     useEffect(() => {
         const loadScheduleShifts = async () => {
             if (!authToken || !scheduleModal?.serviceId || !user?.id) return;
+            if (
+                scheduleModal.scheduleView === 'image' &&
+                scheduleModal.scheduleImage
+            ) {
+                setScheduleShifts([]);
+                return;
+            }
             try {
                 setScheduleLoading(true);
                 const data = await fetchEmployeeScheduleShifts(
@@ -688,13 +695,10 @@ const EmployeeServicesComponent = () => {
                             {scheduleModal.scheduleView === 'image' &&
                             scheduleModal.scheduleImage ? (
                                 <div className='employee-schedule-image'>
-                                    <a
-                                        href={`${import.meta.env.VITE_API_URL}/uploads/${scheduleModal.scheduleImage}`}
-                                        target='_blank'
-                                        rel='noreferrer'
-                                    >
-                                        Ver cuadrante actual
-                                    </a>
+                                    <img
+                                        src={`${import.meta.env.VITE_API_URL}/uploads/${scheduleModal.scheduleImage}`}
+                                        alt={`Cuadrante de ${scheduleModal.serviceName}`}
+                                    />
                                 </div>
                             ) : scheduleLoading ? (
                                 <p>Cargando turnos...</p>

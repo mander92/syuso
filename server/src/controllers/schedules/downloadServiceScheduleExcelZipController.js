@@ -4,13 +4,13 @@ import archiver from 'archiver';
 import listServiceScheduleShiftsService from '../../services/schedules/listServiceScheduleShiftsService.js';
 import ensureServiceDelegationAccessService from '../../services/delegations/ensureServiceDelegationAccessService.js';
 import selectServiceByIdService from '../../services/services/selectServiceByIdService.js';
-import { createScheduleGridPdfUtil } from '../../utils/schedulePdfUtil.js';
+import { createScheduleGridExcelUtil } from '../../utils/scheduleExcelUtil.js';
 import {
     buildServiceScheduleSection,
     getServiceScheduleFileBaseName,
 } from '../../utils/scheduleExportUtil.js';
 
-const downloadServiceScheduleZipController = async (req, res, next) => {
+const downloadServiceScheduleExcelZipController = async (req, res, next) => {
     try {
         const { serviceIds, month } = req.query;
         const { id: userId, role } = req.userLogged;
@@ -29,7 +29,7 @@ const downloadServiceScheduleZipController = async (req, res, next) => {
         }
 
         const archive = archiver('zip', { zlib: { level: 9 } });
-        res.attachment(`schedules-${effectiveMonth}.zip`);
+        res.attachment(`schedules-excel-${effectiveMonth}.zip`);
         archive.pipe(res);
 
         for (const serviceId of ids) {
@@ -40,7 +40,7 @@ const downloadServiceScheduleZipController = async (req, res, next) => {
                 effectiveMonth
             );
 
-            const filePath = await createScheduleGridPdfUtil({
+            const filePath = await createScheduleGridExcelUtil({
                 sections: [
                     buildServiceScheduleSection({
                         service,
@@ -52,7 +52,7 @@ const downloadServiceScheduleZipController = async (req, res, next) => {
                     service,
                     serviceId,
                     effectiveMonth
-                )}.pdf`,
+                )}.xlsx`,
             });
 
             archive.append(fs.createReadStream(filePath), {
@@ -66,4 +66,4 @@ const downloadServiceScheduleZipController = async (req, res, next) => {
     }
 };
 
-export default downloadServiceScheduleZipController;
+export default downloadServiceScheduleExcelZipController;

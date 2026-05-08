@@ -41,6 +41,8 @@ import deleteServiceScheduleShiftController from '../controllers/schedules/delet
 import listEmployeeScheduleShiftsController from '../controllers/schedules/listEmployeeScheduleShiftsController.js';
 import downloadServiceSchedulePdfController from '../controllers/schedules/downloadServiceSchedulePdfController.js';
 import downloadServiceScheduleZipController from '../controllers/schedules/downloadServiceScheduleZipController.js';
+import downloadServiceScheduleExcelController from '../controllers/schedules/downloadServiceScheduleExcelController.js';
+import downloadServiceScheduleExcelZipController from '../controllers/schedules/downloadServiceScheduleExcelZipController.js';
 import downloadEmployeeSchedulePdfController from '../controllers/schedules/downloadEmployeeSchedulePdfController.js';
 import downloadEmployeeScheduleZipController from '../controllers/schedules/downloadEmployeeScheduleZipController.js';
 import listServiceShiftTypesController from '../controllers/schedules/listServiceShiftTypesController.js';
@@ -157,10 +159,25 @@ router.get(
 );
 
 router.get(
+    '/services/:serviceId/schedule/excel',
+    authUser,
+    isAdmin,
+    serviceExists,
+    downloadServiceScheduleExcelController
+);
+
+router.get(
     '/services/schedule/zip',
     authUser,
     isAdmin,
     downloadServiceScheduleZipController
+);
+
+router.get(
+    '/services/schedule/excel-zip',
+    authUser,
+    isAdmin,
+    downloadServiceScheduleExcelZipController
 );
 
 router.get(

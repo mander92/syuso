@@ -2,13 +2,13 @@ import path from 'path';
 import listServiceScheduleShiftsService from '../../services/schedules/listServiceScheduleShiftsService.js';
 import ensureServiceDelegationAccessService from '../../services/delegations/ensureServiceDelegationAccessService.js';
 import selectServiceByIdService from '../../services/services/selectServiceByIdService.js';
-import { createScheduleGridPdfUtil } from '../../utils/schedulePdfUtil.js';
+import { createScheduleGridExcelUtil } from '../../utils/scheduleExcelUtil.js';
 import {
     buildServiceScheduleSection,
     getServiceScheduleFileBaseName,
 } from '../../utils/scheduleExportUtil.js';
 
-const downloadServiceSchedulePdfController = async (req, res, next) => {
+const downloadServiceScheduleExcelController = async (req, res, next) => {
     try {
         const { serviceId } = req.params;
         const { month } = req.query;
@@ -23,19 +23,19 @@ const downloadServiceSchedulePdfController = async (req, res, next) => {
             effectiveMonth
         );
 
-        const section = buildServiceScheduleSection({
-            service,
-            shifts,
-            month: effectiveMonth,
-        });
-        const fileName = `${getServiceScheduleFileBaseName(
-            service,
-            serviceId,
-            effectiveMonth
-        )}.pdf`;
-        const filePath = await createScheduleGridPdfUtil({
-            sections: [section],
-            fileName,
+        const filePath = await createScheduleGridExcelUtil({
+            sections: [
+                buildServiceScheduleSection({
+                    service,
+                    shifts,
+                    month: effectiveMonth,
+                }),
+            ],
+            fileName: `${getServiceScheduleFileBaseName(
+                service,
+                serviceId,
+                effectiveMonth
+            )}.xlsx`,
         });
 
         return res.download(filePath, path.basename(filePath));
@@ -44,4 +44,4 @@ const downloadServiceSchedulePdfController = async (req, res, next) => {
     }
 };
 
-export default downloadServiceSchedulePdfController;
+export default downloadServiceScheduleExcelController;
