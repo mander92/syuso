@@ -11,26 +11,17 @@ const CalendarComponent = ({ events, onSelectEvent, defaultView }) => {
     const eventStyle = (event) => {
         let backgroundColor = '';
         switch (event.status) {
-            case 'accepted':
-                backgroundColor = 'orange';
-                break;
-            case 'canceled':
-                backgroundColor = 'red';
-                break;
-            case 'completed':
-                backgroundColor = 'green';
+            case 'pending':
+                backgroundColor = 'lightsalmon';
                 break;
             case 'confirmed':
                 backgroundColor = 'lightgreen';
                 break;
-            case 'pending':
-                backgroundColor = 'lightsalmon';
-                break;
-            case 'rejected':
-                backgroundColor = 'lightcoral';
+            case 'completed':
+                backgroundColor = 'green';
                 break;
             default:
-                backgroundColor = 'white';
+                backgroundColor = '#94a3b8';
         }
         return {
             style: {

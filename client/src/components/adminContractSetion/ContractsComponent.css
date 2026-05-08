@@ -169,11 +169,6 @@
     border-color: rgba(0, 0, 0, 0.08);
 }
 
-.contracts-legend-badge--accepted {
-    background-color: orange;
-    border-color: rgba(0, 0, 0, 0.08);
-}
-
 .contracts-legend-badge--confirmed {
     background-color: lightgreen;
     border-color: rgba(0, 0, 0, 0.08);
@@ -181,17 +176,6 @@
 
 .contracts-legend-badge--completed {
     background-color: green;
-    color: #f9fafb;
-    border-color: rgba(0, 0, 0, 0.08);
-}
-
-.contracts-legend-badge--rejected {
-    background-color: lightcoral;
-    border-color: rgba(0, 0, 0, 0.08);
-}
-
-.contracts-legend-badge--canceled {
-    background-color: red;
     color: #f9fafb;
     border-color: rgba(0, 0, 0, 0.08);
 }
@@ -246,6 +230,141 @@
     font-size: 0.95rem;
     color: #475569;
     padding: 0.5rem 0.25rem;
+}
+
+/* === SERVICIOS POR DELEGACION === */
+
+.contracts-delegations {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px;
+}
+
+.contracts-delegations-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+
+.contracts-delegations-header h2 {
+    margin: 0;
+    color: #0f172a;
+}
+
+.contracts-delegations-header p {
+    margin: 6px 0 0;
+    color: #64748b;
+}
+
+.contracts-delegations-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.contracts-delegation-list {
+    display: grid;
+    gap: 10px;
+}
+
+.contracts-delegation-group {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.contracts-delegation-toggle {
+    width: 100%;
+    border: 0;
+    background: #f8fafc;
+    color: #0f172a;
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 14px;
+    text-align: left;
+}
+
+.contracts-delegation-toggle span:first-child {
+    font-weight: 700;
+}
+
+.contracts-delegation-toggle strong {
+    color: #475569;
+    font-size: 0.86rem;
+}
+
+.contracts-delegation-toggle span:last-child {
+    color: #1d4ed8;
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
+.contracts-delegation-services {
+    display: grid;
+    gap: 8px;
+    padding: 10px;
+}
+
+.contracts-delegation-service {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #ffffff;
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px;
+    text-align: left;
+}
+
+.contracts-delegation-service:hover {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+}
+
+.contracts-delegation-service span {
+    color: #0f172a;
+    font-weight: 700;
+}
+
+.contracts-delegation-service small {
+    color: #64748b;
+    overflow-wrap: anywhere;
+}
+
+.contracts-status {
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-style: normal;
+    font-weight: 700;
+    padding: 0.24rem 0.58rem;
+    white-space: nowrap;
+}
+
+.contracts-status--pending {
+    background: lightsalmon;
+    color: #7c2d12;
+}
+
+.contracts-status--confirmed {
+    background: lightgreen;
+    color: #14532d;
+}
+
+.contracts-status--completed {
+    background: green;
+    color: #ffffff;
 }
 
 /* === SERVICIOS EN CURSO === */
@@ -510,6 +629,11 @@
 @media (max-width: 768px) {
     .contracts-filter select {
         min-width: 150px;
+    }
+
+    .contracts-delegation-toggle,
+    .contracts-delegation-service {
+        grid-template-columns: 1fr;
     }
 
     .contracts-filter-actions {

@@ -16,6 +16,18 @@ import CalendarComponent from '../calendarComponent/CalendarComponent.jsx';
 import toast from 'react-hot-toast';
 import './ContractsComponent.css';
 
+const managedStatusOptions = [
+    { value: 'pending', label: 'Pendiente' },
+    { value: 'confirmed', label: 'Confirmado' },
+    { value: 'completed', label: 'Completado' },
+];
+
+const statusLabels = {
+    pending: 'Pendiente',
+    confirmed: 'Confirmado',
+    completed: 'Completado',
+};
+
 const ContractsComponent = () => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
@@ -34,6 +46,7 @@ const ContractsComponent = () => {
     const [activeServices, setActiveServices] = useState([]);
     const [activeLoading, setActiveLoading] = useState(false);
     const [expandedActive, setExpandedActive] = useState({});
+    const [expandedDelegations, setExpandedDelegations] = useState({});
     const [activeShifts, setActiveShifts] = useState({});
     const [activeShiftLoading, setActiveShiftLoading] = useState({});
     const [loading, setLoading] = useState(false);
@@ -206,21 +219,6 @@ const ContractsComponent = () => {
         [data]
     );
 
-    const scheduleServices = useMemo(
-        () =>
-            (data || [])
-                .filter((item) => item.scheduleImage)
-                .map((item) => ({
-                    id: item.serviceId || item.id,
-                    name: item.name || item.type,
-                    scheduleImage: item.scheduleImage,
-                    address: item.address,
-                    city: item.city,
-                }))
-                .filter((item) => item.id),
-        [data]
-    );
-
     const filteredActiveServices = useMemo(() => {
         const term = activeServiceSearch.trim().toLowerCase();
         if (!term) return activeServices;
@@ -231,14 +229,59 @@ const ContractsComponent = () => {
         );
     }, [activeServices, activeServiceSearch]);
 
-    const calendarEvents = useMemo(() => {
+    const visibleServices = useMemo(() => {
         const term = calendarSearch.trim().toLowerCase();
-        return data
-            .filter((event) => {
-                if (!term) return true;
-                const name = (event.name || event.type || '').toLowerCase();
-                return name.includes(term);
-            })
+        if (!term) return data || [];
+        return (data || []).filter((service) => {
+            const haystack = [
+                service.name,
+                service.type,
+                service.status,
+                statusLabels[service.status],
+                service.province,
+                service.city,
+                service.address,
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase();
+            return haystack.includes(term);
+        });
+    }, [calendarSearch, data]);
+
+    const servicesByDelegation = useMemo(() => {
+        const groups = new Map();
+        visibleServices.forEach((service) => {
+            const delegation = service.province || 'Sin delegacion';
+            if (!groups.has(delegation)) groups.set(delegation, []);
+            groups.get(delegation).push(service);
+        });
+        return [...groups.entries()]
+            .sort(([a], [b]) => compareText(a, b))
+            .map(([delegation, services]) => ({
+                delegation,
+                services: services.sort((a, b) =>
+                    compareText(a.name || a.type, b.name || b.type)
+                ),
+            }));
+    }, [visibleServices]);
+
+    useEffect(() => {
+        if (!servicesByDelegation.length) {
+            setExpandedDelegations({});
+            return;
+        }
+        setExpandedDelegations((prev) => {
+            const next = {};
+            servicesByDelegation.forEach((group) => {
+                next[group.delegation] = prev[group.delegation] ?? true;
+            });
+            return next;
+        });
+    }, [servicesByDelegation]);
+
+    const calendarEvents = useMemo(() => {
+        return visibleServices
             .map((event) => {
                 const start = new Date(event.startDateTime);
                 let end = event.endDateTime
@@ -259,7 +302,25 @@ const ContractsComponent = () => {
                     status: event.status,
                 };
             });
-    }, [data, calendarSearch]);
+    }, [visibleServices]);
+
+    const toggleDelegation = (delegation) => {
+        setExpandedDelegations((prev) => ({
+            ...prev,
+            [delegation]: !prev[delegation],
+        }));
+    };
+
+    const setAllDelegationsExpanded = (expanded) => {
+        setExpandedDelegations(
+            Object.fromEntries(
+                servicesByDelegation.map((group) => [
+                    group.delegation,
+                    expanded,
+                ])
+            )
+        );
+    };
 
     const handleSelectEvent = (event) => {
         if (isAdminLike && event?.serviceId) {
@@ -363,12 +424,11 @@ const ContractsComponent = () => {
                             onChange={(e) => setStatus(e.target.value)}
                         >
                             <option value=''>Todos</option>
-                            <option value='accepted'>Aceptado</option>
-                            <option value='canceled'>Cancelado</option>
-                            <option value='completed'>Completado</option>
-                            <option value='confirmed'>Confirmado</option>
-                            <option value='pending'>Pendiente</option>
-                            <option value='rejected'>Rechazado</option>
+                            {managedStatusOptions.map((item) => (
+                                <option key={item.value} value={item.value}>
+                                    {item.label}
+                                </option>
+                            ))}
                         </select>
                         </div>
 
@@ -435,20 +495,11 @@ const ContractsComponent = () => {
                     <span className='contracts-legend-badge contracts-legend-badge--pending'>
                         Pendiente
                     </span>
-                    <span className='contracts-legend-badge contracts-legend-badge--accepted'>
-                        Aceptado
-                    </span>
                     <span className='contracts-legend-badge contracts-legend-badge--confirmed'>
                         Confirmado
                     </span>
                     <span className='contracts-legend-badge contracts-legend-badge--completed'>
                         Completado
-                    </span>
-                    <span className='contracts-legend-badge contracts-legend-badge--rejected'>
-                        Rechazado
-                    </span>
-                    <span className='contracts-legend-badge contracts-legend-badge--canceled'>
-                        Cancelado
                     </span>
                 </div>
             )}
@@ -657,12 +708,115 @@ const ContractsComponent = () => {
                 {isCalendarOpen && (
                     <input
                         type='text'
-                        placeholder='Buscar servicio'
+                        placeholder='Buscar por servicio, estado o delegacion'
                         value={calendarSearch}
                         onChange={(e) => setCalendarSearch(e.target.value)}
                     />
                 )}
             </div>
+
+            {isAdminLike && (
+                <section className='contracts-delegations'>
+                    <div className='contracts-delegations-header'>
+                        <div>
+                            <h2>Servicios por delegacion</h2>
+                            <p>
+                                {visibleServices.length} servicios con los filtros
+                                actuales.
+                            </p>
+                        </div>
+                        <div className='contracts-delegations-actions'>
+                            <button
+                                type='button'
+                                className='contracts-btn contracts-btn--ghost'
+                                onClick={() => setAllDelegationsExpanded(false)}
+                            >
+                                Plegar todo
+                            </button>
+                            <button
+                                type='button'
+                                className='contracts-btn'
+                                onClick={() => setAllDelegationsExpanded(true)}
+                            >
+                                Desplegar todo
+                            </button>
+                        </div>
+                    </div>
+                    {servicesByDelegation.length ? (
+                        <div className='contracts-delegation-list'>
+                            {servicesByDelegation.map((group) => (
+                                <div
+                                    className='contracts-delegation-group'
+                                    key={group.delegation}
+                                >
+                                    <button
+                                        type='button'
+                                        className='contracts-delegation-toggle'
+                                        onClick={() =>
+                                            toggleDelegation(group.delegation)
+                                        }
+                                    >
+                                        <span>{group.delegation}</span>
+                                        <strong>
+                                            {group.services.length} servicios
+                                        </strong>
+                                        <span>
+                                            {expandedDelegations[
+                                                group.delegation
+                                            ]
+                                                ? 'Ocultar'
+                                                : 'Mostrar'}
+                                        </span>
+                                    </button>
+                                    {expandedDelegations[group.delegation] ? (
+                                        <div className='contracts-delegation-services'>
+                                            {group.services.map((service) => (
+                                                <button
+                                                    type='button'
+                                                    className='contracts-delegation-service'
+                                                    key={
+                                                        service.serviceId ||
+                                                        service.id
+                                                    }
+                                                    onClick={() =>
+                                                        navigate(
+                                                            `/services/${
+                                                                service.serviceId ||
+                                                                service.id
+                                                            }`
+                                                        )
+                                                    }
+                                                >
+                                                    <span>
+                                                        {service.name ||
+                                                            service.type ||
+                                                            'Servicio'}
+                                                    </span>
+                                                    <small>
+                                                        {service.address},{' '}
+                                                        {service.city}
+                                                    </small>
+                                                    <em
+                                                        className={`contracts-status contracts-status--${service.status}`}
+                                                    >
+                                                        {statusLabels[
+                                                            service.status
+                                                        ] || service.status}
+                                                    </em>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    ) : null}
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className='contracts-loading'>
+                            No hay servicios con estos filtros.
+                        </p>
+                    )}
+                </section>
+            )}
 
             {isCalendarOpen && (
                 <div className='contracts-calendar-card'>
