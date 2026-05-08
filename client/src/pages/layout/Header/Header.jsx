@@ -12,7 +12,7 @@ export default function Header() {
 
     // Leemos del contexto
     const { authToken, authLogout } = useContext(AuthContext);
-    const { unreadTotal } = useChatNotifications();
+    const { notificationTotal } = useChatNotifications();
     const isLoggedIn = Boolean(authToken);
 
     const toggleMenu = () => {
@@ -49,9 +49,9 @@ export default function Header() {
                         <NavLink to={'/account'}>
                             <button className='nav-btn nav-btn-chat'>
                                 Mi cuenta
-                                {unreadTotal > 0 ? (
+                                {notificationTotal > 0 ? (
                                     <span className='nav-chat-badge'>
-                                        {unreadTotal}
+                                        {notificationTotal}
                                     </span>
                                 ) : null}
                             </button>
@@ -100,9 +100,9 @@ export default function Header() {
                         <NavLink to='/account' onClick={closeMenu}>
                             <button className='mobile-nav-btn mobile-nav-btn-chat'>
                                 Mi cuenta
-                                {unreadTotal > 0 ? (
+                                {notificationTotal > 0 ? (
                                     <span className='mobile-chat-badge'>
-                                        {unreadTotal}
+                                        {notificationTotal}
                                     </span>
                                 ) : null}
                             </button>

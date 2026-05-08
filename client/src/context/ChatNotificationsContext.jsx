@@ -12,15 +12,22 @@ import {
     fetchGeneralChatUnreadCounts,
     fetchGeneralChats,
 } from '../services/generalChatService.js';
+import {
+    fetchAdminShiftSwapRequests,
+    fetchMyShiftSwapRequests,
+} from '../services/shiftSwapService.js';
 import { getChatSocket } from '../services/chatSocket.js';
 
 const ChatNotificationsContext = createContext({
     unreadByService: {},
     unreadByGeneral: {},
+    shiftSwapUnread: 0,
     unreadTotal: 0,
+    notificationTotal: 0,
     resetServiceUnread: () => {},
     resetGeneralUnread: () => {},
     resetAllUnread: () => {},
+    resetShiftSwapUnread: () => {},
     syncGeneralChats: () => {},
 });
 
@@ -32,6 +39,7 @@ export const ChatNotificationsProvider = ({ children }) => {
     const [trackedServiceIds, setTrackedServiceIds] = useState([]);
     const [generalChats, setGeneralChats] = useState([]);
     const [unreadByGeneral, setUnreadByGeneral] = useState({});
+    const [shiftSwapUnread, setShiftSwapUnread] = useState(0);
     const [trackedGeneralChatIds, setTrackedGeneralChatIds] = useState([]);
     const joinedServiceRooms = useRef(new Set());
     const joinedGeneralRooms = useRef(new Set());
@@ -40,6 +48,9 @@ export const ChatNotificationsProvider = ({ children }) => {
         : null;
     const generalStorageKey = user?.id
         ? `syuso_chat_unread_general_${user.id}`
+        : null;
+    const shiftSwapStorageKey = user?.id
+        ? `syuso_shift_swap_unread_${user.id}`
         : null;
 
     const socket = useMemo(
@@ -93,6 +104,7 @@ export const ChatNotificationsProvider = ({ children }) => {
             setTrackedServiceIds([]);
             setGeneralChats([]);
             setUnreadByGeneral({});
+            setShiftSwapUnread(0);
             setTrackedGeneralChatIds([]);
             return;
         }
@@ -102,6 +114,7 @@ export const ChatNotificationsProvider = ({ children }) => {
             setUnreadByService({});
             setGeneralChats([]);
             setUnreadByGeneral({});
+            setShiftSwapUnread(0);
             return;
         }
 
@@ -202,6 +215,17 @@ export const ChatNotificationsProvider = ({ children }) => {
     }, [generalStorageKey]);
 
     useEffect(() => {
+        if (!shiftSwapStorageKey) return;
+        try {
+            const raw = localStorage.getItem(shiftSwapStorageKey);
+            if (!raw) return;
+            setShiftSwapUnread(Number(raw) || 0);
+        } catch {
+            // ignore storage errors
+        }
+    }, [shiftSwapStorageKey]);
+
+    useEffect(() => {
         if (!authToken || !user) return;
         if (user.role === 'client') return;
 
@@ -217,6 +241,40 @@ export const ChatNotificationsProvider = ({ children }) => {
         };
 
         loadUnread();
+    }, [authToken, user]);
+
+    useEffect(() => {
+        if (!authToken || !user) return;
+        if (user.role === 'client') return;
+
+        const loadShiftSwapUnread = async () => {
+            try {
+                const isAdmin =
+                    user.role === 'admin' || user.role === 'sudo';
+                const rows = isAdmin
+                    ? await fetchAdminShiftSwapRequests(authToken)
+                    : await fetchMyShiftSwapRequests(authToken);
+                const list = Array.isArray(rows) ? rows : rows?.data || [];
+                const actionable = list.filter((request) => {
+                    if (isAdmin) {
+                        return (
+                            request.status === 'pending_counterpart' ||
+                            request.status === 'pending_admin' ||
+                            request.status === 'pending'
+                        );
+                    }
+                    return (
+                        request.status === 'pending_counterpart' &&
+                        request.counterpartId === user.id
+                    );
+                }).length;
+                setShiftSwapUnread(actionable);
+            } catch {
+                // ignore errors to avoid blocking
+            }
+        };
+
+        loadShiftSwapUnread();
     }, [authToken, user]);
 
     useEffect(() => {
@@ -260,6 +318,18 @@ export const ChatNotificationsProvider = ({ children }) => {
             // ignore storage errors
         }
     }, [generalStorageKey, unreadByGeneral]);
+
+    useEffect(() => {
+        if (!shiftSwapStorageKey) return;
+        try {
+            localStorage.setItem(
+                shiftSwapStorageKey,
+                String(shiftSwapUnread || 0)
+            );
+        } catch {
+            // ignore storage errors
+        }
+    }, [shiftSwapStorageKey, shiftSwapUnread]);
 
     useEffect(() => {
         if (!socket || !user) return;
@@ -334,14 +404,30 @@ export const ChatNotificationsProvider = ({ children }) => {
             });
         };
 
+        const handleShiftSwapEvent = (request) => {
+            if (!request?.id) return;
+            setShiftSwapUnread((prev) => (prev || 0) + 1);
+            toast('Cambios de turno: nueva alerta', {
+                id: `shift-swap-${request.id}-${request.status || 'event'}`,
+            });
+        };
+
         socket.on('connect', handleConnect);
         socket.on('chat:message', handleMessage);
         socket.on('generalChat:message', handleGeneralMessage);
+        socket.on('shiftSwap:created', handleShiftSwapEvent);
+        socket.on('shiftSwap:confirmed', handleShiftSwapEvent);
+        socket.on('shiftSwap:approved', handleShiftSwapEvent);
+        socket.on('shiftSwap:rejected', handleShiftSwapEvent);
 
         return () => {
             socket.off('connect', handleConnect);
             socket.off('chat:message', handleMessage);
             socket.off('generalChat:message', handleGeneralMessage);
+            socket.off('shiftSwap:created', handleShiftSwapEvent);
+            socket.off('shiftSwap:confirmed', handleShiftSwapEvent);
+            socket.off('shiftSwap:approved', handleShiftSwapEvent);
+            socket.off('shiftSwap:rejected', handleShiftSwapEvent);
             joinServiceIds.forEach((serviceId) => {
                 if (!joinedServiceRooms.current.has(serviceId)) return;
                 socket.emit('chat:leave', { serviceId });
@@ -383,6 +469,11 @@ export const ChatNotificationsProvider = ({ children }) => {
     const resetAllUnread = () => {
         setUnreadByService({});
         setUnreadByGeneral({});
+        setShiftSwapUnread(0);
+    };
+
+    const resetShiftSwapUnread = () => {
+        setShiftSwapUnread(0);
     };
 
     const syncGeneralChats = (nextChats) => {
@@ -403,15 +494,20 @@ export const ChatNotificationsProvider = ({ children }) => {
         [unreadByService, unreadByGeneral]
     );
 
+    const notificationTotal = unreadTotal + (shiftSwapUnread || 0);
+
     return (
         <ChatNotificationsContext.Provider
             value={{
                 unreadByService,
                 unreadByGeneral,
+                shiftSwapUnread,
                 unreadTotal,
+                notificationTotal,
                 resetServiceUnread,
                 resetGeneralUnread,
                 resetAllUnread,
+                resetShiftSwapUnread,
                 syncGeneralChats,
             }}
         >

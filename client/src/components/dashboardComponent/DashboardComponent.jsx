@@ -20,7 +20,8 @@ import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx
 
 const DashboardComponent = () => {
     const { user } = useUser();
-    const { unreadTotal } = useChatNotifications();
+    const { unreadTotal, shiftSwapUnread, resetShiftSwapUnread } =
+        useChatNotifications();
     const [activeSection, setActiveSection] = useState('profile');
     const hasSetDefault = useRef(false);
     const userRole = String(user?.role || '').trim().toLowerCase();
@@ -124,6 +125,12 @@ const DashboardComponent = () => {
         }
     }, [sections, activeSection]);
 
+    useEffect(() => {
+        if (activeSection === 'shiftSwaps') {
+            resetShiftSwapUnread();
+        }
+    }, [activeSection]);
+
     const renderSectionContent = () => {
         if (!user) return null;
 
@@ -226,6 +233,12 @@ const DashboardComponent = () => {
                                 {section.id === 'chats' && unreadTotal > 0 ? (
                                     <span className='dashboard-nav-badge'>
                                         {unreadTotal}
+                                    </span>
+                                ) : null}
+                                {section.id === 'shiftSwaps' &&
+                                shiftSwapUnread > 0 ? (
+                                    <span className='dashboard-nav-badge'>
+                                        {shiftSwapUnread}
                                     </span>
                                 ) : null}
                             </button>

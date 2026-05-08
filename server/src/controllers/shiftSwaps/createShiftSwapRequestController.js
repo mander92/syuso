@@ -1,6 +1,7 @@
 import Joi from 'joi';
 import createShiftSwapRequestService from '../../services/shiftSwaps/createShiftSwapRequestService.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
+import { getIO } from '../../sockets/io.js';
 
 const bodySchema = Joi.object({
     serviceId: Joi.string().uuid().required(),
@@ -27,6 +28,14 @@ const createShiftSwapRequestController = async (req, res, next) => {
             ...value,
             requestorId,
         });
+
+        const io = getIO();
+        if (io) {
+            io.to(`user:${newRequest.counterpartId}`).emit(
+                'shiftSwap:created',
+                newRequest
+            );
+        }
 
         res.status(201).send({
             status: 'ok',
