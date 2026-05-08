@@ -77,7 +77,7 @@ const listAdminShiftSwapRequestsService = async () => {
         INNER JOIN services s ON s.id = ssr.serviceId
         INNER JOIN users requestor ON requestor.id = ssr.requestorId
         INNER JOIN users counterpart ON counterpart.id = ssr.counterpartId
-        WHERE ssr.status IN ('pending_admin', 'pending', 'approved', 'rejected')
+        WHERE ssr.status IN ('pending_counterpart', 'pending_admin', 'pending', 'approved', 'rejected')
         ORDER BY ssr.createdAt DESC
         `
     );

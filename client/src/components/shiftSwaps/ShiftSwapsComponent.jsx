@@ -5,6 +5,7 @@ import { AuthContext } from '../../context/AuthContext.jsx';
 import useUser from '../../hooks/useUser.js';
 import {
     approveShiftSwapRequest,
+    createAdminShiftSwapRequest,
     confirmShiftSwapRequest,
     createShiftSwapRequest,
     fetchAdminShiftSwapRequests,
@@ -61,6 +62,7 @@ const ShiftSwapsComponent = () => {
     const [formServiceId, setFormServiceId] = useState('');
     const [form, setForm] = useState({
         requestType: 'swap',
+        requestorId: '',
         fromShiftIds: [],
         toShiftIds: [],
         counterpartId: '',
@@ -145,9 +147,10 @@ const ShiftSwapsComponent = () => {
 
     const coworkerShiftOptions = useMemo(() => {
         const search = normalizeSearch(coworkerSearch);
+        const requestorId = isAdminLike ? form.requestorId : user?.id;
         const selectedEmployeeIds = new Set(
             serviceEmployees
-                .filter((employee) => employee.id && employee.id !== user?.id)
+                .filter((employee) => employee.id && employee.id !== requestorId)
                 .filter((employee) => {
                     if (!search) return true;
                     return normalizeSearch(
@@ -165,7 +168,7 @@ const ShiftSwapsComponent = () => {
             .filter(
                 (shift) =>
                     shift.employeeId &&
-                    shift.employeeId !== user?.id &&
+                    shift.employeeId !== requestorId &&
                     (!selectedEmployeeIds.size ||
                         selectedEmployeeIds.has(shift.employeeId))
             )
@@ -181,6 +184,8 @@ const ShiftSwapsComponent = () => {
     }, [
         coworkerSearch,
         employeeNameMap,
+        form.requestorId,
+        isAdminLike,
         serviceEmployees,
         serviceShifts,
         user?.id,
@@ -188,14 +193,15 @@ const ShiftSwapsComponent = () => {
 
     const coworkerSearchMatches = useMemo(() => {
         const search = normalizeSearch(coworkerSearch);
+        const requestorId = isAdminLike ? form.requestorId : user?.id;
         if (!search) {
             return serviceEmployees.filter(
-                (employee) => employee.id && employee.id !== user?.id
+                (employee) => employee.id && employee.id !== requestorId
             );
         }
 
         return serviceEmployees
-            .filter((employee) => employee.id && employee.id !== user?.id)
+            .filter((employee) => employee.id && employee.id !== requestorId)
             .filter((employee) =>
                 normalizeSearch(
                     `${employee.firstName || ''} ${
@@ -205,7 +211,7 @@ const ShiftSwapsComponent = () => {
                         ''
                 ).includes(search)
             );
-    }, [coworkerSearch, serviceEmployees, user?.id]);
+    }, [coworkerSearch, form.requestorId, isAdminLike, serviceEmployees, user?.id]);
 
     const coworkerResultGroups = useMemo(() => {
         return coworkerSearchMatches.slice(0, 12).map((employee) => ({
@@ -311,6 +317,7 @@ const ShiftSwapsComponent = () => {
     useEffect(() => {
         setForm((prev) => ({
             ...prev,
+            requestorId: '',
             fromShiftIds: [],
             toShiftIds: [],
             counterpartId: '',
@@ -332,7 +339,11 @@ const ShiftSwapsComponent = () => {
                 setServiceShifts(Array.isArray(team) ? team : []);
                 setMyShifts(
                     Array.isArray(team)
-                        ? team.filter((shift) => shift.employeeId === user?.id)
+                        ? team.filter(
+                              (shift) =>
+                                  shift.employeeId ===
+                                  (isAdminLike ? form.requestorId : user?.id)
+                          )
                         : []
                 );
                 setServiceEmployees(
@@ -364,7 +375,14 @@ const ShiftSwapsComponent = () => {
         };
 
         loadShifts();
-    }, [authToken, formServiceId, month, user?.id]);
+    }, [authToken, formServiceId, isAdminLike, month, user?.id]);
+
+    useEffect(() => {
+        const requestorId = isAdminLike ? form.requestorId : user?.id;
+        setMyShifts(
+            serviceShifts.filter((shift) => shift.employeeId === requestorId)
+        );
+    }, [form.requestorId, isAdminLike, serviceShifts, user?.id]);
 
     const formatShift = (shift) => {
         if (!shift) return '';
@@ -516,6 +534,17 @@ const ShiftSwapsComponent = () => {
         setCoworkerSearch('');
     };
 
+    const handleRequestorSelect = (requestorId) => {
+        setForm((prev) => ({
+            ...prev,
+            requestorId,
+            fromShiftIds: [],
+            toShiftIds: [],
+            counterpartId: '',
+        }));
+        setCoworkerSearch('');
+    };
+
     const handleCounterpartSelect = (employeeId) => {
         setForm((prev) => ({
             ...prev,
@@ -565,6 +594,7 @@ const ShiftSwapsComponent = () => {
         const payload = {
             serviceId: formServiceId,
             requestType: form.requestType,
+            ...(isAdminLike ? { requestorId: form.requestorId } : {}),
             fromShiftIds:
                 form.requestType === 'request' ? [] : form.fromShiftIds,
             toShiftIds:
@@ -575,6 +605,7 @@ const ShiftSwapsComponent = () => {
 
         const missing = Object.entries({
             serviceId: payload.serviceId,
+            requestorId: isAdminLike ? payload.requestorId : true,
             fromShiftIds:
                 payload.requestType === 'request'
                     ? true
@@ -592,17 +623,25 @@ const ShiftSwapsComponent = () => {
 
         try {
             setCreating(true);
-            await createShiftSwapRequest(authToken, payload);
+            await (isAdminLike
+                ? createAdminShiftSwapRequest(authToken, payload)
+                : createShiftSwapRequest(authToken, payload));
             toast.success('Solicitud enviada.');
             setForm((prev) => ({
                 ...prev,
+                requestorId: isAdminLike ? prev.requestorId : '',
                 fromShiftIds: [],
                 toShiftIds: [],
                 counterpartId: '',
                 reason: '',
             }));
-            const mine = await fetchMyShiftSwapRequests(authToken);
-            setMyRequests(Array.isArray(mine) ? mine : mine?.data || []);
+            if (isAdminLike) {
+                const admin = await fetchAdminShiftSwapRequests(authToken);
+                setAdminRequests(Array.isArray(admin) ? admin : admin?.data || []);
+            } else {
+                const mine = await fetchMyShiftSwapRequests(authToken);
+                setMyRequests(Array.isArray(mine) ? mine : mine?.data || []);
+            }
         } catch (error) {
             toast.error(error.message || 'No se pudo crear la solicitud');
         } finally {
@@ -773,6 +812,35 @@ const ShiftSwapsComponent = () => {
                             </select>
                         </label>
 
+                        {isAdminLike ? (
+                            <label className='shift-swaps-field'>
+                                <span>Trabajador que solicita</span>
+                                <select
+                                    value={form.requestorId}
+                                    onChange={(event) =>
+                                        handleRequestorSelect(event.target.value)
+                                    }
+                                    disabled={!formServiceId || loadingShifts}
+                                >
+                                    <option value=''>Selecciona trabajador</option>
+                                    {serviceEmployees.map((employee) => (
+                                        <option
+                                            value={employee.id}
+                                            key={employee.id}
+                                        >
+                                            {employeeNameMap.get(employee.id) ||
+                                                employee.email ||
+                                                employee.id}
+                                        </option>
+                                    ))}
+                                </select>
+                                <small>
+                                    Admin propone el cambio en nombre de este
+                                    trabajador.
+                                </small>
+                            </label>
+                        ) : null}
+
                         <label className='shift-swaps-field'>
                             <span>Operacion</span>
                             <select
@@ -789,12 +857,29 @@ const ShiftSwapsComponent = () => {
 
                         {form.requestType !== 'request' ? (
                             <div className='shift-swaps-field'>
-                                <span>Tus turnos</span>
+                                <span>
+                                    {isAdminLike
+                                        ? `Turnos de ${
+                                              form.requestorId
+                                                  ? describeUser(
+                                                        form.requestorId
+                                                    )
+                                                  : 'trabajador'
+                                          }`
+                                        : 'Tus turnos'}
+                                </span>
                                 <div className='shift-swaps-check-list'>
                                     {loadingShifts ? (
                                         <p>Cargando turnos...</p>
+                                    ) : isAdminLike && !form.requestorId ? (
+                                        <p>
+                                            Selecciona primero el trabajador.
+                                        </p>
                                     ) : !myShifts.length ? (
-                                        <p>No tienes turnos en este servicio y mes.</p>
+                                        <p>
+                                            No hay turnos para ese trabajador en
+                                            este servicio y mes.
+                                        </p>
                                     ) : (
                                         myShifts.map((shift) => (
                                             <label key={shift.id}>
@@ -835,7 +920,11 @@ const ShiftSwapsComponent = () => {
                                         counterpartId: '',
                                     }));
                                 }}
-                                disabled={!formServiceId || loadingShifts}
+                                disabled={
+                                    !formServiceId ||
+                                    loadingShifts ||
+                                    (isAdminLike && !form.requestorId)
+                                }
                             />
 
                             {form.counterpartId ? (

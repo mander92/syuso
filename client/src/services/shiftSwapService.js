@@ -34,6 +34,18 @@ export const createShiftSwapRequest = async (authToken, payload) => {
     return handleResponse(res);
 };
 
+export const createAdminShiftSwapRequest = async (authToken, payload) => {
+    const res = await fetch(`${VITE_API_URL}/shift-swaps/admin`, {
+        method: 'POST',
+        headers: {
+            Authorization: authToken,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+    });
+    return handleResponse(res);
+};
+
 export const approveShiftSwapRequest = async (authToken, requestId) => {
     const res = await fetch(
         `${VITE_API_URL}/shift-swaps/${requestId}/approve`,
