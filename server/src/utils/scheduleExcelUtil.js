@@ -1,178 +1,221 @@
 import fs from 'fs';
 import path from 'path';
 import ExcelJS from 'exceljs';
+import { fileURLToPath } from 'url';
 import { UPLOADS_DIR } from '../../env.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const TEMPLATE_PATH = path.join(__dirname, '../templates/schedule-template.xlsx');
 const DAY_START_COL = 5;
+const DAY_END_COL = 35;
 const FIRST_EMPLOYEE_ROW = 12;
 const EMPLOYEE_BLOCK_SIZE = 4;
+const EMPLOYEE_BLOCKS_PER_SHEET = 9;
 
 const ensureDir = async (dirPath) => {
     await fs.promises.mkdir(dirPath, { recursive: true });
 };
 
+const cloneValue = (value) => {
+    if (value instanceof Date) return new Date(value.getTime());
+    if (value && typeof value === 'object') return JSON.parse(JSON.stringify(value));
+    return value;
+};
+
+const cloneWorksheetFromTemplate = (source, target) => {
+    target.properties = { ...source.properties };
+    target.pageSetup = JSON.parse(JSON.stringify(source.pageSetup || {}));
+    target.pageMargins = JSON.parse(JSON.stringify(source.pageMargins || {}));
+    target.headerFooter = JSON.parse(JSON.stringify(source.headerFooter || {}));
+    target.views = JSON.parse(JSON.stringify(source.views || []));
+    target.autoFilter = source.autoFilter;
+
+    source.columns.forEach((column, index) => {
+        target.getColumn(index + 1).width = column.width;
+        target.getColumn(index + 1).hidden = column.hidden;
+        target.getColumn(index + 1).outlineLevel = column.outlineLevel;
+        target.getColumn(index + 1).style = JSON.parse(
+            JSON.stringify(column.style || {})
+        );
+    });
+
+    source.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+        const targetRow = target.getRow(rowNumber);
+        targetRow.height = row.height;
+        targetRow.hidden = row.hidden;
+        targetRow.outlineLevel = row.outlineLevel;
+
+        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+            const targetCell = target.getCell(rowNumber, colNumber);
+            targetCell.value = cloneValue(cell.value);
+            targetCell.style = JSON.parse(JSON.stringify(cell.style || {}));
+            if (cell.numFmt) targetCell.numFmt = cell.numFmt;
+        });
+    });
+
+    (source.model.merges || []).forEach((merge) => target.mergeCells(merge));
+};
+
 const getMonthDays = (month) => {
     const [year, monthValue] = month.split('-').map(Number);
     const daysInMonth = new Date(Date.UTC(year, monthValue, 0)).getUTCDate();
-    const weekdays = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+    const weekdays = ['do', 'lu', 'ma', 'mie', 'ju', 'vi', 'sa'];
 
-    return Array.from({ length: daysInMonth }, (_, index) => {
+    return Array.from({ length: 31 }, (_, index) => {
         const dayNumber = index + 1;
+        if (dayNumber > daysInMonth) {
+            return { dayNumber: '', weekday: '', dateKey: '' };
+        }
         const date = new Date(Date.UTC(year, monthValue - 1, dayNumber));
-        const weekday = weekdays[date.getUTCDay()];
-        const isWeekend = weekday === 'S' || weekday === 'D';
         const dateKey = `${year}-${String(monthValue).padStart(2, '0')}-${String(
             dayNumber
         ).padStart(2, '0')}`;
-        return { dayNumber, weekday, isWeekend, dateKey };
+        return {
+            dayNumber,
+            weekday: weekdays[date.getUTCDay()],
+            dateKey,
+        };
     });
 };
 
-const formatMonthLabel = (month) => {
+const parseTime = (value) => {
+    const text = String(value || '').split('\n')[0].trim();
+    const match = text.match(/^(\d{1,2}):(\d{2})/);
+    if (!match) return null;
+
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+
+    return (hours * 60 + minutes) / (24 * 60);
+};
+
+const calculateDuration = (start, end) => {
+    if (start === null || end === null) return null;
+    return end >= start ? end - start : end - start + 1;
+};
+
+const fillMonth = (worksheet, month) => {
     const [year, monthValue] = month.split('-').map(Number);
-    return new Intl.DateTimeFormat('es-ES', {
-        timeZone: 'Europe/Madrid',
-        month: 'long',
-        year: 'numeric',
-    })
-        .format(new Date(Date.UTC(year, monthValue - 1, 1)))
-        .toUpperCase();
+    worksheet.getCell('A5').value = new Date(Date.UTC(year, monthValue - 1, 1));
 };
 
-const applyBorder = (cell) => {
-    cell.border = {
-        top: { style: 'thin', color: { argb: 'FF9CA3AF' } },
-        left: { style: 'thin', color: { argb: 'FF9CA3AF' } },
-        bottom: { style: 'thin', color: { argb: 'FF9CA3AF' } },
-        right: { style: 'thin', color: { argb: 'FF9CA3AF' } },
-    };
+const fillServiceMeta = (worksheet, meta) => {
+    worksheet.getCell('K2').value = meta.center || '';
+    worksheet.getCell('K3').value = meta.phone || '';
+    worksheet.getCell('AA3').value = meta.category || '';
+    worksheet.getCell('K4').value = meta.address || '';
+    worksheet.getCell('N5').value = meta.description || '';
 };
 
-const styleCell = (cell, options = {}) => {
-    cell.alignment = {
-        vertical: 'middle',
-        horizontal: options.horizontal || 'center',
-        wrapText: true,
-    };
-    cell.font = {
-        name: 'Arial',
-        size: options.size || 8,
-        bold: Boolean(options.bold),
-        color: { argb: options.color || 'FF111827' },
-    };
-    if (options.fill) {
-        cell.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: options.fill },
+const fillDays = (worksheet, month) => {
+    const days = getMonthDays(month);
+    days.forEach((day, index) => {
+        const col = DAY_START_COL + index;
+        worksheet.getCell(9, col).value = day.weekday;
+        worksheet.getCell(10, col).value = day.dayNumber;
+    });
+};
+
+const clearEmployeeBlock = (worksheet, baseRow) => {
+    worksheet.getCell(baseRow, 1).value = null;
+    worksheet.getCell(baseRow + 1, 1).value = null;
+
+    for (let col = DAY_START_COL; col <= DAY_END_COL; col += 1) {
+        worksheet.getCell(baseRow, col).value = null;
+        worksheet.getCell(baseRow + 1, col).value = null;
+        worksheet.getCell(baseRow + 2, col).value = {
+            formula: `IF(${worksheet.getCell(baseRow, col).address}>0,IF(${worksheet.getCell(baseRow, col).address}>${worksheet.getCell(baseRow + 1, col).address},${worksheet.getCell(baseRow + 1, col).address}-${worksheet.getCell(baseRow, col).address}+1,(${worksheet.getCell(baseRow + 1, col).address}-${worksheet.getCell(baseRow, col).address})),"-")`,
+            result: '-',
         };
     }
-    applyBorder(cell);
+
+    worksheet.getCell(baseRow, 36).value = {
+        formula: `SUM(E${baseRow + 2}:AI${baseRow + 2})`,
+        result: null,
+    };
 };
 
-const addHeader = (worksheet, section, monthLabel) => {
-    worksheet.mergeCells('A1:D2');
-    worksheet.getCell('A1').value = 'Mes y Año';
-    worksheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
-    worksheet.getCell('A1').font = { name: 'Arial', size: 12, bold: true };
+const fillEmployeeBlock = (worksheet, row, days, blockIndex, dailyTotals) => {
+    const baseRow = FIRST_EMPLOYEE_ROW + blockIndex * EMPLOYEE_BLOCK_SIZE;
+    clearEmployeeBlock(worksheet, baseRow);
+    worksheet.getCell(baseRow, 1).value = row.name || '';
+    let employeeTotal = 0;
 
-    worksheet.mergeCells('E1:J2');
-    worksheet.getCell('E1').value = monthLabel;
-
-    worksheet.mergeCells('K1:AI2');
-    worksheet.getCell('K1').value = section.meta.center || '';
-
-    worksheet.getCell('A4').value = 'Centro:';
-    worksheet.getCell('B4').value = section.meta.center || '';
-    worksheet.getCell('A5').value = 'Telefono:';
-    worksheet.getCell('B5').value = section.meta.phone || '';
-    worksheet.getCell('A6').value = 'Direccion:';
-    worksheet.getCell('B6').value = section.meta.address || '';
-    worksheet.getCell('A7').value = 'Categoria:';
-    worksheet.getCell('B7').value = section.meta.category || '';
-    worksheet.getCell('F5').value = 'Descripcion del servicio:';
-    worksheet.getCell('K5').value = section.meta.description || '';
-
-    ['A4', 'A5', 'A6', 'A7', 'F5'].forEach((address) => {
-        worksheet.getCell(address).font = { name: 'Arial', size: 9, bold: true };
-    });
-
-    ['E1', 'K1'].forEach((address) => {
-        worksheet.getCell(address).alignment = {
-            vertical: 'middle',
-            horizontal: 'center',
-            wrapText: true,
-        };
-        worksheet.getCell(address).font = { name: 'Arial', size: 12, bold: true };
-    });
-
-    worksheet.mergeCells('A10:C11');
-    worksheet.getCell('A10').value = 'Dos apellidos y nombre';
-    styleCell(worksheet.getCell('A10'), { bold: true, fill: 'FFE5E7EB' });
-    worksheet.getCell('D10').value = '';
-    styleCell(worksheet.getCell('D10'), { bold: true, fill: 'FFE5E7EB' });
-    worksheet.getCell('D11').value = '';
-    styleCell(worksheet.getCell('D11'), { bold: true, fill: 'FFE5E7EB' });
-
-    worksheet.mergeCells('AJ10:AJ11');
-    worksheet.getCell('AJ10').value = 'TOTAL HORAS';
-    styleCell(worksheet.getCell('AJ10'), { bold: true, fill: 'FFE5E7EB' });
-};
-
-const addDays = (worksheet, days) => {
     days.forEach((day, index) => {
-        const column = DAY_START_COL + index;
-        const weekdayCell = worksheet.getCell(9, column);
-        const dayCell = worksheet.getCell(10, column);
+        if (!day.dateKey) return;
+        const col = DAY_START_COL + index;
+        const start = parseTime(row.startsByDay?.[day.dateKey]);
+        const end = parseTime(row.endsByDay?.[day.dateKey]);
+        const duration = calculateDuration(start, end);
 
-        weekdayCell.value = day.weekday;
-        dayCell.value = day.dayNumber;
+        worksheet.getCell(baseRow, col).value = start;
+        worksheet.getCell(baseRow + 1, col).value = end;
+        worksheet.getCell(baseRow + 2, col).value = {
+            formula: `IF(${worksheet.getCell(baseRow, col).address}>0,IF(${worksheet.getCell(baseRow, col).address}>${worksheet.getCell(baseRow + 1, col).address},${worksheet.getCell(baseRow + 1, col).address}-${worksheet.getCell(baseRow, col).address}+1,(${worksheet.getCell(baseRow + 1, col).address}-${worksheet.getCell(baseRow, col).address})),"-")`,
+            result: duration === null ? '-' : duration,
+        };
 
-        const fill = day.isWeekend ? 'FFFFD6D6' : 'FFF3F4F6';
-        styleCell(weekdayCell, { bold: true, fill });
-        styleCell(dayCell, { bold: true, fill });
+        if (duration !== null) {
+            dailyTotals[index] = (dailyTotals[index] || 0) + duration;
+            employeeTotal += duration;
+        }
     });
+
+    worksheet.getCell(baseRow, 36).value = {
+        formula: `SUM(E${baseRow + 2}:AI${baseRow + 2})`,
+        result: employeeTotal || null,
+    };
 };
 
-const addRows = (worksheet, days, rows) => {
-    rows.forEach((row, rowIndex) => {
-        const baseRow = FIRST_EMPLOYEE_ROW + rowIndex * EMPLOYEE_BLOCK_SIZE;
+const fillSheetTotals = (worksheet, dailyTotals) => {
+    const hourRows = Array.from({ length: EMPLOYEE_BLOCKS_PER_SHEET }, (_, index) =>
+        FIRST_EMPLOYEE_ROW + index * EMPLOYEE_BLOCK_SIZE + 2
+    );
+    let monthlyTotal = 0;
 
-        worksheet.mergeCells(baseRow, 1, baseRow + 2, 3);
-        const nameCell = worksheet.getCell(baseRow, 1);
-        nameCell.value = row.name;
-        styleCell(nameCell, { bold: true, horizontal: 'left' });
+    for (let col = DAY_START_COL; col <= DAY_END_COL; col += 1) {
+        const index = col - DAY_START_COL;
+        const total = dailyTotals[index] || 0;
+        monthlyTotal += total;
+        worksheet.getCell(48, col).value = {
+            formula: `SUM(${hourRows
+                .map((rowNumber) => worksheet.getCell(rowNumber, col).address)
+                .join(',')})`,
+            result: total || null,
+        };
+    }
 
-        worksheet.getCell(baseRow, 4).value = 'Entrada';
-        worksheet.getCell(baseRow + 1, 4).value = 'Salida';
-        worksheet.getCell(baseRow + 2, 4).value = 'Horas';
+    worksheet.getCell(48, 36).value = {
+        formula: 'SUM(E48:AI48)',
+        result: monthlyTotal || null,
+    };
+    worksheet.getCell(50, 36).value = {
+        formula: 'SUM(AJ12,AJ16,AJ20,AJ24,AJ28,AJ32,AJ36,AJ40,AJ44)',
+        result: monthlyTotal || null,
+    };
+};
 
-        [baseRow, baseRow + 1, baseRow + 2].forEach((line) => {
-            worksheet.getRow(line).height = 18;
-            styleCell(worksheet.getCell(line, 4), { bold: true, fill: 'FFF9FAFB' });
-        });
+const prepareSheet = (worksheet, section, rows) => {
+    fillMonth(worksheet, section.month);
+    fillServiceMeta(worksheet, section.meta || {});
+    fillDays(worksheet, section.month);
 
-        days.forEach((day, index) => {
-            const column = DAY_START_COL + index;
-            const fill = day.isWeekend ? 'FFFFECEC' : undefined;
-            const startCell = worksheet.getCell(baseRow, column);
-            const endCell = worksheet.getCell(baseRow + 1, column);
-            const hoursCell = worksheet.getCell(baseRow + 2, column);
+    for (let index = 0; index < EMPLOYEE_BLOCKS_PER_SHEET; index += 1) {
+        clearEmployeeBlock(
+            worksheet,
+            FIRST_EMPLOYEE_ROW + index * EMPLOYEE_BLOCK_SIZE
+        );
+    }
 
-            startCell.value = row.startsByDay?.[day.dateKey] || '';
-            endCell.value = row.endsByDay?.[day.dateKey] || '';
-            hoursCell.value = row.hoursByDay?.[day.dateKey] || '';
-
-            styleCell(startCell, { fill });
-            styleCell(endCell, { fill });
-            styleCell(hoursCell, { fill });
-        });
-
-        worksheet.mergeCells(baseRow, 36, baseRow + 2, 36);
-        const totalCell = worksheet.getCell(baseRow, 36);
-        totalCell.value = row.totalHours || '';
-        styleCell(totalCell, { bold: true, fill: 'FFF9FAFB' });
-    });
+    const days = getMonthDays(section.month);
+    const dailyTotals = Array.from({ length: 31 }, () => 0);
+    rows.forEach((row, index) =>
+        fillEmployeeBlock(worksheet, row, days, index, dailyTotals)
+    );
+    fillSheetTotals(worksheet, dailyTotals);
 };
 
 export const createScheduleGridExcelUtil = async ({ sections, fileName }) => {
@@ -181,37 +224,47 @@ export const createScheduleGridExcelUtil = async ({ sections, fileName }) => {
 
     const safeFileName = fileName || `schedule-${Date.now()}.xlsx`;
     const filePath = path.join(baseDir, safeFileName);
+
+    const templateWorkbook = new ExcelJS.Workbook();
+    await templateWorkbook.xlsx.readFile(TEMPLATE_PATH);
+    const pristineSheet =
+        templateWorkbook.getWorksheet('VIGILANTES') || templateWorkbook.worksheets[0];
+
     const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile(TEMPLATE_PATH);
     workbook.creator = 'SYUSO';
+    workbook.modified = new Date();
+    workbook.calcProperties.fullCalcOnLoad = true;
 
-    sections.forEach((section, index) => {
-        const worksheet = workbook.addWorksheet(
-            index === 0 ? 'VIGILANTES' : `VIGILANTES ${index + 1}`
-        );
-        const days = getMonthDays(section.month);
-        const monthLabel = formatMonthLabel(section.month);
+    const templateSheet = workbook.getWorksheet('VIGILANTES') || workbook.worksheets[0];
+    const sheetModels = [];
 
-        worksheet.pageSetup = {
-            paperSize: 9,
-            orientation: 'landscape',
-            fitToPage: true,
-            fitToWidth: 1,
-            fitToHeight: 0,
-        };
-        worksheet.views = [{ showGridLines: false }];
+    sections.forEach((section) => {
+        const rows = section.rows || [];
+        const chunks = [];
+        for (let index = 0; index < Math.max(rows.length, 1); index += EMPLOYEE_BLOCKS_PER_SHEET) {
+            chunks.push(rows.slice(index, index + EMPLOYEE_BLOCKS_PER_SHEET));
+        }
+        sheetModels.push({ section, chunks });
+    });
 
-        worksheet.columns = [
-            { width: 12 },
-            { width: 12 },
-            { width: 12 },
-            { width: 12 },
-            ...Array.from({ length: 31 }, () => ({ width: 5 })),
-            { width: 10 },
-        ];
+    let sheetIndex = 0;
+    sheetModels.forEach(({ section, chunks }) => {
+        chunks.forEach((rows) => {
+            const worksheet =
+                sheetIndex === 0
+                    ? templateSheet
+                    : workbook.addWorksheet(
+                          `VIGILANTES ${String(sheetIndex + 1).padStart(2, '0')}`
+                      );
 
-        addHeader(worksheet, section, monthLabel);
-        addDays(worksheet, days);
-        addRows(worksheet, days, section.rows);
+            if (sheetIndex > 0) {
+                cloneWorksheetFromTemplate(pristineSheet, worksheet);
+            }
+
+            prepareSheet(worksheet, section, rows);
+            sheetIndex += 1;
+        });
     });
 
     await workbook.xlsx.writeFile(filePath);
