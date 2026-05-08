@@ -40,7 +40,6 @@ const DashboardComponent = () => {
                 { id: 'chats', label: 'Chats' },
                 { id: 'workReports', label: 'Partes de trabajo' },
                 { id: 'users', label: 'Usuarios' },
-                { id: 'services', label: 'Tipos de servicios' },
                 { id: 'profile', label: 'Mi perfil' },
             ];
             if (userRole === 'sudo') {

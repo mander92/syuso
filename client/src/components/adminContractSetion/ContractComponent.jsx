@@ -341,6 +341,18 @@ const ContractsComponent = () => {
                 </div>
 
                 {user?.role !== 'client' && (
+                    <div className='contracts-header-actions'>
+                        {isAdminLike && (
+                            <button
+                                type='button'
+                                className='contracts-btn'
+                                onClick={() =>
+                                    navigate('/services/createcontract')
+                                }
+                            >
+                                Nuevo servicio
+                            </button>
+                        )}
                     <form className='contracts-filters'>
                         <div className='contracts-filter'>
                         <label htmlFor='status'>Estado</label>
@@ -414,6 +426,7 @@ const ContractsComponent = () => {
                         </button>
                         </div>
                     </form>
+                    </div>
                 )}
             </div>
 
