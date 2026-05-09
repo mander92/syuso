@@ -52,6 +52,48 @@
     gap: 16px;
 }
 
+.service-chat-dashboard-group {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.service-chat-dashboard-group-toggle {
+    width: 100%;
+    border: 0;
+    background: #f8fafc;
+    color: #0f172a;
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 14px;
+    text-align: left;
+}
+
+.service-chat-dashboard-group-toggle span:first-child {
+    font-weight: 700;
+}
+
+.service-chat-dashboard-group-toggle strong {
+    color: #475569;
+    font-size: 0.86rem;
+}
+
+.service-chat-dashboard-group-toggle span:last-child {
+    color: #1d4ed8;
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
+.service-chat-dashboard-group-list {
+    display: grid;
+    gap: 12px;
+    padding: 12px;
+}
+
 .service-chat-dashboard-card {
     background: #ffffff;
     border-radius: 12px;
@@ -115,6 +157,10 @@
     .service-chat-dashboard-card {
         padding: 18px;
         gap: 18px;
+    }
+
+    .service-chat-dashboard-group-toggle {
+        grid-template-columns: 1fr;
     }
 
     .service-chat-dashboard-card-row {

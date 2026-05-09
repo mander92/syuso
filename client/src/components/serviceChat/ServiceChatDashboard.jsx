@@ -17,6 +17,7 @@ const ServiceChatDashboard = () => {
     const { unreadByService, resetServiceUnread } = useChatNotifications();
     const [services, setServices] = useState([]);
     const [openChats, setOpenChats] = useState({});
+    const [expandedDelegations, setExpandedDelegations] = useState({});
     const [searchText, setSearchText] = useState('');
     const [statusFilter, setStatusFilter] = useState('confirmed');
     const [dateFrom, setDateFrom] = useState('');
@@ -29,6 +30,10 @@ const ServiceChatDashboard = () => {
             .replace(/[\u0300-\u036f]/g, '')
             .toLowerCase()
             .trim();
+    const compareText = (a, b) =>
+        String(a || '').localeCompare(String(b || ''), 'es', {
+            sensitivity: 'base',
+        });
     useEffect(() => {
         const loadServices = async () => {
             if (!authToken || !user) return;
@@ -101,12 +106,56 @@ const ServiceChatDashboard = () => {
                 });
             });
 
-            return Array.from(uniqueMap.values()).filter((service) =>
-                query ? normalizeText(service.name).includes(query) : true
-            );
+            return Array.from(uniqueMap.values())
+                .filter((service) =>
+                    query
+                        ? normalizeText(
+                              `${service.name} ${service.delegation}`
+                          ).includes(query)
+                        : true
+                )
+                .sort((a, b) => compareText(a.name, b.name));
         },
         [services, searchText]
     );
+
+    const servicesByDelegation = useMemo(() => {
+        const groups = new Map();
+        normalizedServices.forEach((service) => {
+            const delegation = service.delegation || 'Sin delegacion';
+            if (!groups.has(delegation)) groups.set(delegation, []);
+            groups.get(delegation).push(service);
+        });
+
+        return [...groups.entries()]
+            .sort(([a], [b]) => compareText(a, b))
+            .map(([delegation, rows]) => ({
+                delegation,
+                rows,
+            }));
+    }, [normalizedServices]);
+
+    useEffect(() => {
+        if (!servicesByDelegation.length) {
+            setExpandedDelegations({});
+            return;
+        }
+
+        setExpandedDelegations((prev) => {
+            const next = {};
+            servicesByDelegation.forEach((group) => {
+                next[group.delegation] = prev[group.delegation] ?? false;
+            });
+            return next;
+        });
+    }, [servicesByDelegation]);
+
+    const toggleDelegation = (delegation) => {
+        setExpandedDelegations((prev) => ({
+            ...prev,
+            [delegation]: !prev[delegation],
+        }));
+    };
 
     const toggleChat = (serviceId) => {
         setOpenChats((prev) => ({
@@ -188,37 +237,69 @@ const ServiceChatDashboard = () => {
                 <p className='service-chat-dashboard-loading'>
                     Cargando chats...
                 </p>
-            ) : normalizedServices.length ? (
+            ) : servicesByDelegation.length ? (
                 <div className='service-chat-dashboard-list'>
-                    {normalizedServices.map((service) => (
+                    {servicesByDelegation.map((group) => (
                         <div
-                            key={service.id}
-                            className='service-chat-dashboard-card'
+                            className='service-chat-dashboard-group'
+                            key={group.delegation}
                         >
-                            <div className='service-chat-dashboard-card-row'>
-                                <h3>{service.displayName || service.name}</h3>
-                                <button
-                                    type='button'
-                                    className='service-chat-dashboard-btn'
-                                    onClick={() => toggleChat(service.id)}
-                                >
-                                    {openChats[service.id]
-                                        ? 'Cerrar chat'
-                                        : 'Abrir chat'}
-                                    {unreadByService?.[service.id] ? (
-                                        <span className='service-chat-badge'>
-                                            {unreadByService[service.id]}
-                                        </span>
-                                    ) : null}
-                                </button>
-                            </div>
-                            {openChats[service.id] && (
-                                <ServiceChat
-                                    serviceId={service.id}
-                                    title={`Chat: ${service.name}`}
-                                    compact
-                                />
-                            )}
+                            <button
+                                type='button'
+                                className='service-chat-dashboard-group-toggle'
+                                onClick={() => toggleDelegation(group.delegation)}
+                            >
+                                <span>{group.delegation}</span>
+                                <strong>{group.rows.length} chats</strong>
+                                <span>
+                                    {expandedDelegations[group.delegation]
+                                        ? 'Ocultar'
+                                        : 'Mostrar'}
+                                </span>
+                            </button>
+                            {expandedDelegations[group.delegation] ? (
+                                <div className='service-chat-dashboard-group-list'>
+                                    {group.rows.map((service) => (
+                                        <div
+                                            key={service.id}
+                                            className='service-chat-dashboard-card'
+                                        >
+                                            <div className='service-chat-dashboard-card-row'>
+                                                <h3>{service.name}</h3>
+                                                <button
+                                                    type='button'
+                                                    className='service-chat-dashboard-btn'
+                                                    onClick={() =>
+                                                        toggleChat(service.id)
+                                                    }
+                                                >
+                                                    {openChats[service.id]
+                                                        ? 'Cerrar chat'
+                                                        : 'Abrir chat'}
+                                                    {unreadByService?.[
+                                                        service.id
+                                                    ] ? (
+                                                        <span className='service-chat-badge'>
+                                                            {
+                                                                unreadByService[
+                                                                    service.id
+                                                                ]
+                                                            }
+                                                        </span>
+                                                    ) : null}
+                                                </button>
+                                            </div>
+                                            {openChats[service.id] && (
+                                                <ServiceChat
+                                                    serviceId={service.id}
+                                                    title={`Chat: ${service.name}`}
+                                                    compact
+                                                />
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : null}
                         </div>
                     ))}
                 </div>
