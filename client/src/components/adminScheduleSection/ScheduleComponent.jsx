@@ -363,7 +363,7 @@ const ScheduleComponent = () => {
         setExpandedScheduleDelegations((prev) => {
             const next = {};
             scheduleCardsByDelegation.forEach((group) => {
-                next[group.delegation] = prev[group.delegation] ?? true;
+                next[group.delegation] = prev[group.delegation] ?? false;
             });
             return next;
         });
@@ -554,7 +554,7 @@ const ScheduleComponent = () => {
         setExpandedPersonalDelegations((prev) => {
             const next = {};
             personalRowsByDelegation.forEach((group) => {
-                next[group.delegation] = prev[group.delegation] ?? true;
+                next[group.delegation] = prev[group.delegation] ?? false;
             });
             return next;
         });

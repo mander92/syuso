@@ -232,7 +232,7 @@ const AdminUsersSection = () => {
         setExpandedUserDelegations((prev) => {
             const next = {};
             usersByDelegation.forEach((group) => {
-                next[group.delegation] = prev[group.delegation] ?? true;
+                next[group.delegation] = prev[group.delegation] ?? false;
             });
             return next;
         });

@@ -246,7 +246,7 @@ const ContractsComponent = () => {
         setExpandedDelegations((prev) => {
             const next = {};
             servicesByDelegation.forEach((group) => {
-                next[group.delegation] = prev[group.delegation] ?? true;
+                next[group.delegation] = prev[group.delegation] ?? false;
             });
             return next;
         });
