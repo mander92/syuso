@@ -426,6 +426,8 @@
     margin-top: 16px;
     border-top: 1px solid #e2e8f0;
     padding-top: 12px;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .service-detail-employee-search h3 {
@@ -452,6 +454,13 @@
     border-radius: 10px;
     background: #f8fafc;
     border: 1px solid #e2e8f0;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.service-detail-employee > div {
+    min-width: 0;
 }
 
 .service-detail-employee--active {
@@ -470,6 +479,7 @@
     margin-top: 4px;
     color: #475569;
     font-size: 0.85rem;
+    overflow-wrap: anywhere;
 }
 
 .service-detail-btn {
@@ -550,10 +560,47 @@
 
 .service-detail-card .form-filters {
     margin-bottom: 12px;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.service-detail-card .form-filters input,
+.service-detail-card .form-filters select,
+.service-detail-card .form-filters button {
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 .service-detail-card .cards {
     gap: 12px;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+}
+
+.service-detail-card .cards li {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.service-detail-card .cards li img {
+    max-width: 100%;
+    height: auto;
+    align-self: center;
+}
+
+.service-detail-card .cards li h3,
+.service-detail-card .cards li p {
+    overflow-wrap: anywhere;
+}
+
+.service-detail-card .cards li button {
+    max-width: 100%;
+    white-space: normal;
 }
 
 .service-detail-empty {
@@ -623,5 +670,29 @@
 
     .service-detail-summary-actions button {
         width: 100%;
+    }
+
+    .service-detail-employee {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .service-detail-btn {
+        width: 100%;
+    }
+
+    .service-detail-card .form-filters {
+        align-items: stretch;
+        width: 100%;
+    }
+
+    .service-detail-card .form-filters input,
+    .service-detail-card .form-filters select,
+    .service-detail-card .form-filters button {
+        width: 100%;
+    }
+
+    .service-detail-card .cards {
+        grid-template-columns: 1fr;
     }
 }
