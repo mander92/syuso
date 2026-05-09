@@ -53,6 +53,23 @@ const normalizeDateTime = (value) => {
     return value;
 };
 
+const normalizeSignatureImage = async (signatureDataUrl) => {
+    const signatureBase64 = String(signatureDataUrl || '').replace(
+        /^data:image\/png;base64,/,
+        ''
+    );
+
+    if (!signatureBase64 || signatureBase64.length < 50) {
+        generateErrorUtil('Firma invalida', 400);
+    }
+
+    const signatureBuffer = Buffer.from(signatureBase64, 'base64');
+    return sharp(signatureBuffer)
+        .flatten({ background: '#ffffff' })
+        .png()
+        .toBuffer();
+};
+
 const buildReportSvg = (payload, signatureDataUrl) => {
     const width = 1240;
     const height = 1754;
@@ -115,7 +132,8 @@ const createInspectionPdf = async (
     pdfPath,
     reportData,
     logoPath,
-    signatureSource,
+    inspectorSignatureSource,
+    guardSignatureSource,
     photoPaths = []
 ) => {
     await new Promise((resolve, reject) => {
@@ -336,21 +354,43 @@ const createInspectionPdf = async (
             }
         }
 
-        if (signatureSource) {
+        if (inspectorSignatureSource || guardSignatureSource) {
             ensureSpace(92);
             doc.moveDown(0.8);
-            doc.fontSize(11).text('Firma vigilante', {
-                align: 'right',
+            const signatureWidth = 150;
+            const signatureHeight = 64;
+            const gap = 24;
+            const leftX = doc.page.margins.left;
+            const rightX = leftX + signatureWidth + gap;
+            const y = doc.y;
+
+            doc.fontSize(11).text('Firma inspector', leftX, y, {
+                width: signatureWidth,
+                align: 'center',
             });
-            try {
-                doc.image(
-                    signatureSource,
-                    doc.page.width - doc.page.margins.right - 150,
-                    doc.y + 4,
-                    { fit: [150, 64] }
-                );
-            } catch (error) {
-                // ignore missing signature
+            doc.fontSize(11).text('Firma vigilante', rightX, y, {
+                width: signatureWidth,
+                align: 'center',
+            });
+
+            if (inspectorSignatureSource) {
+                try {
+                    doc.image(inspectorSignatureSource, leftX, y + 18, {
+                        fit: [signatureWidth, signatureHeight],
+                    });
+                } catch (error) {
+                    // ignore missing signature
+                }
+            }
+
+            if (guardSignatureSource) {
+                try {
+                    doc.image(guardSignatureSource, rightX, y + 18, {
+                        fit: [signatureWidth, signatureHeight],
+                    });
+                } catch (error) {
+                    // ignore missing signature
+                }
             }
         }
 
@@ -622,18 +662,11 @@ const createWorkReportService = async ({
     const reportImagePath = path.join(reportDir, `${reportId}.png`);
     const reportPdfPath = path.join(pdfDir, `${reportId}.pdf`);
 
-    const signatureBase64 = reportData.signature.replace(
-        /^data:image\/png;base64,/, ''
-    );
-
-    if (!signatureBase64 || signatureBase64.length < 50) {
-        generateErrorUtil('Firma invalida', 400);
-    }
-    const signatureBuffer = Buffer.from(signatureBase64, 'base64');
-    const signatureImage = await sharp(signatureBuffer)
-        .flatten({ background: '#ffffff' })
-        .png()
-        .toBuffer();
+    const signatureImage = await normalizeSignatureImage(reportData.signature);
+    const guardSignatureImage =
+        reportData.reportType === 'inspection' && reportData.guardSignature
+            ? await normalizeSignatureImage(reportData.guardSignature)
+            : null;
     await fsPromises.writeFile(signaturePath, signatureImage);
     const keepAssets = process.env.WORKREPORT_KEEP_ASSETS === '1';
     if (keepAssets) {
@@ -825,6 +858,7 @@ const createWorkReportService = async ({
             svgPayload,
             logoPath,
             signatureImage,
+            guardSignatureImage,
             inspectionPhotoFiles
         );
     } else if (normalizedIncidents.length) {

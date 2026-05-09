@@ -29,6 +29,14 @@ const schema = Joi.object({
         .pattern(/^data:image\/png;base64,/)
         .min(100)
         .required(),
+    guardSignature: Joi.when('reportType', {
+        is: 'inspection',
+        then: Joi.string()
+            .pattern(/^data:image\/png;base64,/)
+            .min(100)
+            .required(),
+        otherwise: Joi.string().allow('', null),
+    }),
 });
 
 const normalizeDateTime = (value) => {
@@ -162,6 +170,7 @@ const createAdminWorkReportController = async (req, res, next) => {
                 actionsTaken: 'No aplica',
                 outcome: 'controlado',
                 signature: value.signature,
+                guardSignature: value.guardSignature || null,
                 reportType: value.reportType,
                 inspectionData,
             },

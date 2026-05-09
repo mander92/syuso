@@ -111,8 +111,11 @@ const WorkReportsComponent = () => {
     );
     const [inspectionPhotos, setInspectionPhotos] = useState([]);
     const signatureCanvasRef = useRef(null);
+    const guardSignatureCanvasRef = useRef(null);
     const isSigningRef = useRef(false);
+    const isGuardSigningRef = useRef(false);
     const [signatureData, setSignatureData] = useState('');
+    const [guardSignatureData, setGuardSignatureData] = useState('');
 
     const normalizeText = (value) =>
         String(value || '')
@@ -179,6 +182,52 @@ const WorkReportsComponent = () => {
         setSignatureData('');
     };
 
+    const getGuardCanvasPoint = (event) => {
+        const canvas = guardSignatureCanvasRef.current;
+        if (!canvas) return null;
+        const rect = canvas.getBoundingClientRect();
+        const source = event.touches?.[0] || event;
+        return {
+            x: source.clientX - rect.left,
+            y: source.clientY - rect.top,
+        };
+    };
+
+    const startGuardSignature = (event) => {
+        const canvas = guardSignatureCanvasRef.current;
+        const point = getGuardCanvasPoint(event);
+        if (!canvas || !point) return;
+        event.preventDefault();
+        const ctx = canvas.getContext('2d');
+        isGuardSigningRef.current = true;
+        ctx.beginPath();
+        ctx.moveTo(point.x, point.y);
+    };
+
+    const drawGuardSignature = (event) => {
+        if (!isGuardSigningRef.current) return;
+        const canvas = guardSignatureCanvasRef.current;
+        const point = getGuardCanvasPoint(event);
+        if (!canvas || !point) return;
+        event.preventDefault();
+        const ctx = canvas.getContext('2d');
+        ctx.lineTo(point.x, point.y);
+        ctx.stroke();
+        setGuardSignatureData(canvas.toDataURL('image/png'));
+    };
+
+    const endGuardSignature = () => {
+        isGuardSigningRef.current = false;
+    };
+
+    const clearGuardSignature = () => {
+        const canvas = guardSignatureCanvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        setGuardSignatureData('');
+    };
+
     useEffect(() => {
         const loadEmployees = async () => {
             if (!authToken || !isAdminLike) return;
@@ -205,8 +254,7 @@ const WorkReportsComponent = () => {
     }, [authToken, isAdminLike]);
 
     useEffect(() => {
-        if (!createModalOpen) return;
-        const canvas = signatureCanvasRef.current;
+        const setupCanvas = (canvas) => {
         if (!canvas) return;
 
         const ratio = window.devicePixelRatio || 1;
@@ -221,7 +269,12 @@ const WorkReportsComponent = () => {
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
         ctx.strokeStyle = '#111827';
-    }, [createModalOpen]);
+        };
+
+        if (!createModalOpen) return;
+        setupCanvas(signatureCanvasRef.current);
+        setupCanvas(guardSignatureCanvasRef.current);
+    }, [createModalOpen, reportMode]);
 
     useEffect(() => {
         const loadServices = async () => {
@@ -565,11 +618,12 @@ const WorkReportsComponent = () => {
             !manualReport.incidentStart ||
             !manualReport.incidentEnd ||
             (!isInspection && !manualReport.description.trim()) ||
-            !signatureData
+            !signatureData ||
+            (isInspection && !guardSignatureData)
         ) {
             toast.error(
                 isInspection
-                    ? 'Completa trabajador, servicio, horas y firma.'
+                    ? 'Completa trabajador, servicio, horas y las dos firmas.'
                     : 'Completa trabajador, servicio, horas, descripcion y firma.'
             );
             return;
@@ -596,6 +650,7 @@ const WorkReportsComponent = () => {
                     'inspectionData',
                     JSON.stringify(inspectionReport)
                 );
+                payload.append('guardSignature', guardSignatureData);
                 inspectionPhotos.forEach((file) => {
                     payload.append('inspectionPhotos', file);
                 });
@@ -626,6 +681,7 @@ const WorkReportsComponent = () => {
             setInspectionPhotos([]);
             setReportMode('work');
             clearSignature();
+            clearGuardSignature();
         } catch (error) {
             toast.error(error.message || 'No se pudo crear el parte');
         } finally {
@@ -1204,12 +1260,12 @@ const WorkReportsComponent = () => {
 
                                 <div className='shift-filter'>
                                     <span>Tipo de servicio</span>
-                                    <div className='shift-form-grid'>
+                                    <div className='inspection-checkbox-grid'>
                                         {INSPECTION_SERVICE_TYPES.map(
                                             (serviceType) => (
                                                 <label
                                                     key={serviceType}
-                                                    className='shift-filter'
+                                                    className='inspection-checkbox-option'
                                                 >
                                                     <input
                                                         type='checkbox'
@@ -1390,7 +1446,11 @@ const WorkReportsComponent = () => {
 
                         <div className='shift-signature-field'>
                             <div className='shift-signature-field__head'>
-                                <span>Firma</span>
+                                <span>
+                                    {reportMode === 'inspection'
+                                        ? 'Firma inspector'
+                                        : 'Firma'}
+                                </span>
                                 <button
                                     type='button'
                                     className='shift-btn shift-btn--ghost'
@@ -1412,6 +1472,33 @@ const WorkReportsComponent = () => {
                                 onTouchEnd={endSignature}
                             />
                         </div>
+
+                        {reportMode === 'inspection' && (
+                            <div className='shift-signature-field'>
+                                <div className='shift-signature-field__head'>
+                                    <span>Firma vigilante</span>
+                                    <button
+                                        type='button'
+                                        className='shift-btn shift-btn--ghost'
+                                        onClick={clearGuardSignature}
+                                        disabled={isCreatingReport}
+                                    >
+                                        Limpiar firma
+                                    </button>
+                                </div>
+                                <canvas
+                                    ref={guardSignatureCanvasRef}
+                                    className='shift-signature-canvas'
+                                    onMouseDown={startGuardSignature}
+                                    onMouseMove={drawGuardSignature}
+                                    onMouseUp={endGuardSignature}
+                                    onMouseLeave={endGuardSignature}
+                                    onTouchStart={startGuardSignature}
+                                    onTouchMove={drawGuardSignature}
+                                    onTouchEnd={endGuardSignature}
+                                />
+                            </div>
+                        )}
 
                         <div className='shift-modal-actions'>
                             <button
