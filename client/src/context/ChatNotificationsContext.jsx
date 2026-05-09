@@ -400,37 +400,27 @@ export const ChatNotificationsProvider = ({ children }) => {
             ...new Set([...serviceIds, ...trackedServiceIds]),
         ];
 
-        joinServiceIds.forEach((serviceId) => {
-            if (joinedServiceRooms.current.has(serviceId)) return;
-            socket.emit('chat:join', { serviceId });
-            joinedServiceRooms.current.add(serviceId);
-        });
-
         const joinGeneralChatIds = [
             ...new Set([...generalChatIds, ...trackedGeneralChatIds]),
         ];
 
-        joinGeneralChatIds.forEach((chatId) => {
-            if (joinedGeneralRooms.current.has(chatId)) return;
-            socket.emit('generalChat:join', { chatId });
-            joinedGeneralRooms.current.add(chatId);
-        });
-
-        const joinRooms = () => {
+        const joinRooms = (force = false) => {
             joinServiceIds.forEach((serviceId) => {
-                if (joinedServiceRooms.current.has(serviceId)) return;
+                if (!force && joinedServiceRooms.current.has(serviceId)) return;
                 socket.emit('chat:join', { serviceId });
                 joinedServiceRooms.current.add(serviceId);
             });
             joinGeneralChatIds.forEach((chatId) => {
-                if (joinedGeneralRooms.current.has(chatId)) return;
+                if (!force && joinedGeneralRooms.current.has(chatId)) return;
                 socket.emit('generalChat:join', { chatId });
                 joinedGeneralRooms.current.add(chatId);
             });
         };
 
+        joinRooms(false);
+
         const handleConnect = () => {
-            joinRooms();
+            joinRooms(true);
         };
 
         const handleMessage = (message) => {
@@ -503,16 +493,6 @@ export const ChatNotificationsProvider = ({ children }) => {
             socket.off('employeeRequest:created', handleEmployeeRequestEvent);
             socket.off('employeeRequest:approved', handleEmployeeRequestEvent);
             socket.off('employeeRequest:rejected', handleEmployeeRequestEvent);
-            joinServiceIds.forEach((serviceId) => {
-                if (!joinedServiceRooms.current.has(serviceId)) return;
-                socket.emit('chat:leave', { serviceId });
-                joinedServiceRooms.current.delete(serviceId);
-            });
-            joinGeneralChatIds.forEach((chatId) => {
-                if (!joinedGeneralRooms.current.has(chatId)) return;
-                socket.emit('generalChat:leave', { chatId });
-                joinedGeneralRooms.current.delete(chatId);
-            });
         };
     }, [
         socket,
@@ -524,6 +504,22 @@ export const ChatNotificationsProvider = ({ children }) => {
         serviceNameMap,
         generalChatNameMap,
     ]);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        return () => {
+            joinedServiceRooms.current.forEach((serviceId) => {
+                socket.emit('chat:leave', { serviceId });
+            });
+            joinedServiceRooms.current.clear();
+
+            joinedGeneralRooms.current.forEach((chatId) => {
+                socket.emit('generalChat:leave', { chatId });
+            });
+            joinedGeneralRooms.current.clear();
+        };
+    }, [socket]);
 
     const resetServiceUnread = (serviceId) => {
         if (!serviceId) return;
