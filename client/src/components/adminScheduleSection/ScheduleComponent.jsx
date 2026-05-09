@@ -33,6 +33,10 @@ const ScheduleComponent = () => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
     const isAdminLike = user?.role === 'admin' || user?.role === 'sudo';
+    const compareText = (a, b) =>
+        String(a || '').localeCompare(String(b || ''), 'es', {
+            sensitivity: 'base',
+        });
 
     const [employees, setEmployees] = useState([]);
     const [delegations, setDelegations] = useState([]);
