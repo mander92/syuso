@@ -329,6 +329,29 @@ const ContractsComponent = () => {
         return (activeShifts[serviceId] || []).length;
     };
 
+    const getOpenShiftLabel = (service) => {
+        const serviceId = getServiceId(service);
+        const rows = activeShifts[serviceId] || [];
+        if (!rows.length) return 'Sin turno abierto';
+
+        const names = rows
+            .map((employee) =>
+                `${employee.firstName || ''} ${
+                    employee.lastName || ''
+                }`.trim()
+            )
+            .filter(Boolean);
+        const visibleNames = names.slice(0, 2).join(', ');
+        const extraCount = names.length - 2;
+        const prefix =
+            rows.length === 1 ? 'Turno abierto' : 'Turnos abiertos';
+
+        if (!visibleNames) return `${prefix} (${rows.length})`;
+        return extraCount > 0
+            ? `${prefix}: ${visibleNames} +${extraCount}`
+            : `${prefix}: ${visibleNames}`;
+    };
+
     const handleSelectEvent = (event) => {
         if (isAdminLike && event?.serviceId) {
             navigate(`/services/${event.serviceId}`);
@@ -861,9 +884,9 @@ const ContractsComponent = () => {
                                                             >
                                                                 {isCheckingOpenShift
                                                                     ? 'Comprobando turno'
-                                                                    : openShiftCount
-                                                                      ? `Turno abierto (${openShiftCount})`
-                                                                      : 'Sin turno abierto'}
+                                                                    : getOpenShiftLabel(
+                                                                          service
+                                                                      )}
                                                             </span>
                                                         </div>
                                                     </article>
