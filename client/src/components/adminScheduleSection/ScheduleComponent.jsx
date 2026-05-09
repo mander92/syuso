@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 
 import { AuthContext } from '../../context/AuthContext.jsx';
@@ -57,6 +57,9 @@ const ScheduleComponent = () => {
         useState(false);
     const [scheduleCards, setScheduleCards] = useState([]);
     const [scheduleShiftMap, setScheduleShiftMap] = useState({});
+    const [expandedScheduleDelegations, setExpandedScheduleDelegations] =
+        useState({});
+    const [serviceScheduleModal, setServiceScheduleModal] = useState(null);
     const [personalModal, setPersonalModal] = useState(null);
     const [scheduleViewMode, setScheduleViewMode] = useState('services');
     const [isDownloadingServicePdf, setIsDownloadingServicePdf] = useState(false);
@@ -73,8 +76,6 @@ const ScheduleComponent = () => {
     const [rulesSavingId, setRulesSavingId] = useState('');
     const [absenceSavingId, setAbsenceSavingId] = useState('');
     const [absenceDrafts, setAbsenceDrafts] = useState({});
-
-    const schedulePanelRef = useRef(null);
 
     useEffect(() => {
         const loadEmployees = async () => {
@@ -263,6 +264,12 @@ const ScheduleComponent = () => {
                         cards.push({
                             id: service.id,
                             name: service.name,
+                            type: service.type,
+                            address: service.address,
+                            city: service.city,
+                            delegation: service.province || 'Sin delegacion',
+                            scheduleImage: service.scheduleImage || '',
+                            scheduleView: service.scheduleView || 'grid',
                             month: scheduleMonth,
                             shiftCount: filteredShifts.length,
                             employeeCount: employeeSet.size,
@@ -296,11 +303,73 @@ const ScheduleComponent = () => {
         scheduleEndDate,
     ]);
 
+    useEffect(() => {
+        if (scheduleServiceFilter) {
+            setScheduleServiceId(scheduleServiceFilter);
+        }
+    }, [scheduleServiceFilter]);
+
     const serviceNameMap = useMemo(() => {
         return new Map(
             scheduleServices.map((service) => [service.id, service.name])
         );
     }, [scheduleServices]);
+
+    const scheduleCardsByDelegation = useMemo(() => {
+        const groups = new Map();
+        scheduleCards.forEach((card) => {
+            const delegation = card.delegation || 'Sin delegacion';
+            if (!groups.has(delegation)) groups.set(delegation, []);
+            groups.get(delegation).push(card);
+        });
+
+        return [...groups.entries()]
+            .sort(([a], [b]) => compareText(a, b))
+            .map(([delegation, cards]) => ({
+                delegation,
+                cards: cards.sort((a, b) =>
+                    compareText(a.name || a.type, b.name || b.type)
+                ),
+            }));
+    }, [scheduleCards]);
+
+    const toggleScheduleDelegation = (delegation) => {
+        setExpandedScheduleDelegations((prev) => ({
+            ...prev,
+            [delegation]: !prev[delegation],
+        }));
+    };
+
+    const setAllScheduleDelegationsExpanded = (expanded) => {
+        setExpandedScheduleDelegations(
+            Object.fromEntries(
+                scheduleCardsByDelegation.map((group) => [
+                    group.delegation,
+                    expanded,
+                ])
+            )
+        );
+    };
+
+    const openServiceScheduleModal = (card) => {
+        setScheduleServiceId(card.id);
+        setServiceScheduleModal(card);
+    };
+
+    useEffect(() => {
+        if (!scheduleCardsByDelegation.length) {
+            setExpandedScheduleDelegations({});
+            return;
+        }
+
+        setExpandedScheduleDelegations((prev) => {
+            const next = {};
+            scheduleCardsByDelegation.forEach((group) => {
+                next[group.delegation] = prev[group.delegation] ?? true;
+            });
+            return next;
+        });
+    }, [scheduleCardsByDelegation]);
 
     const filteredEmployees = useMemo(() => {
         if (!employees.length) return [];
@@ -949,87 +1018,134 @@ const ScheduleComponent = () => {
 
             {scheduleViewMode === 'services' ? (
                 <>
-                    <div className='schedule-cards'>
+                    <div className='schedule-delegations'>
+                        <div className='schedule-delegations-header'>
+                            <div>
+                                <h2>Cuadrantes por delegacion</h2>
+                                <p>
+                                    {scheduleCards.length} servicios con los filtros
+                                    actuales.
+                                </p>
+                            </div>
+                            <div className='schedule-delegations-actions'>
+                                <button
+                                    type='button'
+                                    className='schedule-btn schedule-btn--ghost'
+                                    onClick={() =>
+                                        setAllScheduleDelegationsExpanded(false)
+                                    }
+                                >
+                                    Plegar todo
+                                </button>
+                                <button
+                                    type='button'
+                                    className='schedule-btn'
+                                    onClick={() =>
+                                        setAllScheduleDelegationsExpanded(true)
+                                    }
+                                >
+                                    Desplegar todo
+                                </button>
+                            </div>
+                        </div>
                         {scheduleOverviewLoading ? (
                             <p className='schedule-empty'>Cargando cuadrantes...</p>
-                        ) : scheduleCards.length ? (
-                            scheduleCards.map((card) => (
-                                <div key={card.id} className='schedule-card'>
-                                    <div>
-                                        <h3>{card.name}</h3>
-                                        <p>Mes: {card.month}</p>
-                                    </div>
-                                    <div className='schedule-card-meta'>
-                                        <span>Turnos: {card.shiftCount}</span>
-                                        <span>Empleados: {card.employeeCount}</span>
-                                        <span>
-                                            Horas: {card.totalHours.toFixed(2)}
-                                        </span>
-                                        <span>
-                                            Plantilla:{' '}
-                                            {card.templateApplied
-                                                ? 'Aplicada'
-                                                : 'Sin plantilla'}
-                                        </span>
-                                    </div>
-                                    <button
-                                        type='button'
-                                        className='schedule-btn schedule-btn--ghost'
-                                        onClick={() => {
-                                            setScheduleServiceId(card.id);
-                                            schedulePanelRef.current?.scrollIntoView({
-                                                behavior: 'smooth',
-                                                block: 'start',
-                                            });
-                                        }}
+                        ) : scheduleCardsByDelegation.length ? (
+                            <div className='schedule-delegation-list'>
+                                {scheduleCardsByDelegation.map((group) => (
+                                    <div
+                                        className='schedule-delegation-group'
+                                        key={group.delegation}
                                     >
-                                        Ver cuadrante
-                                    </button>
-                                </div>
-                            ))
+                                        <button
+                                            type='button'
+                                            className='schedule-delegation-toggle'
+                                            onClick={() =>
+                                                toggleScheduleDelegation(
+                                                    group.delegation
+                                                )
+                                            }
+                                        >
+                                            <span>{group.delegation}</span>
+                                            <strong>
+                                                {group.cards.length} servicios
+                                            </strong>
+                                            <span>
+                                                {expandedScheduleDelegations[
+                                                    group.delegation
+                                                ]
+                                                    ? 'Ocultar'
+                                                    : 'Mostrar'}
+                                            </span>
+                                        </button>
+                                        {expandedScheduleDelegations[
+                                            group.delegation
+                                        ] ? (
+                                            <div className='schedule-cards'>
+                                                {group.cards.map((card) => (
+                                                    <div
+                                                        key={card.id}
+                                                        className='schedule-card'
+                                                    >
+                                                        <div>
+                                                            <h3>
+                                                                {card.name ||
+                                                                    card.type ||
+                                                                    'Servicio'}
+                                                            </h3>
+                                                            <p>
+                                                                {card.address}
+                                                                {card.address &&
+                                                                card.city
+                                                                    ? ', '
+                                                                    : ''}
+                                                                {card.city}
+                                                            </p>
+                                                            <p>Mes: {card.month}</p>
+                                                        </div>
+                                                        <div className='schedule-card-meta'>
+                                                            <span>
+                                                                Turnos:{' '}
+                                                                {card.shiftCount}
+                                                            </span>
+                                                            <span>
+                                                                Empleados:{' '}
+                                                                {card.employeeCount}
+                                                            </span>
+                                                            <span>
+                                                                Horas:{' '}
+                                                                {card.totalHours.toFixed(
+                                                                    2
+                                                                )}
+                                                            </span>
+                                                            <span>
+                                                                Plantilla:{' '}
+                                                                {card.templateApplied
+                                                                    ? 'Aplicada'
+                                                                    : 'Sin plantilla'}
+                                                            </span>
+                                                        </div>
+                                                        <button
+                                                            type='button'
+                                                            className='schedule-btn schedule-btn--ghost'
+                                                            onClick={() =>
+                                                                openServiceScheduleModal(
+                                                                    card
+                                                                )
+                                                            }
+                                                        >
+                                                            Ver cuadrante
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                ))}
+                            </div>
                         ) : (
                             <p className='schedule-empty'>
                                 Sin cuadrantes disponibles.
-                            </p>
-                        )}
-                    </div>
-
-                    <div className='schedule-panel' ref={schedulePanelRef}>
-                        <div className='schedule-panel-header'>
-                            <div>
-                                <h2>Cuadrante por servicio</h2>
-                                <p>Selecciona un servicio para editar el mes.</p>
-                            </div>
-                            <div className='schedule-panel-select'>
-                                <label htmlFor='scheduleService'>Servicio</label>
-                                <select
-                                    id='scheduleService'
-                                    value={scheduleServiceId}
-                                    onChange={(event) =>
-                                        setScheduleServiceId(event.target.value)
-                                    }
-                                >
-                                    <option value=''>
-                                        {scheduleLoading
-                                            ? 'Cargando...'
-                                            : 'Selecciona un servicio'}
-                                    </option>
-                                    {scheduleServices.map((service) => (
-                                        <option key={service.id} value={service.id}>
-                                            {service.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-                        {scheduleServiceId ? (
-                            <ServiceSchedulePanel
-                                serviceId={scheduleServiceId}
-                                authToken={authToken}
-                            />
-                        ) : (
-                            <p className='schedule-empty'>
-                                Selecciona un servicio para ver el cuadrante.
                             </p>
                         )}
                     </div>
@@ -1396,6 +1512,51 @@ const ScheduleComponent = () => {
                             Sin cuadrantes personales.
                         </p>
                     )}
+                </div>
+            )}
+
+            {serviceScheduleModal && (
+                <div className='schedule-service-modal'>
+                    <button
+                        type='button'
+                        className='schedule-service-modal__backdrop'
+                        onClick={() => setServiceScheduleModal(null)}
+                        aria-label='Cerrar cuadrante'
+                    />
+                    <div className='schedule-service-modal__panel'>
+                        <div className='schedule-service-modal__header'>
+                            <div>
+                                <h3>
+                                    {serviceScheduleModal.name ||
+                                        serviceScheduleModal.type ||
+                                        'Cuadrante por servicio'}
+                                </h3>
+                                <p>
+                                    {serviceScheduleModal.delegation} -{' '}
+                                    {serviceScheduleModal.month}
+                                </p>
+                            </div>
+                            <button
+                                type='button'
+                                className='schedule-service-modal__close'
+                                onClick={() => setServiceScheduleModal(null)}
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                        <div className='schedule-service-modal__body'>
+                            <ServiceSchedulePanel
+                                serviceId={serviceScheduleModal.id}
+                                authToken={authToken}
+                                scheduleImage={
+                                    serviceScheduleModal.scheduleImage || ''
+                                }
+                                scheduleView={
+                                    serviceScheduleModal.scheduleView || 'grid'
+                                }
+                            />
+                        </div>
+                    </div>
                 </div>
             )}
 
