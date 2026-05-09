@@ -345,7 +345,7 @@
     pointer-events: none;
 }
 
-.contracts-delegation-card-top .contracts-active-top-link,
+.contracts-delegation-card-top .contracts-service-top-link,
 .contracts-delegation-card-top .contracts-btn--ellipsis {
     pointer-events: auto;
 }
@@ -376,30 +376,6 @@
     min-width: 0;
 }
 
-.contracts-status {
-    border-radius: 999px;
-    font-size: 0.74rem;
-    font-style: normal;
-    font-weight: 700;
-    padding: 0.24rem 0.58rem;
-    white-space: nowrap;
-}
-
-.contracts-status--pending {
-    background: lightsalmon;
-    color: #7c2d12;
-}
-
-.contracts-status--confirmed {
-    background: lightgreen;
-    color: #14532d;
-}
-
-.contracts-status--completed {
-    background: green;
-    color: #ffffff;
-}
-
 .contracts-open-shift {
     border-radius: 999px;
     background: #f1f5f9;
@@ -416,107 +392,7 @@
     color: #166534;
 }
 
-/* === SERVICIOS EN CURSO === */
-
-.contracts-active {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin-top: 24px;
-}
-
-.contracts-active-header h2 {
-    margin: 0;
-    color: #0f172a;
-}
-
-.contracts-active-header p {
-    margin: 6px 0 0;
-    color: #64748b;
-}
-
-.contracts-active-filters {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    align-items: center;
-    margin-top: 12px;
-}
-
-.contracts-active-filters input,
-.contracts-active-filters select {
-    border-radius: 0.55rem;
-    border: 1px solid #e2e8f0;
-    padding: 0.45rem 0.7rem;
-    font-size: 0.9rem;
-    background-color: #ffffff;
-    min-width: 200px;
-}
-
-.contracts-active-list {
-    display: grid;
-    gap: 16px;
-}
-
-@media (min-width: 900px) {
-    .contracts-active-list {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .contracts-active-card {
-        padding-top: 52px;
-    }
-
-    .contracts-schedule-preview {
-        position: absolute;
-        top: 12px;
-        right: 12px;
-    }
-
-    .contracts-active-actions {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 8px;
-        width: 100%;
-    }
-
-    .contracts-active-actions .contracts-btn,
-    .contracts-active-actions .contracts-upload {
-        width: 100%;
-        text-align: center;
-    }
-}
-
-.contracts-active-card {
-    background: #ffffff;
-    border-radius: 12px;
-    padding: 16px;
-    padding-top: 52px;
-    border: 1px solid #e5e7eb;
-    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    position: relative;
-}
-
-.contracts-active-card-top {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    right: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    pointer-events: none;
-}
-
-.contracts-active-top-link,
-.contracts-active-top-placeholder {
-    pointer-events: auto;
-}
-
-.contracts-active-top-link {
+.contracts-service-top-link {
     background: transparent;
     border: 0;
     cursor: pointer;
@@ -525,34 +401,6 @@
     color: #1d4ed8;
     text-decoration: none;
     padding: 0;
-}
-
-.contracts-active-card-top .contracts-btn--ellipsis {
-    pointer-events: auto;
-}
-
-.contracts-active-card-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-    align-items: flex-start;
-}
-
-.contracts-active-card h3 {
-    margin: 0 0 6px;
-    color: #0f172a;
-}
-
-.contracts-active-card p {
-    margin: 4px 0;
-    color: #475569;
-}
-
-.contracts-active-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
 }
 
 .contracts-btn--ellipsis {
@@ -564,61 +412,6 @@
     line-height: 1;
     border-radius: 999px;
 }
-
-.contracts-upload {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.contracts-upload input {
-    display: none;
-}
-
-.contracts-schedule-preview a {
-    color: #1d4ed8;
-    font-weight: 600;
-    text-decoration: none;
-}
-
-.contracts-active-employees {
-    display: grid;
-    gap: 8px;
-    border-top: 1px solid #e2e8f0;
-    padding-top: 12px;
-}
-
-.contracts-active-nfc {
-    border-top: 1px solid #e2e8f0;
-    padding-top: 12px;
-}
-
-.contracts-active-employee {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-    color: #475569;
-}
-
-.contracts-active-person {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.contracts-active-dot {
-    width: 9px;
-    height: 9px;
-    border-radius: 999px;
-    background: #22c55e;
-    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
-    display: inline-block;
-}
-
 
 /* === CUADRANTES SUBIDOS === */
 
@@ -690,28 +483,6 @@
         flex-wrap: wrap;
     }
 
-    .contracts-active-actions {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 8px;
-        width: 100%;
-    }
-
-    .contracts-active-actions .contracts-btn,
-    .contracts-active-actions .contracts-upload {
-        width: 100%;
-        text-align: center;
-    }
-
-    .contracts-active-card {
-        padding-top: 52px;
-    }
-
-    .contracts-schedule-preview {
-        position: absolute;
-        top: 12px;
-        right: 12px;
-    }
 }
 
 @media (max-width: 480px) {

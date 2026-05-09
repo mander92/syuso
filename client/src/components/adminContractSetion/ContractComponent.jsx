@@ -8,8 +8,6 @@ import {
     fetchClientAllServicesServices,
     fetchInProgressServices,
     fetchActiveServiceShifts,
-    uploadServiceScheduleImage,
-    fetchUpdateServiceStatus,
 } from '../../services/serviceService.js';
 import { fetchDelegations } from '../../services/delegationService.js';
 import CalendarComponent from '../calendarComponent/CalendarComponent.jsx';
@@ -40,12 +38,8 @@ const ContractsComponent = () => {
     const [isVisible, setIsVisible] = useState(false);
     const [delegationId, setDelegationId] = useState('');
     const [delegations, setDelegations] = useState([]);
-    const [activeServiceSearch, setActiveServiceSearch] = useState('');
     const [calendarSearch, setCalendarSearch] = useState('');
     const [isCalendarOpen, setIsCalendarOpen] = useState(true);
-    const [activeServices, setActiveServices] = useState([]);
-    const [activeLoading, setActiveLoading] = useState(false);
-    const [expandedActive, setExpandedActive] = useState({});
     const [expandedDelegations, setExpandedDelegations] = useState({});
     const [activeShifts, setActiveShifts] = useState({});
     const [activeShiftLoading, setActiveShiftLoading] = useState({});
@@ -133,26 +127,16 @@ const ContractsComponent = () => {
         if (!authToken || !user || !isAdminLike) return;
 
         try {
-            setActiveLoading(true);
             const data = await fetchInProgressServices(
                 authToken,
                 delegationId
             );
             const services = data || [];
-            setActiveServices(services);
             if (!services.length) {
-                setExpandedActive({});
                 setActiveShifts({});
                 setActiveShiftLoading({});
                 return;
             }
-
-            const expandedMap = services.reduce((acc, service) => {
-                const serviceId = service.serviceId || service.id;
-                if (serviceId) acc[serviceId] = true;
-                return acc;
-            }, {});
-            setExpandedActive(expandedMap);
 
             const loadingMap = services.reduce((acc, service) => {
                 const serviceId = service.serviceId || service.id;
@@ -200,8 +184,6 @@ const ContractsComponent = () => {
             toast.error(
                 error.message || 'No se pudieron cargar los servicios'
             );
-        } finally {
-            setActiveLoading(false);
         }
     };
 
@@ -218,16 +200,6 @@ const ContractsComponent = () => {
                 .sort(compareText),
         [data]
     );
-
-    const filteredActiveServices = useMemo(() => {
-        const term = activeServiceSearch.trim().toLowerCase();
-        if (!term) return activeServices;
-        return activeServices.filter((service) =>
-            (service.name || service.type || '')
-                .toLowerCase()
-                .includes(term)
-        );
-    }, [activeServices, activeServiceSearch]);
 
     const visibleServices = useMemo(() => {
         const term = calendarSearch.trim().toLowerCase();
@@ -358,67 +330,6 @@ const ContractsComponent = () => {
         }
     };
 
-    const handleToggleActive = async (serviceId) => {
-        const willOpen = !expandedActive[serviceId];
-        setExpandedActive((prev) => ({
-            ...prev,
-            [serviceId]: willOpen,
-        }));
-
-        if (!willOpen || activeShifts[serviceId]) return;
-
-        try {
-            setActiveShiftLoading((prev) => ({
-                ...prev,
-                [serviceId]: true,
-            }));
-            const rows = await fetchActiveServiceShifts(authToken, serviceId);
-            setActiveShifts((prev) => ({
-                ...prev,
-                [serviceId]: rows || [],
-            }));
-        } catch (error) {
-            toast.error(
-                error.message || 'No se pudieron cargar los turnos abiertos'
-            );
-        } finally {
-            setActiveShiftLoading((prev) => ({
-                ...prev,
-                [serviceId]: false,
-            }));
-        }
-    };
-
-
-    const handleScheduleUpload = async (serviceId, file) => {
-        if (!file) return;
-        if (!['image/png', 'image/jpeg'].includes(file.type)) {
-            toast.error('La foto del cuadrante debe ser PNG o JPG');
-            return;
-        }
-
-        try {
-            const data = await uploadServiceScheduleImage(
-                authToken,
-                serviceId,
-                file
-            );
-            setActiveServices((prev) =>
-                prev.map((service) =>
-                    service.serviceId === serviceId
-                        ? { ...service, scheduleImage: data.scheduleImage }
-                        : service
-                )
-            );
-            toast.success('Cuadrante actualizado');
-        } catch (error) {
-            toast.error(
-                error.message || 'No se pudo subir el cuadrante'
-            );
-        }
-    };
-
-
     return (
         <section className='contracts-wrapper'>
             <div className='contracts-header'>
@@ -534,193 +445,6 @@ const ContractsComponent = () => {
                 </div>
             )}
 
-            {isAdminLike && (
-                <section className='contracts-active'>
-                    <div className='contracts-active-header'>
-                        <div>
-                            <h2>Servicios activos</h2>
-                            <p>Servicios con estado confirmado.</p>
-                        </div>
-                        <div className='contracts-active-filters'>
-                            <input
-                                type='text'
-                                placeholder='Buscar servicio'
-                                value={activeServiceSearch}
-                                onChange={(e) =>
-                                    setActiveServiceSearch(e.target.value)
-                                }
-                            />
-                            <select
-                                value={delegationId}
-                                onChange={(e) =>
-                                    setDelegationId(e.target.value)
-                                }
-                            >
-                                <option value=''>Todas las delegaciones</option>
-                                {delegations.map((delegation) => (
-                                    <option
-                                        key={delegation.id}
-                                        value={delegation.id}
-                                    >
-                                        {delegation.name}
-                                    </option>
-                                ))}
-                            </select>
-                            <button
-                                type='button'
-                                className='contracts-btn'
-                                onClick={loadActiveServices}
-                                disabled={activeLoading}
-                            >
-                                {activeLoading
-                                    ? 'Actualizando...'
-                                    : 'Actualizar'}
-                            </button>
-                        </div>
-                    </div>
-
-                    {activeLoading ? (
-                        <p className='contracts-loading'>
-                            Cargando servicios activos...
-                        </p>
-                    ) : filteredActiveServices.length ? (
-                        <div className='contracts-active-list'>
-                            {filteredActiveServices.map((service) => (
-                                <article
-                                    key={service.serviceId}
-                                    className='contracts-active-card'
-                                >
-                                    <div className='contracts-active-card-row'>
-                                        <div className='contracts-active-card-top'>
-                                            {service.scheduleView === 'image' &&
-                                            service.scheduleImage ? (
-                                                <a
-                                                    className='contracts-active-top-link'
-                                                    href={`${import.meta.env.VITE_API_URL}/uploads/${service.scheduleImage}`}
-                                                    target='_blank'
-                                                    rel='noreferrer'
-                                                >
-                                                    Ver foto actual
-                                                </a>
-                                            ) : (
-                                                <button
-                                                    type='button'
-                                                    className='contracts-active-top-link'
-                                                    onClick={() =>
-                                                        navigate(
-                                                            `/services/${service.serviceId}?tab=schedule`
-                                                        )
-                                                    }
-                                                >
-                                                    Ver cuadrante actual
-                                                </button>
-                                            )}
-                                            <button
-                                                type='button'
-                                                className='contracts-btn contracts-btn--ghost contracts-btn--ellipsis'
-                                                aria-label='Detalle del servicio'
-                                                onClick={() =>
-                                                    navigate(
-                                                        `/services/${service.serviceId}`
-                                                    )
-                                                }
-                                            >
-                                                ...
-                                            </button>
-                                        </div>
-                                        <div>
-                                            <h3>
-                                                {service.name || service.type}
-                                            </h3>
-                                            <p>
-                                                {service.address},{' '}
-                                                {service.city}
-                                            </p>
-                                        </div>
-                                        <div className='contracts-active-actions'>
-                                            <button
-                                                type='button'
-                                                className='contracts-btn'
-                                                onClick={() =>
-                                                    handleToggleActive(
-                                                        service.serviceId
-                                                    )
-                                                }
-                                            >
-                                                {expandedActive[
-                                                    service.serviceId
-                                                ]
-                                                    ? 'Ocultar turnos'
-                                                    : 'Turnos abiertos'}
-                                            </button>
-                                            <label className='contracts-upload contracts-btn contracts-btn--ghost'>
-                                                Subir foto
-                                                <input
-                                                    type='file'
-                                                    accept='image/png,image/jpeg'
-                                                    onChange={(event) =>
-                                                        Promise.resolve(
-                                                            handleScheduleUpload(
-                                                                service.serviceId,
-                                                                event.target
-                                                                    .files?.[0]
-                                                            )
-                                                        ).finally(() => {
-                                                            event.target.value =
-                                                                '';
-                                                        })
-                                                    }
-                                                />
-                                            </label>
-                                        </div>
-                                    </div>
-
-                                            {expandedActive[service.serviceId] && (
-                                        <div className='contracts-active-employees'>
-                                            {activeShiftLoading[service.serviceId] ? (
-                                                <p className='contracts-loading'>
-                                                    Cargando turnos abiertos...
-                                                </p>
-                                            ) : (activeShifts[service.serviceId] || []).length ? (
-                                                activeShifts[service.serviceId].map(
-                                                    (employee) => (
-                                                        <div
-                                                            key={
-                                                                employee.shiftId ||
-                                                                employee.employeeId
-                                                            }
-                                                            className='contracts-active-employee'
-                                                        >
-                                                            <span className='contracts-active-person'>
-                                                                <span className='contracts-active-dot' />
-                                                                {employee.firstName}{' '}
-                                                                {employee.lastName}
-                                                            </span>
-                                                            <span>
-                                                                Turno abierto
-                                                            </span>
-                                                        </div>
-                                                    )
-                                                )
-                                    ) : (
-                                        <p className='contracts-loading'>
-                                            Sin turnos abiertos.
-                                        </p>
-                                    )}
-                                </div>
-                            )}
-
-                        </article>
-                    ))}
-                </div>
-                    ) : (
-                        <p className='contracts-loading'>
-                            No hay servicios activos.
-                        </p>
-                    )}
-                </section>
-            )}
-
             <div className='contracts-calendar-search'>
                 <div className='contracts-calendar-toggle'>
                     <button
@@ -822,7 +546,7 @@ const ContractsComponent = () => {
                                                         <div className='contracts-delegation-card-top'>
                                                             {showImageLink ? (
                                                                 <a
-                                                                    className='contracts-active-top-link'
+                                                                    className='contracts-service-top-link'
                                                                     href={`${import.meta.env.VITE_API_URL}/uploads/${service.scheduleImage}`}
                                                                     target='_blank'
                                                                     rel='noreferrer'
@@ -832,7 +556,7 @@ const ContractsComponent = () => {
                                                             ) : (
                                                                 <button
                                                                     type='button'
-                                                                    className='contracts-active-top-link'
+                                                                    className='contracts-service-top-link'
                                                                     onClick={() =>
                                                                         navigate(
                                                                             `/services/${serviceId}?tab=schedule`
