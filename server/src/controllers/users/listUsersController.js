@@ -35,7 +35,8 @@ const listUsersController = async (req, res, next) => {
             active,
             city,
             role,
-            allowedDelegations
+            allowedDelegations,
+            userRole
         );
 
         res.send({

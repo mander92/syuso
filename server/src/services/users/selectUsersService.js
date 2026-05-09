@@ -5,7 +5,8 @@ const selectUsersService = async (
     active,
     city,
     role,
-    delegationNames = []
+    delegationNames = [],
+    viewerRole = ''
 ) => {
     const pool = await getPool();
 
@@ -50,6 +51,10 @@ const selectUsersService = async (
     if (role) {
         sqlQuery += ' AND u.role = ?';
         sqlValues.push(role);
+    }
+
+    if (viewerRole === 'admin') {
+        sqlQuery += " AND u.role <> 'sudo'";
     }
 
     if (delegationNames.length) {

@@ -568,22 +568,37 @@
 /* === RESPONSIVE CARDS (sin scroll lateral tampoco aquí) === */
 
 @media (max-width: 1024px) {
+    .admin-users-card {
+        padding: 1rem;
+        overflow: hidden;
+    }
+
+    .admin-users-table-wrapper {
+        overflow: visible;
+    }
+
     .admin-users-table thead {
         display: none;
     }
 
     .admin-users-table {
+        display: block;
+        width: 100%;
         background: transparent;
+        border-radius: 0;
+        overflow: visible;
+        table-layout: auto;
     }
 
     .admin-users-table tbody {
-        display: flex;
-        flex-direction: column;
+        display: grid;
         gap: 0.8rem;
+        width: 100%;
     }
 
     .admin-users-table tr {
         display: flex;
+        width: 100%;
         flex-wrap: wrap;
         gap: 0.4rem 0.9rem;
         align-items: center;
@@ -592,10 +607,12 @@
         padding: 2rem 1rem 0.9rem;
         box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
         position: relative;
+        box-sizing: border-box;
     }
 
     .admin-users-table tr.admin-users-group-row {
         display: block;
+        width: 100%;
         padding: 0;
         box-shadow: none;
         background: transparent !important;
@@ -614,6 +631,7 @@
 
     .admin-users-table td {
         display: inline-flex;
+        width: auto !important;
         align-items: center;
         gap: 0.35rem;
         padding: 0;
@@ -691,6 +709,7 @@
     .admin-users-mobile-extra-cell {
         flex-basis: 100%;
         width: 100%;
+        max-width: 100%;
         padding-top: 0.5rem;
     }
 

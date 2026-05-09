@@ -184,11 +184,15 @@ const AdminUsersSection = () => {
     // Búsqueda local (nombre/email/DNI)
     // ===============================
     const filteredUsers = useMemo(() => {
-        if (!search.trim()) return users;
+        const visibleUsers = isSudo
+            ? users
+            : users.filter((item) => item.role !== 'sudo');
+
+        if (!search.trim()) return visibleUsers;
 
         const term = search.toLowerCase();
 
-        return users.filter((u) => {
+        return visibleUsers.filter((u) => {
             const fullName =
                 `${u.firstName || ''} ${u.lastName || ''}`.toLowerCase();
             return (
@@ -197,7 +201,7 @@ const AdminUsersSection = () => {
                 (u.dni || '').toLowerCase().includes(term)
             );
         });
-    }, [users, search]);
+    }, [users, search, isSudo]);
 
     const getUserDelegationLabel = (item) =>
         item.delegations || item.city || 'Sin delegacion';
