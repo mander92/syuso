@@ -171,6 +171,7 @@
     border-radius: 12px;
     padding: 18px;
     box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    min-width: 0;
 }
 
 .service-detail-section {
@@ -180,7 +181,8 @@
 
 .service-detail-section--schedule {
     width: 100%;
-    overflow: visible;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .service-detail-section-header {
@@ -575,8 +577,17 @@
         overflow-x: hidden;
     }
 
+    .service-detail-page--wide {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
     .service-detail-card {
         margin: 0 auto;
+    }
+
+    .service-detail-section--schedule {
+        padding: 12px;
     }
 
     .service-detail-section-header {
