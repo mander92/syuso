@@ -33,7 +33,7 @@ const ContractsComponent = () => {
     const isAdminLike = user?.role === 'admin' || user?.role === 'sudo';
 
     const [data, setData] = useState([]);
-    const [status, setStatus] = useState('');
+    const [status, setStatus] = useState('confirmed');
     const [type, setType] = useState('');
     const [isVisible, setIsVisible] = useState(false);
     const [delegationId, setDelegationId] = useState('');
@@ -52,7 +52,7 @@ const ContractsComponent = () => {
 
     const resetFilter = (e) => {
         e.preventDefault();
-        setStatus('');
+        setStatus('confirmed');
         setType('');
         setDelegationId('');
     };

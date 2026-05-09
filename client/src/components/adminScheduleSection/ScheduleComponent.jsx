@@ -47,7 +47,6 @@ const ScheduleComponent = () => {
     const [scheduleServiceStatus, setScheduleServiceStatus] = useState(
         'confirmed'
     );
-    const [scheduleShiftStatus, setScheduleShiftStatus] = useState('');
     const [scheduleEmployeeFilter, setScheduleEmployeeFilter] =
         useState('');
     const [scheduleServiceFilter, setScheduleServiceFilter] = useState('');
@@ -206,12 +205,6 @@ const ScheduleComponent = () => {
                         const filteredShifts = (shifts || []).filter(
                             (shift) => {
                                 if (
-                                    scheduleShiftStatus &&
-                                    shift.status !== scheduleShiftStatus
-                                ) {
-                                    return false;
-                                }
-                                if (
                                     scheduleEmployeeFilter &&
                                     shift.employeeId !== scheduleEmployeeFilter
                                 ) {
@@ -296,7 +289,6 @@ const ScheduleComponent = () => {
         isAdminLike,
         scheduleServices,
         scheduleMonth,
-        scheduleShiftStatus,
         scheduleEmployeeFilter,
         scheduleServiceFilter,
         scheduleStartDate,
@@ -653,7 +645,6 @@ const ScheduleComponent = () => {
         setScheduleStartDate('');
         setScheduleEndDate('');
         setScheduleServiceStatus('confirmed');
-        setScheduleShiftStatus('');
         setScheduleEmployeeFilter('');
         setScheduleServiceFilter('');
         setScheduleDelegationFilter('');
@@ -863,21 +854,6 @@ const ScheduleComponent = () => {
                         <option value='canceled'>Cancelado</option>
                         <option value='accepted'>Aceptado</option>
                         <option value='rejected'>Rechazado</option>
-                    </select>
-                </div>
-                <div className='schedule-filter'>
-                    <label htmlFor='scheduleShiftStatus'>Estado turno</label>
-                    <select
-                        id='scheduleShiftStatus'
-                        value={scheduleShiftStatus}
-                        onChange={(e) =>
-                            setScheduleShiftStatus(e.target.value)
-                        }
-                    >
-                        <option value=''>Todos</option>
-                        <option value='scheduled'>Programado</option>
-                        <option value='completed'>Completado</option>
-                        <option value='canceled'>Cancelado</option>
                     </select>
                 </div>
                 <div className='schedule-filter'>
