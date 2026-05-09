@@ -85,6 +85,11 @@ const formatTime = (value) => {
     return `${hours}:${minutes}`;
 };
 
+const formatHours = (value) => {
+    const number = Number(value) || 0;
+    return number.toFixed(2);
+};
+
 const ServiceScheduleGrid = ({
     month,
     shifts,
@@ -141,6 +146,23 @@ const ServiceScheduleGrid = ({
         return showUnassigned ? [{ id: null, label: 'Sin asignar' }, ...base] : base;
     }, [employees, showUnassigned]);
 
+    const rowTotals = useMemo(() => {
+        const totals = new Map();
+        rows.forEach((row) => {
+            totals.set(row.id || 'unassigned', 0);
+        });
+        (shifts || []).forEach((shift) => {
+            const key = shift.employeeId || 'unassigned';
+            if (!totals.has(key)) return;
+            totals.set(key, totals.get(key) + (Number(shift.hours) || 0));
+        });
+        return totals;
+    }, [rows, shifts]);
+
+    const visibleTotalHours = useMemo(
+        () => Array.from(rowTotals.values()).reduce((acc, value) => acc + value, 0),
+        [rowTotals]
+    );
 
     const handleDragStart = (event, shiftId) => {
         setDraggedShiftId(shiftId);
@@ -189,6 +211,7 @@ const ServiceScheduleGrid = ({
                         </div>
                     );
                 })}
+                <div className='service-schedule-grid-total-head'>Horas</div>
             </div>
             <div className='service-schedule-grid-head service-schedule-grid-head--numbers' style={gridStyle}>
                 <div className='service-schedule-grid-corner'> </div>
@@ -197,11 +220,13 @@ const ServiceScheduleGrid = ({
                         {day}
                     </div>
                 ))}
+                <div className='service-schedule-grid-total-head'>Total</div>
             </div>
             {rows.map((row) => {
                 const rowKey = row.id || 'unassigned';
                 const isCollapsed = collapsedRows.has(rowKey);
                 const rowAbsences = row.id ? absencesByEmployee[row.id] || [] : [];
+                const rowTotalHours = rowTotals.get(rowKey) || 0;
                 return (
                     <div
                         className={`service-schedule-grid-row ${
@@ -212,6 +237,9 @@ const ServiceScheduleGrid = ({
                     >
                         <div className='service-schedule-grid-employee'>
                             <span>{row.label}</span>
+                            <strong className='service-schedule-grid-mobile-total'>
+                                {formatHours(rowTotalHours)} h
+                            </strong>
                             <button
                                 type='button'
                                 className='service-schedule-grid-toggle'
@@ -296,9 +324,19 @@ const ServiceScheduleGrid = ({
                                 </div>
                             );
                             })}
+                        <div className='service-schedule-grid-row-total'>
+                            {formatHours(rowTotalHours)} h
+                        </div>
                     </div>
                 );
             })}
+            <div className='service-schedule-grid-footer' style={gridStyle}>
+                <div className='service-schedule-grid-footer-label'>Total horas</div>
+                <div className='service-schedule-grid-footer-spacer' />
+                <div className='service-schedule-grid-footer-total'>
+                    {formatHours(visibleTotalHours)} h
+                </div>
+            </div>
         </div>
     );
 };

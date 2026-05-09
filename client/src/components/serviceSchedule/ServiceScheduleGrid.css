@@ -9,7 +9,7 @@
 .service-schedule-grid-head,
 .service-schedule-grid-row {
     display: grid;
-    grid-template-columns: minmax(160px, 220px) repeat(var(--days), minmax(0, 1fr));
+    grid-template-columns: minmax(160px, 220px) repeat(var(--days), minmax(0, 1fr)) minmax(76px, 90px);
     width: 100%;
     min-width: 0;
 }
@@ -17,7 +17,8 @@
 .service-schedule-grid-corner,
 .service-schedule-grid-employee,
 .service-schedule-grid-weekday,
-.service-schedule-grid-day {
+.service-schedule-grid-day,
+.service-schedule-grid-total-head {
     font-size: 0.75rem;
     font-weight: 600;
     color: #0f172a;
@@ -25,6 +26,10 @@
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     text-align: center;
+}
+
+.service-schedule-grid-total-head {
+    background: #e2e8f0;
 }
 
 .service-schedule-grid-day-label {
@@ -59,6 +64,56 @@
     flex-direction: column;
     gap: 4px;
     justify-content: flex-start;
+}
+
+.service-schedule-grid-row-total {
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 6px 4px;
+    text-align: center;
+}
+
+.service-schedule-grid-mobile-total {
+    display: none;
+}
+
+.service-schedule-grid-footer {
+    display: grid;
+    grid-template-columns: minmax(160px, 220px) repeat(var(--days), minmax(0, 1fr)) minmax(76px, 90px);
+    width: 100%;
+}
+
+.service-schedule-grid-footer-label,
+.service-schedule-grid-footer-spacer,
+.service-schedule-grid-footer-total {
+    border: 1px solid #e2e8f0;
+    background: #f1f5f9;
+    padding: 8px 6px;
+    color: #0f172a;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.service-schedule-grid-footer-label {
+    text-align: left;
+}
+
+.service-schedule-grid-footer-spacer {
+    grid-column: 2 / span var(--days);
+}
+
+.service-schedule-grid-footer-total {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e2e8f0;
+    text-align: center;
 }
 
 .service-schedule-grid-absence {
@@ -133,6 +188,18 @@
         border: none;
     }
 
+    .service-schedule-grid-mobile-total {
+        display: inline-flex;
+        margin-left: auto;
+        color: #ffffff;
+        font-size: 0.78rem;
+        white-space: nowrap;
+    }
+
+    .service-schedule-grid-row-total {
+        display: none;
+    }
+
     .service-schedule-grid-cell {
         flex-direction: row;
         align-items: center;
@@ -155,5 +222,16 @@
         border-radius: 6px;
         padding: 2px 6px;
         text-transform: uppercase;
+    }
+
+    .service-schedule-grid-footer {
+        grid-template-columns: 1fr auto;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .service-schedule-grid-footer-spacer {
+        display: none;
     }
 }
