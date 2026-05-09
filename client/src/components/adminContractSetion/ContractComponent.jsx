@@ -322,6 +322,13 @@ const ContractsComponent = () => {
         );
     };
 
+    const getServiceId = (service) => service.serviceId || service.id;
+
+    const getOpenShiftCount = (service) => {
+        const serviceId = getServiceId(service);
+        return (activeShifts[serviceId] || []).length;
+    };
+
     const handleSelectEvent = (event) => {
         if (isAdminLike && event?.serviceId) {
             navigate(`/services/${event.serviceId}`);
@@ -770,41 +777,106 @@ const ContractsComponent = () => {
                                     </button>
                                     {expandedDelegations[group.delegation] ? (
                                         <div className='contracts-delegation-services'>
-                                            {group.services.map((service) => (
-                                                <button
-                                                    type='button'
-                                                    className='contracts-delegation-service'
-                                                    key={
-                                                        service.serviceId ||
-                                                        service.id
-                                                    }
-                                                    onClick={() =>
-                                                        navigate(
-                                                            `/services/${
-                                                                service.serviceId ||
-                                                                service.id
-                                                            }`
-                                                        )
-                                                    }
-                                                >
-                                                    <span>
-                                                        {service.name ||
-                                                            service.type ||
-                                                            'Servicio'}
-                                                    </span>
-                                                    <small>
-                                                        {service.address},{' '}
-                                                        {service.city}
-                                                    </small>
-                                                    <em
-                                                        className={`contracts-status contracts-status--${service.status}`}
+                                            {group.services.map((service) => {
+                                                const serviceId =
+                                                    getServiceId(service);
+                                                const openShiftCount =
+                                                    getOpenShiftCount(service);
+                                                const isCheckingOpenShift =
+                                                    !!activeShiftLoading[
+                                                        serviceId
+                                                    ];
+                                                const showImageLink =
+                                                    service.scheduleView ===
+                                                        'image' &&
+                                                    service.scheduleImage;
+
+                                                return (
+                                                    <article
+                                                        className='contracts-delegation-service'
+                                                        key={serviceId}
                                                     >
-                                                        {statusLabels[
-                                                            service.status
-                                                        ] || service.status}
-                                                    </em>
-                                                </button>
-                                            ))}
+                                                        <div className='contracts-delegation-service-main'>
+                                                            <span>
+                                                                {service.name ||
+                                                                    service.type ||
+                                                                    'Servicio'}
+                                                            </span>
+                                                            <small>
+                                                                {service.address}
+                                                                {service.address &&
+                                                                service.city
+                                                                    ? ', '
+                                                                    : ''}
+                                                                {service.city}
+                                                            </small>
+                                                        </div>
+                                                        <div className='contracts-delegation-service-meta'>
+                                                            <em
+                                                                className={`contracts-status contracts-status--${service.status}`}
+                                                            >
+                                                                {statusLabels[
+                                                                    service.status
+                                                                ] ||
+                                                                    service.status}
+                                                            </em>
+                                                            <span
+                                                                className={`contracts-open-shift${
+                                                                    openShiftCount
+                                                                        ? ' contracts-open-shift--active'
+                                                                        : ''
+                                                                }`}
+                                                            >
+                                                                {isCheckingOpenShift
+                                                                    ? 'Comprobando turno'
+                                                                    : openShiftCount
+                                                                      ? `Turno abierto (${openShiftCount})`
+                                                                      : 'Sin turno abierto'}
+                                                            </span>
+                                                        </div>
+                                                        <div className='contracts-delegation-service-actions'>
+                                                            {showImageLink ? (
+                                                                <a
+                                                                    className='contracts-delegation-link'
+                                                                    href={`${import.meta.env.VITE_API_URL}/uploads/${service.scheduleImage}`}
+                                                                    target='_blank'
+                                                                    rel='noreferrer'
+                                                                >
+                                                                    Ver foto
+                                                                </a>
+                                                            ) : (
+                                                                <button
+                                                                    type='button'
+                                                                    className='contracts-delegation-link'
+                                                                    onClick={() =>
+                                                                        navigate(
+                                                                            `/services/${serviceId}?tab=schedule`
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    Ver cuadrante
+                                                                </button>
+                                                            )}
+                                                            <button
+                                                                type='button'
+                                                                className='contracts-btn contracts-btn--ghost contracts-btn--ellipsis'
+                                                                aria-label={`Opciones de ${
+                                                                    service.name ||
+                                                                    service.type ||
+                                                                    'servicio'
+                                                                }`}
+                                                                onClick={() =>
+                                                                    navigate(
+                                                                        `/services/${serviceId}`
+                                                                    )
+                                                                }
+                                                            >
+                                                                ...
+                                                            </button>
+                                                        </div>
+                                                    </article>
+                                                );
+                                            })}
                                         </div>
                                     ) : null}
                                 </div>

@@ -319,9 +319,8 @@
     border: 1px solid #e5e7eb;
     border-radius: 8px;
     background: #ffffff;
-    cursor: pointer;
     display: grid;
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.8fr) auto;
     gap: 10px;
     align-items: center;
     padding: 10px 12px;
@@ -333,14 +332,51 @@
     background: #f8fafc;
 }
 
-.contracts-delegation-service span {
-    color: #0f172a;
-    font-weight: 700;
+.contracts-delegation-service-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
 }
 
-.contracts-delegation-service small {
+.contracts-delegation-service-main span {
+    color: #0f172a;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.contracts-delegation-service-main small {
     color: #64748b;
     overflow-wrap: anywhere;
+}
+
+.contracts-delegation-service-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.contracts-delegation-service-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.contracts-delegation-link {
+    border: 0;
+    background: transparent;
+    color: #1d4ed8;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.84rem;
+    font-weight: 700;
+    padding: 0;
+    text-decoration: underline;
+    white-space: nowrap;
 }
 
 .contracts-status {
@@ -365,6 +401,21 @@
 .contracts-status--completed {
     background: green;
     color: #ffffff;
+}
+
+.contracts-open-shift {
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 0.74rem;
+    font-weight: 700;
+    padding: 0.24rem 0.58rem;
+    white-space: nowrap;
+}
+
+.contracts-open-shift--active {
+    background: #dcfce7;
+    color: #166534;
 }
 
 /* === SERVICIOS EN CURSO === */
@@ -634,6 +685,10 @@
     .contracts-delegation-toggle,
     .contracts-delegation-service {
         grid-template-columns: 1fr;
+    }
+
+    .contracts-delegation-service-actions {
+        justify-content: flex-start;
     }
 
     .contracts-filter-actions {
