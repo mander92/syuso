@@ -109,6 +109,7 @@ const WorkReportsComponent = () => {
     const [inspectionReport, setInspectionReport] = useState(
         defaultInspectionReport
     );
+    const [inspectionPhotos, setInspectionPhotos] = useState([]);
     const signatureCanvasRef = useRef(null);
     const isSigningRef = useRef(false);
     const [signatureData, setSignatureData] = useState('');
@@ -545,6 +546,13 @@ const WorkReportsComponent = () => {
         });
     };
 
+    const handleInspectionPhotosChange = (event) => {
+        const files = Array.from(event.target.files || []).filter((file) =>
+            file.type.startsWith('image/')
+        );
+        setInspectionPhotos(files);
+    };
+
     const handleCreateManualReport = async (event) => {
         event.preventDefault();
         if (!authToken) return;
@@ -569,7 +577,8 @@ const WorkReportsComponent = () => {
 
         try {
             setIsCreatingReport(true);
-            await fetchCreateAdminWorkReport(authToken, {
+            const payload = new FormData();
+            Object.entries({
                 ...manualReport,
                 reportType: reportMode,
                 incidentStart: toApiDateTime(manualReport.incidentStart),
@@ -577,9 +586,22 @@ const WorkReportsComponent = () => {
                 description: isInspection
                     ? inspectionReport.observations || 'Parte de inspeccion'
                     : manualReport.description.trim(),
-                inspectionData: isInspection ? inspectionReport : undefined,
                 signature: signatureData,
+            }).forEach(([key, value]) => {
+                payload.append(key, value || '');
             });
+
+            if (isInspection) {
+                payload.append(
+                    'inspectionData',
+                    JSON.stringify(inspectionReport)
+                );
+                inspectionPhotos.forEach((file) => {
+                    payload.append('inspectionPhotos', file);
+                });
+            }
+
+            await fetchCreateAdminWorkReport(authToken, payload);
             toast.success(
                 isInspection ? 'Parte de inspeccion creado' : 'Parte creado'
             );
@@ -601,6 +623,7 @@ const WorkReportsComponent = () => {
                 reportEmail: '',
             }));
             setInspectionReport(defaultInspectionReport);
+            setInspectionPhotos([]);
             setReportMode('work');
             clearSignature();
         } catch (error) {
@@ -1328,9 +1351,24 @@ const WorkReportsComponent = () => {
                                             handleInspectionReportChange(
                                                 'otherData',
                                                 event.target.value
-                                            )
-                                        }
+                                        )
+                                    }
+                                />
+                            </label>
+                                <label className='shift-filter'>
+                                    <span>Fotos adjuntas</span>
+                                    <input
+                                        type='file'
+                                        accept='image/*'
+                                        multiple
+                                        onChange={handleInspectionPhotosChange}
                                     />
+                                    {inspectionPhotos.length ? (
+                                        <small>
+                                            {inspectionPhotos.length} fotos
+                                            seleccionadas
+                                        </small>
+                                    ) : null}
                                 </label>
                             </>
                         ) : (

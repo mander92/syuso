@@ -75,8 +75,8 @@ export const fetchNewContractAdmin = async (
         body: JSON.stringify({
             startDateTime,
             endDateTime,
-            hours,
-            numberOfPeople,
+            hours: hours || 1,
+            numberOfPeople: numberOfPeople || 1,
             comments,
             address,
             city,

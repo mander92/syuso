@@ -227,13 +227,16 @@ export const fetchCreateWorkReport = async (
 };
 
 export const fetchCreateAdminWorkReport = async (authToken, payload) => {
+    const isFormData = payload instanceof FormData;
     const res = await fetch(`${VITE_API_URL}/workReports/admin`, {
         method: 'POST',
-        headers: {
-            Authorization: authToken,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
+        headers: isFormData
+            ? { Authorization: authToken }
+            : {
+                  Authorization: authToken,
+                  'Content-Type': 'application/json',
+              },
+        body: isFormData ? payload : JSON.stringify(payload),
     });
 
     const body = await res.json();

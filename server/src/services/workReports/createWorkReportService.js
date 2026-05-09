@@ -115,7 +115,8 @@ const createInspectionPdf = async (
     pdfPath,
     reportData,
     logoPath,
-    signatureSource
+    signatureSource,
+    photoPaths = []
 ) => {
     await new Promise((resolve, reject) => {
         const doc = new PDFDocument({ size: 'A4', margin: 36 });
@@ -291,6 +292,49 @@ const createInspectionPdf = async (
         field('Informacion dada al trabajador', inspection.workerInformationGiven);
         field('Informacion recibida del trabajador', inspection.workerInformationReceived);
         field('Observaciones', inspection.observations || reportData.description);
+
+        if (photoPaths.length) {
+            sectionTitle('Fotos adjuntas');
+            const imageGap = 10;
+            const imageWidth = (pageWidth - imageGap) / 2;
+            const imageHeight = 115;
+
+            for (let index = 0; index < photoPaths.length; index += 2) {
+                ensureSpace(imageHeight + 12);
+                const y = doc.y;
+                const leftPath = photoPaths[index];
+                const rightPath = photoPaths[index + 1];
+
+                if (leftPath) {
+                    try {
+                        doc.image(leftPath, doc.page.margins.left, y, {
+                            width: imageWidth,
+                            height: imageHeight,
+                        });
+                    } catch (error) {
+                        // ignore missing image
+                    }
+                }
+
+                if (rightPath) {
+                    try {
+                        doc.image(
+                            rightPath,
+                            doc.page.margins.left + imageWidth + imageGap,
+                            y,
+                            {
+                                width: imageWidth,
+                                height: imageHeight,
+                            }
+                        );
+                    } catch (error) {
+                        // ignore missing image
+                    }
+                }
+
+                doc.y = y + imageHeight + 8;
+            }
+        }
 
         if (signatureSource) {
             ensureSpace(92);
@@ -519,6 +563,7 @@ const createWorkReportService = async ({
     incidents,
     incidentFiles,
     reportData,
+    inspectionFiles = {},
 }) => {
     const pool = await getPool();
 
@@ -711,6 +756,7 @@ const createWorkReportService = async ({
     );
 
     const fileEntries = Object.entries(incidentFiles || {});
+    const inspectionPhotoFiles = [];
 
     for (const [fieldName, fileValue] of fileEntries) {
         if (!fieldName.startsWith('incidentPhotos_')) continue;
@@ -741,6 +787,35 @@ const createWorkReportService = async ({
     }
 
     if (reportData.reportType === 'inspection') {
+        const inspectionFileEntries = Object.entries(inspectionFiles || {});
+        for (const [fieldName, fileValue] of inspectionFileEntries) {
+            if (!fieldName.startsWith('inspectionPhotos')) continue;
+            const files = Array.isArray(fileValue) ? fileValue : [fileValue];
+
+            for (const file of files) {
+                if (!file) continue;
+                const extension =
+                    path.extname(file.name || '').toLowerCase() ||
+                    (file.mimetype === 'image/png' ? '.png' : '.jpg');
+                const photoId = uuid();
+                const photoFileName = `${photoId}${extension}`;
+                const photoPath = path.join(photoDir, photoFileName);
+
+                if (file.tempFilePath) {
+                    await fsPromises.copyFile(file.tempFilePath, photoPath);
+                } else if (file.data) {
+                    await fsPromises.writeFile(photoPath, file.data);
+                }
+
+                inspectionPhotoFiles.push(photoPath);
+            }
+        }
+        if (inspectionPhotoFiles.length) {
+            incidentPhotoFiles.push(inspectionPhotoFiles);
+        }
+    }
+
+    if (reportData.reportType === 'inspection') {
         const logoPath =
             process.env.SYUSO_LOGO_PATH ||
             'C:\\Users\\Mario\\OneDrive\\Escritorio\\SYUSO_app\\client\\src\\assets\\syusoLogo.jpg';
@@ -749,7 +824,8 @@ const createWorkReportService = async ({
             reportPdfPath,
             svgPayload,
             logoPath,
-            signatureImage
+            signatureImage,
+            inspectionPhotoFiles
         );
     } else if (normalizedIncidents.length) {
         incidentPhotoFiles = normalizedIncidents.map(() => []);

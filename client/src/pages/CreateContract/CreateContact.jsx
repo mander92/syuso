@@ -2,7 +2,6 @@ import { useParams } from 'react-router-dom';
 import { useState, useContext } from 'react';
 import toast from 'react-hot-toast';
 
-import ListUserComponent from '../../components/ListUserComponent/ListUserComponent.jsx';
 import { fetchNewContractAdmin } from '../../services/serviceService.js';
 import { AuthContext } from '../../context/AuthContext.jsx';
 
@@ -12,13 +11,11 @@ const CreateContract = () => {
 
     const [startDateTime, setStartDateTime] = useState('');
     const [endDateTime, setEndDateTime] = useState('');
-    const [hours, setHours] = useState('');
     const [numberOfPeople, setNumberOfPeople] = useState('');
     const [comments, setComments] = useState('');
     const [address, setAddress] = useState('');
     const [city, setCity] = useState('');
     const [postCode, setPostCode] = useState('');
-    const [clientId, setClientId] = useState('');
     const [name, setName] = useState('');
     const [type, setType] = useState('');
     const [description, setDescription] = useState('');
@@ -42,13 +39,13 @@ const CreateContract = () => {
                 typeOfServiceId || '',
                 formattedStartDateTime,
                 formattedEndDateTime,
-                hours,
+                '',
                 numberOfPeople,
                 comments,
                 address,
                 city,
                 postCode,
-                clientId,
+                '',
                 name,
                 type,
                 description,
@@ -119,18 +116,6 @@ const CreateContract = () => {
                         value={endDateTime}
                         onChange={(e) => setEndDateTime(e.target.value)}
                     />
-                    <label htmlFor='Hours'>Horas Totales</label>
-                    <input
-                        type='number'
-                        defaultValue={1}
-                        min={1}
-                        id='Hours'
-                        name='Hours'
-                        value={hours}
-                        onChange={(e) => {
-                            setHours(e.target.value);
-                        }}
-                    />
                     <label htmlFor='NumberOfPeople'>Número de personas</label>
                     <input
                         type='number'
@@ -183,20 +168,20 @@ const CreateContract = () => {
                             setPostCode(e.target.value);
                         }}
                     />
-                    <label htmlFor='Client'>
+                    <label htmlFor='Client' style={{ display: 'none' }}>
                         Cliente (Elígelo en el Buscador)
                     </label>
                     <input
+                        style={{ display: 'none' }}
                         type='text'
                         id='Client'
                         name='CLient'
-                        value={clientId}
-                        onChange={setClientId}
+                        value=''
+                        readOnly
                     />
                     <button>Enviar</button>
                 </fieldset>
             </form>
-            <ListUserComponent setClientId={setClientId} />
         </>
     );
 };

@@ -25,6 +25,8 @@ const insertServiceAdmin = async (
     const resolvedDescription = serviceType.description || comments || null;
     const resolvedProvince = serviceType.province || city || null;
     const resolvedImage = serviceType.image || null;
+    const resolvedHours = Number(hours) || 1;
+    const resolvedNumberOfPeople = Number(numberOfPeople) || 1;
 
     const [verify] = await pool.query(
         `
@@ -87,8 +89,8 @@ const insertServiceAdmin = async (
             resolvedImage,
             startDateTime,
             normalizedEndDateTime,
-            hours,
-            numberOfPeople,
+            resolvedHours,
+            resolvedNumberOfPeople,
             comments,
             validationCode,
             clientId,

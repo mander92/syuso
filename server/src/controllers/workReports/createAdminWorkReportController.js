@@ -40,9 +40,25 @@ const normalizeDateTime = (value) => {
     return `${datePart}T${cleanTime}`;
 };
 
+const parseInspectionData = (value) => {
+    if (!value) return {};
+    if (typeof value === 'object') return value;
+    try {
+        const parsed = JSON.parse(value);
+        return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+        generateErrorUtil('Datos de inspeccion invalidos', 400);
+    }
+};
+
 const createAdminWorkReportController = async (req, res, next) => {
     try {
-        const { error, value } = schema.validate(req.body || {}, {
+        const body = {
+            ...(req.body || {}),
+            inspectionData: parseInspectionData(req.body?.inspectionData),
+        };
+
+        const { error, value } = schema.validate(body, {
             abortEarly: false,
             stripUnknown: true,
         });
@@ -115,6 +131,7 @@ const createAdminWorkReportController = async (req, res, next) => {
             locationCoords: null,
             incidents: [],
             incidentFiles: {},
+            inspectionFiles: isInspection ? req.files || {} : {},
             reportData: {
                 folio:
                     value.folio ||
