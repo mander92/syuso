@@ -4,6 +4,7 @@ import { fetchEmployeeScheduleShifts } from '../../services/serviceService.js';
 import { AuthContext } from '../../context/AuthContext.jsx';
 import { useContext } from 'react';
 import ServiceScheduleGrid from '../serviceSchedule/ServiceScheduleGrid.jsx';
+import '../serviceSchedule/ServiceSchedulePanel.css';
 import './EmployeeScheduleComponent.css';
 
 const EmployeeScheduleComponent = () => {
@@ -117,28 +118,28 @@ const EmployeeScheduleComponent = () => {
             )}
 
             {isGridOpen && (
-                <div className='employee-schedule-modal'>
+                <div className='service-schedule-grid-modal'>
                     <button
                         type='button'
-                        className='employee-schedule-modal__backdrop'
+                        className='service-schedule-grid-modal__backdrop'
                         onClick={() => setIsGridOpen(false)}
                         aria-label='Cerrar cuadrante'
                     />
-                    <div className='employee-schedule-modal__panel'>
-                        <div className='employee-schedule-modal__header'>
+                    <div className='service-schedule-grid-modal__panel'>
+                        <div className='service-schedule-grid-modal__header'>
                             <div>
                                 <h3>Mis Cuadrantes</h3>
                                 <p>{month}</p>
                             </div>
                             <button
                                 type='button'
-                                className='employee-schedule-modal__close'
+                                className='service-schedule-grid-modal__close'
                                 onClick={() => setIsGridOpen(false)}
                             >
                                 Cerrar
                             </button>
                         </div>
-                        <div className='employee-schedule-modal__body'>
+                        <div className='service-schedule-grid-modal__body'>
                             <ServiceScheduleGrid
                                 month={month}
                                 shifts={gridShifts}

@@ -16,6 +16,7 @@ import { createServiceNfcLog } from '../../services/nfcService.js';
 import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 import ServiceChat from '../serviceChat/ServiceChat.jsx';
 import ServiceScheduleGrid from '../serviceSchedule/ServiceScheduleGrid.jsx';
+import '../serviceSchedule/ServiceSchedulePanel.css';
 import './EmployeeServicesComponent.css';
 
 const LOCATION_CACHE_KEY = 'syuso_last_location';
@@ -669,15 +670,15 @@ const EmployeeServicesComponent = () => {
                 </ul>
             )}
             {scheduleModal && (
-                <div
-                    className='employee-schedule-modal-overlay'
-                    onClick={closeScheduleModal}
-                >
-                    <div
-                        className='employee-schedule-modal'
-                        onClick={(event) => event.stopPropagation()}
-                    >
-                        <div className='employee-schedule-modal-header'>
+                <div className='service-schedule-grid-modal'>
+                    <button
+                        type='button'
+                        className='service-schedule-grid-modal__backdrop'
+                        onClick={closeScheduleModal}
+                        aria-label='Cerrar cuadrante'
+                    />
+                    <div className='service-schedule-grid-modal__panel'>
+                        <div className='service-schedule-grid-modal__header'>
                             <div>
                                 <h3>
                                     Cuadrante: {scheduleModal.serviceName}
@@ -686,13 +687,13 @@ const EmployeeServicesComponent = () => {
                             </div>
                             <button
                                 type='button'
-                                className='employee-schedule-modal-close'
+                                className='service-schedule-grid-modal__close'
                                 onClick={closeScheduleModal}
                             >
                                 Cerrar
                             </button>
                         </div>
-                        <div className='employee-schedule-modal-body'>
+                        <div className='service-schedule-grid-modal__body'>
                             {scheduleModal.scheduleView === 'image' &&
                             scheduleModal.scheduleImage ? (
                                 <div className='employee-schedule-image'>
