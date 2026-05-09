@@ -294,6 +294,7 @@ const ServiceChatDashboard = () => {
                                                     serviceId={service.id}
                                                     title={`Chat: ${service.name}`}
                                                     compact
+                                                    manageRoom={false}
                                                 />
                                             )}
                                         </div>

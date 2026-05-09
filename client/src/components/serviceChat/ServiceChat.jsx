@@ -9,6 +9,7 @@ import {
     uploadServiceChatImage,
 } from '../../services/serviceChatService.js';
 import { getChatSocket } from '../../services/chatSocket.js';
+import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 import './ServiceChat.css';
 
 const formatTime = (value) => {
@@ -26,6 +27,7 @@ const ServiceChat = ({
 }) => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
+    const { resetServiceUnread } = useChatNotifications();
     const [messages, setMessages] = useState([]);
     const [messageText, setMessageText] = useState('');
     const [loading, setLoading] = useState(false);
@@ -48,6 +50,12 @@ const ServiceChat = ({
         user?.role === 'admin' || user?.role === 'sudo';
     const canReply = user?.role && user.role !== 'client';
 
+    const markAsRead = () => {
+        if (!serviceId) return;
+        resetServiceUnread(serviceId);
+        socket?.emit('chat:read', { serviceId });
+    };
+
     useEffect(() => {
         const loadMessages = async () => {
             if (!authToken || !serviceId) return;
@@ -60,6 +68,7 @@ const ServiceChat = ({
                 );
                 setMessages(data.messages || []);
                 setChatPaused(Boolean(data.chatPaused));
+                markAsRead();
             } catch (error) {
                 toast.error(
                     error.message || 'No se pudo cargar el chat'
@@ -116,6 +125,7 @@ const ServiceChat = ({
         const handleMessage = (newMessage) => {
             if (newMessage?.serviceId !== serviceId) return;
             setMessages((prev) => [...prev, newMessage]);
+            markAsRead();
         };
         const handlePause = (payload) => {
             if (payload?.serviceId !== serviceId) return;

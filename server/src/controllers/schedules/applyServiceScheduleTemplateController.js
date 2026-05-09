@@ -1,6 +1,7 @@
 import applyServiceScheduleTemplateService from '../../services/schedules/applyServiceScheduleTemplateService.js';
 import ensureServiceDelegationAccessService from '../../services/delegations/ensureServiceDelegationAccessService.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
+import { emitServiceScheduleChanged } from '../../utils/serviceScheduleNotificationUtil.js';
 
 const applyServiceScheduleTemplateController = async (req, res, next) => {
     try {
@@ -20,6 +21,11 @@ const applyServiceScheduleTemplateController = async (req, res, next) => {
             startDate,
             userId
         );
+
+        emitServiceScheduleChanged(serviceId, {
+            changedBy: userId,
+            reason: 'template_applied',
+        });
 
         res.send({
             status: 'ok',

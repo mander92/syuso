@@ -14,6 +14,7 @@ const listShiftRecordsController = async (req, res, next) => {
             endDate,
             generateExcel,
             delegationId,
+            reportType,
         } = req.query;
 
         const { id: userId, role } = req.userLogged;
@@ -49,7 +50,8 @@ const listShiftRecordsController = async (req, res, next) => {
             startDate,
             endDate,
             generateExcel,
-            allowedDelegations
+            allowedDelegations,
+            reportType
         );
 
         res.send({

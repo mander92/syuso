@@ -9,6 +9,7 @@ import {
     uploadGeneralChatImage,
 } from '../../services/generalChatService.js';
 import { getChatSocket } from '../../services/chatSocket.js';
+import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 import '../serviceChat/ServiceChat.css';
 
 const formatTime = (value) => {
@@ -21,6 +22,7 @@ const formatTime = (value) => {
 const GeneralChat = ({ chatId, chatName, chatType, compact = false, manageRoom = true }) => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
+    const { resetGeneralUnread } = useChatNotifications();
     const [messages, setMessages] = useState([]);
     const [messageText, setMessageText] = useState('');
     const [loading, setLoading] = useState(false);
@@ -42,6 +44,12 @@ const GeneralChat = ({ chatId, chatName, chatType, compact = false, manageRoom =
     const canWrite = chatType !== 'announcement' || isAdminUser;
     const canReply = Boolean(user?.role && user.role !== 'client');
 
+    const markAsRead = () => {
+        if (!chatId) return;
+        resetGeneralUnread(chatId);
+        socket?.emit('generalChat:read', { chatId });
+    };
+
     useEffect(() => {
         const loadMessages = async () => {
             if (!authToken || !chatId) return;
@@ -53,6 +61,7 @@ const GeneralChat = ({ chatId, chatName, chatType, compact = false, manageRoom =
                     authToken
                 );
                 setMessages(data.messages || []);
+                markAsRead();
             } catch (error) {
                 toast.error(
                     error.message || 'No se pudo cargar el chat'
@@ -106,6 +115,7 @@ const GeneralChat = ({ chatId, chatName, chatType, compact = false, manageRoom =
             if (!newMessage?.chatId) return;
             if (newMessage.chatId !== chatId) return;
             setMessages((prev) => [...prev, newMessage]);
+            markAsRead();
         };
         const handleDelete = (payload) => {
             if (payload?.chatId !== chatId) return;

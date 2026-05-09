@@ -1,6 +1,7 @@
 import createServiceScheduleShiftService from '../../services/schedules/createServiceScheduleShiftService.js';
 import ensureServiceDelegationAccessService from '../../services/delegations/ensureServiceDelegationAccessService.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
+import { emitServiceScheduleChanged } from '../../utils/serviceScheduleNotificationUtil.js';
 
 const createServiceScheduleShiftController = async (req, res, next) => {
     try {
@@ -31,6 +32,11 @@ const createServiceScheduleShiftController = async (req, res, next) => {
             shiftTypeId,
             userId
         );
+
+        emitServiceScheduleChanged(serviceId, {
+            changedBy: userId,
+            reason: 'shift_created',
+        });
 
         res.send({
             status: 'ok',

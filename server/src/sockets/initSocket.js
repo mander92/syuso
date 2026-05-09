@@ -8,10 +8,12 @@ import ensureServiceChatNotPausedService from '../services/serviceChat/ensureSer
 import updateServiceChatPausedService from '../services/serviceChat/updateServiceChatPausedService.js';
 import deleteServiceChatMessageService from '../services/serviceChat/deleteServiceChatMessageService.js';
 import deleteServiceChatMessagesByServiceService from '../services/serviceChat/deleteServiceChatMessagesByServiceService.js';
+import updateServiceChatReadService from '../services/serviceChat/updateServiceChatReadService.js';
 import ensureGeneralChatAccessService from '../services/generalChat/ensureGeneralChatAccessService.js';
 import ensureGeneralChatWriteAccessService from '../services/generalChat/ensureGeneralChatWriteAccessService.js';
 import createGeneralChatMessageService from '../services/generalChat/createGeneralChatMessageService.js';
 import deleteGeneralChatMessageService from '../services/generalChat/deleteGeneralChatMessageService.js';
+import updateGeneralChatReadService from '../services/generalChat/updateGeneralChatReadService.js';
 import selectUserByIdService from '../services/users/selectUserByIdService.js';
 import generateErrorUtil from '../utils/generateErrorUtil.js';
 
@@ -92,6 +94,16 @@ const initSocket = (httpServer) => {
             }
         });
 
+        socket.on('chat:read', async ({ serviceId }, callback) => {
+            try {
+                await ensureServiceChatAccessService(serviceId, socket.user.id, socket.user.role);
+                await updateServiceChatReadService(serviceId, socket.user.id);
+                callback?.({ ok: true });
+            } catch (error) {
+                callback?.({ ok: false, message: error.message });
+            }
+        });
+
         socket.on('chat:pause', async ({ serviceId, paused }, callback) => {
             try {
                 if (!isAdminUser) generateErrorUtil('Acceso denegado: Se requiere rol de Administrador', 403);
@@ -161,6 +173,16 @@ const initSocket = (httpServer) => {
 
                 io.to(`generalChat:${chatId}`).emit('generalChat:message', newMessage);
                 callback?.({ ok: true, message: newMessage });
+            } catch (error) {
+                callback?.({ ok: false, message: error.message });
+            }
+        });
+
+        socket.on('generalChat:read', async ({ chatId }, callback) => {
+            try {
+                await ensureGeneralChatAccessService(chatId, socket.user.id);
+                await updateGeneralChatReadService(chatId, socket.user.id);
+                callback?.({ ok: true });
             } catch (error) {
                 callback?.({ ok: false, message: error.message });
             }

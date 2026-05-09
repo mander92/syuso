@@ -1,5 +1,6 @@
 import deleteServiceShiftTypeService from '../../services/schedules/deleteServiceShiftTypeService.js';
 import ensureServiceDelegationAccessService from '../../services/delegations/ensureServiceDelegationAccessService.js';
+import { emitServiceScheduleChanged } from '../../utils/serviceScheduleNotificationUtil.js';
 
 const deleteServiceShiftTypeController = async (req, res, next) => {
     try {
@@ -9,6 +10,11 @@ const deleteServiceShiftTypeController = async (req, res, next) => {
         await ensureServiceDelegationAccessService(serviceId, userId, role);
 
         await deleteServiceShiftTypeService(serviceId, shiftTypeId);
+
+        emitServiceScheduleChanged(serviceId, {
+            changedBy: userId,
+            reason: 'shift_type_deleted',
+        });
 
         res.send({
             status: 'ok',

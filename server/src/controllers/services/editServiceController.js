@@ -2,6 +2,8 @@ import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import updateServiceByIdService from '../../services/services/updateServiceByIdService.js';
 import Joi from 'joi';
 import ensureServiceDelegationAccessService from '../../services/delegations/ensureServiceDelegationAccessService.js';
+import { emitServiceScheduleChanged } from '../../utils/serviceScheduleNotificationUtil.js';
+import selectServiceByIdService from '../../services/services/selectServiceByIdService.js';
 
 const editServiceController = async (req, res, next) => {
     try {
@@ -47,6 +49,16 @@ const editServiceController = async (req, res, next) => {
 
         await ensureServiceDelegationAccessService(serviceId, userId, role);
 
+        const shouldCheckScheduleView = Object.prototype.hasOwnProperty.call(
+            req.body,
+            'scheduleView'
+        );
+        const previousService = shouldCheckScheduleView
+            ? await selectServiceByIdService(serviceId)
+            : null;
+        const previousScheduleView = previousService?.[0]?.scheduleView || 'grid';
+        const nextScheduleView = scheduleView || 'grid';
+
         const data = await updateServiceByIdService(
             serviceId,
             address,
@@ -72,6 +84,13 @@ const editServiceController = async (req, res, next) => {
             image,
             role
         );
+
+        if (shouldCheckScheduleView && nextScheduleView !== previousScheduleView) {
+            emitServiceScheduleChanged(serviceId, {
+                changedBy: userId,
+                reason: 'schedule_view_changed',
+            });
+        }
 
         res.send({
             status: 'ok',

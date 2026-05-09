@@ -7,6 +7,7 @@ import createWorkReportService from '../../services/workReports/createWorkReport
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 
 const schema = Joi.object({
+    reportType: Joi.string().valid('work', 'inspection').default('work'),
     employeeId: Joi.string().length(36).required(),
     serviceId: Joi.string().length(36).required(),
     folio: Joi.string().allow('', null),
@@ -17,7 +18,12 @@ const schema = Joi.object({
     guardFullName: Joi.string().allow('', null),
     guardEmployeeNumber: Joi.string().allow('', null),
     securityCompany: Joi.string().allow('', null),
-    description: Joi.string().required(),
+    description: Joi.when('reportType', {
+        is: 'inspection',
+        then: Joi.string().allow('', null),
+        otherwise: Joi.string().required(),
+    }),
+    inspectionData: Joi.object().unknown(true).default({}),
     reportEmail: Joi.string().allow('', null),
     signature: Joi.string()
         .pattern(/^data:image\/png;base64,/)
@@ -90,6 +96,16 @@ const createAdminWorkReportController = async (req, res, next) => {
             'Servicio';
         const incidentStart = normalizeDateTime(value.incidentStart);
         const incidentEnd = normalizeDateTime(value.incidentEnd);
+        const isInspection = value.reportType === 'inspection';
+        const inspectionData = value.inspectionData || {};
+        const inspectionDescription =
+            [
+                inspectionData.observations,
+                inspectionData.workerInformationReceived,
+                inspectionData.otherData,
+            ]
+                .filter(Boolean)
+                .join('\n\n') || 'Parte de inspeccion';
 
         const data = await createWorkReportService({
             shiftRecordId,
@@ -116,19 +132,29 @@ const createAdminWorkReportController = async (req, res, next) => {
                 guardEmployeeNumber: value.guardEmployeeNumber || 'Admin',
                 guardShift: service.name || 'Turno',
                 securityCompany: value.securityCompany || 'Syuso',
-                incidentType: 'Parte de trabajo',
+                incidentType: isInspection
+                    ? 'Parte de inspeccion'
+                    : 'Parte de trabajo',
                 severity: 'leve',
-                description: value.description,
-                detection: 'Creado manualmente desde administracion',
+                description: isInspection
+                    ? inspectionDescription
+                    : value.description,
+                detection: isInspection
+                    ? 'Inspeccion de servicio creada desde administracion'
+                    : 'Creado manualmente desde administracion',
                 actionsTaken: 'No aplica',
                 outcome: 'controlado',
                 signature: value.signature,
+                reportType: value.reportType,
+                inspectionData,
             },
         });
 
         res.send({
             status: 'ok',
-            message: 'Parte de trabajo creado',
+            message: isInspection
+                ? 'Parte de inspeccion creado'
+                : 'Parte de trabajo creado',
             data,
         });
     } catch (error) {

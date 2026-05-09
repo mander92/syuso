@@ -21,6 +21,7 @@ const downloadWorkReportsZipController = async (req, res, next) => {
             endDate,
             delegationId,
             personSearch,
+            reportType,
         } = req.query;
 
         const { id: userId, role } = req.userLogged;
@@ -59,7 +60,8 @@ const downloadWorkReportsZipController = async (req, res, next) => {
             startDate,
             endDate,
             false,
-            allowedDelegations
+            allowedDelegations,
+            reportType
         );
 
         const normalizeText = (value) =>

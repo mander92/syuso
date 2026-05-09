@@ -111,6 +111,211 @@ const createPdfFromPng = async (pngPath, pdfPath) => {
     });
 };
 
+const createInspectionPdf = async (
+    pdfPath,
+    reportData,
+    logoPath,
+    signatureSource
+) => {
+    await new Promise((resolve, reject) => {
+        const doc = new PDFDocument({ size: 'A4', margin: 36 });
+        const stream = fs.createWriteStream(pdfPath);
+        doc.pipe(stream);
+
+        const sanitizeText = (value) =>
+            String(value || '')
+                .replace(/\u00d0/g, '')
+                .replace(/\r/g, '')
+                .trim();
+        const inspection = reportData.inspectionData || {};
+        const pageWidth =
+            doc.page.width - doc.page.margins.left - doc.page.margins.right;
+
+        const formatDate = (value) => {
+            const text = sanitizeText(value);
+            if (!text) return '';
+            if (text.includes('T')) return text.split('T')[0].split('-').reverse().join('-');
+            if (text.includes(' ')) return text.split(' ')[0].split('-').reverse().join('-');
+            if (text.includes('-')) return text.split('-').reverse().join('-');
+            return text;
+        };
+
+        const formatDateTime = (value) => {
+            const text = sanitizeText(value);
+            if (!text) return '';
+            if (text.includes('T')) {
+                const [datePart, timePart] = text.split('T');
+                return `${datePart.split('-').reverse().join('-')} ${timePart}`;
+            }
+            if (text.includes(' ')) {
+                const [datePart, timePart] = text.split(' ');
+                return `${datePart.split('-').reverse().join('-')} ${timePart}`;
+            }
+            return text;
+        };
+
+        const ensureSpace = (height = 80) => {
+            if (doc.y + height > doc.page.height - doc.page.margins.bottom) {
+                doc.addPage();
+            }
+        };
+
+        const sectionTitle = (title) => {
+            ensureSpace(36);
+            doc.moveDown(0.5);
+            doc.fontSize(12).fillColor('#0f172a').text(title, {
+                underline: true,
+            });
+            doc.moveDown(0.25);
+            doc.fillColor('#111827');
+        };
+
+        const field = (label, value, width = pageWidth) => {
+            const text = sanitizeText(value) || '-';
+            ensureSpace(24);
+            doc.fontSize(9).fillColor('#6b7280').text(label, {
+                continued: false,
+            });
+            doc.fontSize(10).fillColor('#111827').text(text, {
+                width,
+            });
+            doc.moveDown(0.25);
+        };
+
+        const twoCols = (items) => {
+            const leftX = doc.page.margins.left;
+            const rightX = leftX + pageWidth / 2 + 8;
+            const startY = doc.y;
+            const colWidth = pageWidth / 2 - 8;
+            items.forEach((item, index) => {
+                const x = index % 2 === 0 ? leftX : rightX;
+                if (index % 2 === 0 && index > 0) {
+                    doc.y += 4;
+                }
+                const y = doc.y;
+                doc.x = x;
+                field(item.label, item.value, colWidth);
+                if (index % 2 === 0) {
+                    doc.y = y;
+                }
+            });
+            doc.x = leftX;
+            if (doc.y < startY + 18) doc.y = startY + 18;
+        };
+
+        const scoreTable = (items) => {
+            const scoreWidth = 50;
+            items.forEach((item) => {
+                ensureSpace(22);
+                const y = doc.y;
+                doc.fontSize(10).fillColor('#111827').text(item.label, {
+                    width: pageWidth - scoreWidth,
+                });
+                doc.fontSize(10).text(
+                    sanitizeText(item.value) || '-',
+                    doc.page.margins.left + pageWidth - scoreWidth,
+                    y,
+                    { width: scoreWidth, align: 'center' }
+                );
+                doc.moveTo(doc.page.margins.left, doc.y + 2)
+                    .lineTo(doc.page.margins.left + pageWidth, doc.y + 2)
+                    .strokeColor('#e5e7eb')
+                    .stroke();
+                doc.moveDown(0.35);
+            });
+            doc.strokeColor('#111827');
+        };
+
+        if (logoPath) {
+            try {
+                doc.image(logoPath, doc.page.margins.left, 28, {
+                    fit: [130, 46],
+                });
+            } catch (error) {
+                // ignore missing logo
+            }
+        }
+
+        doc.moveDown(2.4);
+        doc.fontSize(18).fillColor('#0f172a').text('Parte de inspeccion');
+        doc.fontSize(10).fillColor('#374151').text(`Folio: ${sanitizeText(reportData.folio)}`);
+        doc.text(`Fecha/Hora: ${formatDateTime(reportData.incidentStart)}`);
+
+        sectionTitle('Informacion general del servicio');
+        twoCols([
+            { label: 'Denominacion del servicio', value: inspection.serviceDenomination || reportData.guardShift },
+            { label: 'Direccion', value: inspection.address || reportData.location },
+            { label: 'Poblacion', value: inspection.city },
+            { label: 'Jefe de Seguridad o Inspector', value: inspection.inspectorName },
+            { label: 'Fecha del parte', value: formatDate(reportData.reportDate) },
+            { label: 'Horario inspeccion', value: `${formatDateTime(reportData.incidentStart)} - ${formatDateTime(reportData.incidentEnd)}` },
+        ]);
+
+        field('Tipo de servicio', (inspection.serviceTypes || []).join(', '));
+        twoCols([
+            { label: 'Conflictos', value: inspection.conflicts },
+            { label: 'Intentos de agresion', value: inspection.aggressionAttempts },
+            { label: 'Intentos de robo', value: inspection.robberyAttempts },
+            { label: 'Danos inmuebles', value: inspection.propertyDamage },
+            { label: 'Presencia policial', value: inspection.policePresence },
+            { label: 'Limpieza vivienda/control', value: inspection.controlPostCleanliness },
+            { label: 'Limpieza zona trabajo', value: inspection.workAreaCleanliness },
+            { label: 'Otros datos de interes', value: inspection.otherData },
+        ]);
+
+        sectionTitle('Evaluacion del personal (puntuacion de 1 a 5)');
+        twoCols([
+            { label: 'Vigilante de seguridad', value: inspection.guardName || reportData.guardFullName },
+            { label: 'TIP', value: inspection.tip || reportData.guardEmployeeNumber },
+            { label: 'Hora inicio', value: inspection.startTime },
+            { label: 'Hora fin', value: inspection.endTime },
+        ]);
+        scoreTable([
+            { label: 'Uniformidad', value: inspection.uniformity },
+            { label: 'Actitud', value: inspection.attitude },
+            { label: 'Documentacion', value: inspection.documentation },
+            { label: 'Herramientas de trabajo', value: inspection.workTools },
+            { label: 'Relacion con cliente, mandos y companeros', value: inspection.relationship },
+        ]);
+
+        sectionTitle('Seguridad y salud');
+        scoreTable([
+            { label: 'Estado de los EPIs', value: inspection.epiStatus },
+            { label: 'Uso de los EPIs', value: inspection.epiUse },
+            { label: 'Cumplimiento de normas de seguridad', value: inspection.safetyRules },
+            { label: 'Cumplimiento de normas de calidad y medioambientales', value: inspection.qualityRules },
+        ]);
+        field('Nuevos riesgos', inspection.newRisks);
+
+        sectionTitle('Incidencias y observaciones');
+        field('Informacion dada al trabajador', inspection.workerInformationGiven);
+        field('Informacion recibida del trabajador', inspection.workerInformationReceived);
+        field('Observaciones', inspection.observations || reportData.description);
+
+        if (signatureSource) {
+            ensureSpace(92);
+            doc.moveDown(0.8);
+            doc.fontSize(11).text('Firma vigilante', {
+                align: 'right',
+            });
+            try {
+                doc.image(
+                    signatureSource,
+                    doc.page.width - doc.page.margins.right - 150,
+                    doc.y + 4,
+                    { fit: [150, 64] }
+                );
+            } catch (error) {
+                // ignore missing signature
+            }
+        }
+
+        doc.end();
+        stream.on('finish', resolve);
+        stream.on('error', reject);
+    });
+};
+
 const createPdfWithIncidents = async (
     pdfPath,
     reportData,
@@ -535,7 +740,18 @@ const createWorkReportService = async ({
         }
     }
 
-    if (normalizedIncidents.length) {
+    if (reportData.reportType === 'inspection') {
+        const logoPath =
+            process.env.SYUSO_LOGO_PATH ||
+            'C:\\Users\\Mario\\OneDrive\\Escritorio\\SYUSO_app\\client\\src\\assets\\syusoLogo.jpg';
+
+        await createInspectionPdf(
+            reportPdfPath,
+            svgPayload,
+            logoPath,
+            signatureImage
+        );
+    } else if (normalizedIncidents.length) {
         incidentPhotoFiles = normalizedIncidents.map(() => []);
 
         for (let index = 0; index < normalizedIncidents.length; index += 1) {

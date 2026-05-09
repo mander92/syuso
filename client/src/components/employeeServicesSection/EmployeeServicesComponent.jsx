@@ -660,6 +660,7 @@ const EmployeeServicesComponent = () => {
                                         serviceId={serviceId}
                                         title={`Chat: ${service.name || service.type || ''}`}
                                         compact
+                                        manageRoom={false}
                                     />
                                 )}
                             </li>

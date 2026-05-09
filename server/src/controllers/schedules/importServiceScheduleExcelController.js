@@ -2,6 +2,7 @@ import Joi from 'joi';
 
 import importServiceScheduleExcelService from '../../services/schedules/importServiceScheduleExcelService.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
+import { emitServiceScheduleChanged } from '../../utils/serviceScheduleNotificationUtil.js';
 
 const querySchema = Joi.object({
     month: Joi.string()
@@ -44,6 +45,13 @@ const importServiceScheduleExcelController = async (req, res, next) => {
             employeeMappings: parseMappings(req.body?.employeeMappings),
             createdBy: req.userLogged.id,
         });
+
+        if (data.applied) {
+            emitServiceScheduleChanged(req.params.serviceId, {
+                changedBy: req.userLogged.id,
+                reason: 'excel_imported',
+            });
+        }
 
         res.send({
             status: 'ok',

@@ -2,6 +2,7 @@ import Joi from 'joi';
 import approveShiftSwapRequestService from '../../services/shiftSwaps/approveShiftSwapRequestService.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import { getIO } from '../../sockets/io.js';
+import { emitServiceScheduleChanged } from '../../utils/serviceScheduleNotificationUtil.js';
 
 const paramsSchema = Joi.object({
     id: Joi.string().uuid().required(),
@@ -27,6 +28,10 @@ const approveShiftSwapRequestController = async (req, res, next) => {
             io.to(`user:${result.requestorId}`).emit('shiftSwap:approved', result);
             io.to(`user:${result.counterpartId}`).emit('shiftSwap:approved', result);
         }
+        emitServiceScheduleChanged(result.serviceId, {
+            changedBy: adminId,
+            reason: 'shift_swap_approved',
+        });
 
         res.send({
             status: 'ok',

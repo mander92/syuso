@@ -12,7 +12,8 @@ const selectShiftRecordsService = async (
     startDate,
     endDate,
     generateExcel,
-    delegationNames = []
+    delegationNames = [],
+    reportType = ''
 ) => {
     const pool = await getPool();
 
@@ -21,7 +22,7 @@ const selectShiftRecordsService = async (
         s.id, s.serviceId, s.employeeId, u.firstName, u.lastName, s.clockIn, s.clockOut,
         s.realClockIn, s.realClockOut,
         s.latitudeIn, s.longitudeIn, s.latitudeOut, s.longitudeOut,
-        wr.id AS reportId, wr.reportDate, se.name AS serviceName, se.status, se.hours, se.startDateTime, a.city, a.address, se.type, se.province,
+        wr.id AS reportId, wr.reportDate, wr.incidentType, se.name AS serviceName, se.status, se.hours, se.startDateTime, a.city, a.address, se.type, se.province,
         TIMESTAMPDIFF(HOUR, s.clockIn, s.clockOut) AS hoursWorked,
         MOD(TIMESTAMPDIFF(MINUTE, s.clockIn, s.clockOut), 60) AS minutesWorked,
         TIMESTAMPDIFF(HOUR, s.realClockIn, s.realClockOut) AS realHoursWorked,
@@ -82,6 +83,15 @@ const selectShiftRecordsService = async (
             .map(() => '?')
             .join(', ')})`;
         sqlValuesDetails.push(...delegationNames);
+    }
+
+    if (reportType === 'inspection') {
+        sqlQueryDetails += ' AND wr.incidentType = ?';
+        sqlValuesDetails.push('Parte de inspeccion');
+    } else if (reportType === 'work') {
+        sqlQueryDetails +=
+            ' AND (wr.incidentType IS NULL OR wr.incidentType <> ?)';
+        sqlValuesDetails.push('Parte de inspeccion');
     }
 
     sqlQueryDetails += ' ORDER BY COALESCE(s.realClockIn, s.clockIn) DESC';
@@ -152,6 +162,22 @@ const selectShiftRecordsService = async (
             .map(() => '?')
             .join(', ')})`;
         sqlValuesTotal.push(...delegationNames);
+    }
+
+    if (reportType === 'inspection' || reportType === 'work') {
+        sqlQueryTotal += `
+            AND EXISTS (
+                SELECT 1
+                FROM workReports wrFilter
+                WHERE wrFilter.shiftRecordId = s.id
+                  ${
+                      reportType === 'inspection'
+                          ? 'AND wrFilter.incidentType = ?'
+                          : 'AND (wrFilter.incidentType IS NULL OR wrFilter.incidentType <> ?)'
+                  }
+            )
+        `;
+        sqlValuesTotal.push('Parte de inspeccion');
     }
 
     sqlQueryTotal += `

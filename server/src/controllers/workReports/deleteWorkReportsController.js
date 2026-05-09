@@ -36,6 +36,7 @@ const deleteWorkReportsController = async (req, res, next) => {
             endDate,
             delegationId,
             personSearch,
+            reportType,
         } = req.query;
 
         const { id: userId, role } = req.userLogged;
@@ -74,7 +75,8 @@ const deleteWorkReportsController = async (req, res, next) => {
             startDate,
             endDate,
             false,
-            allowedDelegations
+            allowedDelegations,
+            reportType
         );
 
         const searchText = normalizeText(personSearch);

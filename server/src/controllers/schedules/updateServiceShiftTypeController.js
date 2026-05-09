@@ -1,5 +1,6 @@
 import updateServiceShiftTypeService from '../../services/schedules/updateServiceShiftTypeService.js';
 import ensureServiceDelegationAccessService from '../../services/delegations/ensureServiceDelegationAccessService.js';
+import { emitServiceScheduleChanged } from '../../utils/serviceScheduleNotificationUtil.js';
 
 const updateServiceShiftTypeController = async (req, res, next) => {
     try {
@@ -14,6 +15,11 @@ const updateServiceShiftTypeController = async (req, res, next) => {
             shiftTypeId,
             { name, color }
         );
+
+        emitServiceScheduleChanged(serviceId, {
+            changedBy: userId,
+            reason: 'shift_type_updated',
+        });
 
         res.send({
             status: 'ok',

@@ -15,6 +15,60 @@ import '../adminShiftSection/ShiftComponent.css';
 
 const { VITE_API_URL } = import.meta.env;
 
+const INSPECTION_SERVICE_TYPES = [
+    'Locales',
+    'Control de llaves',
+    'Control estatico',
+    'Control dinamico',
+    'Control y registro de accesos',
+    'Control de instalaciones',
+];
+
+const INSPECTION_SCORE_FIELDS = [
+    ['uniformity', 'Uniformidad'],
+    ['attitude', 'Actitud'],
+    ['documentation', 'Documentacion'],
+    ['workTools', 'Herramientas de trabajo'],
+    ['relationship', 'Relacion con cliente, mandos y companeros'],
+    ['epiStatus', 'Estado de los EPIs'],
+    ['epiUse', 'Uso de los EPIs'],
+    ['safetyRules', 'Cumplimiento normas seguridad'],
+    ['qualityRules', 'Calidad y medioambiente'],
+];
+
+const defaultInspectionReport = {
+    serviceDenomination: '',
+    address: '',
+    city: '',
+    inspectorName: '',
+    guardName: '',
+    tip: '',
+    startTime: '',
+    endTime: '',
+    serviceTypes: [],
+    conflicts: '',
+    aggressionAttempts: '',
+    robberyAttempts: '',
+    propertyDamage: '',
+    policePresence: '',
+    controlPostCleanliness: '',
+    workAreaCleanliness: '',
+    otherData: '',
+    uniformity: '',
+    attitude: '',
+    documentation: '',
+    workTools: '',
+    relationship: '',
+    epiStatus: '',
+    epiUse: '',
+    safetyRules: '',
+    qualityRules: '',
+    newRisks: '',
+    workerInformationGiven: '',
+    workerInformationReceived: '',
+    observations: '',
+};
+
 const WorkReportsComponent = () => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
@@ -28,6 +82,7 @@ const WorkReportsComponent = () => {
     const [personSearch, setPersonSearch] = useState('');
     const [city, setCity] = useState('');
     const [delegationId, setDelegationId] = useState('');
+    const [reportTypeFilter, setReportTypeFilter] = useState('');
     const [delegations, setDelegations] = useState([]);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
@@ -37,6 +92,7 @@ const WorkReportsComponent = () => {
     const [isCreatingReport, setIsCreatingReport] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [createModalOpen, setCreateModalOpen] = useState(false);
+    const [reportMode, setReportMode] = useState('work');
     const [manualReport, setManualReport] = useState({
         employeeId: '',
         serviceId: '',
@@ -50,6 +106,9 @@ const WorkReportsComponent = () => {
         description: '',
         reportEmail: '',
     });
+    const [inspectionReport, setInspectionReport] = useState(
+        defaultInspectionReport
+    );
     const signatureCanvasRef = useRef(null);
     const isSigningRef = useRef(false);
     const [signatureData, setSignatureData] = useState('');
@@ -227,6 +286,7 @@ const WorkReportsComponent = () => {
         serviceName,
         city,
         delegationId,
+        reportTypeFilter,
         startDate,
         endDate,
     ]);
@@ -238,6 +298,7 @@ const WorkReportsComponent = () => {
         setPersonSearch('');
         setCity('');
         setDelegationId('');
+        setReportTypeFilter('');
         setStartDate('');
         setEndDate('');
     };
@@ -247,6 +308,7 @@ const WorkReportsComponent = () => {
         if (serviceName) params.append('serviceName', serviceName);
         if (city) params.append('city', city);
         if (delegationId) params.append('delegationId', delegationId);
+        if (reportTypeFilter) params.append('reportType', reportTypeFilter);
         if (personSearch) params.append('personSearch', personSearch);
 
         if (employeeId) {
@@ -344,9 +406,13 @@ const WorkReportsComponent = () => {
                 const title = record.serviceName
                     ? `${record.serviceName} - ${record.firstName} ${record.lastName}`
                     : `${record.type} - ${record.firstName} ${record.lastName}`;
+                const prefix =
+                    record.incidentType === 'Parte de inspeccion'
+                        ? '[Inspeccion] '
+                        : '';
 
                 return {
-                    title,
+                    title: `${prefix}${title}`,
                     start,
                     end,
                     allDay: false,
@@ -459,20 +525,44 @@ const WorkReportsComponent = () => {
         }));
     };
 
+    const handleInspectionReportChange = (field, value) => {
+        setInspectionReport((prev) => ({
+            ...prev,
+            [field]: value,
+        }));
+    };
+
+    const toggleInspectionServiceType = (serviceType) => {
+        setInspectionReport((prev) => {
+            const current = prev.serviceTypes || [];
+            const nextTypes = current.includes(serviceType)
+                ? current.filter((item) => item !== serviceType)
+                : [...current, serviceType];
+            return {
+                ...prev,
+                serviceTypes: nextTypes,
+            };
+        });
+    };
+
     const handleCreateManualReport = async (event) => {
         event.preventDefault();
         if (!authToken) return;
+
+        const isInspection = reportMode === 'inspection';
 
         if (
             !manualReport.employeeId ||
             !manualReport.serviceId ||
             !manualReport.incidentStart ||
             !manualReport.incidentEnd ||
-            !manualReport.description.trim() ||
+            (!isInspection && !manualReport.description.trim()) ||
             !signatureData
         ) {
             toast.error(
-                'Completa trabajador, servicio, horas, descripcion y firma.'
+                isInspection
+                    ? 'Completa trabajador, servicio, horas y firma.'
+                    : 'Completa trabajador, servicio, horas, descripcion y firma.'
             );
             return;
         }
@@ -481,12 +571,18 @@ const WorkReportsComponent = () => {
             setIsCreatingReport(true);
             await fetchCreateAdminWorkReport(authToken, {
                 ...manualReport,
+                reportType: reportMode,
                 incidentStart: toApiDateTime(manualReport.incidentStart),
                 incidentEnd: toApiDateTime(manualReport.incidentEnd),
-                description: manualReport.description.trim(),
+                description: isInspection
+                    ? inspectionReport.observations || 'Parte de inspeccion'
+                    : manualReport.description.trim(),
+                inspectionData: isInspection ? inspectionReport : undefined,
                 signature: signatureData,
             });
-            toast.success('Parte creado');
+            toast.success(
+                isInspection ? 'Parte de inspeccion creado' : 'Parte creado'
+            );
             const params = buildParams();
             const data = await fetchShiftRecordsAdmin(
                 params.toString(),
@@ -504,6 +600,8 @@ const WorkReportsComponent = () => {
                 description: '',
                 reportEmail: '',
             }));
+            setInspectionReport(defaultInspectionReport);
+            setReportMode('work');
             clearSignature();
         } catch (error) {
             toast.error(error.message || 'No se pudo crear el parte');
@@ -675,6 +773,21 @@ const WorkReportsComponent = () => {
                     </div>
 
                     <div className='shift-filter'>
+                        <label htmlFor='workReportType'>Tipo de parte</label>
+                        <select
+                            id='workReportType'
+                            value={reportTypeFilter}
+                            onChange={(e) =>
+                                setReportTypeFilter(e.target.value)
+                            }
+                        >
+                            <option value=''>Todos</option>
+                            <option value='work'>Trabajo</option>
+                            <option value='inspection'>Inspeccion</option>
+                        </select>
+                    </div>
+
+                    <div className='shift-filter'>
                         <label htmlFor='workCity'>Zona</label>
                         <select
                             id='workCity'
@@ -767,7 +880,37 @@ const WorkReportsComponent = () => {
                         className='shift-modal'
                         onSubmit={handleCreateManualReport}
                     >
-                        <h3>Crear parte de trabajo</h3>
+                        <h3>
+                            {reportMode === 'inspection'
+                                ? 'Crear parte de inspeccion'
+                                : 'Crear parte de trabajo'}
+                        </h3>
+                        <div className='shift-modal-actions'>
+                            <button
+                                type='button'
+                                className={
+                                    reportMode === 'work'
+                                        ? 'shift-btn'
+                                        : 'shift-btn shift-btn--ghost'
+                                }
+                                onClick={() => setReportMode('work')}
+                                disabled={isCreatingReport}
+                            >
+                                Parte de trabajo
+                            </button>
+                            <button
+                                type='button'
+                                className={
+                                    reportMode === 'inspection'
+                                        ? 'shift-btn'
+                                        : 'shift-btn shift-btn--ghost'
+                                }
+                                onClick={() => setReportMode('inspection')}
+                                disabled={isCreatingReport}
+                            >
+                                Parte de inspeccion
+                            </button>
+                        </div>
                         <div className='shift-form-grid'>
                             <label className='shift-filter'>
                                 <span>Trabajador</span>
@@ -925,20 +1068,287 @@ const WorkReportsComponent = () => {
                             </label>
                         </div>
 
-                        <label className='shift-filter'>
-                            <span>Descripcion</span>
-                            <textarea
-                                rows={4}
-                                value={manualReport.description}
-                                onChange={(event) =>
-                                    handleManualReportChange(
-                                        'description',
-                                        event.target.value
-                                    )
-                                }
-                                required
-                            />
-                        </label>
+                        {reportMode === 'inspection' ? (
+                            <>
+                                <div className='shift-form-grid'>
+                                    <label className='shift-filter'>
+                                        <span>Denominacion del servicio</span>
+                                        <input
+                                            type='text'
+                                            value={
+                                                inspectionReport.serviceDenomination
+                                            }
+                                            onChange={(event) =>
+                                                handleInspectionReportChange(
+                                                    'serviceDenomination',
+                                                    event.target.value
+                                                )
+                                            }
+                                        />
+                                    </label>
+                                    <label className='shift-filter'>
+                                        <span>Direccion</span>
+                                        <input
+                                            type='text'
+                                            value={inspectionReport.address}
+                                            onChange={(event) =>
+                                                handleInspectionReportChange(
+                                                    'address',
+                                                    event.target.value
+                                                )
+                                            }
+                                        />
+                                    </label>
+                                    <label className='shift-filter'>
+                                        <span>Poblacion</span>
+                                        <input
+                                            type='text'
+                                            value={inspectionReport.city}
+                                            onChange={(event) =>
+                                                handleInspectionReportChange(
+                                                    'city',
+                                                    event.target.value
+                                                )
+                                            }
+                                        />
+                                    </label>
+                                    <label className='shift-filter'>
+                                        <span>Inspector</span>
+                                        <input
+                                            type='text'
+                                            value={inspectionReport.inspectorName}
+                                            onChange={(event) =>
+                                                handleInspectionReportChange(
+                                                    'inspectorName',
+                                                    event.target.value
+                                                )
+                                            }
+                                        />
+                                    </label>
+                                    <label className='shift-filter'>
+                                        <span>Vigilante</span>
+                                        <input
+                                            type='text'
+                                            value={inspectionReport.guardName}
+                                            onChange={(event) =>
+                                                handleInspectionReportChange(
+                                                    'guardName',
+                                                    event.target.value
+                                                )
+                                            }
+                                        />
+                                    </label>
+                                    <label className='shift-filter'>
+                                        <span>TIP</span>
+                                        <input
+                                            type='text'
+                                            value={inspectionReport.tip}
+                                            onChange={(event) =>
+                                                handleInspectionReportChange(
+                                                    'tip',
+                                                    event.target.value
+                                                )
+                                            }
+                                        />
+                                    </label>
+                                    <label className='shift-filter'>
+                                        <span>Hora inicio inspeccion</span>
+                                        <input
+                                            type='time'
+                                            value={inspectionReport.startTime}
+                                            onChange={(event) =>
+                                                handleInspectionReportChange(
+                                                    'startTime',
+                                                    event.target.value
+                                                )
+                                            }
+                                        />
+                                    </label>
+                                    <label className='shift-filter'>
+                                        <span>Hora fin inspeccion</span>
+                                        <input
+                                            type='time'
+                                            value={inspectionReport.endTime}
+                                            onChange={(event) =>
+                                                handleInspectionReportChange(
+                                                    'endTime',
+                                                    event.target.value
+                                                )
+                                            }
+                                        />
+                                    </label>
+                                </div>
+
+                                <div className='shift-filter'>
+                                    <span>Tipo de servicio</span>
+                                    <div className='shift-form-grid'>
+                                        {INSPECTION_SERVICE_TYPES.map(
+                                            (serviceType) => (
+                                                <label
+                                                    key={serviceType}
+                                                    className='shift-filter'
+                                                >
+                                                    <input
+                                                        type='checkbox'
+                                                        checked={inspectionReport.serviceTypes.includes(
+                                                            serviceType
+                                                        )}
+                                                        onChange={() =>
+                                                            toggleInspectionServiceType(
+                                                                serviceType
+                                                            )
+                                                        }
+                                                    />
+                                                    <span>{serviceType}</span>
+                                                </label>
+                                            )
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className='shift-form-grid'>
+                                    {INSPECTION_SCORE_FIELDS.map(
+                                        ([field, label]) => (
+                                            <label
+                                                key={field}
+                                                className='shift-filter'
+                                            >
+                                                <span>{label}</span>
+                                                <select
+                                                    value={
+                                                        inspectionReport[field]
+                                                    }
+                                                    onChange={(event) =>
+                                                        handleInspectionReportChange(
+                                                            field,
+                                                            event.target.value
+                                                        )
+                                                    }
+                                                >
+                                                    <option value=''>-</option>
+                                                    {[1, 2, 3, 4, 5].map(
+                                                        (score) => (
+                                                            <option
+                                                                key={score}
+                                                                value={score}
+                                                            >
+                                                                {score}
+                                                            </option>
+                                                        )
+                                                    )}
+                                                </select>
+                                            </label>
+                                        )
+                                    )}
+                                </div>
+
+                                <div className='shift-form-grid'>
+                                    {[
+                                        ['conflicts', 'Conflictos'],
+                                        ['aggressionAttempts', 'Intentos de agresion'],
+                                        ['robberyAttempts', 'Intentos de robo'],
+                                        ['propertyDamage', 'Danos inmuebles'],
+                                        ['policePresence', 'Presencia policial'],
+                                        ['controlPostCleanliness', 'Limpieza vivienda/control'],
+                                        ['workAreaCleanliness', 'Limpieza zona trabajo'],
+                                        ['newRisks', 'Nuevos riesgos'],
+                                    ].map(([field, label]) => (
+                                        <label
+                                            key={field}
+                                            className='shift-filter'
+                                        >
+                                            <span>{label}</span>
+                                            <textarea
+                                                rows={2}
+                                                value={
+                                                    inspectionReport[field]
+                                                }
+                                                onChange={(event) =>
+                                                    handleInspectionReportChange(
+                                                        field,
+                                                        event.target.value
+                                                    )
+                                                }
+                                            />
+                                        </label>
+                                    ))}
+                                </div>
+
+                                <label className='shift-filter'>
+                                    <span>Informacion dada al trabajador</span>
+                                    <textarea
+                                        rows={3}
+                                        value={
+                                            inspectionReport.workerInformationGiven
+                                        }
+                                        onChange={(event) =>
+                                            handleInspectionReportChange(
+                                                'workerInformationGiven',
+                                                event.target.value
+                                            )
+                                        }
+                                    />
+                                </label>
+                                <label className='shift-filter'>
+                                    <span>
+                                        Informacion recibida del trabajador
+                                    </span>
+                                    <textarea
+                                        rows={3}
+                                        value={
+                                            inspectionReport.workerInformationReceived
+                                        }
+                                        onChange={(event) =>
+                                            handleInspectionReportChange(
+                                                'workerInformationReceived',
+                                                event.target.value
+                                            )
+                                        }
+                                    />
+                                </label>
+                                <label className='shift-filter'>
+                                    <span>Incidencias y observaciones</span>
+                                    <textarea
+                                        rows={4}
+                                        value={inspectionReport.observations}
+                                        onChange={(event) =>
+                                            handleInspectionReportChange(
+                                                'observations',
+                                                event.target.value
+                                            )
+                                        }
+                                    />
+                                </label>
+                                <label className='shift-filter'>
+                                    <span>Otros datos de interes</span>
+                                    <textarea
+                                        rows={3}
+                                        value={inspectionReport.otherData}
+                                        onChange={(event) =>
+                                            handleInspectionReportChange(
+                                                'otherData',
+                                                event.target.value
+                                            )
+                                        }
+                                    />
+                                </label>
+                            </>
+                        ) : (
+                            <label className='shift-filter'>
+                                <span>Descripcion</span>
+                                <textarea
+                                    rows={4}
+                                    value={manualReport.description}
+                                    onChange={(event) =>
+                                        handleManualReportChange(
+                                            'description',
+                                            event.target.value
+                                        )
+                                    }
+                                    required
+                                />
+                            </label>
+                        )}
 
                         <div className='shift-signature-field'>
                             <div className='shift-signature-field__head'>
@@ -981,6 +1391,8 @@ const WorkReportsComponent = () => {
                             >
                                 {isCreatingReport
                                     ? 'Creando...'
+                                    : reportMode === 'inspection'
+                                    ? 'Crear inspeccion'
                                     : 'Crear parte'}
                             </button>
                         </div>

@@ -471,9 +471,20 @@ export const ChatNotificationsProvider = ({ children }) => {
             });
         };
 
+        const handleServiceScheduleChanged = (event) => {
+            if (!event?.serviceId) return;
+
+            const serviceName =
+                serviceNameMap.get(event.serviceId) || 'Servicio';
+            toast(`${serviceName}: cuadrante actualizado`, {
+                id: `schedule-${event.serviceId}-${event.changedAt || Date.now()}`,
+            });
+        };
+
         socket.on('connect', handleConnect);
         socket.on('chat:message', handleMessage);
         socket.on('generalChat:message', handleGeneralMessage);
+        socket.on('serviceSchedule:changed', handleServiceScheduleChanged);
         socket.on('shiftSwap:created', handleShiftSwapEvent);
         socket.on('shiftSwap:confirmed', handleShiftSwapEvent);
         socket.on('shiftSwap:approved', handleShiftSwapEvent);
@@ -486,6 +497,7 @@ export const ChatNotificationsProvider = ({ children }) => {
             socket.off('connect', handleConnect);
             socket.off('chat:message', handleMessage);
             socket.off('generalChat:message', handleGeneralMessage);
+            socket.off('serviceSchedule:changed', handleServiceScheduleChanged);
             socket.off('shiftSwap:created', handleShiftSwapEvent);
             socket.off('shiftSwap:confirmed', handleShiftSwapEvent);
             socket.off('shiftSwap:approved', handleShiftSwapEvent);

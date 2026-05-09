@@ -3,6 +3,7 @@ import updateServiceScheduleImageService from '../../services/services/updateSer
 import { deleteScheduleImageUtil, saveScheduleImageUtil } from '../../utils/scheduleImageUtil.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import ensureServiceDelegationAccessService from '../../services/delegations/ensureServiceDelegationAccessService.js';
+import { emitServiceScheduleChanged } from '../../utils/serviceScheduleNotificationUtil.js';
 
 const updateServiceScheduleImageController = async (req, res, next) => {
     try {
@@ -24,6 +25,11 @@ const updateServiceScheduleImageController = async (req, res, next) => {
         const scheduleImage = await saveScheduleImageUtil(req.files.image);
 
         await updateServiceScheduleImageService(serviceId, scheduleImage);
+
+        emitServiceScheduleChanged(serviceId, {
+            changedBy: userId,
+            reason: 'image_uploaded',
+        });
 
         res.send({
             status: 'ok',

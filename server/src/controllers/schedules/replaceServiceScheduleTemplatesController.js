@@ -1,6 +1,7 @@
 import replaceServiceScheduleTemplatesService from '../../services/schedules/replaceServiceScheduleTemplatesService.js';
 import ensureServiceDelegationAccessService from '../../services/delegations/ensureServiceDelegationAccessService.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
+import { emitServiceScheduleChanged } from '../../utils/serviceScheduleNotificationUtil.js';
 
 const replaceServiceScheduleTemplatesController = async (req, res, next) => {
     try {
@@ -20,6 +21,11 @@ const replaceServiceScheduleTemplatesController = async (req, res, next) => {
             templates,
             userId
         );
+
+        emitServiceScheduleChanged(serviceId, {
+            changedBy: userId,
+            reason: 'templates_updated',
+        });
 
         res.send({
             status: 'ok',

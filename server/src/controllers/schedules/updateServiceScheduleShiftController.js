@@ -1,5 +1,6 @@
 import updateServiceScheduleShiftService from '../../services/schedules/updateServiceScheduleShiftService.js';
 import ensureServiceDelegationAccessService from '../../services/delegations/ensureServiceDelegationAccessService.js';
+import { emitServiceScheduleChanged } from '../../utils/serviceScheduleNotificationUtil.js';
 
 const updateServiceScheduleShiftController = async (req, res, next) => {
     try {
@@ -9,6 +10,11 @@ const updateServiceScheduleShiftController = async (req, res, next) => {
         await ensureServiceDelegationAccessService(serviceId, userId, role);
 
         const data = await updateServiceScheduleShiftService(shiftId, req.body);
+
+        emitServiceScheduleChanged(serviceId, {
+            changedBy: userId,
+            reason: 'shift_updated',
+        });
 
         res.send({
             status: 'ok',
