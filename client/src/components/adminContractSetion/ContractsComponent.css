@@ -311,25 +311,43 @@
 
 .contracts-delegation-services {
     display: grid;
-    gap: 8px;
+    gap: 16px;
     padding: 10px;
 }
 
 .contracts-delegation-service {
     border: 1px solid #e5e7eb;
-    border-radius: 8px;
+    border-radius: 12px;
     background: #ffffff;
-    display: grid;
-    grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.8fr) auto;
-    gap: 10px;
-    align-items: center;
-    padding: 10px 12px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+    padding: 52px 16px 16px;
+    position: relative;
     text-align: left;
 }
 
 .contracts-delegation-service:hover {
     border-color: #cbd5e1;
     background: #f8fafc;
+}
+
+.contracts-delegation-card-top {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    pointer-events: none;
+}
+
+.contracts-delegation-card-top .contracts-active-top-link,
+.contracts-delegation-card-top .contracts-btn--ellipsis {
+    pointer-events: auto;
 }
 
 .contracts-delegation-service-main {
@@ -356,27 +374,6 @@
     gap: 8px;
     flex-wrap: wrap;
     min-width: 0;
-}
-
-.contracts-delegation-service-actions {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.contracts-delegation-link {
-    border: 0;
-    background: transparent;
-    color: #1d4ed8;
-    cursor: pointer;
-    font: inherit;
-    font-size: 0.84rem;
-    font-weight: 700;
-    padding: 0;
-    text-decoration: underline;
-    white-space: nowrap;
 }
 
 .contracts-status {
@@ -682,13 +679,8 @@
         min-width: 150px;
     }
 
-    .contracts-delegation-toggle,
-    .contracts-delegation-service {
+    .contracts-delegation-toggle {
         grid-template-columns: 1fr;
-    }
-
-    .contracts-delegation-service-actions {
-        justify-content: flex-start;
     }
 
     .contracts-filter-actions {

@@ -796,48 +796,10 @@ const ContractsComponent = () => {
                                                         className='contracts-delegation-service'
                                                         key={serviceId}
                                                     >
-                                                        <div className='contracts-delegation-service-main'>
-                                                            <span>
-                                                                {service.name ||
-                                                                    service.type ||
-                                                                    'Servicio'}
-                                                            </span>
-                                                            <small>
-                                                                {service.address}
-                                                                {service.address &&
-                                                                service.city
-                                                                    ? ', '
-                                                                    : ''}
-                                                                {service.city}
-                                                            </small>
-                                                        </div>
-                                                        <div className='contracts-delegation-service-meta'>
-                                                            <em
-                                                                className={`contracts-status contracts-status--${service.status}`}
-                                                            >
-                                                                {statusLabels[
-                                                                    service.status
-                                                                ] ||
-                                                                    service.status}
-                                                            </em>
-                                                            <span
-                                                                className={`contracts-open-shift${
-                                                                    openShiftCount
-                                                                        ? ' contracts-open-shift--active'
-                                                                        : ''
-                                                                }`}
-                                                            >
-                                                                {isCheckingOpenShift
-                                                                    ? 'Comprobando turno'
-                                                                    : openShiftCount
-                                                                      ? `Turno abierto (${openShiftCount})`
-                                                                      : 'Sin turno abierto'}
-                                                            </span>
-                                                        </div>
-                                                        <div className='contracts-delegation-service-actions'>
+                                                        <div className='contracts-delegation-card-top'>
                                                             {showImageLink ? (
                                                                 <a
-                                                                    className='contracts-delegation-link'
+                                                                    className='contracts-active-top-link'
                                                                     href={`${import.meta.env.VITE_API_URL}/uploads/${service.scheduleImage}`}
                                                                     target='_blank'
                                                                     rel='noreferrer'
@@ -847,7 +809,7 @@ const ContractsComponent = () => {
                                                             ) : (
                                                                 <button
                                                                     type='button'
-                                                                    className='contracts-delegation-link'
+                                                                    className='contracts-active-top-link'
                                                                     onClick={() =>
                                                                         navigate(
                                                                             `/services/${serviceId}?tab=schedule`
@@ -873,6 +835,36 @@ const ContractsComponent = () => {
                                                             >
                                                                 ...
                                                             </button>
+                                                        </div>
+                                                        <div className='contracts-delegation-service-main'>
+                                                            <span>
+                                                                {service.name ||
+                                                                    service.type ||
+                                                                    'Servicio'}
+                                                            </span>
+                                                            <small>
+                                                                {service.address}
+                                                                {service.address &&
+                                                                service.city
+                                                                    ? ', '
+                                                                    : ''}
+                                                                {service.city}
+                                                            </small>
+                                                        </div>
+                                                        <div className='contracts-delegation-service-meta'>
+                                                            <span
+                                                                className={`contracts-open-shift${
+                                                                    openShiftCount
+                                                                        ? ' contracts-open-shift--active'
+                                                                        : ''
+                                                                }`}
+                                                            >
+                                                                {isCheckingOpenShift
+                                                                    ? 'Comprobando turno'
+                                                                    : openShiftCount
+                                                                      ? `Turno abierto (${openShiftCount})`
+                                                                      : 'Sin turno abierto'}
+                                                            </span>
                                                         </div>
                                                     </article>
                                                 );
