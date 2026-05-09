@@ -233,6 +233,43 @@
     background-color: #eef2ff;
 }
 
+.admin-users-group-row {
+    background: #f8fafc !important;
+}
+
+.admin-users-group-row td {
+    padding: 0 !important;
+}
+
+.admin-users-group-toggle {
+    width: 100%;
+    border: 0;
+    background: #f8fafc;
+    color: #0f172a;
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 14px;
+    text-align: left;
+}
+
+.admin-users-group-toggle span:first-child {
+    font-weight: 700;
+}
+
+.admin-users-group-toggle strong {
+    color: #475569;
+    font-size: 0.86rem;
+}
+
+.admin-users-group-toggle span:last-child {
+    color: #1d4ed8;
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
 /* === SELECT ROL === */
 
 .admin-users-role-select {
@@ -555,6 +592,24 @@
         padding: 2rem 1rem 0.9rem;
         box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
         position: relative;
+    }
+
+    .admin-users-table tr.admin-users-group-row {
+        display: block;
+        padding: 0;
+        box-shadow: none;
+        background: transparent !important;
+    }
+
+    .admin-users-group-row td {
+        display: block !important;
+        width: 100%;
+    }
+
+    .admin-users-group-toggle {
+        grid-template-columns: 1fr;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.75rem;
     }
 
     .admin-users-table td {

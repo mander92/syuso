@@ -220,6 +220,11 @@
     margin-top: 0.75rem;
 }
 
+.schedule-personal-delegation-toggle {
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+}
+
 .schedule-personal-row {
     display: flex;
     justify-content: space-between;

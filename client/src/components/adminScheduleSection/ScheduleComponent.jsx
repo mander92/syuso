@@ -62,6 +62,8 @@ const ScheduleComponent = () => {
     const [scheduleShiftMap, setScheduleShiftMap] = useState({});
     const [expandedScheduleDelegations, setExpandedScheduleDelegations] =
         useState({});
+    const [expandedPersonalDelegations, setExpandedPersonalDelegations] =
+        useState({});
     const [serviceScheduleModal, setServiceScheduleModal] = useState(null);
     const [personalModal, setPersonalModal] = useState(null);
     const [scheduleViewMode, setScheduleViewMode] = useState('services');
@@ -520,11 +522,64 @@ const ScheduleComponent = () => {
             return {
                 id: employee.id,
                 name: `${employee.firstName} ${employee.lastName}`,
+                delegation: employee.delegations || employee.city || 'Sin delegacion',
                 shifts,
                 totalHours,
             };
         });
     }, [scheduleShiftMap, filteredEmployees]);
+
+    const personalRowsByDelegation = useMemo(() => {
+        const groups = new Map();
+        personalScheduleRows.forEach((row) => {
+            const delegation = row.delegation || 'Sin delegacion';
+            if (!groups.has(delegation)) groups.set(delegation, []);
+            groups.get(delegation).push(row);
+        });
+
+        return [...groups.entries()]
+            .sort(([a], [b]) => compareText(a, b))
+            .map(([delegation, rows]) => ({
+                delegation,
+                rows: rows.sort((a, b) => compareText(a.name, b.name)),
+            }));
+    }, [personalScheduleRows]);
+
+    useEffect(() => {
+        if (!personalRowsByDelegation.length) {
+            setExpandedPersonalDelegations({});
+            return;
+        }
+
+        setExpandedPersonalDelegations((prev) => {
+            const next = {};
+            personalRowsByDelegation.forEach((group) => {
+                next[group.delegation] = prev[group.delegation] ?? true;
+            });
+            return next;
+        });
+    }, [personalRowsByDelegation]);
+
+    const togglePersonalDelegation = (delegation) => {
+        setExpandedPersonalDelegations((prev) => ({
+            ...prev,
+            [delegation]: !prev[delegation],
+        }));
+    };
+
+    const personalScheduleDisplayRows = useMemo(() => {
+        return personalRowsByDelegation.flatMap((group) => [
+            {
+                id: `delegation-${group.delegation}`,
+                isDelegationHeader: true,
+                delegation: group.delegation,
+                count: group.rows.length,
+            },
+            ...(expandedPersonalDelegations[group.delegation]
+                ? group.rows
+                : []),
+        ]);
+    }, [personalRowsByDelegation, expandedPersonalDelegations]);
 
     const handleRuleChange = (employeeId, field, value) => {
         setEmployeeRulesMap((prev) => ({
@@ -1138,9 +1193,33 @@ const ScheduleComponent = () => {
                             <p>Revisa el cuadrante individual del mes.</p>
                         </div>
                     </div>
-                    {personalScheduleRows.length ? (
+                    {personalRowsByDelegation.length ? (
                         <div className='schedule-personal-list'>
-                            {personalScheduleRows.map((item) => {
+                            {personalScheduleDisplayRows.map((item) => {
+                                if (item.isDelegationHeader) {
+                                    return (
+                                        <button
+                                            key={item.id}
+                                            type='button'
+                                            className='schedule-delegation-toggle schedule-personal-delegation-toggle'
+                                            onClick={() =>
+                                                togglePersonalDelegation(
+                                                    item.delegation
+                                                )
+                                            }
+                                        >
+                                            <span>{item.delegation}</span>
+                                            <strong>{item.count} empleados</strong>
+                                            <span>
+                                                {expandedPersonalDelegations[
+                                                    item.delegation
+                                                ]
+                                                    ? 'Ocultar'
+                                                    : 'Mostrar'}
+                                            </span>
+                                        </button>
+                                    );
+                                }
                                 const rules = employeeRulesMap[item.id] || {};
                                 const absences = employeeAbsencesMap[item.id] || [];
                                 const monthAbsences = absences.filter((absence) =>

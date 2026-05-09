@@ -27,6 +27,10 @@ const AdminUsersSection = () => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
     const isSudo = user?.role === 'sudo';
+    const compareText = (a, b) =>
+        String(a || '').localeCompare(String(b || ''), 'es', {
+            sensitivity: 'base',
+        });
 
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -54,6 +58,7 @@ const AdminUsersSection = () => {
     const [savingEdit, setSavingEdit] = useState(false);
     const [actionUser, setActionUser] = useState(null);
     const [expandedUserId, setExpandedUserId] = useState(null);
+    const [expandedUserDelegations, setExpandedUserDelegations] = useState({});
     const [passwordUser, setPasswordUser] = useState(null);
     const [passwordValue, setPasswordValue] = useState('');
     const [passwordConfirm, setPasswordConfirm] = useState('');
@@ -193,6 +198,57 @@ const AdminUsersSection = () => {
             );
         });
     }, [users, search]);
+
+    const getUserDelegationLabel = (item) =>
+        item.delegations || item.city || 'Sin delegacion';
+
+    const usersByDelegation = useMemo(() => {
+        const groups = new Map();
+        filteredUsers.forEach((item) => {
+            const delegation = getUserDelegationLabel(item);
+            if (!groups.has(delegation)) groups.set(delegation, []);
+            groups.get(delegation).push(item);
+        });
+
+        return [...groups.entries()]
+            .sort(([a], [b]) => compareText(a, b))
+            .map(([delegation, rows]) => ({
+                delegation,
+                rows: rows.sort((a, b) =>
+                    compareText(
+                        `${a.firstName || ''} ${a.lastName || ''}`,
+                        `${b.firstName || ''} ${b.lastName || ''}`
+                    )
+                ),
+            }));
+    }, [filteredUsers]);
+
+    useEffect(() => {
+        if (!usersByDelegation.length) {
+            setExpandedUserDelegations({});
+            return;
+        }
+
+        setExpandedUserDelegations((prev) => {
+            const next = {};
+            usersByDelegation.forEach((group) => {
+                next[group.delegation] = prev[group.delegation] ?? true;
+            });
+            return next;
+        });
+    }, [usersByDelegation]);
+
+    const userDisplayRows = useMemo(() => {
+        return usersByDelegation.flatMap((group) => [
+            {
+                id: `delegation-${group.delegation}`,
+                isDelegationHeader: true,
+                delegation: group.delegation,
+                count: group.rows.length,
+            },
+            ...(expandedUserDelegations[group.delegation] ? group.rows : []),
+        ]);
+    }, [usersByDelegation, expandedUserDelegations]);
 
     // ===============================
     // Acciones: rol, activo, borrar, reset pass
@@ -1063,7 +1119,45 @@ const AdminUsersSection = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredUsers.map((u) => {
+                                {userDisplayRows.map((u) => {
+                                    if (u.isDelegationHeader) {
+                                        return (
+                                            <tr
+                                                key={u.id}
+                                                className='admin-users-group-row'
+                                            >
+                                                <td colSpan='9'>
+                                                    <button
+                                                        type='button'
+                                                        className='admin-users-group-toggle'
+                                                        onClick={() =>
+                                                            setExpandedUserDelegations(
+                                                                (prev) => ({
+                                                                    ...prev,
+                                                                    [u.delegation]:
+                                                                        !prev[
+                                                                            u.delegation
+                                                                        ],
+                                                                })
+                                                            )
+                                                        }
+                                                    >
+                                                        <span>{u.delegation}</span>
+                                                        <strong>
+                                                            {u.count} usuarios
+                                                        </strong>
+                                                        <span>
+                                                            {expandedUserDelegations[
+                                                                u.delegation
+                                                            ]
+                                                                ? 'Ocultar'
+                                                                : 'Mostrar'}
+                                                        </span>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    }
                                     const active = isUserActive(u.active);
                                     const isEditing =
                                         editingUser && editingUser.id === u.id;
