@@ -40,6 +40,7 @@ const ChatNotificationsContext = createContext({
     resetServiceUnread: () => {},
     resetGeneralUnread: () => {},
     resetAllUnread: () => {},
+    resetChatUnread: () => {},
     resetShiftSwapUnread: () => {},
     resetEmployeeRequestUnread: () => {},
     setServiceChatActive: () => {},
@@ -584,6 +585,45 @@ export const ChatNotificationsProvider = ({ children }) => {
         setEmployeeRequestUnread(0);
     };
 
+    const resetChatUnread = useCallback(() => {
+        const serviceIdsToRead = [
+            ...new Set([
+                ...serviceIds,
+                ...trackedServiceIds,
+                ...Object.keys(unreadByService || {}),
+            ]),
+        ];
+        const generalChatIdsToRead = [
+            ...new Set([
+                ...generalChatIds,
+                ...trackedGeneralChatIds,
+                ...Object.keys(unreadByGeneral || {}),
+            ]),
+        ];
+
+        serviceIdsToRead.forEach((serviceId) => {
+            if (serviceId) {
+                socket?.emit('chat:read', { serviceId });
+            }
+        });
+        generalChatIdsToRead.forEach((chatId) => {
+            if (chatId) {
+                socket?.emit('generalChat:read', { chatId });
+            }
+        });
+
+        setUnreadByService({});
+        setUnreadByGeneral({});
+    }, [
+        socket,
+        serviceIds,
+        trackedServiceIds,
+        unreadByService,
+        generalChatIds,
+        trackedGeneralChatIds,
+        unreadByGeneral,
+    ]);
+
     const resetShiftSwapUnread = () => {
         setShiftSwapUnread(0);
     };
@@ -646,6 +686,7 @@ export const ChatNotificationsProvider = ({ children }) => {
                 resetServiceUnread,
                 resetGeneralUnread,
                 resetAllUnread,
+                resetChatUnread,
                 resetShiftSwapUnread,
                 resetEmployeeRequestUnread,
                 setServiceChatActive,
