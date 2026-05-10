@@ -1,6 +1,5 @@
 import getPool from '../../db/getPool.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
-import ensureServiceDelegationAccessService from '../delegations/ensureServiceDelegationAccessService.js';
 
 const ensureServiceChatAccessService = async (serviceId, userId, role) => {
     const pool = await getPool();
@@ -25,46 +24,37 @@ const ensureServiceChatAccessService = async (serviceId, userId, role) => {
         generateErrorUtil('Acceso denegado', 403);
     }
 
-    const [assignedRows] = await pool.query(
+    const [accessRows] = await pool.query(
         `
-        SELECT id
-        FROM personsAssigned
-        WHERE serviceId = ? AND employeeId = ?
+        SELECT s.id
+        FROM services s
+        LEFT JOIN personsAssigned pa
+            ON pa.serviceId = s.id AND pa.employeeId = ?
+        WHERE s.id = ?
+          AND s.deletedAt IS NULL
+          AND (
+            pa.employeeId IS NOT NULL
+            OR EXISTS (
+                SELECT 1
+                FROM serviceScheduleShifts ss
+                WHERE ss.serviceId = s.id
+                  AND ss.employeeId = ?
+                  AND ss.deletedAt IS NULL
+            )
+            OR EXISTS (
+                SELECT 1
+                FROM shiftRecords sr
+                WHERE sr.serviceId = s.id
+                  AND sr.employeeId = ?
+            )
+          )
+        LIMIT 1
         `,
-        [serviceId, userId]
+        [userId, serviceId, userId, userId]
     );
 
-    if (!assignedRows.length) {
-        const [scheduledRows] = await pool.query(
-            `
-            SELECT id
-            FROM serviceScheduleShifts
-            WHERE serviceId = ?
-              AND employeeId = ?
-              AND deletedAt IS NULL
-            LIMIT 1
-            `,
-            [serviceId, userId]
-        );
-
-        if (scheduledRows.length) {
-            return true;
-        }
-
-        const [shiftRecordRows] = await pool.query(
-            `
-            SELECT id
-            FROM shiftRecords
-            WHERE serviceId = ?
-              AND employeeId = ?
-            LIMIT 1
-            `,
-            [serviceId, userId]
-        );
-
-        if (!shiftRecordRows.length) {
-            generateErrorUtil('Acceso denegado', 403);
-        }
+    if (!accessRows.length) {
+        generateErrorUtil('Acceso denegado', 403);
     }
 
     return true;
