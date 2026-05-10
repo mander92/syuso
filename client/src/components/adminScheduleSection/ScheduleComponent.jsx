@@ -23,12 +23,33 @@ import {
     downloadEmployeeSchedulePdf,
     downloadEmployeeScheduleZip,
     fetchHolidays,
+    createHoliday,
+    deleteHoliday,
 } from '../../services/serviceService.js';
 import ServiceSchedulePanel from '../serviceSchedule/ServiceSchedulePanel.jsx';
 import ServiceScheduleGrid from '../serviceSchedule/ServiceScheduleGrid.jsx';
 import '../button/Button.css';
 import './ScheduleComponent.css';
 import '../serviceSchedule/ServiceSchedulePanel.css';
+
+const holidayScopeLabels = {
+    national: 'Nacional',
+    autonomous: 'Autonomico',
+    local: 'Local',
+};
+
+const toLocalDateInput = (date = new Date()) => {
+    const offset = date.getTimezoneOffset();
+    const local = new Date(date.getTime() - offset * 60000);
+    return local.toISOString().slice(0, 10);
+};
+
+const formatDateEs = (value) => {
+    if (!value) return '';
+    const [year, month, day] = String(value).slice(0, 10).split('-');
+    if (!year || !month || !day) return value;
+    return `${day}/${month}/${year}`;
+};
 
 const ScheduleComponent = () => {
     const { authToken } = useContext(AuthContext);
@@ -91,6 +112,13 @@ const ScheduleComponent = () => {
     const [absenceSavingId, setAbsenceSavingId] = useState('');
     const [absenceDrafts, setAbsenceDrafts] = useState({});
     const [holidays, setHolidays] = useState([]);
+    const [holidayDraft, setHolidayDraft] = useState({
+        holidayDate: toLocalDateInput(),
+        scope: 'local',
+        name: '',
+    });
+    const [isSavingHoliday, setIsSavingHoliday] = useState(false);
+    const [isHolidayToolsOpen, setIsHolidayToolsOpen] = useState(false);
 
     useEffect(() => {
         const loadEmployees = async () => {
@@ -422,6 +450,87 @@ const ScheduleComponent = () => {
             });
 
         return map;
+    };
+
+    const buildHolidayPayload = (card, holidayDate, scope, customName = '') => {
+        const label = holidayScopeLabels[scope] || 'Festivo';
+        return {
+            holidayDate,
+            scope,
+            name: customName?.trim() || `Festivo ${label.toLowerCase()}`,
+            autonomousCommunity:
+                scope === 'autonomous' || scope === 'local'
+                    ? card?.autonomousCommunity || ''
+                    : null,
+            province:
+                scope === 'local'
+                    ? card?.province || card?.delegation || ''
+                    : null,
+            city: scope === 'local' ? card?.city || '' : null,
+        };
+    };
+
+    const handleCreateHoliday = async (event) => {
+        event?.preventDefault();
+        if (!serviceScheduleViewModal) return;
+        if (!holidayDraft.holidayDate) {
+            toast.error('Selecciona una fecha de festivo');
+            return;
+        }
+
+        try {
+            setIsSavingHoliday(true);
+            const created = await createHoliday(
+                authToken,
+                buildHolidayPayload(
+                    serviceScheduleViewModal,
+                    holidayDraft.holidayDate,
+                    holidayDraft.scope,
+                    holidayDraft.name
+                )
+            );
+            setHolidays((prev) => [...prev, created].filter(Boolean));
+            setHolidayDraft((prev) => ({ ...prev, name: '' }));
+            toast.success('Festivo anadido');
+        } catch (error) {
+            toast.error(error.message || 'No se pudo anadir el festivo');
+        } finally {
+            setIsSavingHoliday(false);
+        }
+    };
+
+    const handleHolidayDrop = async (dateKey, scope) => {
+        if (!serviceScheduleViewModal) return;
+        try {
+            const created = await createHoliday(
+                authToken,
+                buildHolidayPayload(serviceScheduleViewModal, dateKey, scope)
+            );
+            setHolidays((prev) => [...prev, created].filter(Boolean));
+            toast.success(`Festivo ${holidayScopeLabels[scope] || ''} anadido`);
+        } catch (error) {
+            toast.error(error.message || 'No se pudo anadir el festivo');
+        }
+    };
+
+    const handleHolidayClick = async (holiday) => {
+        if (!holiday?.id) return;
+        const shouldDelete = window.confirm(
+            `Eliminar festivo "${holiday.name}" del ${formatDateEs(
+                holiday.holidayDate
+            )}?`
+        );
+        if (!shouldDelete) return;
+
+        try {
+            await deleteHoliday(authToken, holiday.id);
+            setHolidays((prev) =>
+                prev.filter((item) => item.id !== holiday.id)
+            );
+            toast.success('Festivo eliminado');
+        } catch (error) {
+            toast.error(error.message || 'No se pudo eliminar el festivo');
+        }
     };
 
     useEffect(() => {
@@ -1702,6 +1811,113 @@ const ScheduleComponent = () => {
                             </div>
                         </div>
                         <div className='schedule-service-modal__body'>
+                            <div className='service-schedule-holidays'>
+                                <div className='service-schedule-holidays__header'>
+                                    <div>
+                                        <strong>Festivos</strong>
+                                        <span>Marca dias especiales en el cuadrante.</span>
+                                    </div>
+                                    <button
+                                        type='button'
+                                        className='service-schedule-holidays__toggle'
+                                        onClick={() =>
+                                            setIsHolidayToolsOpen((prev) => !prev)
+                                        }
+                                    >
+                                        {isHolidayToolsOpen
+                                            ? 'Ocultar festivos'
+                                            : 'Anadir festivos'}
+                                    </button>
+                                </div>
+                                {isHolidayToolsOpen && (
+                                    <div className='service-schedule-holidays__content'>
+                                        <form
+                                            className='service-schedule-holidays__form'
+                                            onSubmit={handleCreateHoliday}
+                                        >
+                                            <label>
+                                                Festivo
+                                                <input
+                                                    type='date'
+                                                    value={holidayDraft.holidayDate}
+                                                    onChange={(event) =>
+                                                        setHolidayDraft((prev) => ({
+                                                            ...prev,
+                                                            holidayDate:
+                                                                event.target.value,
+                                                        }))
+                                                    }
+                                                />
+                                            </label>
+                                            <label>
+                                                Tipo
+                                                <select
+                                                    value={holidayDraft.scope}
+                                                    onChange={(event) =>
+                                                        setHolidayDraft((prev) => ({
+                                                            ...prev,
+                                                            scope: event.target.value,
+                                                        }))
+                                                    }
+                                                >
+                                                    <option value='national'>
+                                                        Nacional
+                                                    </option>
+                                                    <option value='autonomous'>
+                                                        Autonomico
+                                                    </option>
+                                                    <option value='local'>Local</option>
+                                                </select>
+                                            </label>
+                                            <label>
+                                                Nombre
+                                                <input
+                                                    type='text'
+                                                    value={holidayDraft.name}
+                                                    onChange={(event) =>
+                                                        setHolidayDraft((prev) => ({
+                                                            ...prev,
+                                                            name: event.target.value,
+                                                        }))
+                                                    }
+                                                    placeholder='Nombre del festivo'
+                                                />
+                                            </label>
+                                            <button
+                                                type='submit'
+                                                className='service-schedule-btn'
+                                                disabled={isSavingHoliday}
+                                            >
+                                                {isSavingHoliday
+                                                    ? 'Anadiendo...'
+                                                    : 'Anadir'}
+                                            </button>
+                                        </form>
+                                        <div className='service-schedule-holidays__drag'>
+                                            {Object.entries(holidayScopeLabels).map(
+                                                ([scope, label]) => (
+                                                    <button
+                                                        key={scope}
+                                                        type='button'
+                                                        className='service-schedule-holidays__chip'
+                                                        draggable
+                                                        onDragStart={(event) => {
+                                                            event.dataTransfer.setData(
+                                                                'application/x-holiday-scope',
+                                                                scope
+                                                            );
+                                                            event.dataTransfer.effectAllowed =
+                                                                'copy';
+                                                        }}
+                                                    >
+                                                        {label}
+                                                    </button>
+                                                )
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                             {serviceScheduleViewModal.scheduleView === 'image' &&
                             serviceScheduleViewModal.scheduleImage ? (
                                 <div className='schedule-service-modal__image'>
@@ -1728,6 +1944,8 @@ const ScheduleComponent = () => {
                                     holidaysByDate={buildServiceHolidaysByDate(
                                         serviceScheduleViewModal
                                     )}
+                                    onHolidayDrop={handleHolidayDrop}
+                                    onHolidayClick={handleHolidayClick}
                                     onShiftUpdate={() => {}}
                                     readOnly
                                     showUnassigned={(
