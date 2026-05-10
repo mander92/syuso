@@ -217,6 +217,13 @@
     color: #64748b;
 }
 
+.dashboard-alerts-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
 .dashboard-alerts-clear,
 .dashboard-alert-actions button {
     border: none;
@@ -308,6 +315,10 @@
 
     .dashboard-alerts-clear,
     .dashboard-alert-actions button {
+        width: 100%;
+    }
+
+    .dashboard-alerts-header-actions {
         width: 100%;
     }
 }

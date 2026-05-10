@@ -36,24 +36,36 @@ const AlertsPanel = ({
     notifications,
     onOpenSection,
     onMarkRead,
+    onRemove,
     onMarkAllRead,
+    onClearRead,
 }) => (
     <section className='dashboard-alerts'>
         <div className='dashboard-alerts-header'>
             <div>
                 <h2>Alertas</h2>
                 <p>
-                    Revisa avisos de cuadrantes, cambios de turno y peticiones.
+                    Revisa avisos de chats, cuadrantes, cambios de turno y peticiones.
                 </p>
             </div>
-            <button
-                type='button'
-                className='dashboard-alerts-clear'
-                onClick={onMarkAllRead}
-                disabled={!notifications.some((item) => !item.read)}
-            >
-                Marcar todo como leido
-            </button>
+            <div className='dashboard-alerts-header-actions'>
+                <button
+                    type='button'
+                    className='dashboard-alerts-clear'
+                    onClick={onMarkAllRead}
+                    disabled={!notifications.some((item) => !item.read)}
+                >
+                    Marcar todo como leido
+                </button>
+                <button
+                    type='button'
+                    className='dashboard-alerts-clear'
+                    onClick={onClearRead}
+                    disabled={!notifications.some((item) => item.read)}
+                >
+                    Borrar leidas
+                </button>
+            </div>
         </div>
 
         {notifications.length ? (
@@ -96,7 +108,15 @@ const AlertsPanel = ({
                                 >
                                     Marcar leida
                                 </button>
-                            ) : null}
+                            ) : (
+                                <button
+                                    type='button'
+                                    className='dashboard-alert-secondary'
+                                    onClick={() => onRemove(notification.id)}
+                                >
+                                    Borrar
+                                </button>
+                            )}
                         </div>
                     </article>
                 ))}
@@ -118,7 +138,9 @@ const DashboardComponent = () => {
         alertNotifications,
         alertUnreadTotal,
         markNotificationRead,
+        removeNotification,
         clearNotificationsBySection,
+        clearReadNotifications,
         markAllNotificationsRead,
         resetShiftSwapUnread,
         resetEmployeeRequestUnread,
@@ -248,6 +270,9 @@ const DashboardComponent = () => {
         if (activeSection === 'schedule') {
             clearNotificationsBySection('schedule');
         }
+        if (activeSection === 'chats') {
+            clearNotificationsBySection('chats');
+        }
     }, [
         activeSection,
         clearNotificationsBySection,
@@ -272,7 +297,9 @@ const DashboardComponent = () => {
                             }
                         }}
                         onMarkRead={markNotificationRead}
+                        onRemove={removeNotification}
                         onMarkAllRead={markAllNotificationsRead}
+                        onClearRead={clearReadNotifications}
                     />
                 );
 

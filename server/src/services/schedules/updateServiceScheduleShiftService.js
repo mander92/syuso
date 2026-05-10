@@ -78,6 +78,7 @@ const updateServiceScheduleShiftService = async (
         nightHours: breakdown.nightHours,
         holidayHours: breakdown.holidayHours,
         regularHours: breakdown.regularHours,
+        previousEmployeeId: current.employeeId,
         employeeId:
             updates.employeeId !== undefined ? updates.employeeId : current.employeeId,
         status: updates.status || current.status,

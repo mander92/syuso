@@ -40,7 +40,9 @@ const ChatNotificationsContext = createContext({
     unreadTotal: 0,
     notificationTotal: 0,
     markNotificationRead: () => {},
+    removeNotification: () => {},
     clearNotificationsBySection: () => {},
+    clearReadNotifications: () => {},
     markAllNotificationsRead: () => {},
     resetServiceUnread: () => {},
     resetGeneralUnread: () => {},
@@ -522,6 +524,14 @@ export const ChatNotificationsProvider = ({ children }) => {
 
             const serviceName =
                 serviceNameMap.get(message.serviceId) || 'Servicio';
+            addAlertNotification({
+                id: `service-chat-${message.id || `${message.serviceId}-${Date.now()}`}`,
+                type: 'chat',
+                section: 'chats',
+                title: 'Chat de servicio',
+                message: `${serviceName}: nuevo mensaje`,
+                routeLabel: buildAlertRoute('chats'),
+            });
             toast(`${serviceName}: nuevo mensaje`, {
                 id: `chat-${message.id || message.serviceId}`,
             });
@@ -546,6 +556,14 @@ export const ChatNotificationsProvider = ({ children }) => {
 
             const chatName =
                 generalChatNameMap.get(message.chatId) || 'Chat';
+            addAlertNotification({
+                id: `general-chat-${message.id || `${message.chatId}-${Date.now()}`}`,
+                type: 'chat',
+                section: 'chats',
+                title: 'Chat general',
+                message: `${chatName}: nuevo mensaje`,
+                routeLabel: buildAlertRoute('chats'),
+            });
             toast(`${chatName}: nuevo mensaje`, {
                 id: `general-chat-${message.id || message.chatId}`,
             });
@@ -746,6 +764,13 @@ export const ChatNotificationsProvider = ({ children }) => {
         );
     }, []);
 
+    const removeNotification = useCallback((notificationId) => {
+        if (!notificationId) return;
+        setAlertNotifications((prev) =>
+            prev.filter((item) => item.id !== notificationId)
+        );
+    }, []);
+
     const clearNotificationsBySection = useCallback((section) => {
         if (!section) return;
         setAlertNotifications((prev) =>
@@ -753,6 +778,10 @@ export const ChatNotificationsProvider = ({ children }) => {
                 item.section === section ? { ...item, read: true } : item
             )
         );
+    }, []);
+
+    const clearReadNotifications = useCallback(() => {
+        setAlertNotifications((prev) => prev.filter((item) => !item.read));
     }, []);
 
     const markAllNotificationsRead = useCallback(() => {
@@ -808,10 +837,19 @@ export const ChatNotificationsProvider = ({ children }) => {
         [alertNotifications]
     );
 
+    const nonChatAlertUnreadTotal = useMemo(
+        () =>
+            alertNotifications.reduce((sum, item) => {
+                if (item.read || item.section === 'chats') return sum;
+                return sum + 1;
+            }, 0),
+        [alertNotifications]
+    );
+
     const actionUnreadTotal =
         (shiftSwapUnread || 0) + (employeeRequestUnread || 0);
     const totalNotifications =
-        unreadTotal + Math.max(alertUnreadTotal, actionUnreadTotal);
+        unreadTotal + Math.max(nonChatAlertUnreadTotal, actionUnreadTotal);
 
     return (
         <ChatNotificationsContext.Provider
@@ -825,7 +863,9 @@ export const ChatNotificationsProvider = ({ children }) => {
                 unreadTotal,
                 notificationTotal: totalNotifications,
                 markNotificationRead,
+                removeNotification,
                 clearNotificationsBySection,
+                clearReadNotifications,
                 markAllNotificationsRead,
                 resetServiceUnread,
                 resetGeneralUnread,

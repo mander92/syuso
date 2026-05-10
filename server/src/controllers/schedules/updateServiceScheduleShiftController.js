@@ -14,6 +14,7 @@ const updateServiceScheduleShiftController = async (req, res, next) => {
         emitServiceScheduleChanged(serviceId, {
             changedBy: userId,
             reason: 'shift_updated',
+            userIds: [data.previousEmployeeId, data.employeeId],
         });
 
         res.send({
