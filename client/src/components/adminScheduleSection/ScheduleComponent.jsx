@@ -53,6 +53,27 @@ const formatDateEs = (value) => {
     return `${day}/${month}/${year}`;
 };
 
+const calculateShiftHours = (startTime, endTime) => {
+    if (!startTime || !endTime) return '';
+    const [startHours, startMinutes] = startTime.split(':').map(Number);
+    const [endHours, endMinutes] = endTime.split(':').map(Number);
+    if (
+        [startHours, startMinutes, endHours, endMinutes].some((value) =>
+            Number.isNaN(value)
+        )
+    ) {
+        return '';
+    }
+
+    const startTotal = startHours * 60 + startMinutes;
+    const endTotal = endHours * 60 + endMinutes;
+    const diffMinutes =
+        endTotal >= startTotal
+            ? endTotal - startTotal
+            : endTotal + 24 * 60 - startTotal;
+    return Math.round((diffMinutes / 60) * 100) / 100;
+};
+
 const ScheduleComponent = () => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
@@ -126,6 +147,7 @@ const ScheduleComponent = () => {
         useState(false);
     const [generatedSchedulePreview, setGeneratedSchedulePreview] =
         useState(null);
+    const [selectedGeneratedShift, setSelectedGeneratedShift] = useState(null);
 
     useEffect(() => {
         const loadEmployees = async () => {
@@ -423,6 +445,7 @@ const ScheduleComponent = () => {
         setScheduleServiceId(card.id);
         setServiceScheduleViewModal(card);
         setGeneratedSchedulePreview(null);
+        setSelectedGeneratedShift(null);
     };
 
     const handleServiceScheduleViewMonthChange = async (monthValue) => {
@@ -434,6 +457,7 @@ const ScheduleComponent = () => {
             prev ? { ...prev, month: monthValue } : prev
         );
         setGeneratedSchedulePreview(null);
+        setSelectedGeneratedShift(null);
 
         try {
             const shifts = await fetchServiceScheduleShifts(
@@ -463,6 +487,7 @@ const ScheduleComponent = () => {
                 ? data.shifts
                 : [];
             setGeneratedSchedulePreview(generatedShifts);
+            setSelectedGeneratedShift(null);
             setScheduleShiftMap((prev) => ({
                 ...prev,
                 [serviceScheduleViewModal.id]: generatedShifts,
@@ -487,6 +512,7 @@ const ScheduleComponent = () => {
             );
             toast.success('Cuadrante aplicado');
             setGeneratedSchedulePreview(null);
+            setSelectedGeneratedShift(null);
             const shifts = await fetchServiceScheduleShifts(
                 authToken,
                 serviceScheduleViewModal.id,
@@ -503,6 +529,55 @@ const ScheduleComponent = () => {
         } finally {
             setIsApplyingGeneratedSchedule(false);
         }
+    };
+
+    const updateGeneratedPreviewShift = (shiftId, updates) => {
+        if (!serviceScheduleViewModal || !generatedSchedulePreview) return;
+        const nextPreview = generatedSchedulePreview.map((shift) =>
+            shift.id === shiftId ? { ...shift, ...updates } : shift
+        );
+        setGeneratedSchedulePreview(nextPreview);
+        setScheduleShiftMap((prev) => ({
+            ...prev,
+            [serviceScheduleViewModal.id]: nextPreview,
+        }));
+        setSelectedGeneratedShift((prev) =>
+            prev?.id === shiftId ? { ...prev, ...updates } : prev
+        );
+    };
+
+    const handleGeneratedShiftUpdate = (shiftId, updates) => {
+        updateGeneratedPreviewShift(shiftId, updates);
+    };
+
+    const handleGeneratedShiftFieldChange = (field, value) => {
+        setSelectedGeneratedShift((prev) => {
+            if (!prev) return prev;
+            const next = { ...prev, [field]: value };
+            if (field === 'startTime' || field === 'endTime') {
+                const hours = calculateShiftHours(
+                    field === 'startTime' ? value : next.startTime,
+                    field === 'endTime' ? value : next.endTime
+                );
+                if (hours !== '') {
+                    next.hours = hours;
+                }
+            }
+            return next;
+        });
+    };
+
+    const handleSaveGeneratedShift = () => {
+        if (!selectedGeneratedShift?.id) return;
+        updateGeneratedPreviewShift(selectedGeneratedShift.id, {
+            scheduleDate: selectedGeneratedShift.scheduleDate,
+            startTime: selectedGeneratedShift.startTime,
+            endTime: selectedGeneratedShift.endTime,
+            hours: selectedGeneratedShift.hours,
+            employeeId: selectedGeneratedShift.employeeId || null,
+        });
+        toast.success('Turno actualizado en previsualizacion');
+        setSelectedGeneratedShift(null);
     };
 
     const buildServiceHolidaysByDate = (card) => {
@@ -2072,8 +2147,13 @@ const ScheduleComponent = () => {
                                     )}
                                     onHolidayDrop={handleHolidayDrop}
                                     onHolidayClick={handleHolidayClick}
-                                    onShiftUpdate={() => {}}
-                                    readOnly
+                                    onShiftUpdate={handleGeneratedShiftUpdate}
+                                    onSelectShift={(shift) => {
+                                        if (generatedSchedulePreview) {
+                                            setSelectedGeneratedShift(shift);
+                                        }
+                                    }}
+                                    readOnly={!generatedSchedulePreview}
                                     showUnassigned={(
                                         scheduleShiftMap[
                                             serviceScheduleViewModal.id
@@ -2085,6 +2165,124 @@ const ScheduleComponent = () => {
                                     Sin turnos para este mes.
                                 </p>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {selectedGeneratedShift && (
+                <div className='service-schedule-modal-overlay'>
+                    <div className='service-schedule-modal'>
+                        <div className='service-schedule-modal-header'>
+                            <div>
+                                <h3>Editar turno de la previsualizacion</h3>
+                                <p>
+                                    Cambia trabajador, dia u horario antes de aplicar
+                                    el cuadrante.
+                                </p>
+                            </div>
+                            <button
+                                type='button'
+                                className='service-schedule-modal-close'
+                                onClick={() => setSelectedGeneratedShift(null)}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div className='service-schedule-modal-grid'>
+                            <label>
+                                Fecha
+                                <input
+                                    type='date'
+                                    value={String(
+                                        selectedGeneratedShift.scheduleDate || ''
+                                    ).slice(0, 10)}
+                                    onChange={(event) =>
+                                        handleGeneratedShiftFieldChange(
+                                            'scheduleDate',
+                                            event.target.value
+                                        )
+                                    }
+                                />
+                            </label>
+                            <label>
+                                Inicio
+                                <input
+                                    type='time'
+                                    value={selectedGeneratedShift.startTime || ''}
+                                    onChange={(event) =>
+                                        handleGeneratedShiftFieldChange(
+                                            'startTime',
+                                            event.target.value
+                                        )
+                                    }
+                                />
+                            </label>
+                            <label>
+                                Fin
+                                <input
+                                    type='time'
+                                    value={selectedGeneratedShift.endTime || ''}
+                                    onChange={(event) =>
+                                        handleGeneratedShiftFieldChange(
+                                            'endTime',
+                                            event.target.value
+                                        )
+                                    }
+                                />
+                            </label>
+                            <label>
+                                Horas
+                                <input
+                                    type='number'
+                                    step='0.25'
+                                    min='0'
+                                    value={selectedGeneratedShift.hours || ''}
+                                    onChange={(event) =>
+                                        handleGeneratedShiftFieldChange(
+                                            'hours',
+                                            event.target.value
+                                        )
+                                    }
+                                />
+                            </label>
+                            <label>
+                                Trabajador
+                                <select
+                                    value={selectedGeneratedShift.employeeId || ''}
+                                    onChange={(event) =>
+                                        handleGeneratedShiftFieldChange(
+                                            'employeeId',
+                                            event.target.value
+                                        )
+                                    }
+                                >
+                                    <option value=''>Sin asignar</option>
+                                    {employees.map((employee) => (
+                                        <option key={employee.id} value={employee.id}>
+                                            {`${employee.firstName || ''} ${
+                                                employee.lastName || ''
+                                            }`.trim() || employee.email}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+                        </div>
+                        <div className='service-schedule-modal-actions'>
+                            <button
+                                type='button'
+                                className='service-schedule-btn service-schedule-btn--ghost'
+                                onClick={() => setSelectedGeneratedShift(null)}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type='button'
+                                className='service-schedule-btn'
+                                onClick={handleSaveGeneratedShift}
+                            >
+                                Guardar cambio
+                            </button>
                         </div>
                     </div>
                 </div>
