@@ -22,6 +22,7 @@ import {
     downloadServiceScheduleExcelZip,
     downloadEmployeeSchedulePdf,
     downloadEmployeeScheduleZip,
+    fetchHolidays,
 } from '../../services/serviceService.js';
 import ServiceSchedulePanel from '../serviceSchedule/ServiceSchedulePanel.jsx';
 import ServiceScheduleGrid from '../serviceSchedule/ServiceScheduleGrid.jsx';
@@ -37,6 +38,12 @@ const ScheduleComponent = () => {
         String(a || '').localeCompare(String(b || ''), 'es', {
             sensitivity: 'base',
         });
+    const normalizeText = (value) =>
+        String(value || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim()
+            .toLowerCase();
 
     const [employees, setEmployees] = useState([]);
     const [delegations, setDelegations] = useState([]);
@@ -65,6 +72,8 @@ const ScheduleComponent = () => {
     const [expandedPersonalDelegations, setExpandedPersonalDelegations] =
         useState({});
     const [serviceScheduleModal, setServiceScheduleModal] = useState(null);
+    const [serviceScheduleViewModal, setServiceScheduleViewModal] =
+        useState(null);
     const [personalModal, setPersonalModal] = useState(null);
     const [scheduleViewMode, setScheduleViewMode] = useState('services');
     const [isDownloadingServicePdf, setIsDownloadingServicePdf] = useState(false);
@@ -81,6 +90,7 @@ const ScheduleComponent = () => {
     const [rulesSavingId, setRulesSavingId] = useState('');
     const [absenceSavingId, setAbsenceSavingId] = useState('');
     const [absenceDrafts, setAbsenceDrafts] = useState({});
+    const [holidays, setHolidays] = useState([]);
 
     useEffect(() => {
         const loadEmployees = async () => {
@@ -265,10 +275,13 @@ const ScheduleComponent = () => {
                             name: service.name,
                             type: service.type,
                             address: service.address,
-                            city: service.city,
                             delegation: service.province || 'Sin delegacion',
                             scheduleImage: service.scheduleImage || '',
                             scheduleView: service.scheduleView || 'grid',
+                            autonomousCommunity:
+                                service.autonomousCommunity || '',
+                            province: service.province || '',
+                            city: service.city || '',
                             month: scheduleMonth,
                             shiftCount: filteredShifts.length,
                             employeeCount: employeeSet.size,
@@ -300,6 +313,23 @@ const ScheduleComponent = () => {
         scheduleStartDate,
         scheduleEndDate,
     ]);
+
+    useEffect(() => {
+        const loadHolidays = async () => {
+            if (!authToken || !isAdminLike) return;
+            try {
+                const year = scheduleMonth
+                    ? Number(scheduleMonth.slice(0, 4))
+                    : new Date().getFullYear();
+                const data = await fetchHolidays(authToken, { year });
+                setHolidays(Array.isArray(data) ? data : []);
+            } catch (error) {
+                toast.error(error.message || 'No se pudieron cargar festivos');
+            }
+        };
+
+        loadHolidays();
+    }, [authToken, isAdminLike, scheduleMonth]);
 
     useEffect(() => {
         if (scheduleServiceFilter) {
@@ -352,6 +382,46 @@ const ScheduleComponent = () => {
     const openServiceScheduleModal = (card) => {
         setScheduleServiceId(card.id);
         setServiceScheduleModal(card);
+    };
+
+    const openServiceScheduleViewModal = (card) => {
+        setScheduleServiceId(card.id);
+        setServiceScheduleViewModal(card);
+    };
+
+    const buildServiceHolidaysByDate = (card) => {
+        const serviceCommunity = normalizeText(card?.autonomousCommunity);
+        const serviceCity = normalizeText(card?.city);
+        const serviceProvince = normalizeText(card?.province || card?.delegation);
+        const map = {};
+
+        holidays
+            .filter((holiday) => {
+                if (holiday.scope === 'national') return true;
+                if (holiday.scope === 'autonomous') {
+                    return (
+                        normalizeText(holiday.autonomousCommunity) ===
+                        serviceCommunity
+                    );
+                }
+                if (holiday.scope === 'local') {
+                    const holidayCity = normalizeText(holiday.city);
+                    const holidayProvince = normalizeText(holiday.province);
+                    return (
+                        (holidayCity && holidayCity === serviceCity) ||
+                        (holidayProvince && holidayProvince === serviceProvince)
+                    );
+                }
+                return false;
+            })
+            .forEach((holiday) => {
+                const key = String(holiday.holidayDate || '').slice(0, 10);
+                if (!key) return;
+                if (!map[key]) map[key] = [];
+                map[key].push(holiday);
+            });
+
+        return map;
     };
 
     useEffect(() => {
@@ -1160,17 +1230,30 @@ const ScheduleComponent = () => {
                                                                     : 'Sin plantilla'}
                                                             </span>
                                                         </div>
-                                                        <button
-                                                            type='button'
-                                                            className='schedule-btn schedule-btn--ghost'
-                                                            onClick={() =>
-                                                                openServiceScheduleModal(
-                                                                    card
-                                                                )
-                                                            }
-                                                        >
-                                                            Ver cuadrante
-                                                        </button>
+                                                        <div className='schedule-card-actions'>
+                                                            <button
+                                                                type='button'
+                                                                className='schedule-btn schedule-btn--ghost'
+                                                                onClick={() =>
+                                                                    openServiceScheduleViewModal(
+                                                                        card
+                                                                    )
+                                                                }
+                                                            >
+                                                                Ver cuadrante
+                                                            </button>
+                                                            <button
+                                                                type='button'
+                                                                className='schedule-btn'
+                                                                onClick={() =>
+                                                                    openServiceScheduleModal(
+                                                                        card
+                                                                    )
+                                                                }
+                                                            >
+                                                                Ajustes
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -1571,6 +1654,95 @@ const ScheduleComponent = () => {
                             Sin cuadrantes personales.
                         </p>
                     )}
+                </div>
+            )}
+
+            {serviceScheduleViewModal && (
+                <div className='schedule-service-modal'>
+                    <button
+                        type='button'
+                        className='schedule-service-modal__backdrop'
+                        onClick={() => setServiceScheduleViewModal(null)}
+                        aria-label='Cerrar cuadrante'
+                    />
+                    <div className='schedule-service-modal__panel'>
+                        <div className='schedule-service-modal__header'>
+                            <div>
+                                <h3>
+                                    {serviceScheduleViewModal.name ||
+                                        serviceScheduleViewModal.type ||
+                                        'Cuadrante por servicio'}
+                                </h3>
+                                <p>
+                                    {serviceScheduleViewModal.delegation} -{' '}
+                                    {serviceScheduleViewModal.month}
+                                </p>
+                            </div>
+                            <div className='schedule-service-modal__header-actions'>
+                                <button
+                                    type='button'
+                                    className='schedule-service-modal__settings'
+                                    onClick={() => {
+                                        const card = serviceScheduleViewModal;
+                                        setServiceScheduleViewModal(null);
+                                        openServiceScheduleModal(card);
+                                    }}
+                                >
+                                    Ajustes
+                                </button>
+                                <button
+                                    type='button'
+                                    className='schedule-service-modal__close'
+                                    onClick={() =>
+                                        setServiceScheduleViewModal(null)
+                                    }
+                                >
+                                    Cerrar
+                                </button>
+                            </div>
+                        </div>
+                        <div className='schedule-service-modal__body'>
+                            {serviceScheduleViewModal.scheduleView === 'image' &&
+                            serviceScheduleViewModal.scheduleImage ? (
+                                <div className='schedule-service-modal__image'>
+                                    <img
+                                        src={`${import.meta.env.VITE_API_URL}/uploads/${serviceScheduleViewModal.scheduleImage}`}
+                                        alt={`Cuadrante de ${
+                                            serviceScheduleViewModal.name ||
+                                            serviceScheduleViewModal.type ||
+                                            'servicio'
+                                        }`}
+                                    />
+                                </div>
+                            ) : (scheduleShiftMap[serviceScheduleViewModal.id] || [])
+                                  .length ? (
+                                <ServiceScheduleGrid
+                                    month={serviceScheduleViewModal.month}
+                                    shifts={
+                                        scheduleShiftMap[
+                                            serviceScheduleViewModal.id
+                                        ] || []
+                                    }
+                                    employees={employees}
+                                    absencesByEmployee={{}}
+                                    holidaysByDate={buildServiceHolidaysByDate(
+                                        serviceScheduleViewModal
+                                    )}
+                                    onShiftUpdate={() => {}}
+                                    readOnly
+                                    showUnassigned={(
+                                        scheduleShiftMap[
+                                            serviceScheduleViewModal.id
+                                        ] || []
+                                    ).some((shift) => !shift.employeeId)}
+                                />
+                            ) : (
+                                <p className='schedule-empty'>
+                                    Sin turnos para este mes.
+                                </p>
+                            )}
+                        </div>
+                    </div>
                 </div>
             )}
 

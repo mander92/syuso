@@ -137,6 +137,7 @@ const ServiceSchedulePanel = ({
         name: '',
     });
     const [isSavingHoliday, setIsSavingHoliday] = useState(false);
+    const [isHolidayToolsOpen, setIsHolidayToolsOpen] = useState(false);
     const [newShift, setNewShift] = useState({
         scheduleDate: toLocalDateInput(),
         startTime: '18:00',
@@ -1437,6 +1438,25 @@ const ServiceSchedulePanel = ({
                         </div>
                         <div className='service-schedule-grid-modal__body'>
                             <div className='service-schedule-holidays'>
+                                <div className='service-schedule-holidays__header'>
+                                    <div>
+                                        <strong>Festivos</strong>
+                                        <span>Marca dias especiales en el cuadrante.</span>
+                                    </div>
+                                    <button
+                                        type='button'
+                                        className='service-schedule-holidays__toggle'
+                                        onClick={() =>
+                                            setIsHolidayToolsOpen((prev) => !prev)
+                                        }
+                                    >
+                                        {isHolidayToolsOpen
+                                            ? 'Ocultar festivos'
+                                            : 'Anadir festivos'}
+                                    </button>
+                                </div>
+                                {isHolidayToolsOpen && (
+                                    <div className='service-schedule-holidays__content'>
                                 <form
                                     className='service-schedule-holidays__form'
                                     onSubmit={handleCreateHoliday}
@@ -1516,6 +1536,8 @@ const ServiceSchedulePanel = ({
                                         )
                                     )}
                                 </div>
+                                    </div>
+                                )}
                             </div>
                             <ServiceScheduleGrid
                                 month={month}

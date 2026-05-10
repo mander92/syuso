@@ -574,14 +574,59 @@
 
 .service-schedule-holidays {
     display: flex;
-    align-items: end;
-    justify-content: space-between;
-    gap: 14px;
+    flex-direction: column;
+    gap: 12px;
     margin-bottom: 14px;
     padding: 12px;
     border: 1px solid #e2e8f0;
     background: #f8fafc;
     border-radius: 8px;
+}
+
+.service-schedule-holidays__header,
+.service-schedule-holidays__content {
+    width: 100%;
+}
+
+.service-schedule-holidays__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.service-schedule-holidays__header div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.service-schedule-holidays__header strong {
+    color: #0f172a;
+    font-size: 0.9rem;
+}
+
+.service-schedule-holidays__header span {
+    color: #64748b;
+    font-size: 0.78rem;
+}
+
+.service-schedule-holidays__toggle {
+    border: none;
+    border-radius: 999px;
+    background: #e2e8f0;
+    color: #0f172a;
+    cursor: pointer;
+    font-weight: 700;
+    padding: 7px 14px;
+    white-space: nowrap;
+}
+
+.service-schedule-holidays__content {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 14px;
 }
 
 .service-schedule-holidays__form {
@@ -648,14 +693,18 @@
         padding: 12px;
     }
 
-    .service-schedule-holidays,
+    .service-schedule-holidays__content,
     .service-schedule-holidays__form {
         grid-template-columns: 1fr;
         align-items: stretch;
     }
 
-    .service-schedule-holidays {
+    .service-schedule-holidays__content {
         flex-direction: column;
+    }
+
+    .service-schedule-holidays__header {
+        align-items: flex-start;
     }
 }
 
