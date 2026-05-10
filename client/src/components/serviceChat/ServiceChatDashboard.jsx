@@ -124,7 +124,10 @@ const ServiceChatDashboard = () => {
         normalizedServices.forEach((service) => {
             const delegation = service.delegation || 'Sin delegacion';
             if (!groups.has(delegation)) groups.set(delegation, []);
-            groups.get(delegation).push(service);
+            groups.get(delegation).push({
+                ...service,
+                unreadCount: Number(unreadByService?.[service.id]) || 0,
+            });
         });
 
         return [...groups.entries()]
@@ -132,8 +135,12 @@ const ServiceChatDashboard = () => {
             .map(([delegation, rows]) => ({
                 delegation,
                 rows,
+                unreadCount: rows.reduce(
+                    (total, service) => total + (service.unreadCount || 0),
+                    0
+                ),
             }));
-    }, [normalizedServices]);
+    }, [normalizedServices, unreadByService]);
 
     useEffect(() => {
         if (!servicesByDelegation.length) {
@@ -164,6 +171,51 @@ const ServiceChatDashboard = () => {
         }));
         resetServiceUnread(serviceId);
     };
+
+    const shouldGroupByDelegation =
+        user?.role === 'admin' ||
+        user?.role === 'sudo' ||
+        servicesByDelegation.length > 1;
+
+    const renderServiceCard = (service) => (
+        <div
+            key={service.id}
+            className='service-chat-dashboard-card'
+        >
+            <div className='service-chat-dashboard-card-row'>
+                <h3 className='service-chat-dashboard-service-title'>
+                    {service.name}
+                    {service.unreadCount > 0 ? (
+                        <span className='service-chat-badge service-chat-badge--inline'>
+                            {service.unreadCount}
+                        </span>
+                    ) : null}
+                </h3>
+                <button
+                    type='button'
+                    className='service-chat-dashboard-btn'
+                    onClick={() => toggleChat(service.id)}
+                >
+                    {openChats[service.id]
+                        ? 'Cerrar chat'
+                        : 'Abrir chat'}
+                    {service.unreadCount > 0 ? (
+                        <span className='service-chat-badge'>
+                            {service.unreadCount}
+                        </span>
+                    ) : null}
+                </button>
+            </div>
+            {openChats[service.id] && (
+                <ServiceChat
+                    serviceId={service.id}
+                    title={`Chat: ${service.name}`}
+                    compact
+                    manageRoom={false}
+                />
+            )}
+        </div>
+    );
 
     return (
         <section className='service-chat-dashboard'>
@@ -239,70 +291,47 @@ const ServiceChatDashboard = () => {
                 </p>
             ) : servicesByDelegation.length ? (
                 <div className='service-chat-dashboard-list'>
-                    {servicesByDelegation.map((group) => (
-                        <div
-                            className='service-chat-dashboard-group'
-                            key={group.delegation}
-                        >
-                            <button
-                                type='button'
-                                className='service-chat-dashboard-group-toggle'
-                                onClick={() => toggleDelegation(group.delegation)}
-                            >
-                                <span>{group.delegation}</span>
-                                <strong>{group.rows.length} chats</strong>
-                                <span>
-                                    {expandedDelegations[group.delegation]
-                                        ? 'Ocultar'
-                                        : 'Mostrar'}
-                                </span>
-                            </button>
-                            {expandedDelegations[group.delegation] ? (
-                                <div className='service-chat-dashboard-group-list'>
-                                    {group.rows.map((service) => (
-                                        <div
-                                            key={service.id}
-                                            className='service-chat-dashboard-card'
-                                        >
-                                            <div className='service-chat-dashboard-card-row'>
-                                                <h3>{service.name}</h3>
-                                                <button
-                                                    type='button'
-                                                    className='service-chat-dashboard-btn'
-                                                    onClick={() =>
-                                                        toggleChat(service.id)
-                                                    }
-                                                >
-                                                    {openChats[service.id]
-                                                        ? 'Cerrar chat'
-                                                        : 'Abrir chat'}
-                                                    {unreadByService?.[
-                                                        service.id
-                                                    ] ? (
-                                                        <span className='service-chat-badge'>
-                                                            {
-                                                                unreadByService[
-                                                                    service.id
-                                                                ]
-                                                            }
-                                                        </span>
-                                                    ) : null}
-                                                </button>
-                                            </div>
-                                            {openChats[service.id] && (
-                                                <ServiceChat
-                                                    serviceId={service.id}
-                                                    title={`Chat: ${service.name}`}
-                                                    compact
-                                                    manageRoom={false}
-                                                />
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : null}
-                        </div>
-                    ))}
+                    {shouldGroupByDelegation
+                        ? servicesByDelegation.map((group) => (
+                              <div
+                                  className='service-chat-dashboard-group'
+                                  key={group.delegation}
+                              >
+                                  <button
+                                      type='button'
+                                      className='service-chat-dashboard-group-toggle'
+                                      onClick={() =>
+                                          toggleDelegation(group.delegation)
+                                      }
+                                  >
+                                      <span className='service-chat-dashboard-delegation-name'>
+                                          {group.delegation}
+                                          {group.unreadCount > 0 ? (
+                                              <span className='service-chat-badge service-chat-badge--inline'>
+                                                  {group.unreadCount}
+                                              </span>
+                                          ) : null}
+                                      </span>
+                                      <strong>
+                                          {group.rows.length} chats
+                                          {group.unreadCount > 0
+                                              ? ` · ${group.unreadCount} nuevos`
+                                              : ''}
+                                      </strong>
+                                      <span>
+                                          {expandedDelegations[group.delegation]
+                                              ? 'Ocultar'
+                                              : 'Mostrar'}
+                                      </span>
+                                  </button>
+                                  {expandedDelegations[group.delegation] ? (
+                                      <div className='service-chat-dashboard-group-list'>
+                                          {group.rows.map(renderServiceCard)}
+                                      </div>
+                                  ) : null}
+                              </div>
+                          ))
+                        : servicesByDelegation[0].rows.map(renderServiceCard)}
                 </div>
             ) : (
                 <p className='service-chat-dashboard-empty'>
