@@ -4,6 +4,8 @@
     gap: 8px;
     padding-bottom: 8px;
     width: 100%;
+    overflow-x: auto;
+    position: relative;
 }
 
 .service-schedule-grid-head,
@@ -191,72 +193,137 @@
 
 @media (max-width: 768px) {
     .service-schedule-grid {
-        gap: 12px;
+        gap: 0;
+        padding-bottom: 12px;
+        -webkit-overflow-scrolling: touch;
     }
 
     .service-schedule-grid-head {
-        display: none;
+        display: grid;
+        min-width: 1180px;
+        position: sticky;
+        top: 0;
+        z-index: 6;
     }
 
     .service-schedule-grid-row {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(132px, 132px) repeat(var(--days), minmax(34px, 34px)) minmax(62px, 62px);
+        min-width: 1180px;
         border: 1px solid #e2e8f0;
-        border-radius: 10px;
-        overflow: hidden;
+        border-top: none;
+        border-radius: 0;
+        overflow: visible;
     }
 
     .service-schedule-grid-employee {
-        font-size: 0.8rem;
-        padding: 10px;
+        position: sticky;
+        left: 0;
+        z-index: 5;
+        font-size: 0.72rem;
+        padding: 6px;
         background: #0f172a;
         color: #ffffff;
-        border: none;
+        border: 1px solid #1e293b;
+        min-height: 52px;
     }
 
     .service-schedule-grid-mobile-total {
-        display: inline-flex;
-        margin-left: auto;
-        color: #ffffff;
-        font-size: 0.78rem;
-        white-space: nowrap;
+        display: none;
     }
 
-    .service-schedule-grid-row-total {
-        display: none;
+    .service-schedule-grid-corner {
+        position: sticky;
+        left: 0;
+        z-index: 7;
+        background: #0f172a;
+        color: #ffffff;
+        border-color: #1e293b;
+        min-height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .service-schedule-grid-cell {
-        flex-direction: row;
-        align-items: center;
-        gap: 8px;
-        min-height: 44px;
-        padding: 6px 10px;
+        min-height: 52px;
+        padding: 2px;
+        gap: 2px;
         border-left: none;
-        border-right: none;
-    }
-
-    .service-schedule-grid-day-label {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 58px;
-        font-size: 0.72rem;
-        font-weight: 600;
-        color: #0f172a;
-        background: #f1f5f9;
-        border-radius: 6px;
-        padding: 2px 6px;
-        text-transform: uppercase;
-    }
-
-    .service-schedule-grid-footer {
-        grid-template-columns: 1fr auto;
-        border: 1px solid #e2e8f0;
-        border-radius: 10px;
+        border-top: none;
         overflow: hidden;
     }
 
-    .service-schedule-grid-footer-spacer {
+    .service-schedule-grid-day-label {
         display: none;
+    }
+
+    .service-schedule-grid-weekday,
+    .service-schedule-grid-day,
+    .service-schedule-grid-total-head {
+        min-height: 30px;
+        padding: 5px 2px;
+        font-size: 0.66rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .service-schedule-grid-shift {
+        border-radius: 5px;
+        padding: 3px 2px;
+        font-size: 0.62rem;
+        text-align: center;
+    }
+
+    .service-schedule-grid-shift-time {
+        font-size: 0.62rem;
+        line-height: 1.1;
+    }
+
+    .service-schedule-grid-shift-type {
+        display: none;
+    }
+
+    .service-schedule-grid-holiday {
+        width: 18px;
+        height: 18px;
+        font-size: 0.6rem;
+    }
+
+    .service-schedule-grid-toggle {
+        width: 22px;
+        height: 22px;
+        flex: 0 0 22px;
+    }
+
+    .service-schedule-grid-row-total {
+        font-size: 0.66rem;
+        padding: 4px 2px;
+    }
+
+    .service-schedule-grid-footer {
+        grid-template-columns: minmax(132px, 132px) repeat(var(--days), minmax(34px, 34px)) minmax(62px, 62px);
+        min-width: 1180px;
+        border: 1px solid #e2e8f0;
+        border-top: none;
+        border-radius: 0;
+        overflow: visible;
+    }
+
+    .service-schedule-grid-footer-spacer {
+        display: block;
+    }
+
+    .service-schedule-grid-footer-label {
+        position: sticky;
+        left: 0;
+        z-index: 5;
+        background: #f1f5f9;
+        font-size: 0.72rem;
+    }
+
+    .service-schedule-grid-footer-total {
+        font-size: 0.68rem;
+        padding: 4px 2px;
     }
 }
