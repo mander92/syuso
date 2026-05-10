@@ -393,6 +393,8 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
 .schedule-service-modal__close {
@@ -413,9 +415,51 @@
     cursor: pointer;
 }
 
+.schedule-service-modal__settings:disabled,
+.schedule-service-modal__apply:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
+.schedule-service-modal__apply {
+    border: none;
+    background: #16a34a;
+    color: #ffffff;
+    border-radius: 999px;
+    padding: 6px 14px;
+    cursor: pointer;
+}
+
+.schedule-service-modal__month {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #475569;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.schedule-service-modal__month input {
+    border: 1px solid #cbd5e1;
+    border-radius: 999px;
+    padding: 5px 10px;
+    color: #0f172a;
+}
+
 .schedule-service-modal__body {
     padding: 16px 20px 24px;
     overflow: auto;
+}
+
+.schedule-service-modal__preview-alert {
+    background: #dcfce7;
+    border: 1px solid #86efac;
+    border-radius: 10px;
+    color: #166534;
+    font-size: 0.86rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    padding: 10px 12px;
 }
 
 .schedule-service-modal__image {
@@ -482,6 +526,20 @@
     .schedule-service-modal__header {
         align-items: flex-start;
         padding: 12px;
+        flex-direction: column;
+    }
+
+    .schedule-service-modal__header-actions {
+        justify-content: flex-start;
+        width: 100%;
+    }
+
+    .schedule-service-modal__month {
+        width: 100%;
+    }
+
+    .schedule-service-modal__month input {
+        flex: 1;
     }
 
     .schedule-service-modal__body {

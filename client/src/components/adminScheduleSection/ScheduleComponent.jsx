@@ -25,6 +25,8 @@ import {
     fetchHolidays,
     createHoliday,
     deleteHoliday,
+    simulateServiceSchedule,
+    applyServiceScheduleSimulation,
 } from '../../services/serviceService.js';
 import ServiceSchedulePanel from '../serviceSchedule/ServiceSchedulePanel.jsx';
 import ServiceScheduleGrid from '../serviceSchedule/ServiceScheduleGrid.jsx';
@@ -119,6 +121,11 @@ const ScheduleComponent = () => {
     });
     const [isSavingHoliday, setIsSavingHoliday] = useState(false);
     const [isHolidayToolsOpen, setIsHolidayToolsOpen] = useState(false);
+    const [isGeneratingSchedule, setIsGeneratingSchedule] = useState(false);
+    const [isApplyingGeneratedSchedule, setIsApplyingGeneratedSchedule] =
+        useState(false);
+    const [generatedSchedulePreview, setGeneratedSchedulePreview] =
+        useState(null);
 
     useEffect(() => {
         const loadEmployees = async () => {
@@ -415,6 +422,87 @@ const ScheduleComponent = () => {
     const openServiceScheduleViewModal = (card) => {
         setScheduleServiceId(card.id);
         setServiceScheduleViewModal(card);
+        setGeneratedSchedulePreview(null);
+    };
+
+    const handleServiceScheduleViewMonthChange = async (monthValue) => {
+        if (!serviceScheduleViewModal || !monthValue) return;
+
+        const modal = serviceScheduleViewModal;
+        setScheduleMonth(monthValue);
+        setServiceScheduleViewModal((prev) =>
+            prev ? { ...prev, month: monthValue } : prev
+        );
+        setGeneratedSchedulePreview(null);
+
+        try {
+            const shifts = await fetchServiceScheduleShifts(
+                authToken,
+                modal.id,
+                monthValue
+            );
+            setScheduleShiftMap((prev) => ({
+                ...prev,
+                [modal.id]: Array.isArray(shifts) ? shifts : [],
+            }));
+        } catch (error) {
+            toast.error(error.message || 'No se pudo cargar el mes');
+        }
+    };
+
+    const handleGenerateServiceSchedule = async () => {
+        if (!serviceScheduleViewModal) return;
+        try {
+            setIsGeneratingSchedule(true);
+            const data = await simulateServiceSchedule(
+                authToken,
+                serviceScheduleViewModal.id,
+                serviceScheduleViewModal.month
+            );
+            const generatedShifts = Array.isArray(data?.shifts)
+                ? data.shifts
+                : [];
+            setGeneratedSchedulePreview(generatedShifts);
+            setScheduleShiftMap((prev) => ({
+                ...prev,
+                [serviceScheduleViewModal.id]: generatedShifts,
+            }));
+            toast.success('Cuadrante generado en previsualizacion');
+        } catch (error) {
+            toast.error(error.message || 'No se pudo generar el cuadrante');
+        } finally {
+            setIsGeneratingSchedule(false);
+        }
+    };
+
+    const handleApplyGeneratedServiceSchedule = async () => {
+        if (!serviceScheduleViewModal || !generatedSchedulePreview) return;
+        try {
+            setIsApplyingGeneratedSchedule(true);
+            await applyServiceScheduleSimulation(
+                authToken,
+                serviceScheduleViewModal.id,
+                serviceScheduleViewModal.month,
+                generatedSchedulePreview
+            );
+            toast.success('Cuadrante aplicado');
+            setGeneratedSchedulePreview(null);
+            const shifts = await fetchServiceScheduleShifts(
+                authToken,
+                serviceScheduleViewModal.id,
+                serviceScheduleViewModal.month
+            );
+            setScheduleShiftMap((prev) => ({
+                ...prev,
+                [serviceScheduleViewModal.id]: Array.isArray(shifts)
+                    ? shifts
+                    : [],
+            }));
+        } catch (error) {
+            toast.error(error.message || 'No se pudo aplicar el cuadrante');
+        } finally {
+            setIsApplyingGeneratedSchedule(false);
+        }
     };
 
     const buildServiceHolidaysByDate = (card) => {
@@ -1788,6 +1876,49 @@ const ScheduleComponent = () => {
                                 </p>
                             </div>
                             <div className='schedule-service-modal__header-actions'>
+                                <label className='schedule-service-modal__month'>
+                                    <span>Mes</span>
+                                    <input
+                                        type='month'
+                                        value={serviceScheduleViewModal.month}
+                                        onChange={(event) =>
+                                            handleServiceScheduleViewMonthChange(
+                                                event.target.value
+                                            )
+                                        }
+                                    />
+                                </label>
+                                <button
+                                    type='button'
+                                    className='schedule-service-modal__settings'
+                                    onClick={handleGenerateServiceSchedule}
+                                    disabled={isGeneratingSchedule}
+                                >
+                                    {isGeneratingSchedule
+                                        ? 'Generando...'
+                                        : 'Generar cuadrante'}
+                                </button>
+                                {generatedSchedulePreview && (
+                                    <button
+                                        type='button'
+                                        className='schedule-service-modal__apply'
+                                        onClick={handleApplyGeneratedServiceSchedule}
+                                        disabled={isApplyingGeneratedSchedule}
+                                    >
+                                        {isApplyingGeneratedSchedule
+                                            ? 'Aplicando...'
+                                            : 'Aplicar cuadrante'}
+                                    </button>
+                                )}
+                                <button
+                                    type='button'
+                                    className='schedule-service-modal__settings'
+                                    onClick={() =>
+                                        setIsHolidayToolsOpen((prev) => !prev)
+                                    }
+                                >
+                                    {isHolidayToolsOpen ? 'Ocultar festivos' : 'Festivos'}
+                                </button>
                                 <button
                                     type='button'
                                     className='schedule-service-modal__settings'
@@ -1811,25 +1942,20 @@ const ScheduleComponent = () => {
                             </div>
                         </div>
                         <div className='schedule-service-modal__body'>
-                            <div className='service-schedule-holidays'>
-                                <div className='service-schedule-holidays__header'>
-                                    <div>
-                                        <strong>Festivos</strong>
-                                        <span>Marca dias especiales en el cuadrante.</span>
-                                    </div>
-                                    <button
-                                        type='button'
-                                        className='service-schedule-holidays__toggle'
-                                        onClick={() =>
-                                            setIsHolidayToolsOpen((prev) => !prev)
-                                        }
-                                    >
-                                        {isHolidayToolsOpen
-                                            ? 'Ocultar festivos'
-                                            : 'Anadir festivos'}
-                                    </button>
+                            {generatedSchedulePreview && (
+                                <div className='schedule-service-modal__preview-alert'>
+                                    Previsualizacion generada. Revisa el cuadrante y pulsa
+                                    Aplicar cuadrante para guardarlo.
                                 </div>
-                                {isHolidayToolsOpen && (
+                            )}
+                            {isHolidayToolsOpen && (
+                                <div className='service-schedule-holidays schedule-service-modal__holiday-tools'>
+                                    <div className='service-schedule-holidays__header'>
+                                        <div>
+                                            <strong>Festivos</strong>
+                                            <span>Marca dias especiales en el cuadrante.</span>
+                                        </div>
+                                    </div>
                                     <div className='service-schedule-holidays__content'>
                                         <form
                                             className='service-schedule-holidays__form'
@@ -1916,8 +2042,8 @@ const ScheduleComponent = () => {
                                             )}
                                         </div>
                                     </div>
-                                )}
-                            </div>
+                                </div>
+                            )}
                             {serviceScheduleViewModal.scheduleView === 'image' &&
                             serviceScheduleViewModal.scheduleImage ? (
                                 <div className='schedule-service-modal__image'>
