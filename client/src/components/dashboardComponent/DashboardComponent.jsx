@@ -19,12 +19,107 @@ import ChatHub from '../chatHub/ChatHub.jsx';
 import EmployeeScheduleComponent from '../employeeSchedule/EmployeeScheduleComponent.jsx';
 import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 
+const formatAlertDate = (value) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+};
+
+const AlertsPanel = ({
+    notifications,
+    onOpenSection,
+    onMarkRead,
+    onMarkAllRead,
+}) => (
+    <section className='dashboard-alerts'>
+        <div className='dashboard-alerts-header'>
+            <div>
+                <h2>Alertas</h2>
+                <p>
+                    Revisa avisos de cuadrantes, cambios de turno y peticiones.
+                </p>
+            </div>
+            <button
+                type='button'
+                className='dashboard-alerts-clear'
+                onClick={onMarkAllRead}
+                disabled={!notifications.some((item) => !item.read)}
+            >
+                Marcar todo como leido
+            </button>
+        </div>
+
+        {notifications.length ? (
+            <div className='dashboard-alerts-list'>
+                {notifications.map((notification) => (
+                    <article
+                        key={notification.id}
+                        className={
+                            'dashboard-alert-card' +
+                            (!notification.read
+                                ? ' dashboard-alert-card--unread'
+                                : '')
+                        }
+                    >
+                        <div className='dashboard-alert-card-main'>
+                            <div>
+                                <h3>{notification.title}</h3>
+                                <p>{notification.message}</p>
+                            </div>
+                            <span>{formatAlertDate(notification.createdAt)}</span>
+                        </div>
+                        <div className='dashboard-alert-route'>
+                            Recorrido: {notification.routeLabel}
+                        </div>
+                        <div className='dashboard-alert-actions'>
+                            <button
+                                type='button'
+                                onClick={() => {
+                                    onMarkRead(notification.id);
+                                    onOpenSection(notification.section);
+                                }}
+                            >
+                                Ver cambio
+                            </button>
+                            {!notification.read ? (
+                                <button
+                                    type='button'
+                                    className='dashboard-alert-secondary'
+                                    onClick={() => onMarkRead(notification.id)}
+                                >
+                                    Marcar leida
+                                </button>
+                            ) : null}
+                        </div>
+                    </article>
+                ))}
+            </div>
+        ) : (
+            <div className='dashboard-alerts-empty'>
+                <p>No tienes alertas pendientes.</p>
+            </div>
+        )}
+    </section>
+);
+
 const DashboardComponent = () => {
-    const { user } = useUser();
+    const { user, isLoadingUser } = useUser();
     const {
         unreadTotal,
         shiftSwapUnread,
         employeeRequestUnread,
+        alertNotifications,
+        alertUnreadTotal,
+        markNotificationRead,
+        clearNotificationsBySection,
+        markAllNotificationsRead,
         resetShiftSwapUnread,
         resetEmployeeRequestUnread,
     } =
@@ -47,6 +142,7 @@ const DashboardComponent = () => {
                 { id: 'shiftSwaps', label: 'Cambios de turno' },
                 { id: 'employeeRequests', label: 'Peticiones' },
                 { id: 'chats', label: 'Chats' },
+                { id: 'alerts', label: 'Alertas' },
                 { id: 'workReports', label: 'Partes de trabajo' },
                 { id: 'users', label: 'Usuarios' },
                 { id: 'profile', label: 'Mi perfil' },
@@ -73,6 +169,7 @@ const DashboardComponent = () => {
                 { id: 'shiftSwaps', label: 'Cambios de turno' },
                 { id: 'employeeRequests', label: 'Peticiones' },
                 { id: 'chats', label: 'Chats' },
+                { id: 'alerts', label: 'Alertas' },
                 { id: 'profile', label: 'Mi perfil' },
             ];
         }
@@ -84,6 +181,7 @@ const DashboardComponent = () => {
                 { id: 'shiftSwaps', label: 'Cambios de turno' },
                 { id: 'employeeRequests', label: 'Peticiones' },
                 { id: 'chats', label: 'Chats' },
+                { id: 'alerts', label: 'Alertas' },
                 { id: 'profile', label: 'Mi perfil' },
             ];
         }
@@ -138,16 +236,46 @@ const DashboardComponent = () => {
     useEffect(() => {
         if (activeSection === 'shiftSwaps') {
             resetShiftSwapUnread();
+            clearNotificationsBySection('shiftSwaps');
         }
         if (activeSection === 'employeeRequests') {
             resetEmployeeRequestUnread();
+            clearNotificationsBySection('employeeRequests');
         }
-    }, [activeSection, resetEmployeeRequestUnread, resetShiftSwapUnread]);
+        if (activeSection === 'schedules') {
+            clearNotificationsBySection('schedules');
+        }
+        if (activeSection === 'schedule') {
+            clearNotificationsBySection('schedule');
+        }
+    }, [
+        activeSection,
+        clearNotificationsBySection,
+        resetEmployeeRequestUnread,
+        resetShiftSwapUnread,
+    ]);
 
     const renderSectionContent = () => {
         if (!user) return null;
 
         switch (activeSection) {
+            case 'alerts':
+                return (
+                    <AlertsPanel
+                        notifications={alertNotifications}
+                        onOpenSection={(section) => {
+                            if (
+                                section &&
+                                sections.some((item) => item.id === section)
+                            ) {
+                                setActiveSection(section);
+                            }
+                        }}
+                        onMarkRead={markNotificationRead}
+                        onMarkAllRead={markAllNotificationsRead}
+                    />
+                );
+
             case 'profile':
                 return <ProfileComponent />;
 
@@ -190,6 +318,16 @@ const DashboardComponent = () => {
                 return null;
         }
     };
+
+    if (isLoadingUser) {
+        return (
+            <div className='dashboard-wrapper'>
+                <div className='dashboard-empty'>
+                    <p>Cargando tu sesión...</p>
+                </div>
+            </div>
+        );
+    }
 
     if (!user) {
         return (
@@ -248,6 +386,12 @@ const DashboardComponent = () => {
                                 {section.id === 'chats' && unreadTotal > 0 ? (
                                     <span className='dashboard-nav-badge'>
                                         {unreadTotal}
+                                    </span>
+                                ) : null}
+                                {section.id === 'alerts' &&
+                                alertUnreadTotal > 0 ? (
+                                    <span className='dashboard-nav-badge'>
+                                        {alertUnreadTotal}
                                     </span>
                                 ) : null}
                                 {section.id === 'shiftSwaps' &&

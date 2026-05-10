@@ -35,8 +35,13 @@ const ChatNotificationsContext = createContext({
     unreadByGeneral: {},
     shiftSwapUnread: 0,
     employeeRequestUnread: 0,
+    alertNotifications: [],
+    alertUnreadTotal: 0,
     unreadTotal: 0,
     notificationTotal: 0,
+    markNotificationRead: () => {},
+    clearNotificationsBySection: () => {},
+    markAllNotificationsRead: () => {},
     resetServiceUnread: () => {},
     resetGeneralUnread: () => {},
     resetAllUnread: () => {},
@@ -58,6 +63,7 @@ export const ChatNotificationsProvider = ({ children }) => {
     const [unreadByGeneral, setUnreadByGeneral] = useState({});
     const [shiftSwapUnread, setShiftSwapUnread] = useState(0);
     const [employeeRequestUnread, setEmployeeRequestUnread] = useState(0);
+    const [alertNotifications, setAlertNotifications] = useState([]);
     const [trackedGeneralChatIds, setTrackedGeneralChatIds] = useState([]);
     const joinedServiceRooms = useRef(new Set());
     const joinedGeneralRooms = useRef(new Set());
@@ -74,6 +80,9 @@ export const ChatNotificationsProvider = ({ children }) => {
         : null;
     const employeeRequestStorageKey = user?.id
         ? `syuso_employee_request_unread_${user.id}`
+        : null;
+    const alertStorageKey = user?.id
+        ? `syuso_alert_notifications_${user.id}`
         : null;
 
     const socket = useMemo(
@@ -120,6 +129,38 @@ export const ChatNotificationsProvider = ({ children }) => {
         return map;
     }, [generalChats]);
 
+    const isAdminLike = user?.role === 'admin' || user?.role === 'sudo';
+
+    const buildAlertRoute = (section) => {
+        const labels = {
+            schedules: 'Mi cuenta > Cuadrantes',
+            schedule: 'Mi cuenta > Mi cuadrante',
+            shiftSwaps: 'Mi cuenta > Cambios de turno',
+            employeeRequests: 'Mi cuenta > Peticiones',
+            chats: 'Mi cuenta > Chats',
+        };
+        return labels[section] || 'Mi cuenta';
+    };
+
+    const addAlertNotification = useCallback((notification) => {
+        if (!notification?.id) return;
+        setAlertNotifications((prev) => {
+            if (prev.some((item) => item.id === notification.id)) return prev;
+            const next = [
+                {
+                    createdAt: new Date().toISOString(),
+                    read: false,
+                    ...notification,
+                    routeLabel:
+                        notification.routeLabel ||
+                        buildAlertRoute(notification.section),
+                },
+                ...prev,
+            ];
+            return next.slice(0, 80);
+        });
+    }, []);
+
     useEffect(() => {
         if (!authToken || !user) {
             setServices([]);
@@ -129,6 +170,7 @@ export const ChatNotificationsProvider = ({ children }) => {
             setUnreadByGeneral({});
             setShiftSwapUnread(0);
             setEmployeeRequestUnread(0);
+            setAlertNotifications([]);
             setTrackedGeneralChatIds([]);
             return;
         }
@@ -140,6 +182,7 @@ export const ChatNotificationsProvider = ({ children }) => {
             setUnreadByGeneral({});
             setShiftSwapUnread(0);
             setEmployeeRequestUnread(0);
+            setAlertNotifications([]);
             return;
         }
 
@@ -260,6 +303,20 @@ export const ChatNotificationsProvider = ({ children }) => {
             // ignore storage errors
         }
     }, [employeeRequestStorageKey]);
+
+    useEffect(() => {
+        if (!alertStorageKey) return;
+        try {
+            const raw = localStorage.getItem(alertStorageKey);
+            if (!raw) return;
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+                setAlertNotifications(parsed);
+            }
+        } catch {
+            // ignore storage errors
+        }
+    }, [alertStorageKey]);
 
     useEffect(() => {
         if (!authToken || !user) return;
@@ -406,6 +463,18 @@ export const ChatNotificationsProvider = ({ children }) => {
     }, [employeeRequestStorageKey, employeeRequestUnread]);
 
     useEffect(() => {
+        if (!alertStorageKey) return;
+        try {
+            localStorage.setItem(
+                alertStorageKey,
+                JSON.stringify(alertNotifications || [])
+            );
+        } catch {
+            // ignore storage errors
+        }
+    }, [alertStorageKey, alertNotifications]);
+
+    useEffect(() => {
         if (!socket || !user) return;
         if (user.role === 'client') return;
 
@@ -487,6 +556,17 @@ export const ChatNotificationsProvider = ({ children }) => {
         const handleShiftSwapEvent = (request) => {
             if (!request?.id) return;
             setShiftSwapUnread((prev) => (prev || 0) + 1);
+            addAlertNotification({
+                id: `shift-swap-${request.id}-${request.status || 'event'}`,
+                type: 'shiftSwap',
+                section: 'shiftSwaps',
+                title: 'Cambio de turno',
+                message:
+                    request.serviceName ||
+                    request.service ||
+                    'Hay una actualización en cambios de turno.',
+                routeLabel: buildAlertRoute('shiftSwaps'),
+            });
             toast('Cambios de turno: nueva alerta', {
                 id: `shift-swap-${request.id}-${request.status || 'event'}`,
             });
@@ -495,6 +575,17 @@ export const ChatNotificationsProvider = ({ children }) => {
         const handleEmployeeRequestEvent = (request) => {
             if (!request?.id) return;
             setEmployeeRequestUnread((prev) => (prev || 0) + 1);
+            addAlertNotification({
+                id: `employee-request-${request.id}-${request.status || 'event'}`,
+                type: 'employeeRequest',
+                section: 'employeeRequests',
+                title: 'Petición',
+                message:
+                    request.serviceName ||
+                    request.type ||
+                    'Hay una actualización en peticiones.',
+                routeLabel: buildAlertRoute('employeeRequests'),
+            });
             toast('Peticiones: nueva alerta', {
                 id: `employee-request-${request.id}-${request.status || 'event'}`,
             });
@@ -505,6 +596,17 @@ export const ChatNotificationsProvider = ({ children }) => {
 
             const serviceName =
                 serviceNameMap.get(event.serviceId) || 'Servicio';
+            const section = isAdminLike ? 'schedules' : 'schedule';
+            addAlertNotification({
+                id: `schedule-${event.serviceId}-${event.changedAt || Date.now()}`,
+                type: 'schedule',
+                section,
+                title: 'Cuadrante actualizado',
+                message: `${serviceName}: ${
+                    event.message || 'cuadrante actualizado'
+                }`,
+                routeLabel: buildAlertRoute(section),
+            });
             toast(`${serviceName}: cuadrante actualizado`, {
                 id: `schedule-${event.serviceId}-${event.changedAt || Date.now()}`,
             });
@@ -542,8 +644,10 @@ export const ChatNotificationsProvider = ({ children }) => {
         generalChatIds,
         trackedGeneralChatIds,
         user,
+        isAdminLike,
         serviceNameMap,
         generalChatNameMap,
+        addAlertNotification,
     ]);
 
     useEffect(() => {
@@ -583,6 +687,9 @@ export const ChatNotificationsProvider = ({ children }) => {
         setUnreadByGeneral({});
         setShiftSwapUnread(0);
         setEmployeeRequestUnread(0);
+        setAlertNotifications((prev) =>
+            prev.map((item) => ({ ...item, read: true }))
+        );
     };
 
     const resetChatUnread = useCallback(() => {
@@ -632,6 +739,30 @@ export const ChatNotificationsProvider = ({ children }) => {
         setEmployeeRequestUnread(0);
     };
 
+    const markNotificationRead = useCallback((notificationId) => {
+        if (!notificationId) return;
+        setAlertNotifications((prev) =>
+            prev.map((item) =>
+                item.id === notificationId ? { ...item, read: true } : item
+            )
+        );
+    }, []);
+
+    const clearNotificationsBySection = useCallback((section) => {
+        if (!section) return;
+        setAlertNotifications((prev) =>
+            prev.map((item) =>
+                item.section === section ? { ...item, read: true } : item
+            )
+        );
+    }, []);
+
+    const markAllNotificationsRead = useCallback(() => {
+        setAlertNotifications((prev) =>
+            prev.map((item) => ({ ...item, read: true }))
+        );
+    }, []);
+
     const setServiceChatActive = useCallback((serviceId, active) => {
         if (!serviceId) return;
         if (active) {
@@ -670,9 +801,19 @@ export const ChatNotificationsProvider = ({ children }) => {
         [unreadByService, unreadByGeneral]
     );
 
-    const notificationTotal = unreadTotal + (shiftSwapUnread || 0);
+    const alertUnreadTotal = useMemo(
+        () =>
+            alertNotifications.reduce(
+                (sum, item) => sum + (item.read ? 0 : 1),
+                0
+            ),
+        [alertNotifications]
+    );
+
+    const actionUnreadTotal =
+        (shiftSwapUnread || 0) + (employeeRequestUnread || 0);
     const totalNotifications =
-        notificationTotal + (employeeRequestUnread || 0);
+        unreadTotal + Math.max(alertUnreadTotal, actionUnreadTotal);
 
     return (
         <ChatNotificationsContext.Provider
@@ -681,8 +822,13 @@ export const ChatNotificationsProvider = ({ children }) => {
                 unreadByGeneral,
                 shiftSwapUnread,
                 employeeRequestUnread,
+                alertNotifications,
+                alertUnreadTotal,
                 unreadTotal,
                 notificationTotal: totalNotifications,
+                markNotificationRead,
+                clearNotificationsBySection,
+                markAllNotificationsRead,
                 resetServiceUnread,
                 resetGeneralUnread,
                 resetAllUnread,

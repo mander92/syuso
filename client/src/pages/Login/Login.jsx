@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 
 const Login = () => {
     const { authLogin } = useContext(AuthContext);
-    const { user } = useUser();
+    const { user, isLoadingUser } = useUser();
 
     const navigate = useNavigate();
 
@@ -37,6 +37,7 @@ const Login = () => {
         }
     };
 
+    if (isLoadingUser) return null;
     if (user) return <Navigate to='/' />;
 
     return (
