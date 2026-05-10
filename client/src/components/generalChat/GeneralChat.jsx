@@ -22,7 +22,7 @@ const formatTime = (value) => {
 const GeneralChat = ({ chatId, chatName, chatType, compact = false, manageRoom = true }) => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
-    const { resetGeneralUnread } = useChatNotifications();
+    const { resetGeneralUnread, setGeneralChatActive } = useChatNotifications();
     const [messages, setMessages] = useState([]);
     const [messageText, setMessageText] = useState('');
     const [loading, setLoading] = useState(false);
@@ -43,6 +43,12 @@ const GeneralChat = ({ chatId, chatName, chatType, compact = false, manageRoom =
     const isAdminUser = user?.role === 'admin' || user?.role === 'sudo';
     const canWrite = chatType !== 'announcement' || isAdminUser;
     const canReply = Boolean(user?.role && user.role !== 'client');
+
+    useEffect(() => {
+        if (!chatId) return;
+        setGeneralChatActive(chatId, true);
+        return () => setGeneralChatActive(chatId, false);
+    }, [chatId, setGeneralChatActive]);
 
     const markAsRead = () => {
         if (!chatId) return;

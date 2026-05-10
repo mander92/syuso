@@ -27,7 +27,7 @@ const ServiceChat = ({
 }) => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
-    const { resetServiceUnread } = useChatNotifications();
+    const { resetServiceUnread, setServiceChatActive } = useChatNotifications();
     const [messages, setMessages] = useState([]);
     const [messageText, setMessageText] = useState('');
     const [loading, setLoading] = useState(false);
@@ -49,6 +49,12 @@ const ServiceChat = ({
     const isAdminUser =
         user?.role === 'admin' || user?.role === 'sudo';
     const canReply = user?.role && user.role !== 'client';
+
+    useEffect(() => {
+        if (!serviceId) return;
+        setServiceChatActive(serviceId, true);
+        return () => setServiceChatActive(serviceId, false);
+    }, [serviceId, setServiceChatActive]);
 
     const markAsRead = () => {
         if (!serviceId) return;

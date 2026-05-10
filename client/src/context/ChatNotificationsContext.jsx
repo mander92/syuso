@@ -1,4 +1,12 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import toast from 'react-hot-toast';
 
 import { AuthContext } from './AuthContext.jsx';
@@ -34,6 +42,8 @@ const ChatNotificationsContext = createContext({
     resetAllUnread: () => {},
     resetShiftSwapUnread: () => {},
     resetEmployeeRequestUnread: () => {},
+    setServiceChatActive: () => {},
+    setGeneralChatActive: () => {},
     syncGeneralChats: () => {},
 });
 
@@ -50,6 +60,8 @@ export const ChatNotificationsProvider = ({ children }) => {
     const [trackedGeneralChatIds, setTrackedGeneralChatIds] = useState([]);
     const joinedServiceRooms = useRef(new Set());
     const joinedGeneralRooms = useRef(new Set());
+    const activeServiceChats = useRef(new Set());
+    const activeGeneralChats = useRef(new Set());
     const storageKey = user?.id
         ? `syuso_chat_unread_${user.id}`
         : null;
@@ -427,6 +439,14 @@ export const ChatNotificationsProvider = ({ children }) => {
             if (!message?.serviceId) return;
             if (message.userId === user.id) return;
 
+            if (activeServiceChats.current.has(message.serviceId)) {
+                setUnreadByService((prev) => ({
+                    ...prev,
+                    [message.serviceId]: 0,
+                }));
+                return;
+            }
+
             setUnreadByService((prev) => ({
                 ...prev,
                 [message.serviceId]: (prev[message.serviceId] || 0) + 1,
@@ -442,6 +462,14 @@ export const ChatNotificationsProvider = ({ children }) => {
         const handleGeneralMessage = (message) => {
             if (!message?.chatId) return;
             if (message.userId === user.id) return;
+
+            if (activeGeneralChats.current.has(message.chatId)) {
+                setUnreadByGeneral((prev) => ({
+                    ...prev,
+                    [message.chatId]: 0,
+                }));
+                return;
+            }
 
             setUnreadByGeneral((prev) => ({
                 ...prev,
@@ -533,21 +561,21 @@ export const ChatNotificationsProvider = ({ children }) => {
         };
     }, [socket]);
 
-    const resetServiceUnread = (serviceId) => {
+    const resetServiceUnread = useCallback((serviceId) => {
         if (!serviceId) return;
         setUnreadByService((prev) => ({
             ...prev,
             [serviceId]: 0,
         }));
-    };
+    }, []);
 
-    const resetGeneralUnread = (chatId) => {
+    const resetGeneralUnread = useCallback((chatId) => {
         if (!chatId) return;
         setUnreadByGeneral((prev) => ({
             ...prev,
             [chatId]: 0,
         }));
-    };
+    }, []);
 
     const resetAllUnread = () => {
         setUnreadByService({});
@@ -563,6 +591,26 @@ export const ChatNotificationsProvider = ({ children }) => {
     const resetEmployeeRequestUnread = () => {
         setEmployeeRequestUnread(0);
     };
+
+    const setServiceChatActive = useCallback((serviceId, active) => {
+        if (!serviceId) return;
+        if (active) {
+            activeServiceChats.current.add(serviceId);
+            resetServiceUnread(serviceId);
+            return;
+        }
+        activeServiceChats.current.delete(serviceId);
+    }, [resetServiceUnread]);
+
+    const setGeneralChatActive = useCallback((chatId, active) => {
+        if (!chatId) return;
+        if (active) {
+            activeGeneralChats.current.add(chatId);
+            resetGeneralUnread(chatId);
+            return;
+        }
+        activeGeneralChats.current.delete(chatId);
+    }, [resetGeneralUnread]);
 
     const syncGeneralChats = (nextChats) => {
         if (!Array.isArray(nextChats)) return;
@@ -600,6 +648,8 @@ export const ChatNotificationsProvider = ({ children }) => {
                 resetAllUnread,
                 resetShiftSwapUnread,
                 resetEmployeeRequestUnread,
+                setServiceChatActive,
+                setGeneralChatActive,
                 syncGeneralChats,
             }}
         >
