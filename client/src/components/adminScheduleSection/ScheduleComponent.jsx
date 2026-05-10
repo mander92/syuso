@@ -27,6 +27,7 @@ import {
     deleteHoliday,
     simulateServiceSchedule,
     applyServiceScheduleSimulation,
+    updateServiceScheduleShift,
 } from '../../services/serviceService.js';
 import ServiceSchedulePanel from '../serviceSchedule/ServiceSchedulePanel.jsx';
 import ServiceScheduleGrid from '../serviceSchedule/ServiceScheduleGrid.jsx';
@@ -550,6 +551,63 @@ const ScheduleComponent = () => {
         updateGeneratedPreviewShift(shiftId, updates);
     };
 
+    const updateSavedScheduleShiftInMap = (serviceId, shiftId, nextShift) => {
+        if (!serviceId || !shiftId) return;
+        setScheduleShiftMap((prev) => ({
+            ...prev,
+            [serviceId]: (prev[serviceId] || []).map((shift) =>
+                shift.id === shiftId ? { ...shift, ...nextShift } : shift
+            ),
+        }));
+        setSelectedGeneratedShift((prev) =>
+            prev?.id === shiftId ? { ...prev, ...nextShift } : prev
+        );
+    };
+
+    const handleScheduleViewShiftUpdate = async (shiftId, updates) => {
+        if (generatedSchedulePreview) {
+            updateGeneratedPreviewShift(shiftId, updates);
+            return;
+        }
+
+        if (!serviceScheduleViewModal?.id || !shiftId) return;
+
+        const serviceId = serviceScheduleViewModal.id;
+        const currentShift = (scheduleShiftMap[serviceId] || []).find(
+            (shift) => shift.id === shiftId
+        );
+        if (!currentShift) return;
+
+        const optimisticShift = { ...currentShift, ...updates };
+        updateSavedScheduleShiftInMap(serviceId, shiftId, optimisticShift);
+
+        try {
+            const data = await updateServiceScheduleShift(
+                authToken,
+                serviceId,
+                shiftId,
+                {
+                    scheduleDate:
+                        optimisticShift.scheduleDate ||
+                        currentShift.scheduleDate,
+                    startTime: optimisticShift.startTime || currentShift.startTime,
+                    endTime: optimisticShift.endTime || currentShift.endTime,
+                    hours:
+                        optimisticShift.hours !== undefined
+                            ? optimisticShift.hours
+                            : currentShift.hours,
+                    employeeId: optimisticShift.employeeId || null,
+                    shiftTypeId: optimisticShift.shiftTypeId || null,
+                }
+            );
+            updateSavedScheduleShiftInMap(serviceId, shiftId, data);
+            toast.success('Turno actualizado');
+        } catch (error) {
+            updateSavedScheduleShiftInMap(serviceId, shiftId, currentShift);
+            toast.error(error.message || 'No se pudo actualizar el turno');
+        }
+    };
+
     const handleGeneratedShiftFieldChange = (field, value) => {
         setSelectedGeneratedShift((prev) => {
             if (!prev) return prev;
@@ -567,8 +625,23 @@ const ScheduleComponent = () => {
         });
     };
 
-    const handleSaveGeneratedShift = () => {
+    const handleSaveGeneratedShift = async () => {
         if (!selectedGeneratedShift?.id) return;
+        if (!generatedSchedulePreview) {
+            await handleScheduleViewShiftUpdate(selectedGeneratedShift.id, {
+                scheduleDate: String(
+                    selectedGeneratedShift.scheduleDate || ''
+                ).slice(0, 10),
+                startTime: selectedGeneratedShift.startTime,
+                endTime: selectedGeneratedShift.endTime,
+                hours: selectedGeneratedShift.hours,
+                employeeId: selectedGeneratedShift.employeeId || null,
+                shiftTypeId: selectedGeneratedShift.shiftTypeId || null,
+            });
+            setSelectedGeneratedShift(null);
+            return;
+        }
+
         updateGeneratedPreviewShift(selectedGeneratedShift.id, {
             scheduleDate: selectedGeneratedShift.scheduleDate,
             startTime: selectedGeneratedShift.startTime,
@@ -2147,13 +2220,9 @@ const ScheduleComponent = () => {
                                     )}
                                     onHolidayDrop={handleHolidayDrop}
                                     onHolidayClick={handleHolidayClick}
-                                    onShiftUpdate={handleGeneratedShiftUpdate}
-                                    onSelectShift={(shift) => {
-                                        if (generatedSchedulePreview) {
-                                            setSelectedGeneratedShift(shift);
-                                        }
-                                    }}
-                                    readOnly={!generatedSchedulePreview}
+                                    onShiftUpdate={handleScheduleViewShiftUpdate}
+                                    onSelectShift={setSelectedGeneratedShift}
+                                    readOnly={false}
                                     showUnassigned={(
                                         scheduleShiftMap[
                                             serviceScheduleViewModal.id
@@ -2175,10 +2244,15 @@ const ScheduleComponent = () => {
                     <div className='service-schedule-modal'>
                         <div className='service-schedule-modal-header'>
                             <div>
-                                <h3>Editar turno de la previsualizacion</h3>
+                                <h3>
+                                    {generatedSchedulePreview
+                                        ? 'Editar turno de la previsualizacion'
+                                        : 'Editar turno'}
+                                </h3>
                                 <p>
-                                    Cambia trabajador, dia u horario antes de aplicar
-                                    el cuadrante.
+                                    {generatedSchedulePreview
+                                        ? 'Cambia trabajador, dia u horario antes de aplicar el cuadrante.'
+                                        : 'Cambia trabajador, dia u horario del cuadrante guardado.'}
                                 </p>
                             </div>
                             <button
