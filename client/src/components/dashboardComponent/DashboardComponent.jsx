@@ -139,7 +139,6 @@ const DashboardComponent = () => {
         alertUnreadTotal,
         markNotificationRead,
         removeNotification,
-        clearNotificationsBySection,
         clearReadNotifications,
         markAllNotificationsRead,
         resetShiftSwapUnread,
@@ -258,24 +257,12 @@ const DashboardComponent = () => {
     useEffect(() => {
         if (activeSection === 'shiftSwaps') {
             resetShiftSwapUnread();
-            clearNotificationsBySection('shiftSwaps');
         }
         if (activeSection === 'employeeRequests') {
             resetEmployeeRequestUnread();
-            clearNotificationsBySection('employeeRequests');
-        }
-        if (activeSection === 'schedules') {
-            clearNotificationsBySection('schedules');
-        }
-        if (activeSection === 'schedule') {
-            clearNotificationsBySection('schedule');
-        }
-        if (activeSection === 'chats') {
-            clearNotificationsBySection('chats');
         }
     }, [
         activeSection,
-        clearNotificationsBySection,
         resetEmployeeRequestUnread,
         resetShiftSwapUnread,
     ]);
