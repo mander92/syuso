@@ -20,7 +20,7 @@ const ensureServiceChatAccessService = async (serviceId, userId, role) => {
     if (role === 'sudo') return true;
     if (role === 'admin') return true;
 
-    if (serviceRows[0].clientId === userId) {
+    if (role === 'client') {
         generateErrorUtil('Acceso denegado', 403);
     }
 
