@@ -53,6 +53,22 @@ const ChatNotificationsContext = createContext({
     syncGeneralChats: () => {},
 });
 
+const parseStoredJson = (key, fallback) => {
+    if (!key) return fallback;
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return fallback;
+        return JSON.parse(raw);
+    } catch {
+        try {
+            localStorage.removeItem(key);
+        } catch {
+            // ignore storage errors
+        }
+        return fallback;
+    }
+};
+
 export const ChatNotificationsProvider = ({ children }) => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
@@ -256,29 +272,17 @@ export const ChatNotificationsProvider = ({ children }) => {
 
     useEffect(() => {
         if (!storageKey) return;
-        try {
-            const raw = localStorage.getItem(storageKey);
-            if (!raw) return;
-            const parsed = JSON.parse(raw);
-            if (parsed && typeof parsed === 'object') {
-                setUnreadByService(parsed);
-            }
-        } catch {
-            // ignore storage errors
+        const parsed = parseStoredJson(storageKey, null);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            setUnreadByService(parsed);
         }
     }, [storageKey]);
 
     useEffect(() => {
         if (!generalStorageKey) return;
-        try {
-            const raw = localStorage.getItem(generalStorageKey);
-            if (!raw) return;
-            const parsed = JSON.parse(raw);
-            if (parsed && typeof parsed === 'object') {
-                setUnreadByGeneral(parsed);
-            }
-        } catch {
-            // ignore storage errors
+        const parsed = parseStoredJson(generalStorageKey, null);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            setUnreadByGeneral(parsed);
         }
     }, [generalStorageKey]);
 
@@ -306,15 +310,9 @@ export const ChatNotificationsProvider = ({ children }) => {
 
     useEffect(() => {
         if (!alertStorageKey) return;
-        try {
-            const raw = localStorage.getItem(alertStorageKey);
-            if (!raw) return;
-            const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed)) {
-                setAlertNotifications(parsed);
-            }
-        } catch {
-            // ignore storage errors
+        const parsed = parseStoredJson(alertStorageKey, []);
+        if (Array.isArray(parsed)) {
+            setAlertNotifications(parsed);
         }
     }, [alertStorageKey]);
 
@@ -697,14 +695,12 @@ export const ChatNotificationsProvider = ({ children }) => {
             ...new Set([
                 ...serviceIds,
                 ...trackedServiceIds,
-                ...Object.keys(unreadByService || {}),
             ]),
         ];
         const generalChatIdsToRead = [
             ...new Set([
                 ...generalChatIds,
                 ...trackedGeneralChatIds,
-                ...Object.keys(unreadByGeneral || {}),
             ]),
         ];
 
@@ -719,16 +715,18 @@ export const ChatNotificationsProvider = ({ children }) => {
             }
         });
 
-        setUnreadByService({});
-        setUnreadByGeneral({});
+        setUnreadByService((prev) =>
+            Object.keys(prev || {}).length ? {} : prev
+        );
+        setUnreadByGeneral((prev) =>
+            Object.keys(prev || {}).length ? {} : prev
+        );
     }, [
         socket,
         serviceIds,
         trackedServiceIds,
-        unreadByService,
         generalChatIds,
         trackedGeneralChatIds,
-        unreadByGeneral,
     ]);
 
     const resetShiftSwapUnread = () => {

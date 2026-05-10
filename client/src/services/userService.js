@@ -1,6 +1,20 @@
 // src/services/userServices.js
 const { VITE_API_URL } = import.meta.env;
 
+const readJsonBody = async (res) => {
+    const text = await res.text();
+    if (!text) return {};
+    try {
+        return JSON.parse(text);
+    } catch {
+        throw new Error(
+            res.ok
+                ? 'La respuesta del servidor no es JSON valido'
+                : `Error del servidor (${res.status})`
+        );
+    }
+};
+
 /**
  * Registro de usuario normal (cliente, empleado… vía web pública)
  */
@@ -132,7 +146,7 @@ export const fetchProfileUserServices = async (authToken) => {
         },
     });
 
-    const body = await res.json();
+    const body = await readJsonBody(res);
 
     if (body.status === 'error') {
         throw new Error(body.message);
