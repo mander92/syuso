@@ -6,7 +6,7 @@ const deleteEmployeeAbsenceService = async (absenceId, employeeId) => {
 
     const [rows] = await pool.query(
         `
-        SELECT id
+        SELECT id, employeeId, startDate, endDate
         FROM employeeAbsences
         WHERE id = ? AND employeeId = ?
         `,
@@ -25,7 +25,7 @@ const deleteEmployeeAbsenceService = async (absenceId, employeeId) => {
         [absenceId, employeeId]
     );
 
-    return true;
+    return rows[0];
 };
 
 export default deleteEmployeeAbsenceService;

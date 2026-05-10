@@ -51,15 +51,25 @@ const editServiceController = async (req, res, next) => {
 
         await ensureServiceDelegationAccessService(serviceId, userId, role);
 
-        const shouldCheckScheduleView = Object.prototype.hasOwnProperty.call(
-            req.body,
-            'scheduleView'
+        const scheduleRelevantFields = [
+            'scheduleView',
+            'hourRuleType',
+            'autonomousCommunity',
+            'province',
+            'city',
+            'startDateTime',
+            'endDateTime',
+            'hours',
+            'numberOfPeople',
+            'status',
+        ];
+        const shouldCheckScheduleFields = scheduleRelevantFields.some((field) =>
+            Object.prototype.hasOwnProperty.call(req.body, field)
         );
-        const previousService = shouldCheckScheduleView
+        const previousService = shouldCheckScheduleFields
             ? await selectServiceByIdService(serviceId)
             : null;
-        const previousScheduleView = previousService?.[0]?.scheduleView || 'grid';
-        const nextScheduleView = scheduleView || 'grid';
+        const previousScheduleService = previousService?.[0] || null;
 
         const data = await updateServiceByIdService(
             serviceId,
@@ -89,10 +99,38 @@ const editServiceController = async (req, res, next) => {
             role
         );
 
-        if (shouldCheckScheduleView && nextScheduleView !== previousScheduleView) {
+        const normalizeScheduleValue = (value) => {
+            if (value instanceof Date) return value.toISOString();
+            if (value === undefined || value === null) return '';
+            return String(value);
+        };
+        const hasScheduleRelevantChange =
+            previousScheduleService &&
+            scheduleRelevantFields.some((field) => {
+                if (!Object.prototype.hasOwnProperty.call(req.body, field)) {
+                    return false;
+                }
+
+                const previousValue =
+                    field === 'scheduleView'
+                        ? previousScheduleService[field] || 'grid'
+                        : previousScheduleService[field];
+                const nextValue =
+                    field === 'scheduleView'
+                        ? scheduleView || 'grid'
+                        : req.body[field];
+
+                return (
+                    normalizeScheduleValue(previousValue) !==
+                    normalizeScheduleValue(nextValue)
+                );
+            });
+
+        if (hasScheduleRelevantChange) {
             emitServiceScheduleChanged(serviceId, {
                 changedBy: userId,
-                reason: 'schedule_view_changed',
+                reason: 'service_schedule_settings_changed',
+                message: 'Configuracion del cuadrante actualizada',
             });
         }
 

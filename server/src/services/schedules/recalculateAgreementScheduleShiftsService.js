@@ -68,7 +68,7 @@ const recalculateAgreementScheduleShiftsService = async (
         }
     }
 
-    return rows.length;
+    return [...byService.keys()];
 };
 
 export default recalculateAgreementScheduleShiftsService;

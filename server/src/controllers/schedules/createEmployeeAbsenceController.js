@@ -1,5 +1,7 @@
 import createEmployeeAbsenceService from '../../services/schedules/createEmployeeAbsenceService.js';
+import selectEmployeeScheduledServiceIdsInRangeService from '../../services/schedules/selectEmployeeScheduledServiceIdsInRangeService.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
+import { emitServiceSchedulesChanged } from '../../utils/serviceScheduleNotificationUtil.js';
 
 const createEmployeeAbsenceController = async (req, res, next) => {
     try {
@@ -39,6 +41,19 @@ const createEmployeeAbsenceController = async (req, res, next) => {
             notes,
             createdBy
         );
+
+        const affectedServiceIds =
+            await selectEmployeeScheduledServiceIdsInRangeService(
+                userId,
+                startDate,
+                endDate
+            );
+
+        emitServiceSchedulesChanged(affectedServiceIds, {
+            changedBy: createdBy,
+            reason: 'employee_absence_created',
+            message: 'Ausencia añadida al cuadrante',
+        });
 
         res.send({
             status: 'ok',

@@ -14,3 +14,11 @@ export const emitServiceScheduleChanged = (serviceId, options = {}) => {
         message: options.message || 'Cuadrante actualizado',
     });
 };
+
+export const emitServiceSchedulesChanged = (serviceIds, options = {}) => {
+    const uniqueServiceIds = [...new Set((serviceIds || []).filter(Boolean))];
+
+    uniqueServiceIds.forEach((serviceId) => {
+        emitServiceScheduleChanged(serviceId, options);
+    });
+};

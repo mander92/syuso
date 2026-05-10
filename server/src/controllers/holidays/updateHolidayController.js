@@ -1,6 +1,8 @@
 import getPool from '../../db/getPool.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
+import selectHolidayAffectedServiceIdsService from '../../services/holidays/selectHolidayAffectedServiceIdsService.js';
 import recalculateAgreementScheduleShiftsService from '../../services/schedules/recalculateAgreementScheduleShiftsService.js';
+import { emitServiceSchedulesChanged } from '../../utils/serviceScheduleNotificationUtil.js';
 
 const VALID_SCOPES = new Set(['national', 'autonomous', 'local']);
 
@@ -58,13 +60,42 @@ const updateHolidayController = async (req, res, next) => {
         const affectedDates = [current.holidayDate, resolvedHolidayDate]
             .filter(Boolean)
             .map((date) =>
-                date instanceof Date ? date.toISOString().slice(0, 10) : String(date).slice(0, 10)
+                date instanceof Date
+                    ? date.toISOString().slice(0, 10)
+                    : String(date).slice(0, 10)
             )
             .sort();
-        await recalculateAgreementScheduleShiftsService(pool, {
-            fromDate: affectedDates[0],
-            toDate: affectedDates[affectedDates.length - 1],
+        const affectedServiceIds = await recalculateAgreementScheduleShiftsService(
+            pool,
+            {
+                fromDate: affectedDates[0],
+                toDate: affectedDates[affectedDates.length - 1],
+            }
+        );
+        const previousHolidayServiceIds =
+            await selectHolidayAffectedServiceIdsService(pool, current);
+        const nextHolidayServiceIds = await selectHolidayAffectedServiceIdsService(pool, {
+            scope: resolvedScope,
+            autonomousCommunity:
+                autonomousCommunity !== undefined
+                    ? autonomousCommunity || null
+                    : current.autonomousCommunity,
+            province: province !== undefined ? province || null : current.province,
+            city: city !== undefined ? city || null : current.city,
         });
+
+        emitServiceSchedulesChanged(
+            [
+                ...affectedServiceIds,
+                ...previousHolidayServiceIds,
+                ...nextHolidayServiceIds,
+            ],
+            {
+                changedBy: req.userLogged?.id,
+                reason: 'holiday_updated',
+                message: 'Festivo actualizado',
+            }
+        );
 
         res.send({ status: 'ok', message: 'Festivo actualizado' });
     } catch (error) {

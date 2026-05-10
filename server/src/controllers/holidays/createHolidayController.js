@@ -1,7 +1,9 @@
 import { v4 as uuid } from 'uuid';
 import getPool from '../../db/getPool.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
+import selectHolidayAffectedServiceIdsService from '../../services/holidays/selectHolidayAffectedServiceIdsService.js';
 import recalculateAgreementScheduleShiftsService from '../../services/schedules/recalculateAgreementScheduleShiftsService.js';
+import { emitServiceSchedulesChanged } from '../../utils/serviceScheduleNotificationUtil.js';
 
 const VALID_SCOPES = new Set(['national', 'autonomous', 'local']);
 
@@ -64,9 +66,27 @@ const createHolidayController = async (req, res, next) => {
             ]
         );
 
-        await recalculateAgreementScheduleShiftsService(pool, {
-            fromDate: holidayDate,
-            toDate: holidayDate,
+        const affectedServiceIds = await recalculateAgreementScheduleShiftsService(
+            pool,
+            {
+                fromDate: holidayDate,
+                toDate: holidayDate,
+            }
+        );
+        const holidayServiceIds = await selectHolidayAffectedServiceIdsService(
+            pool,
+            {
+                scope,
+                autonomousCommunity: autonomousCommunity || null,
+                province: province || null,
+                city: city || null,
+            }
+        );
+
+        emitServiceSchedulesChanged([...affectedServiceIds, ...holidayServiceIds], {
+            changedBy: req.userLogged?.id,
+            reason: 'holiday_created',
+            message: `Festivo anadido: ${String(name).trim()}`,
         });
 
         res.status(201).send({
