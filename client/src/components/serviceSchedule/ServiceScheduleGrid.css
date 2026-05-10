@@ -200,15 +200,15 @@
 
     .service-schedule-grid-head {
         display: grid;
-        min-width: 1180px;
+        min-width: 1050px;
         position: sticky;
         top: 0;
         z-index: 6;
     }
 
     .service-schedule-grid-row {
-        grid-template-columns: minmax(132px, 132px) repeat(var(--days), minmax(34px, 34px)) minmax(62px, 62px);
-        min-width: 1180px;
+        grid-template-columns: minmax(96px, 96px) repeat(var(--days), minmax(31px, 31px)) minmax(54px, 54px);
+        min-width: 1050px;
         border: 1px solid #e2e8f0;
         border-top: none;
         border-radius: 0;
@@ -219,12 +219,20 @@
         position: sticky;
         left: 0;
         z-index: 5;
-        font-size: 0.72rem;
-        padding: 6px;
+        font-size: 0.62rem;
+        line-height: 1.08;
+        padding: 5px 4px;
         background: #0f172a;
         color: #ffffff;
         border: 1px solid #1e293b;
-        min-height: 52px;
+        min-height: 48px;
+        gap: 4px;
+    }
+
+    .service-schedule-grid-employee span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .service-schedule-grid-mobile-total {
@@ -238,14 +246,14 @@
         background: #0f172a;
         color: #ffffff;
         border-color: #1e293b;
-        min-height: 30px;
+        min-height: 28px;
         display: flex;
         align-items: center;
         justify-content: center;
     }
 
     .service-schedule-grid-cell {
-        min-height: 52px;
+        min-height: 48px;
         padding: 2px;
         gap: 2px;
         border-left: none;
@@ -294,6 +302,7 @@
         width: 22px;
         height: 22px;
         flex: 0 0 22px;
+        font-size: 0.74rem;
     }
 
     .service-schedule-grid-row-total {
@@ -302,8 +311,8 @@
     }
 
     .service-schedule-grid-footer {
-        grid-template-columns: minmax(132px, 132px) repeat(var(--days), minmax(34px, 34px)) minmax(62px, 62px);
-        min-width: 1180px;
+        grid-template-columns: minmax(96px, 96px) repeat(var(--days), minmax(31px, 31px)) minmax(54px, 54px);
+        min-width: 1050px;
         border: 1px solid #e2e8f0;
         border-top: none;
         border-radius: 0;
