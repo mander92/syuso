@@ -97,6 +97,9 @@ const ServiceScheduleGrid = ({
     absencesByEmployee,
     onShiftUpdate,
     onSelectShift,
+    onHolidayDrop,
+    onHolidayClick,
+    holidaysByDate = {},
     readOnly = false,
     showUnassigned = true,
 }) => {
@@ -174,8 +177,13 @@ const ServiceScheduleGrid = ({
     };
 
     const handleDrop = (event, employeeId, day) => {
-        if (readOnly) return;
         event.preventDefault();
+        const holidayScope = event.dataTransfer.getData('application/x-holiday-scope');
+        if (holidayScope && onHolidayDrop) {
+            onHolidayDrop(toDateKey(year, monthIndex, day), holidayScope);
+            return;
+        }
+        if (readOnly) return;
         const shiftId = event.dataTransfer.getData('text/plain') || draggedShiftId;
         if (!shiftId) return;
         const shift = shiftMap.get(shiftId);
@@ -192,7 +200,7 @@ const ServiceScheduleGrid = ({
     };
 
     const allowDrop = (event) => {
-        if (!readOnly) {
+        if (!readOnly || onHolidayDrop) {
             event.preventDefault();
         }
     };
@@ -205,8 +213,18 @@ const ServiceScheduleGrid = ({
                 <div className='service-schedule-grid-corner'>Empleado</div>
                 {days.map((day) => {
                     const dateObj = new Date(year, monthIndex, day);
+                    const dateKey = toDateKey(year, monthIndex, day);
+                    const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+                    const isHoliday = (holidaysByDate[dateKey] || []).length > 0;
                     return (
-                        <div key={`weekday-${day}`} className='service-schedule-grid-weekday'>
+                        <div
+                            key={`weekday-${day}`}
+                            className={`service-schedule-grid-weekday ${
+                                isWeekend || isHoliday
+                                    ? 'service-schedule-grid-date--holiday'
+                                    : ''
+                            }`}
+                        >
                             {weekdayLabel(dateObj)}
                         </div>
                     );
@@ -215,11 +233,24 @@ const ServiceScheduleGrid = ({
             </div>
             <div className='service-schedule-grid-head service-schedule-grid-head--numbers' style={gridStyle}>
                 <div className='service-schedule-grid-corner'> </div>
-                {days.map((day) => (
-                    <div key={`day-${day}`} className='service-schedule-grid-day'>
-                        {day}
-                    </div>
-                ))}
+                {days.map((day) => {
+                    const dateObj = new Date(year, monthIndex, day);
+                    const dateKey = toDateKey(year, monthIndex, day);
+                    const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+                    const isHoliday = (holidaysByDate[dateKey] || []).length > 0;
+                    return (
+                        <div
+                            key={`day-${day}`}
+                            className={`service-schedule-grid-day ${
+                                isWeekend || isHoliday
+                                    ? 'service-schedule-grid-date--holiday'
+                                    : ''
+                            }`}
+                        >
+                            {day}
+                        </div>
+                    );
+                })}
                 <div className='service-schedule-grid-total-head'>Total</div>
             </div>
             {rows.map((row) => {
@@ -268,6 +299,7 @@ const ServiceScheduleGrid = ({
                             const dateKey = toDateKey(year, monthIndex, day);
                             const bucketKey = `${row.id || 'unassigned'}_${dateKey}`;
                             const shiftsForDay = bucketed.get(bucketKey) || [];
+                            const holidaysForDay = holidaysByDate[dateKey] || [];
                             const dateObj = new Date(year, monthIndex, day);
                             const absence = rowAbsences.find((item) => {
                                 const { start, end } = getAbsenceRange(item);
@@ -277,7 +309,11 @@ const ServiceScheduleGrid = ({
                             return (
                                 <div
                                     key={dateKey}
-                                    className='service-schedule-grid-cell'
+                                    className={`service-schedule-grid-cell ${
+                                        holidaysForDay.length
+                                            ? 'service-schedule-grid-cell--holiday'
+                                            : ''
+                                    }`}
                                     onDrop={(event) => handleDrop(event, row.id, day)}
                                     onDragOver={allowDrop}
                                     style={
@@ -289,6 +325,20 @@ const ServiceScheduleGrid = ({
                                     <span className='service-schedule-grid-day-label'>
                                         {weekdayLabel(dateObj)} {day}
                                     </span>
+                                    {holidaysForDay.length > 0 && (
+                                        <button
+                                            type='button'
+                                            className='service-schedule-grid-holiday'
+                                            onClick={() =>
+                                                onHolidayClick?.(holidaysForDay[0])
+                                            }
+                                            title={holidaysForDay
+                                                .map((holiday) => holiday.name)
+                                                .join(', ')}
+                                        >
+                                            F
+                                        </button>
+                                    )}
                                     {absence && !shiftsForDay.length && (
                                         <span className='service-schedule-grid-absence'>
                                             {absenceShort(absence.type)}

@@ -22,6 +22,30 @@ const createHolidayController = async (req, res, next) => {
 
         const pool = await getPool();
         const id = uuid();
+        const [existing] = await pool.query(
+            `
+            SELECT id
+            FROM holidays
+            WHERE deletedAt IS NULL
+              AND holidayDate = ?
+              AND scope = ?
+              AND COALESCE(autonomousCommunity, '') = COALESCE(?, '')
+              AND COALESCE(province, '') = COALESCE(?, '')
+              AND COALESCE(city, '') = COALESCE(?, '')
+            LIMIT 1
+            `,
+            [
+                holidayDate,
+                scope,
+                autonomousCommunity || null,
+                province || null,
+                city || null,
+            ]
+        );
+
+        if (existing.length) {
+            generateErrorUtil('Este festivo ya existe en el calendario', 409);
+        }
 
         await pool.query(
             `

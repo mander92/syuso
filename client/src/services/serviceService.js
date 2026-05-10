@@ -264,6 +264,58 @@ export const fetchUpdateServiceStatus = async (
     return body;
 };
 
+export const fetchHolidays = async (authToken, params = {}) => {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+            searchParams.append(key, value);
+        }
+    });
+    const query = searchParams.toString();
+    const res = await fetch(`${VITE_API_URL}/holidays${query ? `?${query}` : ''}`, {
+        headers: { Authorization: authToken },
+    });
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};
+
+export const createHoliday = async (authToken, data) => {
+    const res = await fetch(`${VITE_API_URL}/holidays`, {
+        method: 'POST',
+        headers: {
+            Authorization: authToken,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    });
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};
+
+export const deleteHoliday = async (authToken, holidayId) => {
+    const res = await fetch(`${VITE_API_URL}/holidays/${holidayId}`, {
+        method: 'DELETE',
+        headers: { Authorization: authToken },
+    });
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body;
+};
+
 export const fetchInProgressServices = async (authToken, delegationId) => {
     const query = delegationId
         ? `?delegationId=${encodeURIComponent(delegationId)}`
