@@ -32,11 +32,17 @@ const selectServiceByEmployeeIdService = async (status, type, employeeId) => {
                   AND ss.employeeId = ?
                   AND ss.deletedAt IS NULL
             )
+            OR EXISTS (
+                SELECT 1
+                FROM shiftRecords sr
+                WHERE sr.serviceId = s.id
+                  AND sr.employeeId = ?
+            )
           )
          
         `;
 
-    let sqlValues = [employeeId, employeeId, employeeId];
+    let sqlValues = [employeeId, employeeId, employeeId, employeeId];
 
     if (status) {
         sqlQuery += ' AND s.status = ?';

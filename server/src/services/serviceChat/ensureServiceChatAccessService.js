@@ -47,7 +47,22 @@ const ensureServiceChatAccessService = async (serviceId, userId, role) => {
             [serviceId, userId]
         );
 
-        if (!scheduledRows.length) {
+        if (scheduledRows.length) {
+            return true;
+        }
+
+        const [shiftRecordRows] = await pool.query(
+            `
+            SELECT id
+            FROM shiftRecords
+            WHERE serviceId = ?
+              AND employeeId = ?
+            LIMIT 1
+            `,
+            [serviceId, userId]
+        );
+
+        if (!shiftRecordRows.length) {
             generateErrorUtil('Acceso denegado', 403);
         }
     }
