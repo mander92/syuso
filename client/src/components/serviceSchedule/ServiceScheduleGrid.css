@@ -204,6 +204,7 @@
 
     .service-schedule-grid-head {
         display: grid;
+        grid-template-columns: minmax(96px, 96px) repeat(var(--days), minmax(31px, 31px)) minmax(54px, 54px);
         min-width: 1050px;
         position: sticky;
         top: 0;
