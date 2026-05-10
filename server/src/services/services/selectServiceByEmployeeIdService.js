@@ -4,7 +4,7 @@ const selectServiceByEmployeeIdService = async (status, type, employeeId) => {
     const pool = await getPool();
 
     let sqlQuery = `
-        SELECT  pa.id, pa.serviceId, pa.employeeId, s.id, s.name, s.status,
+        SELECT  pa.id, s.id AS serviceId, ? AS employeeId, s.id, s.name, s.status,
                 s.scheduleImage, s.scheduleView, s.locationLink,
                 u.firstName, u.lastName, u.phone, s.type, s.province,
                 s.autonomousCommunity, s.hourRuleType,
@@ -15,18 +15,28 @@ const selectServiceByEmployeeIdService = async (status, type, employeeId) => {
                     FROM serviceNfcTags snt
                     WHERE snt.serviceId = s.id
                 ) AS nfcCount
-        FROM personsAssigned pa
-        INNER JOIN services s
-        ON pa.serviceId = s.id
+        FROM services s
+        LEFT JOIN personsAssigned pa
+        ON pa.serviceId = s.id AND pa.employeeId = ?
         INNER JOIN addresses a
         ON s.addressId = a.id
         INNER JOIN users u
         ON u.id = s.clientId
-        WHERE pa.employeeId = ?
+        WHERE s.deletedAt IS NULL
+          AND (
+            pa.employeeId IS NOT NULL
+            OR EXISTS (
+                SELECT 1
+                FROM serviceScheduleShifts ss
+                WHERE ss.serviceId = s.id
+                  AND ss.employeeId = ?
+                  AND ss.deletedAt IS NULL
+            )
+          )
          
         `;
 
-    let sqlValues = [employeeId];
+    let sqlValues = [employeeId, employeeId, employeeId];
 
     if (status) {
         sqlQuery += ' AND s.status = ?';

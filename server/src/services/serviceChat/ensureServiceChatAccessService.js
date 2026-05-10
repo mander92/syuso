@@ -35,7 +35,21 @@ const ensureServiceChatAccessService = async (serviceId, userId, role) => {
     );
 
     if (!assignedRows.length) {
-        generateErrorUtil('Acceso denegado', 403);
+        const [scheduledRows] = await pool.query(
+            `
+            SELECT id
+            FROM serviceScheduleShifts
+            WHERE serviceId = ?
+              AND employeeId = ?
+              AND deletedAt IS NULL
+            LIMIT 1
+            `,
+            [serviceId, userId]
+        );
+
+        if (!scheduledRows.length) {
+            generateErrorUtil('Acceso denegado', 403);
+        }
     }
 
     return true;

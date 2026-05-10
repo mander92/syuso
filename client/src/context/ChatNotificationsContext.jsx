@@ -133,6 +133,23 @@ export const ChatNotificationsProvider = ({ children }) => {
         return map;
     }, [services]);
 
+    const serviceInfoMap = useMemo(() => {
+        const map = new Map();
+        services.forEach((service) => {
+            const id = service.serviceId || service.id;
+            if (!id || map.has(id)) return;
+            map.set(id, {
+                name: service.name || service.type || 'Servicio',
+                delegation:
+                    service.province ||
+                    service.delegation ||
+                    service.city ||
+                    '',
+            });
+        });
+        return map;
+    }, [services]);
+
     const generalChatIds = useMemo(
         () => generalChats.map((chat) => chat.id).filter(Boolean),
         [generalChats]
@@ -158,6 +175,19 @@ export const ChatNotificationsProvider = ({ children }) => {
             chats: 'Mi cuenta > Chats',
         };
         return labels[section] || 'Mi cuenta';
+    };
+
+    const buildServiceChatAlertRoute = (serviceId) => {
+        const serviceInfo = serviceInfoMap.get(serviceId);
+        if (!isAdminLike || !serviceInfo) return buildAlertRoute('chats');
+
+        return [
+            'Chats',
+            serviceInfo.delegation,
+            serviceInfo.name,
+        ]
+            .filter(Boolean)
+            .join(' > ');
     };
 
     const addAlertNotification = useCallback((notification) => {
@@ -540,7 +570,7 @@ export const ChatNotificationsProvider = ({ children }) => {
                 section: 'chats',
                 title: 'Chat de servicio',
                 message: `${serviceName}: nuevo mensaje`,
-                routeLabel: buildAlertRoute('chats'),
+                routeLabel: buildServiceChatAlertRoute(message.serviceId),
             });
             toast(`${serviceName}: nuevo mensaje`, {
                 id: `chat-${message.id || message.serviceId}`,
@@ -676,6 +706,7 @@ export const ChatNotificationsProvider = ({ children }) => {
         user,
         isAdminLike,
         serviceNameMap,
+        serviceInfoMap,
         generalChatNameMap,
         addAlertNotification,
     ]);

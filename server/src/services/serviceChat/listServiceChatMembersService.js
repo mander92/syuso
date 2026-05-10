@@ -22,6 +22,13 @@ const listServiceChatMembersService = async (serviceId) => {
             UNION
 
             SELECT u.id, u.firstName, u.lastName, u.role
+            FROM serviceScheduleShifts ss
+            INNER JOIN users u ON u.id = ss.employeeId
+            WHERE ss.serviceId = ? AND ss.deletedAt IS NULL AND u.deletedAt IS NULL
+
+            UNION
+
+            SELECT u.id, u.firstName, u.lastName, u.role
             FROM services s
             INNER JOIN delegations d ON d.name = s.province
             INNER JOIN adminDelegations ad ON ad.delegationId = d.id
@@ -36,7 +43,7 @@ const listServiceChatMembersService = async (serviceId) => {
         ) AS member
         ORDER BY member.role, member.firstName, member.lastName
         `,
-        [serviceId, serviceId, serviceId]
+        [serviceId, serviceId, serviceId, serviceId]
     );
 
     return rows;
