@@ -52,6 +52,8 @@ const ServiceDetail = () => {
         type: '',
         description: '',
         province: '',
+        autonomousCommunity: '',
+        hourRuleType: 'standard',
         status: '',
         startDateTime: '',
         endDateTime: '',
@@ -135,6 +137,8 @@ const ServiceDetail = () => {
                 type: rows[0]?.type || '',
                 description: rows[0]?.description || '',
                 province: rows[0]?.province || '',
+                autonomousCommunity: rows[0]?.autonomousCommunity || '',
+                hourRuleType: rows[0]?.hourRuleType || 'standard',
                 status: rows[0]?.status || '',
                 startDateTime: formatDateTimeInput(rows[0]?.startDateTime),
                 endDateTime: formatDateTimeInput(rows[0]?.endDateTime),
@@ -404,6 +408,8 @@ const ServiceDetail = () => {
                 type: summaryForm.type,
                 description: summaryForm.description,
                 province: summaryForm.province,
+                autonomousCommunity: summaryForm.autonomousCommunity,
+                hourRuleType: summaryForm.hourRuleType,
                 ...(summaryForm.startDateTime
                     ? { startDateTime: toIsoFromInput(summaryForm.startDateTime) }
                     : {}),
@@ -625,6 +631,35 @@ const ServiceDetail = () => {
                                             onChange={handleSummaryChange('province')}
                                             placeholder='Delegacion'
                                         />
+                                    </div>
+                                    <div className='service-detail-summary-field'>
+                                        <label htmlFor='serviceAutonomousCommunity'>
+                                            Comunidad autonoma
+                                        </label>
+                                        <input
+                                            id='serviceAutonomousCommunity'
+                                            type='text'
+                                            value={summaryForm.autonomousCommunity}
+                                            onChange={handleSummaryChange(
+                                                'autonomousCommunity'
+                                            )}
+                                            placeholder='Ej. Andalucia'
+                                        />
+                                    </div>
+                                    <div className='service-detail-summary-field'>
+                                        <label htmlFor='serviceHourRuleType'>
+                                            Computo de horas
+                                        </label>
+                                        <select
+                                            id='serviceHourRuleType'
+                                            value={summaryForm.hourRuleType}
+                                            onChange={handleSummaryChange(
+                                                'hourRuleType'
+                                            )}
+                                        >
+                                            <option value='standard'>Normal</option>
+                                            <option value='convenio'>Convenio</option>
+                                        </select>
                                     </div>
                                     <div className='service-detail-summary-field'>
                                         <label htmlFor='serviceDescription'>Descripcion</label>

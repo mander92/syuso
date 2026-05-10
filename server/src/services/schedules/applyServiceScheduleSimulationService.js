@@ -1,6 +1,7 @@
 import getPool from '../../db/getPool.js';
 import { v4 as uuid } from 'uuid';
 import { calculateShiftHours } from '../../utils/scheduleTimeUtil.js';
+import { calculateShiftHourBreakdowns } from './calculateShiftHourBreakdownsService.js';
 
 const normalizeShift = (shift) => ({
     id: shift.id,
@@ -20,6 +21,9 @@ const applyServiceScheduleSimulationService = async (serviceId, month, shifts = 
     const pool = await getPool();
     const list = Array.isArray(shifts) ? shifts.map(normalizeShift) : [];
     if (!list.length) return { applied: 0, created: 0 };
+    list.forEach((shift) => {
+        if (shift.isNew && !shift.id) shift.id = uuid();
+    });
 
     const ids = list.filter((shift) => !shift.isNew && shift.id).map((shift) => shift.id);
     const idSet = new Set(ids);
@@ -46,9 +50,14 @@ const applyServiceScheduleSimulationService = async (serviceId, month, shifts = 
 
     const toUpdate = list.filter((shift) => !shift.isNew);
     const toInsert = list.filter((shift) => shift.isNew);
+    const breakdowns = await calculateShiftHourBreakdowns(pool, serviceId, list);
+    const breakdownById = new Map(
+        list.map((shift, index) => [shift.id, breakdowns[index]])
+    );
 
     if (toUpdate.length) {
         for (const shift of toUpdate) {
+            const breakdown = breakdownById.get(shift.id);
             await pool.query(
                 `
                 UPDATE serviceScheduleShifts
@@ -57,7 +66,11 @@ const applyServiceScheduleSimulationService = async (serviceId, month, shifts = 
                     scheduleDate = ?,
                     startTime = ?,
                     endTime = ?,
-                    hours = ?
+                    hours = ?,
+                    realHours = ?,
+                    nightHours = ?,
+                    holidayHours = ?,
+                    regularHours = ?
                 WHERE id = ? AND serviceId = ? AND deletedAt IS NULL
                 `,
                 [
@@ -66,7 +79,11 @@ const applyServiceScheduleSimulationService = async (serviceId, month, shifts = 
                     shift.scheduleDate,
                     shift.startTime,
                     shift.endTime,
-                    shift.hours,
+                    breakdown?.hours ?? shift.hours,
+                    breakdown?.realHours ?? shift.hours,
+                    breakdown?.nightHours ?? 0,
+                    breakdown?.holidayHours ?? 0,
+                    breakdown?.regularHours ?? shift.hours,
                     shift.id,
                     serviceId,
                 ]
@@ -75,21 +92,32 @@ const applyServiceScheduleSimulationService = async (serviceId, month, shifts = 
     }
 
     if (toInsert.length) {
-        const insertValues = toInsert.map((shift) => [
-            shift.id || uuid(),
-            serviceId,
-            shift.employeeId,
-            shift.shiftTypeId,
-            shift.scheduleDate,
-            shift.startTime,
-            shift.endTime,
-            shift.hours,
-            'scheduled',
-        ]);
+        const insertValues = toInsert.map((shift) => {
+            const breakdown = breakdownById.get(shift.id);
+            return [
+                shift.id || uuid(),
+                serviceId,
+                shift.employeeId,
+                shift.shiftTypeId,
+                shift.scheduleDate,
+                shift.startTime,
+                shift.endTime,
+                breakdown?.hours ?? shift.hours,
+                breakdown?.realHours ?? shift.hours,
+                breakdown?.nightHours ?? 0,
+                breakdown?.holidayHours ?? 0,
+                breakdown?.regularHours ?? shift.hours,
+                'scheduled',
+            ];
+        });
         await pool.query(
             `
             INSERT INTO serviceScheduleShifts
-                (id, serviceId, employeeId, shiftTypeId, scheduleDate, startTime, endTime, hours, status)
+                (
+                    id, serviceId, employeeId, shiftTypeId, scheduleDate,
+                    startTime, endTime, hours, realHours, nightHours,
+                    holidayHours, regularHours, status
+                )
             VALUES ?
             `,
             [insertValues]

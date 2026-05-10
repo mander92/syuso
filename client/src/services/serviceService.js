@@ -12,7 +12,9 @@ export const fetchNewServiceServices = async (
     comments,
     type = '',
     description = '',
-    province = ''
+    province = '',
+    autonomousCommunity = '',
+    hourRuleType = 'standard'
 ) => {
     const url = typeOfServiceId
         ? `${VITE_API_URL}/services/${typeOfServiceId}`
@@ -34,6 +36,8 @@ export const fetchNewServiceServices = async (
             type,
             description,
             province,
+            autonomousCommunity,
+            hourRuleType,
         }),
     });
 
@@ -61,7 +65,9 @@ export const fetchNewContractAdmin = async (
     name,
     type = '',
     description = '',
-    province = ''
+    province = '',
+    autonomousCommunity = '',
+    hourRuleType = 'standard'
 ) => {
     const url = typeOfServiceId
         ? `${VITE_API_URL}/services/${typeOfServiceId}`
@@ -86,6 +92,8 @@ export const fetchNewContractAdmin = async (
             type,
             description,
             province,
+            autonomousCommunity,
+            hourRuleType,
         }),
     });
 

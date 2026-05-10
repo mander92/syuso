@@ -12,6 +12,7 @@ import cleanupRouter from './cleanupRouter.js';
 import generalChatRouter from './generalChatRouter.js';
 import shiftSwapRouter from './shiftSwapRouter.js';
 import employeeRequestRouter from './employeeRequestRouter.js';
+import holidayRouter from './holidayRouter.js';
 
 const router = express.Router();
 
@@ -27,5 +28,6 @@ router.use(cleanupRouter);
 router.use(generalChatRouter);
 router.use(shiftSwapRouter);
 router.use(employeeRequestRouter);
+router.use(holidayRouter);
 
 export default router;

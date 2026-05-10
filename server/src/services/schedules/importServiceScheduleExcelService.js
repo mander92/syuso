@@ -4,6 +4,7 @@ import { v4 as uuid } from 'uuid';
 import getPool from '../../db/getPool.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import { calculateShiftHours } from '../../utils/scheduleTimeUtil.js';
+import { calculateShiftHourBreakdowns } from './calculateShiftHourBreakdownsService.js';
 
 const DAY_START_COL = 5;
 const DAY_END_COL = 35;
@@ -304,6 +305,12 @@ const importServiceScheduleExcelService = async ({
         );
     }
 
+    const breakdowns = await calculateShiftHourBreakdowns(
+        pool,
+        serviceId,
+        preview.shifts
+    );
+
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
@@ -322,12 +329,18 @@ const importServiceScheduleExcelService = async ({
             );
         }
 
-        for (const shift of preview.shifts) {
+        for (let index = 0; index < preview.shifts.length; index += 1) {
+            const shift = preview.shifts[index];
+            const breakdown = breakdowns[index] || {};
             await conn.query(
                 `
                 INSERT INTO serviceScheduleShifts
-                    (id, serviceId, employeeId, scheduleDate, startTime, endTime, hours, status, createdBy)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 'scheduled', ?)
+                    (
+                        id, serviceId, employeeId, scheduleDate, startTime,
+                        endTime, hours, realHours, nightHours, holidayHours,
+                        regularHours, status, createdBy
+                    )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'scheduled', ?)
                 `,
                 [
                     uuid(),
@@ -336,7 +349,11 @@ const importServiceScheduleExcelService = async ({
                     shift.scheduleDate,
                     shift.startTime,
                     shift.endTime,
-                    shift.hours,
+                    breakdown.hours ?? shift.hours,
+                    breakdown.realHours ?? shift.hours,
+                    breakdown.nightHours ?? 0,
+                    breakdown.holidayHours ?? 0,
+                    breakdown.regularHours ?? shift.hours,
                     createdBy,
                 ]
             );

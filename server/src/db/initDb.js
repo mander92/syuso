@@ -19,7 +19,7 @@ const initDb = async () => {
 
         await pool.query(
             `
-            DROP TABLE IF EXISTS serviceNfcTagLogs, workReportIncidentPhotos, workReportPhotos, workReportIncidents, workReportDrafts, workReports, employeeRequests, shiftSwapRequests, generalChatMessages, generalChatReads, generalChatMembers, generalChats, serviceChatMessages, serviceChatReads, serviceScheduleShifts, serviceScheduleTemplates, serviceShiftTypes, employeeAbsences, employeeRules, personsAssigned, serviceNfcTags, shiftRecords, adminDelegations, delegations, services, typeOfServices, users, addresses, consulting_requests, job_applications
+            DROP TABLE IF EXISTS serviceNfcTagLogs, workReportIncidentPhotos, workReportPhotos, workReportIncidents, workReportDrafts, workReports, employeeRequests, shiftSwapRequests, generalChatMessages, generalChatReads, generalChatMembers, generalChats, serviceChatMessages, serviceChatReads, serviceScheduleShifts, serviceScheduleTemplates, serviceShiftTypes, holidays, employeeAbsences, employeeRules, personsAssigned, serviceNfcTags, shiftRecords, adminDelegations, delegations, services, typeOfServices, users, addresses, consulting_requests, job_applications
             `
         );
 
@@ -90,6 +90,7 @@ const initDb = async () => {
                 type VARCHAR(255),
                 description VARCHAR(250),
                 province VARCHAR(30),
+                autonomousCommunity VARCHAR(100),
                 image CHAR(40),
                 startDateTime TIMESTAMP NOT NULL,
                 endDateTime TIMESTAMP,
@@ -100,6 +101,7 @@ const initDb = async () => {
                   locationLink VARCHAR(255),
                   scheduleImage VARCHAR(255),
                   scheduleView ENUM('grid', 'image') DEFAULT 'grid',
+                  hourRuleType ENUM('standard', 'convenio') DEFAULT 'standard',
                   chatPaused BOOLEAN DEFAULT false,
                 status ENUM ('accepted', 'rejected', 'pending', 'completed', 'confirmed', 'canceled') DEFAULT 'pending',
                 allowUnscheduledClockIn BOOLEAN DEFAULT false,
@@ -230,6 +232,10 @@ const initDb = async () => {
                 startTime TIME NOT NULL,
                 endTime TIME NOT NULL,
                 hours DECIMAL(5,2),
+                realHours DECIMAL(6,2) DEFAULT 0,
+                nightHours DECIMAL(6,2) DEFAULT 0,
+                holidayHours DECIMAL(6,2) DEFAULT 0,
+                regularHours DECIMAL(6,2) DEFAULT 0,
                 status ENUM('scheduled', 'completed', 'canceled') DEFAULT 'scheduled',
                 createdBy CHAR(36),
                 createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -244,6 +250,34 @@ const initDb = async () => {
         );
 
         console.log('serviceScheduleShifts creada');
+
+        await pool.query(
+            `
+            CREATE TABLE IF NOT EXISTS holidays (
+                id CHAR(36) PRIMARY KEY NOT NULL,
+                holidayDate DATE NOT NULL,
+                name VARCHAR(150) NOT NULL,
+                scope ENUM('national', 'autonomous', 'local') NOT NULL,
+                autonomousCommunity VARCHAR(100),
+                province VARCHAR(100),
+                city VARCHAR(100),
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                modifiedAt TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                deletedAt TIMESTAMP,
+                UNIQUE KEY unique_holiday_scope (
+                    holidayDate,
+                    scope,
+                    autonomousCommunity,
+                    province,
+                    city
+                ),
+                INDEX idx_holidays_date_scope (holidayDate, scope),
+                INDEX idx_holidays_location (autonomousCommunity, province, city)
+            )
+            `
+        );
+
+        console.log('holidays creada');
 
         await pool.query(
             `

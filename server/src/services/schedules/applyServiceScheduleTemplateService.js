@@ -1,6 +1,7 @@
 import getPool from '../../db/getPool.js';
 import { v4 as uuid } from 'uuid';
 import { calculateShiftHours } from '../../utils/scheduleTimeUtil.js';
+import { calculateShiftHourBreakdowns } from './calculateShiftHourBreakdownsService.js';
 
 const buildDateString = (date) => {
     const year = date.getUTCFullYear();
@@ -71,7 +72,7 @@ const applyServiceScheduleTemplateService = async (
         ]
     );
 
-    const values = [];
+    const shiftsToCreate = [];
 
     for (
         let current = new Date(monthStart);
@@ -97,28 +98,57 @@ const applyServiceScheduleTemplateService = async (
             );
 
             for (let i = 0; i < slots; i += 1) {
-                values.push([
-                    uuid(),
+                shiftsToCreate.push({
+                    id: uuid(),
                     serviceId,
-                    null,
-                    template.shiftTypeId || null,
+                    employeeId: null,
+                    shiftTypeId: template.shiftTypeId || null,
                     scheduleDate,
-                    template.startTime,
-                    template.endTime,
+                    startTime: template.startTime,
+                    endTime: template.endTime,
                     hours,
-                    'scheduled',
+                    status: 'scheduled',
                     createdBy,
-                ]);
+                });
             }
         });
     }
 
-    if (!values.length) return [];
+    if (!shiftsToCreate.length) return [];
+
+    const breakdowns = await calculateShiftHourBreakdowns(
+        pool,
+        serviceId,
+        shiftsToCreate
+    );
+    const values = shiftsToCreate.map((shift, index) => {
+        const breakdown = breakdowns[index];
+        return [
+            shift.id,
+            shift.serviceId,
+            shift.employeeId,
+            shift.shiftTypeId,
+            shift.scheduleDate,
+            shift.startTime,
+            shift.endTime,
+            breakdown.hours ?? shift.hours,
+            breakdown.realHours,
+            breakdown.nightHours,
+            breakdown.holidayHours,
+            breakdown.regularHours,
+            shift.status,
+            shift.createdBy,
+        ];
+    });
 
     await pool.query(
         `
         INSERT INTO serviceScheduleShifts
-            (id, serviceId, employeeId, shiftTypeId, scheduleDate, startTime, endTime, hours, status, createdBy)
+            (
+                id, serviceId, employeeId, shiftTypeId, scheduleDate, startTime,
+                endTime, hours, realHours, nightHours, holidayHours,
+                regularHours, status, createdBy
+            )
         VALUES ?
         `,
         [values]
@@ -134,6 +164,10 @@ const applyServiceScheduleTemplateService = async (
             startTime,
             endTime,
             hours,
+            realHours,
+            nightHours,
+            holidayHours,
+            regularHours,
         ]) => ({
             id,
             serviceId: serviceIdValue,
@@ -143,6 +177,10 @@ const applyServiceScheduleTemplateService = async (
             startTime,
             endTime,
             hours,
+            realHours,
+            nightHours,
+            holidayHours,
+            regularHours,
         })
     );
 };

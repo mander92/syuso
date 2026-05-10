@@ -4,7 +4,10 @@ const selectServiceByClientIdService = async (clientId, status, city, type) => {
     const pool = await getPool();
 
     let sqlQuery = `
-        SELECT s.id, s.name, s.status, s.validationCode, s.comments, s.hours, s.startDateTime, s.endDateTime, s.scheduleImage, s.type, s.province, a.address, a.postCode, a.city
+        SELECT s.id, s.name, s.status, s.validationCode, s.comments, s.hours,
+               s.startDateTime, s.endDateTime, s.scheduleImage, s.type,
+               s.province, s.autonomousCommunity, s.hourRuleType,
+               a.address, a.postCode, a.city
         FROM addresses a
         INNER JOIN services s ON a.id = s.addressId
         INNER JOIN users u ON u.id = s.clientId

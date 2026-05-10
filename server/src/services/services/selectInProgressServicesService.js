@@ -18,6 +18,8 @@ const selectInProgressServicesService = async (
             s.scheduleView,
             s.type,
             s.province,
+            s.autonomousCommunity,
+            s.hourRuleType,
             a.address,
             a.city,
             a.postCode,

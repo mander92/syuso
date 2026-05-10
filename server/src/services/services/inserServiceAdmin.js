@@ -24,7 +24,10 @@ const insertServiceAdmin = async (
     const resolvedType = serviceType.type || name || 'Servicio';
     const resolvedDescription = serviceType.description || comments || null;
     const resolvedProvince = serviceType.province || city || null;
+    const resolvedAutonomousCommunity = serviceType.autonomousCommunity || null;
     const resolvedImage = serviceType.image || null;
+    const resolvedHourRuleType =
+        serviceType.hourRuleType === 'convenio' ? 'convenio' : 'standard';
     const resolvedHours = Number(hours) || 1;
     const resolvedNumberOfPeople = Number(numberOfPeople) || 1;
 
@@ -75,17 +78,18 @@ const insertServiceAdmin = async (
     await pool.query(
         `
             INSERT INTO services(
-                id, type, description, province, image,
+                id, type, description, province, autonomousCommunity, image,
                 startDateTime, endDateTime, hours, numberOfPeople,
                 comments, validationCode, clientId, addressId,
-                typeOfServicesId, name
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                typeOfServicesId, name, hourRuleType
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             `,
         [
             serviceId,
             resolvedType,
             resolvedDescription,
             resolvedProvince,
+            resolvedAutonomousCommunity,
             resolvedImage,
             startDateTime,
             normalizedEndDateTime,
@@ -96,14 +100,15 @@ const insertServiceAdmin = async (
             clientId,
             addressId,
             typeOfServiceId || null,
-            name
+            name,
+            resolvedHourRuleType,
         ]
     );
 
     const [data] = await pool.query(
         `
         SELECT s.status, s.name,
-        s.type, s.province, s.hours, s.startDateTime, a.address, a.postCode, a.city, s.comments, u.email, u.firstName, u.lastName, u.phone
+        s.type, s.province, s.autonomousCommunity, s.hourRuleType, s.hours, s.startDateTime, a.address, a.postCode, a.city, s.comments, u.email, u.firstName, u.lastName, u.phone
         FROM addresses a
         INNER JOIN services s
         ON a.id = s.addressId

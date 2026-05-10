@@ -16,6 +16,8 @@ const selectServiceByIdService = async (serviceId) => {
                 s.typeOfServicesId,
                 s.description,
                 s.province,
+                s.autonomousCommunity,
+                s.hourRuleType,
                 s.image,
                 s.hours, 
                 s.numberOfPeople,

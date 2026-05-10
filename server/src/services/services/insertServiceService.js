@@ -23,7 +23,10 @@ const insertServiceService = async (
     const resolvedType = serviceType.type || name || 'Servicio';
     const resolvedDescription = serviceType.description || comments || null;
     const resolvedProvince = serviceType.province || city || null;
+    const resolvedAutonomousCommunity = serviceType.autonomousCommunity || null;
     const resolvedImage = serviceType.image || null;
+    const resolvedHourRuleType =
+        serviceType.hourRuleType === 'convenio' ? 'convenio' : 'standard';
 
     const [verify] = await pool.query(
         `
@@ -74,15 +77,15 @@ const insertServiceService = async (
         await pool.query(
             `
   INSERT INTO services(
-    id, name, type, description, province, image, startDateTime, endDateTime,
+    id, name, type, description, province, autonomousCommunity, image, startDateTime, endDateTime,
     hours, numberOfPeople, comments, validationCode,
-    clientId, addressId, typeOfServicesId
+    clientId, addressId, typeOfServicesId, hourRuleType
   )
   VALUES (
-    ?, ?, ?, ?, ?, ?,
+    ?, ?, ?, ?, ?, ?, ?,
     STR_TO_DATE(?, '%Y-%m-%dT%H:%i:%sZ'),
     STR_TO_DATE(?, '%Y-%m-%dT%H:%i:%sZ'),
-    ?, ?, ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?, ?
   )
   `,
             [
@@ -91,6 +94,7 @@ const insertServiceService = async (
                 resolvedType,
                 resolvedDescription,
                 resolvedProvince,
+                resolvedAutonomousCommunity,
                 resolvedImage,
                 startDateTime,
                 endDateTime,
@@ -101,21 +105,22 @@ const insertServiceService = async (
                 userId,
                 addressId,
                 typeOfServiceId || null,
+                resolvedHourRuleType,
             ]
         );
     } else {
         await pool.query(
             `
   INSERT INTO services(
-    id, name, type, description, province, image, startDateTime, endDateTime,
+    id, name, type, description, province, autonomousCommunity, image, startDateTime, endDateTime,
     hours, numberOfPeople, comments, validationCode,
-    clientId, addressId, typeOfServicesId
+    clientId, addressId, typeOfServicesId, hourRuleType
   )
   VALUES (
-    ?, ?, ?, ?, ?, ?,
+    ?, ?, ?, ?, ?, ?, ?,
     STR_TO_DATE(?, '%Y-%m-%dT%H:%i:%sZ'),
     NULL,
-    ?, ?, ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?, ?, ?
   )
   `,
             [
@@ -124,6 +129,7 @@ const insertServiceService = async (
                 resolvedType,
                 resolvedDescription,
                 resolvedProvince,
+                resolvedAutonomousCommunity,
                 resolvedImage,
                 startDateTime,
                 hours,
@@ -133,6 +139,7 @@ const insertServiceService = async (
                 userId,
                 addressId,
                 typeOfServiceId || null,
+                resolvedHourRuleType,
             ]
         );
     }
@@ -140,7 +147,7 @@ const insertServiceService = async (
     const [data] = await pool.query(
         `
         SELECT s.status,
-        s.type, s.province, s.hours, s.startDateTime, a.address, a.postCode, a.city, s.comments, u.email, u.firstName, u.lastName, u.phone
+        s.type, s.province, s.autonomousCommunity, s.hourRuleType, s.hours, s.startDateTime, a.address, a.postCode, a.city, s.comments, u.email, u.firstName, u.lastName, u.phone
         FROM addresses a
         INNER JOIN services s
         ON a.id = s.addressId

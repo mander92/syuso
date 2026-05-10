@@ -44,6 +44,8 @@ const editServiceController = async (req, res, next) => {
             type,
             description,
             province,
+            autonomousCommunity,
+            hourRuleType,
             image,
         } = req.body;
 
@@ -81,6 +83,8 @@ const editServiceController = async (req, res, next) => {
             type,
             description,
             province,
+            autonomousCommunity,
+            hourRuleType,
             image,
             role
         );

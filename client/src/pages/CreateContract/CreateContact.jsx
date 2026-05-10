@@ -20,6 +20,8 @@ const CreateContract = () => {
     const [type, setType] = useState('');
     const [description, setDescription] = useState('');
     const [province, setProvince] = useState('');
+    const [autonomousCommunity, setAutonomousCommunity] = useState('');
+    const [hourRuleType, setHourRuleType] = useState('standard');
 
     const formatDate = (dateTime) => {
         if (dateTime) {
@@ -49,7 +51,9 @@ const CreateContract = () => {
                 name,
                 type,
                 description,
-                province
+                province,
+                autonomousCommunity,
+                hourRuleType
             );
 
             toast.success(res.message);
@@ -90,6 +94,25 @@ const CreateContract = () => {
                         value={province}
                         onChange={(e) => setProvince(e.target.value)}
                     />
+                    <label htmlFor='autonomousCommunity'>Comunidad autonoma</label>
+                    <input
+                        type='text'
+                        id='autonomousCommunity'
+                        name='autonomousCommunity'
+                        value={autonomousCommunity}
+                        onChange={(e) => setAutonomousCommunity(e.target.value)}
+                        placeholder='Ej. Andalucia'
+                    />
+                    <label htmlFor='hourRuleType'>Computo de horas</label>
+                    <select
+                        id='hourRuleType'
+                        name='hourRuleType'
+                        value={hourRuleType}
+                        onChange={(e) => setHourRuleType(e.target.value)}
+                    >
+                        <option value='standard'>Normal</option>
+                        <option value='convenio'>Convenio</option>
+                    </select>
                     <label htmlFor='description'>Descripcion</label>
                     <input
                         type='text'

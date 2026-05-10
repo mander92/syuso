@@ -1,6 +1,6 @@
 import getPool from '../../db/getPool.js';
 import { v4 as uuid } from 'uuid';
-import { calculateShiftHours } from '../../utils/scheduleTimeUtil.js';
+import { calculateShiftHourBreakdown } from './calculateShiftHourBreakdownsService.js';
 
 const createServiceScheduleShiftService = async (
     serviceId,
@@ -15,16 +15,25 @@ const createServiceScheduleShiftService = async (
     const pool = await getPool();
     const id = uuid();
 
+    const breakdown = await calculateShiftHourBreakdown(pool, serviceId, {
+        scheduleDate,
+        startTime,
+        endTime,
+    });
     const resolvedHours =
         hours !== undefined && hours !== null && hours !== ''
             ? Number(hours)
-            : calculateShiftHours(startTime, endTime);
+            : breakdown.hours;
 
     await pool.query(
         `
         INSERT INTO serviceScheduleShifts
-            (id, serviceId, employeeId, shiftTypeId, scheduleDate, startTime, endTime, hours, status, createdBy)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'scheduled', ?)
+            (
+                id, serviceId, employeeId, shiftTypeId, scheduleDate, startTime,
+                endTime, hours, realHours, nightHours, holidayHours,
+                regularHours, status, createdBy
+            )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'scheduled', ?)
         `,
         [
             id,
@@ -35,6 +44,10 @@ const createServiceScheduleShiftService = async (
             startTime,
             endTime,
             resolvedHours,
+            breakdown.realHours,
+            breakdown.nightHours,
+            breakdown.holidayHours,
+            breakdown.regularHours,
             createdBy,
         ]
     );
@@ -48,6 +61,10 @@ const createServiceScheduleShiftService = async (
         startTime,
         endTime,
         hours: resolvedHours,
+        realHours: breakdown.realHours,
+        nightHours: breakdown.nightHours,
+        holidayHours: breakdown.holidayHours,
+        regularHours: breakdown.regularHours,
         status: 'scheduled',
     };
 };

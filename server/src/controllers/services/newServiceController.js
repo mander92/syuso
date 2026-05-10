@@ -14,6 +14,8 @@ const newServiceController = async (req, res, next) => {
                 type,
                 description,
                 province,
+                autonomousCommunity,
+                hourRuleType,
                 image,
                 startDateTime,
                 endDateTime,
@@ -62,6 +64,8 @@ const newServiceController = async (req, res, next) => {
                     type: type || legacyTypeOfService?.type,
                     description: description || legacyTypeOfService?.description,
                     province: province || legacyTypeOfService?.city,
+                    autonomousCommunity,
+                    hourRuleType,
                     image: image || legacyTypeOfService?.image,
                     typeOfServiceId: typeOfServiceId || null,
                 }
@@ -80,6 +84,8 @@ const newServiceController = async (req, res, next) => {
                 type,
                 description,
                 province,
+                autonomousCommunity,
+                hourRuleType,
                 image,
                 startDateTime,
                 endDateTime,
@@ -112,6 +118,8 @@ const newServiceController = async (req, res, next) => {
                     type: type || legacyTypeOfService?.type,
                     description: description || legacyTypeOfService?.description,
                     province: province || legacyTypeOfService?.city,
+                    autonomousCommunity,
+                    hourRuleType,
                     image: image || legacyTypeOfService?.image,
                 }
             );

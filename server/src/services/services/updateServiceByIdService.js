@@ -1,5 +1,6 @@
 import getPool from '../../db/getPool.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
+import { calculateShiftHourBreakdowns } from '../schedules/calculateShiftHourBreakdownsService.js';
 
 const updateServiceByIdService = async (
     serviceId,
@@ -23,6 +24,8 @@ const updateServiceByIdService = async (
     type,
     description,
     province,
+    autonomousCommunity,
+    hourRuleType,
     image,
     role
 ) => {
@@ -36,7 +39,8 @@ const updateServiceByIdService = async (
                s.clockInEarlyMinutes,
                s.scheduleView,
                s.addressId, s.typeOfServicesId,
-               s.type, s.description, s.province, s.image,
+               s.type, s.description, s.province, s.autonomousCommunity,
+               s.hourRuleType, s.image,
                a.address, a.postCode, a.city
         FROM services s
         INNER JOIN addresses a ON a.id = s.addressId
@@ -123,6 +127,14 @@ const updateServiceByIdService = async (
             : current.description;
     const resolvedProvince =
         province && province.trim() !== '' ? province.trim() : current.province;
+    const resolvedAutonomousCommunity =
+        autonomousCommunity !== undefined && autonomousCommunity !== null
+            ? String(autonomousCommunity).trim()
+            : current.autonomousCommunity;
+    const resolvedHourRuleType =
+        hourRuleType === 'convenio' || hourRuleType === 'standard'
+            ? hourRuleType
+            : current.hourRuleType || 'standard';
     const resolvedImage =
         image !== undefined && image !== null ? String(image).trim() : current.image;
 
@@ -150,6 +162,8 @@ const updateServiceByIdService = async (
         'type = ?',
         'description = ?',
         'province = ?',
+        'autonomousCommunity = ?',
+        'hourRuleType = ?',
         'image = ?',
     ];
     const values = [
@@ -168,6 +182,8 @@ const updateServiceByIdService = async (
         resolvedType,
         resolvedDescription,
         resolvedProvince,
+        resolvedAutonomousCommunity,
+        resolvedHourRuleType,
         resolvedImage,
     ];
 
@@ -218,6 +234,55 @@ const updateServiceByIdService = async (
         values
     );
 
+    const shouldRecalculateScheduleHours =
+        resolvedHourRuleType !== (current.hourRuleType || 'standard') ||
+        resolvedProvince !== current.province ||
+        resolvedAutonomousCommunity !== current.autonomousCommunity ||
+        resolvedCity !== current.city;
+
+    if (shouldRecalculateScheduleHours) {
+        const [shifts] = await pool.query(
+            `
+            SELECT id, scheduleDate, startTime, endTime
+            FROM serviceScheduleShifts
+            WHERE serviceId = ?
+              AND deletedAt IS NULL
+            `,
+            [serviceId]
+        );
+
+        if (shifts.length) {
+            const breakdowns = await calculateShiftHourBreakdowns(
+                pool,
+                serviceId,
+                shifts
+            );
+
+            for (let index = 0; index < shifts.length; index += 1) {
+                const breakdown = breakdowns[index];
+                await pool.query(
+                    `
+                    UPDATE serviceScheduleShifts
+                    SET hours = ?,
+                        realHours = ?,
+                        nightHours = ?,
+                        holidayHours = ?,
+                        regularHours = ?
+                    WHERE id = ?
+                    `,
+                    [
+                        breakdown.hours,
+                        breakdown.realHours,
+                        breakdown.nightHours,
+                        breakdown.holidayHours,
+                        breakdown.regularHours,
+                        shifts[index].id,
+                    ]
+                );
+            }
+        }
+    }
+
     const [data] = await pool.query(
         `
         SELECT s.startDateTime, s.hours, s.numberOfPeople, s.reportEmail,
@@ -229,6 +294,8 @@ const updateServiceByIdService = async (
                s.type,
                s.description,
                s.province,
+               s.autonomousCommunity,
+               s.hourRuleType,
                s.image,
                a.address, a.city, a.postCode
         FROM services s
