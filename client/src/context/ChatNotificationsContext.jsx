@@ -163,18 +163,28 @@ export const ChatNotificationsProvider = ({ children }) => {
     const addAlertNotification = useCallback((notification) => {
         if (!notification?.id) return;
         setAlertNotifications((prev) => {
-            if (prev.some((item) => item.id === notification.id)) return prev;
-            const next = [
-                {
-                    createdAt: new Date().toISOString(),
-                    read: false,
-                    ...notification,
-                    routeLabel:
-                        notification.routeLabel ||
-                        buildAlertRoute(notification.section),
-                },
-                ...prev,
-            ];
+            const normalizedNotification = {
+                createdAt: new Date().toISOString(),
+                read: false,
+                ...notification,
+                routeLabel:
+                    notification.routeLabel ||
+                    buildAlertRoute(notification.section),
+            };
+            const existing = prev.find((item) => item.id === notification.id);
+            if (existing) {
+                const next = [
+                    {
+                        ...existing,
+                        ...normalizedNotification,
+                        read: false,
+                    },
+                    ...prev.filter((item) => item.id !== notification.id),
+                ];
+                return next.slice(0, 80);
+            }
+
+            const next = [normalizedNotification, ...prev];
             return next.slice(0, 80);
         });
     }, []);
@@ -614,7 +624,11 @@ export const ChatNotificationsProvider = ({ children }) => {
                 serviceNameMap.get(event.serviceId) || 'Servicio';
             const section = isAdminLike ? 'schedules' : 'schedule';
             addAlertNotification({
-                id: `schedule-${event.serviceId}-${event.changedAt || Date.now()}`,
+                id:
+                    event.notificationId ||
+                    `schedule-${event.serviceId}-${
+                        event.changedAt || Date.now()
+                    }`,
                 type: 'schedule',
                 section,
                 title: 'Cuadrante actualizado',

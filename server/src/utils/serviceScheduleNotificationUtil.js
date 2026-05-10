@@ -42,6 +42,11 @@ export const emitServiceScheduleChanged = (serviceId, options = {}) => {
 
     const payload = {
         serviceId,
+        notificationId:
+            options.notificationId ||
+            `schedule-${serviceId}-${Date.now()}-${Math.random()
+                .toString(36)
+                .slice(2, 8)}`,
         changedAt: new Date().toISOString(),
         changedBy: options.changedBy || null,
         reason: options.reason || 'schedule',
