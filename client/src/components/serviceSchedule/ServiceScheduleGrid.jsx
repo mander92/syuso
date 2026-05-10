@@ -142,12 +142,28 @@ const ServiceScheduleGrid = ({
     }, [shifts]);
 
     const rows = useMemo(() => {
-        const base = employees.map((employee) => ({
-            id: employee.id,
-            label: `${employee.firstName || ''} ${employee.lastName || ''}`.trim(),
-        }));
-        return showUnassigned ? [{ id: null, label: 'Sin asignar' }, ...base] : base;
-    }, [employees, showUnassigned]);
+        const employeesWithShifts = new Set();
+        let hasUnassignedShifts = false;
+
+        (shifts || []).forEach((shift) => {
+            if (shift?.employeeId) {
+                employeesWithShifts.add(shift.employeeId);
+            } else {
+                hasUnassignedShifts = true;
+            }
+        });
+
+        const base = employees
+            .filter((employee) => employeesWithShifts.has(employee.id))
+            .map((employee) => ({
+                id: employee.id,
+                label: `${employee.firstName || ''} ${employee.lastName || ''}`.trim(),
+            }));
+
+        return showUnassigned && hasUnassignedShifts
+            ? [{ id: null, label: 'Sin asignar' }, ...base]
+            : base;
+    }, [employees, shifts, showUnassigned]);
 
     const rowTotals = useMemo(() => {
         const totals = new Map();
@@ -225,7 +241,12 @@ const ServiceScheduleGrid = ({
                                     : ''
                             }`}
                         >
-                            {weekdayLabel(dateObj)}
+                            <span className='service-schedule-grid-weekday-text'>
+                                {weekdayLabel(dateObj)}
+                            </span>
+                            <span className='service-schedule-grid-weekday-number'>
+                                {day}
+                            </span>
                         </div>
                     );
                 })}

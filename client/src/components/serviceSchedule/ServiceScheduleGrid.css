@@ -53,6 +53,10 @@
     letter-spacing: 0.02em;
 }
 
+.service-schedule-grid-weekday-number {
+    display: none;
+}
+
 .service-schedule-grid-date--holiday {
     background: #fde68a;
     color: #78350f;
@@ -206,6 +210,10 @@
         z-index: 6;
     }
 
+    .service-schedule-grid-head--numbers {
+        display: none;
+    }
+
     .service-schedule-grid-row {
         grid-template-columns: minmax(96px, 96px) repeat(var(--days), minmax(31px, 31px)) minmax(54px, 54px);
         min-width: 1050px;
@@ -268,12 +276,23 @@
     .service-schedule-grid-weekday,
     .service-schedule-grid-day,
     .service-schedule-grid-total-head {
-        min-height: 30px;
+        min-height: 40px;
         padding: 5px 2px;
         font-size: 0.66rem;
         display: flex;
         align-items: center;
         justify-content: center;
+    }
+
+    .service-schedule-grid-weekday {
+        flex-direction: column;
+        gap: 3px;
+        line-height: 1;
+    }
+
+    .service-schedule-grid-weekday-number {
+        display: block;
+        font-weight: 500;
     }
 
     .service-schedule-grid-shift {
