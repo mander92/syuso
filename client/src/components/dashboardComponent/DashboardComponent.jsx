@@ -108,15 +108,14 @@ const AlertsPanel = ({
                                 >
                                     Marcar leida
                                 </button>
-                            ) : (
-                                <button
-                                    type='button'
-                                    className='dashboard-alert-secondary'
-                                    onClick={() => onRemove(notification.id)}
-                                >
-                                    Borrar
-                                </button>
-                            )}
+                            ) : null}
+                            <button
+                                type='button'
+                                className='dashboard-alert-secondary'
+                                onClick={() => onRemove(notification.id)}
+                            >
+                                Borrar
+                            </button>
                         </div>
                     </article>
                 ))}
