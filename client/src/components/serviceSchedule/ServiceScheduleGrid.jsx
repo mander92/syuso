@@ -111,10 +111,7 @@ const ServiceScheduleGrid = ({
 }) => {
     const [draggedShiftId, setDraggedShiftId] = useState(null);
     const [collapsedRows, setCollapsedRows] = useState(() => new Set());
-    const [selectedPasteTargets, setSelectedPasteTargets] = useState(
-        () => new Set()
-    );
-    
+
     const { days, year, monthIndex } = useMemo(() => {
         if (!month) {
             return { days: [], year: 0, monthIndex: 0 };
@@ -233,57 +230,10 @@ const ServiceScheduleGrid = ({
         }
     };
 
-    const buildPasteTargetKey = (employeeId, scheduleDate) =>
-        JSON.stringify({ employeeId: employeeId || '', scheduleDate });
-
-    const parsePasteTargetKey = (key) => {
-        try {
-            return JSON.parse(key);
-        } catch {
-            return null;
-        }
-    };
-
-    const togglePasteTarget = (employeeId, scheduleDate) => {
-        const key = buildPasteTargetKey(employeeId, scheduleDate);
-        setSelectedPasteTargets((prev) => {
-            const next = new Set(prev);
-            if (next.has(key)) {
-                next.delete(key);
-            } else {
-                next.add(key);
-            }
-            return next;
-        });
-    };
-
-    const pasteSelectedTargets = () => {
-        const targets = [...selectedPasteTargets]
-            .map(parsePasteTargetKey)
-            .filter(Boolean);
-        if (!targets.length) return;
-        onPasteShift?.(targets);
-        setSelectedPasteTargets(new Set());
-    };
-
     const gridStyle = { '--days': days.length };
 
     return (
         <div className='service-schedule-grid'>
-            {!readOnly && copiedShift && selectedPasteTargets.size > 0 && (
-                <div className='service-schedule-grid-bulk-actions'>
-                    <span>{selectedPasteTargets.size} celdas seleccionadas</span>
-                    <button type='button' onClick={pasteSelectedTargets}>
-                        Pegar turno
-                    </button>
-                    <button
-                        type='button'
-                        onClick={() => setSelectedPasteTargets(new Set())}
-                    >
-                        Limpiar
-                    </button>
-                </div>
-            )}
             <div className='service-schedule-grid-head' style={gridStyle}>
                 <div className='service-schedule-grid-corner'>Empleado</div>
                 {days.map((day) => {
@@ -381,16 +331,11 @@ const ServiceScheduleGrid = ({
                             const shiftsForDay = bucketed.get(bucketKey) || [];
                             const holidaysForDay = holidaysByDate[dateKey] || [];
                             const dateObj = new Date(year, monthIndex, day);
-                            const pasteTargetKey = buildPasteTargetKey(
-                                row.id || '',
-                                dateKey
-                            );
-                            const isPasteTarget =
-                                selectedPasteTargets.has(pasteTargetKey);
-                            const absence = rowAbsences.find((item) => {
+                            const absencesForDay = rowAbsences.filter((item) => {
                                 const { start, end } = getAbsenceRange(item);
                                 return isDateInRange(dateObj, start, end);
                             });
+                            const primaryAbsence = absencesForDay[0];
 
                             return (
                                 <div
@@ -399,16 +344,16 @@ const ServiceScheduleGrid = ({
                                         holidaysForDay.length
                                             ? 'service-schedule-grid-cell--holiday'
                                             : ''
-                                    } ${
-                                        isPasteTarget
-                                            ? 'service-schedule-grid-cell--selected'
-                                            : ''
                                     }`}
                                     onDrop={(event) => handleDrop(event, row.id, day)}
                                     onDragOver={allowDrop}
                                     style={
-                                        absence
-                                            ? { backgroundColor: absenceColor(absence.type) }
+                                        primaryAbsence
+                                            ? {
+                                                  backgroundColor: absenceColor(
+                                                      primaryAbsence.type
+                                                  ),
+                                              }
                                             : undefined
                                     }
                                 >
@@ -429,11 +374,28 @@ const ServiceScheduleGrid = ({
                                             F
                                         </button>
                                     )}
-                                    {absence && !shiftsForDay.length && (
-                                        <span className='service-schedule-grid-absence'>
-                                            {absenceShort(absence.type)}
+                                    {absencesForDay.map((absence) => (
+                                        <span
+                                            key={
+                                                absence.id ||
+                                                `${absence.type}-${dateKey}`
+                                            }
+                                            className={`service-schedule-grid-absence service-schedule-grid-absence--${absence.type || 'other'}`}
+                                            title={[
+                                                absenceLabel(absence.type),
+                                                absence.notes,
+                                            ]
+                                                .filter(Boolean)
+                                                .join(' · ')}
+                                        >
+                                            <span className='service-schedule-grid-absence-short'>
+                                                {absenceShort(absence.type)}
+                                            </span>
+                                            <span className='service-schedule-grid-absence-label'>
+                                                {absenceLabel(absence.type)}
+                                            </span>
                                         </span>
-                                    )}
+                                    ))}
                                     {!readOnly && (
                                         <div className='service-schedule-grid-cell-actions'>
                                             <button
@@ -451,7 +413,6 @@ const ServiceScheduleGrid = ({
                                                 +
                                             </button>
                                             {copiedShift && (
-                                                <>
                                                 <button
                                                     type='button'
                                                     className='service-schedule-grid-action'
@@ -468,25 +429,6 @@ const ServiceScheduleGrid = ({
                                                 >
                                                     P
                                                 </button>
-                                                <button
-                                                    type='button'
-                                                    className='service-schedule-grid-action'
-                                                    onClick={(event) => {
-                                                        event.stopPropagation();
-                                                        togglePasteTarget(
-                                                            row.id || '',
-                                                            dateKey
-                                                        );
-                                                    }}
-                                                    title={
-                                                        isPasteTarget
-                                                            ? 'Quitar seleccion'
-                                                            : 'Seleccionar para pegar'
-                                                    }
-                                                >
-                                                    {isPasteTarget ? 'OK' : 'Sel'}
-                                                </button>
-                                                </>
                                             )}
                                         </div>
                                     )}

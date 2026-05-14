@@ -1195,6 +1195,55 @@ const ScheduleComponent = () => {
         loadRulesAndAbsences();
     }, [authToken, isAdminLike, scheduleViewMode, filteredEmployees, scheduleMonth]);
 
+    useEffect(() => {
+        const loadServiceScheduleAbsences = async () => {
+            if (!authToken || !isAdminLike || !serviceScheduleViewModal?.id) return;
+
+            const shifts =
+                scheduleShiftMap[serviceScheduleViewModal.id] || [];
+            const employeeIds = [
+                ...new Set(shifts.map((shift) => shift.employeeId).filter(Boolean)),
+            ];
+            const missingEmployeeIds = employeeIds.filter(
+                (employeeId) => !employeeAbsencesMap[employeeId]
+            );
+            if (!missingEmployeeIds.length) return;
+
+            try {
+                const entries = await Promise.all(
+                    missingEmployeeIds.map(async (employeeId) => {
+                        try {
+                            const absences = await fetchEmployeeAbsences(
+                                authToken,
+                                employeeId
+                            );
+                            return [
+                                employeeId,
+                                Array.isArray(absences) ? absences : [],
+                            ];
+                        } catch {
+                            return [employeeId, []];
+                        }
+                    })
+                );
+                setEmployeeAbsencesMap((prev) => ({
+                    ...prev,
+                    ...Object.fromEntries(entries),
+                }));
+            } catch (error) {
+                toast.error(error.message || 'No se pudieron cargar ausencias');
+            }
+        };
+
+        loadServiceScheduleAbsences();
+    }, [
+        authToken,
+        isAdminLike,
+        serviceScheduleViewModal?.id,
+        scheduleShiftMap,
+        employeeAbsencesMap,
+    ]);
+
 
     const personalScheduleRows = useMemo(() => {
         const shiftRows = Object.values(scheduleShiftMap).flat();
@@ -2500,7 +2549,7 @@ const ScheduleComponent = () => {
                                         ] || []
                                     }
                                     employees={employees}
-                                    absencesByEmployee={{}}
+                                    absencesByEmployee={employeeAbsencesMap}
                                     holidaysByDate={buildServiceHolidaysByDate(
                                         serviceScheduleViewModal
                                     )}
@@ -2532,7 +2581,7 @@ const ScheduleComponent = () => {
                                     month={serviceScheduleViewModal.month}
                                     shifts={[]}
                                     employees={employees}
-                                    absencesByEmployee={{}}
+                                    absencesByEmployee={employeeAbsencesMap}
                                     holidaysByDate={buildServiceHolidaysByDate(
                                         serviceScheduleViewModal
                                     )}

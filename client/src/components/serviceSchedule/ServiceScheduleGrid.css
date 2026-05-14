@@ -225,9 +225,50 @@
 }
 
 .service-schedule-grid-absence {
-    font-size: 0.7rem;
-    font-weight: 600;
+    align-items: center;
+    align-self: stretch;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(15, 23, 42, 0.16);
+    border-radius: 6px;
     color: #0f172a;
+    display: inline-flex;
+    font-size: 0.66rem;
+    font-weight: 800;
+    gap: 4px;
+    justify-content: center;
+    line-height: 1.1;
+    min-height: 22px;
+    padding: 3px 4px;
+    text-align: center;
+}
+
+.service-schedule-grid-absence-short {
+    display: none;
+}
+
+.service-schedule-grid-absence--vacation {
+    background: #fef3c7;
+    border-color: #f59e0b;
+    color: #78350f;
+}
+
+.service-schedule-grid-absence--free,
+.service-schedule-grid-absence--leave {
+    background: #e0e7ff;
+    border-color: #818cf8;
+    color: #312e81;
+}
+
+.service-schedule-grid-absence--sick {
+    background: #fee2e2;
+    border-color: #f87171;
+    color: #7f1d1d;
+}
+
+.service-schedule-grid-absence--available {
+    background: #dcfce7;
+    border-color: #4ade80;
+    color: #14532d;
 }
 
 .service-schedule-grid-shift {
@@ -438,6 +479,21 @@
 
     .service-schedule-grid-shift-type {
         display: none;
+    }
+
+    .service-schedule-grid-absence {
+        border-radius: 5px;
+        font-size: 0.58rem;
+        min-height: 18px;
+        padding: 2px;
+    }
+
+    .service-schedule-grid-absence-label {
+        display: none;
+    }
+
+    .service-schedule-grid-absence-short {
+        display: inline;
     }
 
     .service-schedule-grid-holiday {
