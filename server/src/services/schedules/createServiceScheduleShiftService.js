@@ -1,6 +1,7 @@
 import getPool from '../../db/getPool.js';
 import { v4 as uuid } from 'uuid';
 import { calculateShiftHourBreakdown } from './calculateShiftHourBreakdownsService.js';
+import validateEmployeeShiftOverlapsService from './validateEmployeeShiftOverlapsService.js';
 
 const createServiceScheduleShiftService = async (
     serviceId,
@@ -24,6 +25,16 @@ const createServiceScheduleShiftService = async (
         hours !== undefined && hours !== null && hours !== ''
             ? Number(hours)
             : breakdown.hours;
+
+    await validateEmployeeShiftOverlapsService(pool, [
+        {
+            serviceId,
+            employeeId: employeeId || null,
+            scheduleDate,
+            startTime,
+            endTime,
+        },
+    ]);
 
     await pool.query(
         `

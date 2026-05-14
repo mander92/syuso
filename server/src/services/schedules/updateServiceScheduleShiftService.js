@@ -1,6 +1,7 @@
 import getPool from '../../db/getPool.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import { calculateShiftHourBreakdown } from './calculateShiftHourBreakdownsService.js';
+import validateEmployeeShiftOverlapsService from './validateEmployeeShiftOverlapsService.js';
 
 const updateServiceScheduleShiftService = async (
     shiftId,
@@ -34,6 +35,26 @@ const updateServiceScheduleShiftService = async (
         updates.hours !== undefined && updates.hours !== null && updates.hours !== ''
             ? Number(updates.hours)
             : breakdown.hours;
+    const resolvedEmployeeId =
+        updates.employeeId !== undefined ? updates.employeeId : current.employeeId;
+    const resolvedShiftTypeId =
+        updates.shiftTypeId !== undefined ? updates.shiftTypeId : current.shiftTypeId;
+    const resolvedStatus = updates.status || current.status;
+
+    await validateEmployeeShiftOverlapsService(
+        pool,
+        [
+            {
+                id: shiftId,
+                serviceId: current.serviceId,
+                employeeId: resolvedEmployeeId,
+                scheduleDate: resolvedScheduleDate,
+                startTime: resolvedStart,
+                endTime: resolvedEnd,
+            },
+        ],
+        { excludeShiftIds: new Set([shiftId]) }
+    );
 
     await pool.query(
         `
@@ -61,9 +82,9 @@ const updateServiceScheduleShiftService = async (
             breakdown.nightHours,
             breakdown.holidayHours,
             breakdown.regularHours,
-            updates.employeeId !== undefined ? updates.employeeId : current.employeeId,
-            updates.status || current.status,
-            updates.shiftTypeId !== undefined ? updates.shiftTypeId : current.shiftTypeId,
+            resolvedEmployeeId,
+            resolvedStatus,
+            resolvedShiftTypeId,
             shiftId,
         ]
     );
@@ -79,11 +100,9 @@ const updateServiceScheduleShiftService = async (
         holidayHours: breakdown.holidayHours,
         regularHours: breakdown.regularHours,
         previousEmployeeId: current.employeeId,
-        employeeId:
-            updates.employeeId !== undefined ? updates.employeeId : current.employeeId,
-        status: updates.status || current.status,
-        shiftTypeId:
-            updates.shiftTypeId !== undefined ? updates.shiftTypeId : current.shiftTypeId,
+        employeeId: resolvedEmployeeId,
+        status: resolvedStatus,
+        shiftTypeId: resolvedShiftTypeId,
     };
 };
 

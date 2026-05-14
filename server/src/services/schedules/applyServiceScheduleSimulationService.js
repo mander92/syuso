@@ -2,6 +2,7 @@ import getPool from '../../db/getPool.js';
 import { v4 as uuid } from 'uuid';
 import { calculateShiftHours } from '../../utils/scheduleTimeUtil.js';
 import { calculateShiftHourBreakdowns } from './calculateShiftHourBreakdownsService.js';
+import validateEmployeeShiftOverlapsService from './validateEmployeeShiftOverlapsService.js';
 
 const normalizeShift = (shift) => ({
     id: shift.id,
@@ -50,6 +51,18 @@ const applyServiceScheduleSimulationService = async (serviceId, month, shifts = 
 
     const toUpdate = list.filter((shift) => !shift.isNew);
     const toInsert = list.filter((shift) => shift.isNew);
+    await validateEmployeeShiftOverlapsService(
+        pool,
+        list.map((shift) => ({
+            ...shift,
+            serviceId,
+        })),
+        {
+            excludeShiftIds: new Set(
+                toUpdate.map((shift) => shift.id).filter(Boolean)
+            ),
+        }
+    );
     const breakdowns = await calculateShiftHourBreakdowns(pool, serviceId, list);
     const breakdownById = new Map(
         list.map((shift, index) => [shift.id, breakdowns[index]])

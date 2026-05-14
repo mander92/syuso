@@ -394,9 +394,6 @@ const ServiceScheduleGrid = ({
                                             <span className='service-schedule-grid-absence-short'>
                                                 {absenceShort(absence.type)}
                                             </span>
-                                            <span className='service-schedule-grid-absence-label'>
-                                                {absenceLabel(absence.type)}
-                                            </span>
                                         </span>
                                     ))}
                                     {requestBadges.map((badge) => (

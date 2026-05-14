@@ -5,6 +5,7 @@ import getPool from '../../db/getPool.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import { calculateShiftHours } from '../../utils/scheduleTimeUtil.js';
 import { calculateShiftHourBreakdowns } from './calculateShiftHourBreakdownsService.js';
+import validateEmployeeShiftOverlapsService from './validateEmployeeShiftOverlapsService.js';
 
 const DAY_START_COL = 5;
 const DAY_END_COL = 35;
@@ -369,6 +370,20 @@ const importServiceScheduleExcelService = async ({
         pool,
         serviceId,
         preview.shifts
+    );
+
+    await validateEmployeeShiftOverlapsService(
+        pool,
+        preview.shifts.map((shift) => ({
+            ...shift,
+            serviceId,
+        })),
+        replace
+            ? {
+                  ignoreServiceId: serviceId,
+                  ignoreMonth: month,
+              }
+            : {}
     );
 
     const conn = await pool.getConnection();
