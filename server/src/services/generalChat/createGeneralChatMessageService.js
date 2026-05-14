@@ -39,11 +39,13 @@ const createGeneralChatMessageService = async (
             u.firstName,
             u.lastName,
             u.role,
+            gc.name AS chatName,
             r.message AS replyToMessage,
             ru.firstName AS replyToFirstName,
             ru.lastName AS replyToLastName
         FROM generalChatMessages m
         INNER JOIN users u ON u.id = m.userId
+        LEFT JOIN generalChats gc ON gc.id = m.chatId
         LEFT JOIN generalChatMessages r ON r.id = m.replyToMessageId
         LEFT JOIN users ru ON ru.id = r.userId
         WHERE m.id = ?

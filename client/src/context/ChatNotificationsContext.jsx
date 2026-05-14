@@ -177,17 +177,47 @@ export const ChatNotificationsProvider = ({ children }) => {
         return labels[section] || 'Mi cuenta';
     };
 
-    const buildServiceChatAlertRoute = (serviceId) => {
-        const serviceInfo = serviceInfoMap.get(serviceId);
-        if (!isAdminLike || !serviceInfo) return buildAlertRoute('chats');
+    const buildServiceChatAlertRoute = (serviceId, source = {}) => {
+        const serviceInfo = serviceInfoMap.get(serviceId) || {};
+        const delegation =
+            source.serviceDelegation ||
+            source.delegation ||
+            source.province ||
+            source.serviceCity ||
+            serviceInfo.delegation ||
+            '';
+        const name =
+            source.serviceName ||
+            source.service ||
+            serviceInfo.name ||
+            serviceNameMap.get(serviceId) ||
+            '';
 
-        return [
+        const route = [
             'Chats',
-            serviceInfo.delegation,
-            serviceInfo.name,
+            delegation,
+            name,
         ]
             .filter(Boolean)
             .join(' > ');
+
+        return route === 'Chats' ? buildAlertRoute('chats') : route;
+    };
+
+    const buildGeneralChatAlertRoute = (chatId, source = {}) => {
+        const chatName =
+            source.chatName ||
+            source.name ||
+            generalChatNameMap.get(chatId) ||
+            '';
+
+        const route = ['Chats', 'Generales', chatName]
+            .filter(Boolean)
+            .join(' > ');
+
+        return route === 'Chats > Generales'
+            ? buildAlertRoute('chats')
+            : route;
     };
 
     const addAlertNotification = useCallback((notification) => {
@@ -563,14 +593,19 @@ export const ChatNotificationsProvider = ({ children }) => {
             }));
 
             const serviceName =
-                serviceNameMap.get(message.serviceId) || 'Servicio';
+                message.serviceName ||
+                serviceNameMap.get(message.serviceId) ||
+                'Servicio';
             addAlertNotification({
                 id: `service-chat-${message.id || `${message.serviceId}-${Date.now()}`}`,
                 type: 'chat',
                 section: 'chats',
                 title: 'Chat de servicio',
                 message: `${serviceName}: nuevo mensaje`,
-                routeLabel: buildServiceChatAlertRoute(message.serviceId),
+                routeLabel: buildServiceChatAlertRoute(
+                    message.serviceId,
+                    message
+                ),
             });
             toast(`${serviceName}: nuevo mensaje`, {
                 id: `chat-${message.id || message.serviceId}`,
@@ -602,7 +637,10 @@ export const ChatNotificationsProvider = ({ children }) => {
                 section: 'chats',
                 title: 'Chat general',
                 message: `${chatName}: nuevo mensaje`,
-                routeLabel: buildAlertRoute('chats'),
+                routeLabel: buildGeneralChatAlertRoute(
+                    message.chatId,
+                    message
+                ),
             });
             toast(`${chatName}: nuevo mensaje`, {
                 id: `general-chat-${message.id || message.chatId}`,

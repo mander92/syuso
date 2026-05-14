@@ -57,11 +57,14 @@ const createServiceChatMessageService = async (
             u.firstName,
             u.lastName,
             u.role,
+            s.name AS serviceName,
+            s.province AS serviceDelegation,
             r.message AS replyToMessage,
             ru.firstName AS replyToFirstName,
             ru.lastName AS replyToLastName
         FROM serviceChatMessages m
         INNER JOIN users u ON u.id = m.userId
+        LEFT JOIN services s ON s.id = m.serviceId
         LEFT JOIN serviceChatMessages r ON r.id = m.replyToMessageId
         LEFT JOIN users ru ON ru.id = r.userId
         WHERE m.id = ?
