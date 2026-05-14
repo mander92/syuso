@@ -78,6 +78,32 @@ const formatDateEs = (value) => {
     return `${day}/${month}/${year}`;
 };
 
+const buildShiftOverlapMessage = (error) => {
+    const details = error?.details || {};
+    const line = (label, shift) =>
+        shift
+            ? `${label}: ${shift.serviceName || 'Servicio'} · ${
+                  shift.date || ''
+              } · ${shift.startTime || ''}-${shift.endTime || ''}`
+            : '';
+    return [
+        'Hay turnos pisados.',
+        details.employeeName ? `Empleado: ${details.employeeName}` : '',
+        line('Turno nuevo', details.newShift),
+        line('Turno existente', details.existingShift),
+        '',
+        'Quieres permitir que se pisen?',
+    ]
+        .filter((item) => item !== '')
+        .join('\n');
+};
+
+const confirmShiftOverlap = (error) =>
+    error?.code === 'SHIFT_OVERLAP' &&
+    window.confirm(buildShiftOverlapMessage(error));
+
+const isShiftOverlapError = (error) => error?.code === 'SHIFT_OVERLAP';
+
 const holidayScopeLabels = {
     national: 'Nacional',
     autonomous: 'Autonomico',
@@ -139,6 +165,7 @@ const ServiceSchedulePanel = ({
     });
     const [isSavingHoliday, setIsSavingHoliday] = useState(false);
     const [isHolidayToolsOpen, setIsHolidayToolsOpen] = useState(false);
+    const [shiftOverlapModal, setShiftOverlapModal] = useState(null);
     const [newShift, setNewShift] = useState({
         scheduleDate: toLocalDateInput(),
         startTime: '18:00',
@@ -147,6 +174,24 @@ const ServiceSchedulePanel = ({
         employeeId: '',
         shiftTypeId: '',
     });
+
+    const requestShiftOverlapConfirmation = (error) => {
+        if (!isShiftOverlapError(error)) return Promise.resolve(false);
+        return new Promise((resolve) => {
+            setShiftOverlapModal({
+                details: error.details || {},
+                message: error.message,
+                resolve,
+            });
+        });
+    };
+
+    const closeShiftOverlapModal = (allowed) => {
+        setShiftOverlapModal((current) => {
+            current?.resolve?.(allowed);
+            return null;
+        });
+    };
 
     useEffect(() => {
         setScheduleImage(initialScheduleImage || '');
@@ -528,12 +573,18 @@ const ServiceSchedulePanel = ({
             return;
         }
         try {
-            const data = await updateServiceScheduleShift(
-                authToken,
-                serviceId,
-                shiftId,
-                updates
-            );
+            const updateShift = (allowOverlap = false) =>
+                updateServiceScheduleShift(authToken, serviceId, shiftId, {
+                    ...updates,
+                    allowOverlap,
+                });
+            let data;
+            try {
+                data = await updateShift(false);
+            } catch (error) {
+                if (!(await requestShiftOverlapConfirmation(error))) throw error;
+                data = await updateShift(true);
+            }
             setShifts((prev) =>
                 prev.map((shift) => (shift.id === shiftId ? { ...shift, ...data } : shift))
             );
@@ -570,7 +621,18 @@ const ServiceSchedulePanel = ({
             return;
         }
         try {
-            const data = await createServiceScheduleShift(authToken, serviceId, newShift);
+            const createShift = (allowOverlap = false) =>
+                createServiceScheduleShift(authToken, serviceId, {
+                    ...newShift,
+                    allowOverlap,
+                });
+            let data;
+            try {
+                data = await createShift(false);
+            } catch (error) {
+                if (!(await requestShiftOverlapConfirmation(error))) throw error;
+                data = await createShift(true);
+            }
             setShifts((prev) => [data, ...prev]);
             toast.success('Turno creado');
         } catch (error) {
@@ -591,19 +653,26 @@ const ServiceSchedulePanel = ({
         }
         try {
             setIsSavingShift(true);
-            const data = await updateServiceScheduleShift(
-                authToken,
-                serviceId,
-                selectedShift.id,
-                {
+            const payload = {
                     scheduleDate: selectedShift.scheduleDate,
                     startTime: selectedShift.startTime,
                     endTime: selectedShift.endTime,
                     hours: selectedShift.hours,
                     employeeId: selectedShift.employeeId || null,
                     shiftTypeId: selectedShift.shiftTypeId || null,
-                }
-            );
+                };
+            const updateShift = (allowOverlap = false) =>
+                updateServiceScheduleShift(authToken, serviceId, selectedShift.id, {
+                    ...payload,
+                    allowOverlap,
+                });
+            let data;
+            try {
+                data = await updateShift(false);
+            } catch (error) {
+                if (!(await requestShiftOverlapConfirmation(error))) throw error;
+                data = await updateShift(true);
+            }
             setShifts((prev) =>
                 prev.map((shift) =>
                     shift.id === selectedShift.id ? { ...shift, ...data } : shift
@@ -643,7 +712,16 @@ const ServiceSchedulePanel = ({
         if (!authToken || !serviceId || !isSimulationActive) return;
         try {
             setIsApplyingSimulation(true);
-            await applyServiceScheduleSimulation(authToken, serviceId, month, shifts);
+            const applySimulation = (allowOverlap = false) =>
+                applyServiceScheduleSimulation(authToken, serviceId, month, shifts, {
+                    allowOverlap,
+                });
+            try {
+                await applySimulation(false);
+            } catch (error) {
+                if (!(await requestShiftOverlapConfirmation(error))) throw error;
+                await applySimulation(true);
+            }
             toast.success('Cuadrante aplicado');
             setIsSimulationActive(false);
             await loadShifts();
@@ -780,17 +858,26 @@ const ServiceSchedulePanel = ({
 
         try {
             setIsApplyingImport(true);
-            const data = await importServiceScheduleExcel(
-                authToken,
-                serviceId,
-                month,
-                scheduleImportFile,
-                {
-                    apply: true,
-                    replace: replaceImportedMonth,
-                    employeeMappings: employeeImportMappings,
-                }
-            );
+            const applyImport = (allowOverlap = false) =>
+                importServiceScheduleExcel(
+                    authToken,
+                    serviceId,
+                    month,
+                    scheduleImportFile,
+                    {
+                        apply: true,
+                        replace: replaceImportedMonth,
+                        employeeMappings: employeeImportMappings,
+                        allowOverlap,
+                    }
+                );
+            let data;
+            try {
+                data = await applyImport(false);
+            } catch (error) {
+                if (!(await requestShiftOverlapConfirmation(error))) throw error;
+                data = await applyImport(true);
+            }
             setScheduleImportPreview(data);
             toast.success(`Cuadrante importado: ${data.shiftCount} turnos`);
             await loadShifts();
@@ -1743,6 +1830,79 @@ const ServiceSchedulePanel = ({
                                 onClick={handleSelectedShiftDelete}
                             >
                                 Eliminar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {shiftOverlapModal && (
+                <div className='shift-overlap-modal'>
+                    <button
+                        type='button'
+                        className='shift-overlap-modal__backdrop'
+                        onClick={() => closeShiftOverlapModal(false)}
+                        aria-label='Cerrar aviso de turnos pisados'
+                    />
+                    <div className='shift-overlap-modal__panel'>
+                        <h3>Turnos pisados</h3>
+                        <p>
+                            Hay un turno que coincide con otro ya asignado.
+                        </p>
+                        <div className='shift-overlap-modal__details'>
+                            <strong>
+                                {shiftOverlapModal.details.employeeName ||
+                                    'Empleado'}
+                            </strong>
+                            <span>
+                                Nuevo:{' '}
+                                {shiftOverlapModal.details.newShift
+                                    ?.serviceName || 'Servicio'}{' '}
+                                · {shiftOverlapModal.details.newShift?.date}{' '}
+                                ·{' '}
+                                {
+                                    shiftOverlapModal.details.newShift
+                                        ?.startTime
+                                }
+                                -
+                                {shiftOverlapModal.details.newShift?.endTime}
+                            </span>
+                            <span>
+                                Existente:{' '}
+                                {shiftOverlapModal.details.existingShift
+                                    ?.serviceName || 'Servicio'}{' '}
+                                ·{' '}
+                                {
+                                    shiftOverlapModal.details.existingShift
+                                        ?.date
+                                }{' '}
+                                ·{' '}
+                                {
+                                    shiftOverlapModal.details.existingShift
+                                        ?.startTime
+                                }
+                                -
+                                {
+                                    shiftOverlapModal.details.existingShift
+                                        ?.endTime
+                                }
+                            </span>
+                        </div>
+                        <p>Quieres permitir que se pisen?</p>
+                        <div className='shift-overlap-modal__actions'>
+                            <button
+                                type='button'
+                                className='service-schedule-btn service-schedule-btn--ghost'
+                                onClick={() => closeShiftOverlapModal(false)}
+                            >
+                                No, cancelar
+                            </button>
+                            <button
+                                type='button'
+                                className='service-schedule-btn'
+                                onClick={() => closeShiftOverlapModal(true)}
+                            >
+                                Si, permitir
                             </button>
                         </div>
                     </div>

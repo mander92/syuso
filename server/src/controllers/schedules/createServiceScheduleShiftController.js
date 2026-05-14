@@ -13,6 +13,7 @@ const createServiceScheduleShiftController = async (req, res, next) => {
             hours,
             employeeId,
             shiftTypeId,
+            allowOverlap,
         } = req.body;
         const { id: userId, role } = req.userLogged;
 
@@ -30,7 +31,8 @@ const createServiceScheduleShiftController = async (req, res, next) => {
             hours,
             employeeId,
             shiftTypeId,
-            userId
+            userId,
+            { allowOverlap: Boolean(allowOverlap) }
         );
 
         emitServiceScheduleChanged(serviceId, {

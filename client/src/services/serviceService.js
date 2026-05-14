@@ -586,7 +586,8 @@ export const applyServiceScheduleSimulation = async (
     authToken,
     serviceId,
     month,
-    shifts
+    shifts,
+    { allowOverlap = false } = {}
 ) => {
     const res = await fetch(
         `${VITE_API_URL}/services/${serviceId}/schedule/apply-simulation`,
@@ -596,7 +597,7 @@ export const applyServiceScheduleSimulation = async (
                 Authorization: authToken,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ month, shifts }),
+            body: JSON.stringify({ month, shifts, allowOverlap }),
         }
     );
 
@@ -660,6 +661,14 @@ const downloadScheduleFile = async (authToken, url, fallbackName) => {
 
     return { blob, fileName };
 };
+
+class ApiError extends Error {
+    constructor(body, fallbackMessage) {
+        super(body?.message || fallbackMessage);
+        this.code = body?.code;
+        this.details = body?.details;
+    }
+}
 
 export const downloadServiceSchedulePdf = async (
     authToken,
@@ -754,11 +763,17 @@ export const importServiceScheduleExcel = async (
     serviceId,
     month,
     file,
-    { apply = false, replace = true, employeeMappings = {} } = {}
+    {
+        apply = false,
+        replace = true,
+        employeeMappings = {},
+        allowOverlap = false,
+    } = {}
 ) => {
     const params = new URLSearchParams({ month });
     params.append('apply', apply ? '1' : '0');
     params.append('replace', replace ? '1' : '0');
+    params.append('allowOverlap', allowOverlap ? '1' : '0');
 
     const formData = new FormData();
     formData.append('file', file);
@@ -778,7 +793,7 @@ export const importServiceScheduleExcel = async (
     const body = await res.json();
 
     if (body.status === 'error') {
-        throw new Error(body.message);
+        throw new ApiError(body, 'No se pudo aplicar el cuadrante');
     }
 
     return body.data;
@@ -804,7 +819,7 @@ export const createServiceScheduleShift = async (
     const body = await res.json();
 
     if (body.status === 'error') {
-        throw new Error(body.message);
+        throw new ApiError(body, 'No se pudo importar el Excel');
     }
 
     return body.data;
@@ -831,7 +846,7 @@ export const updateServiceScheduleShift = async (
     const body = await res.json();
 
     if (body.status === 'error') {
-        throw new Error(body.message);
+        throw new ApiError(body, 'No se pudo crear el turno');
     }
 
     return body.data;
@@ -855,7 +870,7 @@ export const deleteServiceScheduleShift = async (
     const body = await res.json();
 
     if (body.status === 'error') {
-        throw new Error(body.message);
+        throw new ApiError(body, 'No se pudo actualizar el turno');
     }
 
     return body;

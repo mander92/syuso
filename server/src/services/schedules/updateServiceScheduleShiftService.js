@@ -5,7 +5,8 @@ import validateEmployeeShiftOverlapsService from './validateEmployeeShiftOverlap
 
 const updateServiceScheduleShiftService = async (
     shiftId,
-    updates
+    updates,
+    options = {}
 ) => {
     const pool = await getPool();
 
@@ -53,7 +54,7 @@ const updateServiceScheduleShiftService = async (
                 endTime: resolvedEnd,
             },
         ],
-        { excludeShiftIds: new Set([shiftId]) }
+        { ...options, excludeShiftIds: new Set([shiftId]) }
     );
 
     await pool.query(

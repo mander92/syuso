@@ -508,6 +508,61 @@
     justify-content: flex-end;
 }
 
+.shift-overlap-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 3200;
+}
+
+.shift-overlap-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    background: rgba(15, 23, 42, 0.55);
+    cursor: pointer;
+}
+
+.shift-overlap-modal__panel {
+    position: relative;
+    z-index: 1;
+    width: min(520px, calc(100vw - 32px));
+    margin: 12vh auto 0;
+    padding: 20px;
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+    color: #0f172a;
+}
+
+.shift-overlap-modal__panel h3 {
+    margin: 0 0 8px;
+}
+
+.shift-overlap-modal__panel p {
+    margin: 8px 0;
+}
+
+.shift-overlap-modal__details {
+    display: grid;
+    gap: 8px;
+    margin: 14px 0;
+    padding: 12px;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    background: #fff7f7;
+}
+
+.shift-overlap-modal__details span {
+    font-size: 0.92rem;
+}
+
+.shift-overlap-modal__actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 16px;
+}
+
 .service-schedule-grid-modal {
     position: fixed;
     inset: 0;

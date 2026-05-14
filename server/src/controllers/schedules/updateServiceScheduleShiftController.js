@@ -9,7 +9,9 @@ const updateServiceScheduleShiftController = async (req, res, next) => {
 
         await ensureServiceDelegationAccessService(serviceId, userId, role);
 
-        const data = await updateServiceScheduleShiftService(shiftId, req.body);
+        const data = await updateServiceScheduleShiftService(shiftId, req.body, {
+            allowOverlap: Boolean(req.body?.allowOverlap),
+        });
 
         emitServiceScheduleChanged(serviceId, {
             changedBy: userId,

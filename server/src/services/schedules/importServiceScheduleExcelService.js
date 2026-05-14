@@ -337,6 +337,7 @@ const importServiceScheduleExcelService = async ({
     replace = true,
     employeeMappings = {},
     createdBy,
+    allowOverlap = false,
 }) => {
     if (!filePath) generateErrorUtil('Archivo Excel requerido', 400);
     if (!month || !/^\d{4}-\d{2}$/.test(month)) {
@@ -382,8 +383,9 @@ const importServiceScheduleExcelService = async ({
             ? {
                   ignoreServiceId: serviceId,
                   ignoreMonth: month,
+                  allowOverlap,
               }
-            : {}
+            : { allowOverlap }
     );
 
     const conn = await pool.getConnection();

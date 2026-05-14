@@ -11,7 +11,8 @@ const createServiceScheduleShiftService = async (
     hours,
     employeeId,
     shiftTypeId,
-    createdBy
+    createdBy,
+    options = {}
 ) => {
     const pool = await getPool();
     const id = uuid();
@@ -26,15 +27,19 @@ const createServiceScheduleShiftService = async (
             ? Number(hours)
             : breakdown.hours;
 
-    await validateEmployeeShiftOverlapsService(pool, [
-        {
-            serviceId,
-            employeeId: employeeId || null,
-            scheduleDate,
-            startTime,
-            endTime,
-        },
-    ]);
+    await validateEmployeeShiftOverlapsService(
+        pool,
+        [
+            {
+                serviceId,
+                employeeId: employeeId || null,
+                scheduleDate,
+                startTime,
+                endTime,
+            },
+        ],
+        options
+    );
 
     await pool.query(
         `

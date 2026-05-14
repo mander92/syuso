@@ -1,5 +1,3 @@
-import generateErrorUtil from '../../utils/generateErrorUtil.js';
-
 const pad = (value) => String(value).padStart(2, '0');
 
 const normalizeDateKey = (value) => {
@@ -63,13 +61,43 @@ const buildConflictMessage = (conflict) => {
     const shift = conflict.shift;
     const existing = conflict.existing;
     const employeeText = employeeName || 'el empleado';
+    const serviceText = conflict.existing.serviceName
+        ? ` en ${conflict.existing.serviceName}`
+        : '';
     return `Hay turnos pisados para ${employeeText}: ${formatDateEs(
         normalizeDateKey(shift.scheduleDate)
     )} ${formatTime(shift.startTime)}-${formatTime(
         shift.endTime
     )} coincide con ${formatDateEs(normalizeDateKey(existing.scheduleDate))} ${formatTime(
         existing.startTime
-    )}-${formatTime(existing.endTime)}`;
+    )}-${formatTime(existing.endTime)}${serviceText}`;
+};
+
+const buildConflictDetails = (conflict) => ({
+    employeeName:
+        [conflict.firstName, conflict.lastName].filter(Boolean).join(' ').trim() ||
+        'Empleado',
+    newShift: {
+        serviceName: conflict.shift.serviceName || conflict.shift.serviceId || '',
+        date: normalizeDateKey(conflict.shift.scheduleDate),
+        startTime: formatTime(conflict.shift.startTime),
+        endTime: formatTime(conflict.shift.endTime),
+    },
+    existingShift: {
+        serviceName:
+            conflict.existing.serviceName || conflict.existing.serviceId || '',
+        date: normalizeDateKey(conflict.existing.scheduleDate),
+        startTime: formatTime(conflict.existing.startTime),
+        endTime: formatTime(conflict.existing.endTime),
+    },
+});
+
+const throwOverlapError = (conflict) => {
+    const error = new Error(buildConflictMessage(conflict));
+    error.httpStatus = 409;
+    error.code = 'SHIFT_OVERLAP';
+    error.details = buildConflictDetails(conflict);
+    throw error;
 };
 
 const shouldIgnoreExisting = (row, options) => {
@@ -91,6 +119,8 @@ const validateEmployeeShiftOverlapsService = async (
     shifts = [],
     options = {}
 ) => {
+    if (options.allowOverlap) return;
+
     const candidates = (Array.isArray(shifts) ? shifts : [])
         .filter((shift) => shift?.employeeId && shift.scheduleDate)
         .map((shift) => ({
@@ -121,14 +151,11 @@ const validateEmployeeShiftOverlapsService = async (
                     'SELECT firstName, lastName FROM users WHERE id = ?',
                     [a.employeeId]
                 );
-                generateErrorUtil(
-                    buildConflictMessage({
-                        ...employee,
-                        shift: a,
-                        existing: b,
-                    }),
-                    409
-                );
+                throwOverlapError({
+                    ...employee,
+                    shift: a,
+                    existing: b,
+                });
             }
         }
     }
@@ -143,9 +170,11 @@ const validateEmployeeShiftOverlapsService = async (
             ss.startTime,
             ss.endTime,
             u.firstName,
-            u.lastName
+            u.lastName,
+            s.name AS serviceName
         FROM serviceScheduleShifts ss
         LEFT JOIN users u ON u.id = ss.employeeId
+        LEFT JOIN services s ON s.id = ss.serviceId
         WHERE ss.employeeId IN (?)
           AND ss.deletedAt IS NULL
           AND ss.status = 'scheduled'
@@ -173,15 +202,12 @@ const validateEmployeeShiftOverlapsService = async (
             if (candidate.employeeId !== row.employeeId) continue;
             if (candidate.id && candidate.id === row.id) continue;
             if (!intervalsOverlap(candidate.interval, row.interval)) continue;
-            generateErrorUtil(
-                buildConflictMessage({
-                    firstName: row.firstName,
-                    lastName: row.lastName,
-                    shift: candidate,
-                    existing: row,
-                }),
-                409
-            );
+            throwOverlapError({
+                firstName: row.firstName,
+                lastName: row.lastName,
+                shift: candidate,
+                existing: row,
+            });
         }
     }
 };

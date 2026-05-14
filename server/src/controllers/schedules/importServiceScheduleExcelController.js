@@ -10,6 +10,7 @@ const querySchema = Joi.object({
         .required(),
     apply: Joi.string().valid('0', '1', 'false', 'true').default('0'),
     replace: Joi.string().valid('0', '1', 'false', 'true').default('1'),
+    allowOverlap: Joi.string().valid('0', '1', 'false', 'true').default('0'),
 });
 
 const toBoolean = (value) => value === true || value === '1' || value === 'true';
@@ -42,6 +43,7 @@ const importServiceScheduleExcelController = async (req, res, next) => {
             month: value.month,
             apply: toBoolean(value.apply),
             replace: toBoolean(value.replace),
+            allowOverlap: toBoolean(value.allowOverlap),
             employeeMappings: parseMappings(req.body?.employeeMappings),
             createdBy: req.userLogged.id,
         });

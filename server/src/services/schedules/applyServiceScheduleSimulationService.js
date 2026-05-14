@@ -18,7 +18,12 @@ const normalizeShift = (shift) => ({
     isNew: Boolean(shift.isNew),
 });
 
-const applyServiceScheduleSimulationService = async (serviceId, month, shifts = []) => {
+const applyServiceScheduleSimulationService = async (
+    serviceId,
+    month,
+    shifts = [],
+    options = {}
+) => {
     const pool = await getPool();
     const list = Array.isArray(shifts) ? shifts.map(normalizeShift) : [];
     if (!list.length) return { applied: 0, created: 0 };
@@ -58,6 +63,7 @@ const applyServiceScheduleSimulationService = async (serviceId, month, shifts = 
             serviceId,
         })),
         {
+            ...options,
             excludeShiftIds: new Set(
                 toUpdate.map((shift) => shift.id).filter(Boolean)
             ),
