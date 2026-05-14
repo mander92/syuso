@@ -120,6 +120,16 @@
     gap: 3px;
     justify-content: flex-end;
     min-height: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+
+.service-schedule-grid-cell:hover .service-schedule-grid-cell-actions,
+.service-schedule-grid-cell:focus-within .service-schedule-grid-cell-actions,
+.service-schedule-grid-cell--selected .service-schedule-grid-cell-actions {
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .service-schedule-grid-action,
@@ -236,6 +246,15 @@
     gap: 3px;
     justify-content: center;
     margin-top: 2px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+
+.service-schedule-grid-shift:hover .service-schedule-grid-shift-actions,
+.service-schedule-grid-shift:focus-within .service-schedule-grid-shift-actions {
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .service-schedule-grid-shift-actions button:last-child {
@@ -350,6 +369,14 @@
 
     .service-schedule-grid-cell-actions {
         min-height: 16px;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .service-schedule-grid-cell:focus-within .service-schedule-grid-cell-actions,
+    .service-schedule-grid-cell--selected .service-schedule-grid-cell-actions {
+        opacity: 1;
+        pointer-events: auto;
     }
 
     .service-schedule-grid-action,
@@ -395,6 +422,13 @@
 
     .service-schedule-grid-shift-actions {
         gap: 2px;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .service-schedule-grid-shift:focus-within .service-schedule-grid-shift-actions {
+        opacity: 1;
+        pointer-events: auto;
     }
 
     .service-schedule-grid-shift-time {
