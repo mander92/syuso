@@ -271,6 +271,34 @@
     color: #14532d;
 }
 
+.service-schedule-grid-request {
+    align-self: stretch;
+    background: #eef2ff;
+    border: 1px solid #818cf8;
+    border-radius: 6px;
+    color: #312e81;
+    display: inline-flex;
+    font-size: 0.62rem;
+    font-weight: 800;
+    justify-content: center;
+    line-height: 1.1;
+    min-height: 20px;
+    padding: 3px 4px;
+    text-align: center;
+}
+
+.service-schedule-grid-request--approved {
+    background: #dcfce7;
+    border-color: #22c55e;
+    color: #14532d;
+}
+
+.service-schedule-grid-request--pending_admin {
+    background: #fef3c7;
+    border-color: #f59e0b;
+    color: #78350f;
+}
+
 .service-schedule-grid-shift {
     border-radius: 8px;
     padding: 4px 6px;
@@ -494,6 +522,12 @@
 
     .service-schedule-grid-absence-short {
         display: inline;
+    }
+
+    .service-schedule-grid-request {
+        font-size: 0.54rem;
+        min-height: 16px;
+        padding: 2px;
     }
 
     .service-schedule-grid-holiday {

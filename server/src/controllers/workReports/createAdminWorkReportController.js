@@ -174,7 +174,9 @@ const createAdminWorkReportController = async (req, res, next) => {
                 actionsTaken: 'No aplica',
                 outcome: 'controlado',
                 signature: value.signature,
-                clientSignature: value.clientSignature || null,
+                clientSignature: isInspection
+                    ? null
+                    : value.clientSignature || null,
                 guardSignature: value.guardSignature || null,
                 reportType: value.reportType,
                 inspectionData,

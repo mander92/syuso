@@ -358,6 +358,8 @@ const ScheduleComponent = () => {
                             delegation: service.province || 'Sin delegacion',
                             scheduleImage: service.scheduleImage || '',
                             scheduleView: service.scheduleView || 'grid',
+                            assignedEmployeeIds:
+                                service.assignedEmployeeIds || '',
                             autonomousCommunity:
                                 service.autonomousCommunity || '',
                             province: service.province || '',
@@ -902,8 +904,75 @@ const ScheduleComponent = () => {
             swap: 'Cambio',
             give: 'Cesion',
             take: 'Peticion',
+            transfer: 'Cesion',
+            request: 'Peticion',
         };
         return labels[type] || type || 'Cambio';
+    };
+
+    const parseShiftIdList = (value) => {
+        if (!value) return [];
+        if (Array.isArray(value)) return value.filter(Boolean);
+        try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+        } catch {
+            return [];
+        }
+    };
+
+    const toScheduleDateKey = (value) => {
+        if (!value) return '';
+        if (value instanceof Date && !Number.isNaN(value.getTime())) {
+            return value.toISOString().slice(0, 10);
+        }
+        const match = String(value).match(/^(\d{4}-\d{2}-\d{2})/);
+        return match ? match[1] : String(value).slice(0, 10);
+    };
+
+    const buildRequestBadgesByCell = (requests, shifts) => {
+        const shiftById = new Map(
+            (shifts || [])
+                .filter((shift) => shift?.id)
+                .map((shift) => [shift.id, shift])
+        );
+        const badges = {};
+
+        requests.forEach((request) => {
+            const shiftIds = [
+                request.fromShiftId,
+                request.toShiftId,
+                ...parseShiftIdList(request.fromShiftIds),
+                ...parseShiftIdList(request.toShiftIds),
+            ].filter(Boolean);
+
+            [...new Set(shiftIds)].forEach((shiftId) => {
+                const shift = shiftById.get(shiftId);
+                if (!shift?.employeeId || !shift?.scheduleDate) return;
+                const dateKey = toScheduleDateKey(shift.scheduleDate);
+                if (!dateKey) return;
+                const cellKey = `${shift.employeeId}_${dateKey}`;
+                if (!badges[cellKey]) badges[cellKey] = [];
+                badges[cellKey].push({
+                    id: `${request.id}-${shiftId}`,
+                    status: request.status,
+                    label: `${requestTypeLabel(request.requestType)} ${
+                        request.status === 'approved' ? 'OK' : 'Pend.'
+                    }`,
+                    title: [
+                        `${requestTypeLabel(request.requestType)} - ${requestStatusLabel(request.status)}`,
+                        `${request.requestorName || 'Solicitante'} con ${request.counterpartName || 'companero'}`,
+                        [request.fromShiftSummary, request.toShiftSummary]
+                            .filter(Boolean)
+                            .join(' -> '),
+                    ]
+                        .filter(Boolean)
+                        .join(' · '),
+                });
+            });
+        });
+
+        return badges;
     };
 
     const requestMatchesMonth = (request, month) => {
@@ -926,6 +995,14 @@ const ScheduleComponent = () => {
                 ['pending_admin', 'approved'].includes(request.status) &&
                 requestMatchesMonth(request, month)
         );
+
+    const getRequestBadgesForService = (serviceId, month) => {
+        const shifts = scheduleShiftMap[serviceId] || [];
+        return buildRequestBadgesByCell(
+            getScheduleRequestsForService(serviceId, month),
+            shifts
+        );
+    };
 
     const getScheduleRequestsForEmployee = (employeeId, month) =>
         scheduleRequests.filter(
@@ -1199,11 +1276,24 @@ const ScheduleComponent = () => {
         const loadServiceScheduleAbsences = async () => {
             if (!authToken || !isAdminLike || !serviceScheduleViewModal?.id) return;
 
-            const shifts =
-                scheduleShiftMap[serviceScheduleViewModal.id] || [];
-            const employeeIds = [
-                ...new Set(shifts.map((shift) => shift.employeeId).filter(Boolean)),
-            ];
+            const assignedIds = new Set(
+                String(serviceScheduleViewModal.assignedEmployeeIds || '')
+                    .split(',')
+                    .map((id) => id.trim())
+                    .filter(Boolean)
+            );
+            const shiftEmployeeIds = new Set(
+                (scheduleShiftMap[serviceScheduleViewModal.id] || [])
+                    .map((shift) => shift.employeeId)
+                    .filter(Boolean)
+            );
+            const employeeIds = employees
+                .filter(
+                    (employee) =>
+                        assignedIds.has(employee.id) ||
+                        shiftEmployeeIds.has(employee.id)
+                )
+                .map((employee) => employee.id);
             const missingEmployeeIds = employeeIds.filter(
                 (employeeId) => !employeeAbsencesMap[employeeId]
             );
@@ -1240,10 +1330,33 @@ const ScheduleComponent = () => {
         authToken,
         isAdminLike,
         serviceScheduleViewModal?.id,
+        serviceScheduleViewModal?.assignedEmployeeIds,
         scheduleShiftMap,
+        employees,
         employeeAbsencesMap,
     ]);
 
+
+    const serviceScheduleModalEmployees = useMemo(() => {
+        if (!serviceScheduleViewModal) return [];
+
+        const assignedIds = new Set(
+            String(serviceScheduleViewModal.assignedEmployeeIds || '')
+                .split(',')
+                .map((id) => id.trim())
+                .filter(Boolean)
+        );
+        const shiftEmployeeIds = new Set(
+            (scheduleShiftMap[serviceScheduleViewModal.id] || [])
+                .map((shift) => shift.employeeId)
+                .filter(Boolean)
+        );
+
+        return employees.filter(
+            (employee) =>
+                assignedIds.has(employee.id) || shiftEmployeeIds.has(employee.id)
+        );
+    }, [employees, scheduleShiftMap, serviceScheduleViewModal]);
 
     const personalScheduleRows = useMemo(() => {
         const shiftRows = Object.values(scheduleShiftMap).flat();
@@ -2548,7 +2661,7 @@ const ScheduleComponent = () => {
                                             serviceScheduleViewModal.id
                                         ] || []
                                     }
-                                    employees={employees}
+                                    employees={serviceScheduleModalEmployees}
                                     absencesByEmployee={employeeAbsencesMap}
                                     holidaysByDate={buildServiceHolidaysByDate(
                                         serviceScheduleViewModal
@@ -2562,25 +2675,23 @@ const ScheduleComponent = () => {
                                     onPasteShift={handlePasteScheduleViewShift}
                                     onDeleteShift={handleScheduleViewShiftDelete}
                                     copiedShift={copiedScheduleShift}
+                                    requestBadgesByCell={getRequestBadgesForService(
+                                        serviceScheduleViewModal.id,
+                                        serviceScheduleViewModal.month
+                                    )}
                                     readOnly={false}
                                     showUnassigned={(
                                         scheduleShiftMap[
                                             serviceScheduleViewModal.id
                                         ] || []
                                     ).some((shift) => !shift.employeeId)}
-                                    showAllEmployees={
-                                        !(
-                                            scheduleShiftMap[
-                                                serviceScheduleViewModal.id
-                                            ] || []
-                                        ).length
-                                    }
+                                    showAllEmployees={false}
                                 />
                             ) : (
                                 <ServiceScheduleGrid
                                     month={serviceScheduleViewModal.month}
                                     shifts={[]}
-                                    employees={employees}
+                                    employees={serviceScheduleModalEmployees}
                                     absencesByEmployee={employeeAbsencesMap}
                                     holidaysByDate={buildServiceHolidaysByDate(
                                         serviceScheduleViewModal
@@ -2590,6 +2701,10 @@ const ScheduleComponent = () => {
                                     onCreateShift={openNewScheduleViewShift}
                                     onPasteShift={handlePasteScheduleViewShift}
                                     copiedShift={copiedScheduleShift}
+                                    requestBadgesByCell={getRequestBadgesForService(
+                                        serviceScheduleViewModal.id,
+                                        serviceScheduleViewModal.month
+                                    )}
                                     readOnly={false}
                                     showUnassigned={false}
                                     showAllEmployees

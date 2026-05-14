@@ -14,9 +14,12 @@ const startShiftRecordService = async (
     const pool = await getPool();
     const id = uuid();
 
-    const { date: localDate, time: localTime } = getMadridDateTimeParts(
-        new Date()
-    );
+    const clockInDate =
+        startDateTime instanceof Date && !Number.isNaN(startDateTime.getTime())
+            ? startDateTime
+            : new Date();
+    const { date: localDate, time: localTime } =
+        getMadridDateTimeParts(clockInDate);
 
     const [serviceRows] = await pool.query(
         `

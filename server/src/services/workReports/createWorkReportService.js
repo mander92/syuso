@@ -190,13 +190,15 @@ const createInspectionPdf = async (
             doc.fillColor('#111827');
         };
 
-        const field = (label, value, width = pageWidth) => {
+        const field = (label, value, width = pageWidth, x = doc.page.margins.left) => {
             const text = sanitizeText(value) || '-';
+            doc.x = x;
             ensureSpace(24);
-            doc.fontSize(9).fillColor('#6b7280').text(label, {
+            doc.fontSize(9).fillColor('#6b7280').text(label, x, doc.y, {
                 continued: false,
+                width,
             });
-            doc.fontSize(10).fillColor('#111827').text(text, {
+            doc.fontSize(10).fillColor('#111827').text(text, x, doc.y, {
                 width,
             });
             doc.moveDown(0.25);
@@ -205,44 +207,57 @@ const createInspectionPdf = async (
         const twoCols = (items) => {
             const leftX = doc.page.margins.left;
             const rightX = leftX + pageWidth / 2 + 8;
-            const startY = doc.y;
             const colWidth = pageWidth / 2 - 8;
-            items.forEach((item, index) => {
-                const x = index % 2 === 0 ? leftX : rightX;
-                if (index % 2 === 0 && index > 0) {
-                    doc.y += 4;
-                }
+            for (let index = 0; index < items.length; index += 2) {
+                ensureSpace(36);
                 const y = doc.y;
-                doc.x = x;
-                field(item.label, item.value, colWidth);
-                if (index % 2 === 0) {
+                field(items[index].label, items[index].value, colWidth, leftX);
+                const leftBottom = doc.y;
+                let rightBottom = y;
+                if (items[index + 1]) {
                     doc.y = y;
+                    field(
+                        items[index + 1].label,
+                        items[index + 1].value,
+                        colWidth,
+                        rightX
+                    );
+                    rightBottom = doc.y;
                 }
-            });
+                doc.y = Math.max(leftBottom, rightBottom) + 2;
+            }
             doc.x = leftX;
-            if (doc.y < startY + 18) doc.y = startY + 18;
         };
 
         const scoreTable = (items) => {
             const scoreWidth = 50;
+            const labelWidth = pageWidth - scoreWidth - 14;
+            const leftX = doc.page.margins.left;
+            const scoreX = leftX + labelWidth + 14;
             items.forEach((item) => {
-                ensureSpace(22);
+                const label = sanitizeText(item.label);
+                const value = sanitizeText(item.value) || '-';
+                const labelHeight = doc
+                    .fontSize(10)
+                    .heightOfString(label, { width: labelWidth });
+                const rowHeight = Math.max(20, labelHeight + 8);
+                ensureSpace(rowHeight + 4);
                 const y = doc.y;
-                doc.fontSize(10).fillColor('#111827').text(item.label, {
-                    width: pageWidth - scoreWidth,
+                doc.fontSize(10).fillColor('#111827').text(label, leftX, y, {
+                    width: labelWidth,
                 });
-                doc.fontSize(10).text(
-                    sanitizeText(item.value) || '-',
-                    doc.page.margins.left + pageWidth - scoreWidth,
-                    y,
-                    { width: scoreWidth, align: 'center' }
-                );
-                doc.moveTo(doc.page.margins.left, doc.y + 2)
-                    .lineTo(doc.page.margins.left + pageWidth, doc.y + 2)
+                doc.fontSize(10).text(value, scoreX, y, {
+                    width: scoreWidth,
+                    align: 'center',
+                });
+                doc.y = y + rowHeight;
+                doc.moveTo(leftX, doc.y)
+                    .lineTo(leftX + pageWidth, doc.y)
                     .strokeColor('#e5e7eb')
                     .stroke();
-                doc.moveDown(0.35);
+                doc.y += 4;
             });
+            doc.x = doc.page.margins.left;
             doc.strokeColor('#111827');
         };
 
@@ -362,17 +377,16 @@ const createInspectionPdf = async (
 
         if (
             inspectorSignatureSource ||
-            guardSignatureSource ||
-            clientSignatureSource
+            guardSignatureSource
         ) {
             ensureSpace(92);
             doc.moveDown(0.8);
             const signatureWidth = 140;
             const signatureHeight = 64;
             const gap = 12;
-            const leftX = doc.page.margins.left;
+            const totalWidth = signatureWidth * 2 + gap;
+            const leftX = doc.page.margins.left + (pageWidth - totalWidth) / 2;
             const rightX = leftX + signatureWidth + gap;
-            const clientX = rightX + signatureWidth + gap;
             const y = doc.y;
 
             doc.fontSize(11).text('Firma inspector', leftX, y, {
@@ -380,10 +394,6 @@ const createInspectionPdf = async (
                 align: 'center',
             });
             doc.fontSize(11).text('Firma vigilante', rightX, y, {
-                width: signatureWidth,
-                align: 'center',
-            });
-            doc.fontSize(11).text('Firma cliente', clientX, y, {
                 width: signatureWidth,
                 align: 'center',
             });
@@ -401,16 +411,6 @@ const createInspectionPdf = async (
             if (guardSignatureSource) {
                 try {
                     doc.image(guardSignatureSource, rightX, y + 18, {
-                        fit: [signatureWidth, signatureHeight],
-                    });
-                } catch (error) {
-                    // ignore missing signature
-                }
-            }
-
-            if (clientSignatureSource) {
-                try {
-                    doc.image(clientSignatureSource, clientX, y + 18, {
                         fit: [signatureWidth, signatureHeight],
                     });
                 } catch (error) {

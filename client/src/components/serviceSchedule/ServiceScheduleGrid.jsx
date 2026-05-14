@@ -105,6 +105,7 @@ const ServiceScheduleGrid = ({
     onHolidayClick,
     holidaysByDate = {},
     copiedShift = null,
+    requestBadgesByCell = {},
     readOnly = false,
     showUnassigned = true,
     showAllEmployees = false,
@@ -331,6 +332,8 @@ const ServiceScheduleGrid = ({
                             const shiftsForDay = bucketed.get(bucketKey) || [];
                             const holidaysForDay = holidaysByDate[dateKey] || [];
                             const dateObj = new Date(year, monthIndex, day);
+                            const requestBadges =
+                                requestBadgesByCell[bucketKey] || [];
                             const absencesForDay = rowAbsences.filter((item) => {
                                 const { start, end } = getAbsenceRange(item);
                                 return isDateInRange(dateObj, start, end);
@@ -394,6 +397,15 @@ const ServiceScheduleGrid = ({
                                             <span className='service-schedule-grid-absence-label'>
                                                 {absenceLabel(absence.type)}
                                             </span>
+                                        </span>
+                                    ))}
+                                    {requestBadges.map((badge) => (
+                                        <span
+                                            key={badge.id}
+                                            className={`service-schedule-grid-request service-schedule-grid-request--${badge.status || 'pending'}`}
+                                            title={badge.title || badge.label}
+                                        >
+                                            {badge.label}
                                         </span>
                                     ))}
                                     {!readOnly && (

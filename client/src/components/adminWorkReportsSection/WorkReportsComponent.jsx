@@ -537,7 +537,7 @@ const WorkReportsComponent = () => {
             const blob = await res.blob();
             const url = window.URL.createObjectURL(blob);
             window.open(url, '_blank');
-            setTimeout(() => window.URL.revokeObjectURL(url), 4000);
+            setTimeout(() => window.URL.revokeObjectURL(url), 10 * 60 * 1000);
         } catch (error) {
             toast.error(error.message || 'No se pudo abrir el PDF');
         }
