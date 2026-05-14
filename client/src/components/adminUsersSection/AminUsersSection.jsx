@@ -8,6 +8,7 @@ import {
     fetchSendRecoverPasswordUserServices,
     fetchRegisterAdminUserServices,
     fetchAdminSetUserPasswordServices,
+    fetchDeleteUserServices,
     fetchEmployeeRules,
     updateEmployeeRules,
     fetchEmployeeAbsences,
@@ -314,6 +315,38 @@ const AdminUsersSection = () => {
         } catch (error) {
             console.error(error);
             alert(error.message || 'Error enviando email de reseteo');
+        }
+    };
+
+    const handleDeleteUser = async (targetUser) => {
+        if (!targetUser?.id || !authToken) return;
+        if (user?.id === targetUser.id) {
+            alert('No puedes eliminar tu propio usuario desde aqui.');
+            return;
+        }
+
+        const label =
+            `${targetUser.firstName || ''} ${targetUser.lastName || ''}`.trim() ||
+            targetUser.email ||
+            'este usuario';
+        if (
+            !window.confirm(
+                `Vas a eliminar/desactivar a ${label}. Esta accion ocultara el usuario de la app. Continuar?`
+            )
+        ) {
+            return;
+        }
+
+        try {
+            await fetchDeleteUserServices(authToken, targetUser.id);
+            setUsers((prev) =>
+                prev.filter((item) => item.id !== targetUser.id)
+            );
+            setActionUser(null);
+            alert('Usuario eliminado correctamente.');
+        } catch (error) {
+            console.error(error);
+            alert(error.message || 'Error eliminando usuario');
         }
     };
 
@@ -1671,6 +1704,17 @@ const AdminUsersSection = () => {
                                         }}
                                     >
                                         Cambiar contraseña
+                                    </button>
+                                )}
+                                {user?.id !== actionUser.id && (
+                                    <button
+                                        type='button'
+                                        className='admin-users-btn admin-users-btn--danger'
+                                        onClick={() =>
+                                            handleDeleteUser(actionUser)
+                                        }
+                                    >
+                                        Eliminar usuario
                                     </button>
                                 )}
                             </div>
