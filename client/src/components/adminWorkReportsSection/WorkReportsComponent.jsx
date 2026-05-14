@@ -1288,32 +1288,6 @@ const WorkReportsComponent = () => {
                                         />
                                     </label>
                                     <label className='shift-filter'>
-                                        <span>Vigilante</span>
-                                        <input
-                                            type='text'
-                                            value={inspectionReport.guardName}
-                                            onChange={(event) =>
-                                                handleInspectionReportChange(
-                                                    'guardName',
-                                                    event.target.value
-                                                )
-                                            }
-                                        />
-                                    </label>
-                                    <label className='shift-filter'>
-                                        <span>TIP</span>
-                                        <input
-                                            type='text'
-                                            value={inspectionReport.tip}
-                                            onChange={(event) =>
-                                                handleInspectionReportChange(
-                                                    'tip',
-                                                    event.target.value
-                                                )
-                                            }
-                                        />
-                                    </label>
-                                    <label className='shift-filter'>
                                         <span>Hora inicio inspeccion</span>
                                         <input
                                             type='time'
