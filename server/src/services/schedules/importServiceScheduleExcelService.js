@@ -78,9 +78,10 @@ const scoreEmployeeMatch = (employee, excelName) => {
     const tokenScore =
         excelTokens.length > 0 ? tokenMatches / excelTokens.length : 0;
     const containsScore =
-        employeeNormalized.includes(excelNormalized) ||
-        excelNormalized.includes(employeeNormalized)
-            ? 1
+        excelNormalized.length >= 6 &&
+        (employeeNormalized.includes(excelNormalized) ||
+            excelNormalized.includes(employeeNormalized))
+            ? 0.75
             : 0;
 
     return Math.max(distanceScore, tokenScore, containsScore);
@@ -135,6 +136,56 @@ const buildDateString = (month, day) => {
     return `${year}-${pad(monthValue)}-${pad(day)}`;
 };
 
+const getCellText = (worksheet, rowNumber, colNumber) =>
+    String(worksheet.getCell(rowNumber, colNumber).value || '').trim();
+
+const findDayColumns = (worksheet) => {
+    let best = { rowNumber: 10, columns: [] };
+
+    for (let rowNumber = 8; rowNumber <= 14; rowNumber += 1) {
+        const columns = [];
+        worksheet.getRow(rowNumber).eachCell((cell, colNumber) => {
+            const day = Number(getCellPlainValue(cell));
+            if (day >= 1 && day <= 31) {
+                columns.push({ col: colNumber, day });
+            }
+        });
+
+        if (columns.length > best.columns.length) {
+            best = { rowNumber, columns };
+        }
+    }
+
+    if (best.columns.length) return best;
+
+    return {
+        rowNumber: 10,
+        columns: Array.from(
+            { length: DAY_END_COL - DAY_START_COL + 1 },
+            (_, index) => ({
+                col: DAY_START_COL + index,
+                day: index + 1,
+            })
+        ),
+    };
+};
+
+const getEmployeeNameFromRow = (worksheet, rowNumber) => {
+    const parts = [];
+    for (let col = 1; col <= 4; col += 1) {
+        const text = getCellText(worksheet, rowNumber, col);
+        if (text) parts.push(text);
+    }
+    return parts.join(' ').replace(/\s+/g, ' ').trim();
+};
+
+const rowHasShiftTimes = (worksheet, rowNumber, dayColumns) =>
+    dayColumns.some(({ col }) => {
+        const startTime = getExcelTime(worksheet.getCell(rowNumber, col));
+        const endTime = getExcelTime(worksheet.getCell(rowNumber + 1, col));
+        return Boolean(startTime && endTime);
+    });
+
 const loadEmployees = async (pool) => {
     const [rows] = await pool.query(
         `
@@ -161,24 +212,28 @@ const findEmployee = (employees, excelName) => {
     const normalized = normalizeName(excelName);
     if (!normalized) return null;
     const excelTokens = nameTokens(excelName);
-
-    return (
-        employees.find((employee) => employee.normalizedName === normalized) ||
-        employees.find(
-            (employee) =>
-                employee.normalizedName.includes(normalized) ||
-                normalized.includes(employee.normalizedName)
-        ) ||
-        employees.find((employee) => {
-            const employeeTokens = nameTokens(employee.fullName);
-            if (!employeeTokens.length || !excelTokens.length) return false;
-            const matches = excelTokens.filter((token) =>
-                employeeTokens.includes(token)
-            );
-            return matches.length >= Math.min(2, excelTokens.length);
-        }) ||
-        null
+    const exact = employees.find(
+        (employee) => employee.normalizedName === normalized
     );
+    if (exact) return exact;
+
+    const hasEnoughSpecificity =
+        excelTokens.length >= 2 || normalized.length >= 8;
+    if (!hasEnoughSpecificity) return null;
+
+    const scored = employees
+        .map((employee) => ({
+            employee,
+            score: scoreEmployeeMatch(employee, excelName),
+        }))
+        .sort((a, b) => b.score - a.score);
+
+    const best = scored[0];
+    const second = scored[1];
+    if (!best || best.score < 0.82) return null;
+    if (second && best.score - second.score < 0.12) return null;
+
+    return best.employee;
 };
 
 const parseWorkbook = async ({ filePath, month, employees, employeeMappings = {} }) => {
@@ -197,17 +252,21 @@ const parseWorkbook = async ({ filePath, month, employees, employeeMappings = {}
     const employeeRows = [];
     const unknownEmployees = new Set();
     const unmatchedMap = new Map();
+    const { rowNumber: dayHeaderRow, columns: dayColumns } =
+        findDayColumns(worksheet);
+    const startRow = Math.max(FIRST_EMPLOYEE_ROW, dayHeaderRow + 2);
 
     for (
-        let rowNumber = FIRST_EMPLOYEE_ROW;
+        let rowNumber = startRow;
         rowNumber <= worksheet.rowCount;
-        rowNumber += EMPLOYEE_BLOCK_SIZE
+        rowNumber += 1
     ) {
-        const rawName = String(worksheet.getCell(rowNumber, 1).value || '').trim();
+        const rawName = getEmployeeNameFromRow(worksheet, rowNumber);
         if (!rawName || rawName.toLowerCase().includes('dos apellidos')) continue;
         if (rawName.toLowerCase() === 'n.º') continue;
 
         if (isPlaceholderName(rawName)) continue;
+        if (!rowHasShiftTimes(worksheet, rowNumber, dayColumns)) continue;
 
         const mappedEmployeeId =
             employeeMappings[rawName] || employeeMappings[normalizeName(rawName)];
@@ -222,8 +281,7 @@ const parseWorkbook = async ({ filePath, month, employees, employeeMappings = {}
             employeeName: employee?.fullName || null,
         });
 
-        for (let col = DAY_START_COL; col <= DAY_END_COL; col += 1) {
-            const day = Number(worksheet.getCell(10, col).value);
+        for (const { col, day } of dayColumns) {
             if (!day) continue;
 
             const startTime = getExcelTime(worksheet.getCell(rowNumber, col));
@@ -254,6 +312,8 @@ const parseWorkbook = async ({ filePath, month, employees, employeeMappings = {}
                 hours: calculateShiftHours(startTime, endTime),
             });
         }
+
+        rowNumber += EMPLOYEE_BLOCK_SIZE - 1;
     }
 
     return {

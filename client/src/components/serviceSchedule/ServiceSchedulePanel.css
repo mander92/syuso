@@ -842,6 +842,47 @@
     color: #0f172a;
 }
 
+.schedule-requests-summary {
+    background: #f8fafc;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    padding: 10px;
+}
+
+.schedule-requests-summary strong {
+    color: #0f172a;
+    display: block;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+}
+
+.schedule-requests-summary__list {
+    display: grid;
+    gap: 8px;
+}
+
+.schedule-requests-summary__item {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    display: grid;
+    gap: 3px;
+    padding: 8px;
+}
+
+.schedule-requests-summary__item span {
+    color: #071b4d;
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
+.schedule-requests-summary__item small {
+    color: #475569;
+    font-size: 0.78rem;
+    overflow-wrap: anywhere;
+}
+
 @media (max-width: 720px) {
     .service-schedule-panel {
         gap: 14px;

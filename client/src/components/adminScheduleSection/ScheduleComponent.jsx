@@ -27,8 +27,11 @@ import {
     deleteHoliday,
     simulateServiceSchedule,
     applyServiceScheduleSimulation,
+    createServiceScheduleShift,
+    deleteServiceScheduleShift,
     updateServiceScheduleShift,
 } from '../../services/serviceService.js';
+import { fetchAdminShiftSwapRequests } from '../../services/shiftSwapService.js';
 import ServiceSchedulePanel from '../serviceSchedule/ServiceSchedulePanel.jsx';
 import ServiceScheduleGrid from '../serviceSchedule/ServiceScheduleGrid.jsx';
 import '../button/Button.css';
@@ -149,6 +152,8 @@ const ScheduleComponent = () => {
     const [generatedSchedulePreview, setGeneratedSchedulePreview] =
         useState(null);
     const [selectedGeneratedShift, setSelectedGeneratedShift] = useState(null);
+    const [scheduleRequests, setScheduleRequests] = useState([]);
+    const [copiedScheduleShift, setCopiedScheduleShift] = useState(null);
 
     useEffect(() => {
         const loadEmployees = async () => {
@@ -189,6 +194,23 @@ const ScheduleComponent = () => {
         };
 
         loadDelegations();
+    }, [authToken, isAdminLike]);
+
+    useEffect(() => {
+        const loadScheduleRequests = async () => {
+            if (!authToken || !isAdminLike) return;
+            try {
+                const data = await fetchAdminShiftSwapRequests(authToken);
+                setScheduleRequests(Array.isArray(data) ? data : []);
+            } catch (error) {
+                toast.error(
+                    error.message ||
+                        'No se pudieron cargar las peticiones de turnos'
+                );
+            }
+        };
+
+        loadScheduleRequests();
     }, [authToken, isAdminLike]);
 
     useEffect(() => {
@@ -608,6 +630,141 @@ const ScheduleComponent = () => {
         }
     };
 
+    const handleScheduleViewShiftDelete = async (shift) => {
+        if (!shift?.id || !serviceScheduleViewModal?.id) return;
+        if (!window.confirm('Borrar este turno del cuadrante?')) return;
+        const serviceId = serviceScheduleViewModal.id;
+
+        if (generatedSchedulePreview) {
+            setScheduleShiftMap((prev) => ({
+                ...prev,
+                [serviceId]: (prev[serviceId] || []).filter(
+                    (item) => item.id !== shift.id
+                ),
+            }));
+            setSelectedGeneratedShift(null);
+            return;
+        }
+
+        try {
+            await deleteServiceScheduleShift(authToken, serviceId, shift.id);
+            setScheduleShiftMap((prev) => ({
+                ...prev,
+                [serviceId]: (prev[serviceId] || []).filter(
+                    (item) => item.id !== shift.id
+                ),
+            }));
+            setSelectedGeneratedShift(null);
+            toast.success('Turno eliminado');
+        } catch (error) {
+            toast.error(error.message || 'No se pudo eliminar el turno');
+        }
+    };
+
+    const openNewScheduleViewShift = ({ employeeId, scheduleDate }) => {
+        setSelectedGeneratedShift({
+            scheduleDate,
+            employeeId: employeeId || '',
+            startTime: copiedScheduleShift?.startTime || '18:00',
+            endTime: copiedScheduleShift?.endTime || '08:00',
+            hours:
+                copiedScheduleShift?.hours ||
+                calculateShiftHours(
+                    copiedScheduleShift?.startTime || '18:00',
+                    copiedScheduleShift?.endTime || '08:00'
+                ),
+            shiftTypeId: copiedScheduleShift?.shiftTypeId || '',
+            shiftTypeName: copiedScheduleShift?.shiftTypeName || '',
+            shiftTypeColor: copiedScheduleShift?.shiftTypeColor || '',
+        });
+    };
+
+    const handleCopyScheduleViewShift = (shift) => {
+        setCopiedScheduleShift({
+            startTime: shift.startTime,
+            endTime: shift.endTime,
+            hours: shift.hours,
+            shiftTypeId: shift.shiftTypeId || '',
+            shiftTypeName: shift.shiftTypeName || '',
+            shiftTypeColor: shift.shiftTypeColor || '',
+        });
+        toast.success('Turno copiado');
+    };
+
+    const handlePasteScheduleViewShift = async (targetOrTargets) => {
+        if (!copiedScheduleShift) return;
+        if (!serviceScheduleViewModal?.id) return;
+
+        const targets = Array.isArray(targetOrTargets)
+            ? targetOrTargets
+            : [targetOrTargets];
+        const normalizedTargets = targets
+            .filter(Boolean)
+            .map((target) => ({
+                employeeId: target.employeeId || '',
+                scheduleDate: target.scheduleDate,
+            }))
+            .filter((target) => target.scheduleDate);
+        if (!normalizedTargets.length) return;
+
+        const serviceId = serviceScheduleViewModal.id;
+        const buildPayload = (target) => ({
+            scheduleDate: target.scheduleDate,
+            startTime: copiedScheduleShift.startTime,
+            endTime: copiedScheduleShift.endTime,
+            hours:
+                copiedScheduleShift.hours ||
+                calculateShiftHours(
+                    copiedScheduleShift.startTime,
+                    copiedScheduleShift.endTime
+                ),
+            employeeId: target.employeeId || null,
+            shiftTypeId: copiedScheduleShift.shiftTypeId || null,
+        });
+
+        if (generatedSchedulePreview) {
+            const pastedShifts = normalizedTargets.map((target) => ({
+                ...buildPayload(target),
+                id: `preview-${Date.now()}-${Math.random()}`,
+                shiftTypeName: copiedScheduleShift.shiftTypeName || '',
+                shiftTypeColor: copiedScheduleShift.shiftTypeColor || '',
+            }));
+            setScheduleShiftMap((prev) => ({
+                ...prev,
+                [serviceId]: [...pastedShifts, ...(prev[serviceId] || [])],
+            }));
+            toast.success(
+                pastedShifts.length === 1
+                    ? 'Turno pegado'
+                    : `${pastedShifts.length} turnos pegados`
+            );
+            return;
+        }
+
+        try {
+            const created = await Promise.all(
+                normalizedTargets.map((target) =>
+                    createServiceScheduleShift(
+                        authToken,
+                        serviceId,
+                        buildPayload(target)
+                    )
+                )
+            );
+            setScheduleShiftMap((prev) => ({
+                ...prev,
+                [serviceId]: [...created, ...(prev[serviceId] || [])],
+            }));
+            toast.success(
+                created.length === 1
+                    ? 'Turno pegado'
+                    : `${created.length} turnos pegados`
+            );
+        } catch (error) {
+            toast.error(error.message || 'No se pudieron pegar los turnos');
+        }
+    };
+
     const handleGeneratedShiftFieldChange = (field, value) => {
         setSelectedGeneratedShift((prev) => {
             if (!prev) return prev;
@@ -626,7 +783,49 @@ const ScheduleComponent = () => {
     };
 
     const handleSaveGeneratedShift = async () => {
-        if (!selectedGeneratedShift?.id) return;
+        if (!selectedGeneratedShift) return;
+        if (!selectedGeneratedShift.id) {
+            if (!serviceScheduleViewModal?.id) return;
+            const serviceId = serviceScheduleViewModal.id;
+            const payload = {
+                scheduleDate: selectedGeneratedShift.scheduleDate,
+                startTime: selectedGeneratedShift.startTime,
+                endTime: selectedGeneratedShift.endTime,
+                hours: selectedGeneratedShift.hours,
+                employeeId: selectedGeneratedShift.employeeId || null,
+                shiftTypeId: selectedGeneratedShift.shiftTypeId || null,
+            };
+
+            if (generatedSchedulePreview) {
+                const tempShift = {
+                    ...payload,
+                    id: `preview-${Date.now()}-${Math.random()}`,
+                };
+                setScheduleShiftMap((prev) => ({
+                    ...prev,
+                    [serviceId]: [tempShift, ...(prev[serviceId] || [])],
+                }));
+                setSelectedGeneratedShift(null);
+                return;
+            }
+
+            try {
+                const data = await createServiceScheduleShift(
+                    authToken,
+                    serviceId,
+                    payload
+                );
+                setScheduleShiftMap((prev) => ({
+                    ...prev,
+                    [serviceId]: [data, ...(prev[serviceId] || [])],
+                }));
+                toast.success('Turno creado');
+                setSelectedGeneratedShift(null);
+            } catch (error) {
+                toast.error(error.message || 'No se pudo crear el turno');
+            }
+            return;
+        }
         if (!generatedSchedulePreview) {
             await handleScheduleViewShiftUpdate(selectedGeneratedShift.id, {
                 scheduleDate: String(
@@ -686,6 +885,87 @@ const ScheduleComponent = () => {
             });
 
         return map;
+    };
+
+    const requestStatusLabel = (status) => {
+        const labels = {
+            pending_counterpart: 'Pendiente del companero',
+            pending_admin: 'Pendiente de aprobacion',
+            approved: 'Aprobada',
+            rejected: 'Rechazada',
+        };
+        return labels[status] || status || 'Solicitud';
+    };
+
+    const requestTypeLabel = (type) => {
+        const labels = {
+            swap: 'Cambio',
+            give: 'Cesion',
+            take: 'Peticion',
+        };
+        return labels[type] || type || 'Cambio';
+    };
+
+    const requestMatchesMonth = (request, month) => {
+        if (!month) return true;
+        const [year, monthNumber] = month.split('-');
+        const token = `${monthNumber}/${year}`;
+        const summaries = [
+            request.fromShiftSummary,
+            request.toShiftSummary,
+        ].filter(Boolean);
+        return summaries.length
+            ? summaries.some((summary) => String(summary).includes(token))
+            : String(request.createdAt || '').startsWith(month);
+    };
+
+    const getScheduleRequestsForService = (serviceId, month) =>
+        scheduleRequests.filter(
+            (request) =>
+                request.serviceId === serviceId &&
+                ['pending_admin', 'approved'].includes(request.status) &&
+                requestMatchesMonth(request, month)
+        );
+
+    const getScheduleRequestsForEmployee = (employeeId, month) =>
+        scheduleRequests.filter(
+            (request) =>
+                (request.requestorId === employeeId ||
+                    request.counterpartId === employeeId) &&
+                ['pending_admin', 'approved'].includes(request.status) &&
+                requestMatchesMonth(request, month)
+        );
+
+    const renderScheduleRequests = (requests) => {
+        if (!requests.length) return null;
+
+        return (
+            <div className='schedule-requests-summary'>
+                <strong>Peticiones aprobadas o en aprobacion</strong>
+                <div className='schedule-requests-summary__list'>
+                    {requests.map((request) => (
+                        <div
+                            className='schedule-requests-summary__item'
+                            key={request.id}
+                        >
+                            <span>
+                                {requestTypeLabel(request.requestType)} -{' '}
+                                {requestStatusLabel(request.status)}
+                            </span>
+                            <small>
+                                {request.requestorName || 'Solicitante'} con{' '}
+                                {request.counterpartName || 'companero'}
+                            </small>
+                            <small>
+                                {[request.fromShiftSummary, request.toShiftSummary]
+                                    .filter(Boolean)
+                                    .join(' -> ') || 'Sin detalle de turnos'}
+                            </small>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
     };
 
     const buildHolidayPayload = (card, holidayDate, scope, customName = '') => {
@@ -2192,6 +2472,12 @@ const ScheduleComponent = () => {
                                     </div>
                                 </div>
                             )}
+                            {renderScheduleRequests(
+                                getScheduleRequestsForService(
+                                    serviceScheduleViewModal.id,
+                                    serviceScheduleViewModal.month
+                                )
+                            )}
                             {serviceScheduleViewModal.scheduleView === 'image' &&
                             serviceScheduleViewModal.scheduleImage ? (
                                 <div className='schedule-service-modal__image'>
@@ -2222,17 +2508,43 @@ const ScheduleComponent = () => {
                                     onHolidayClick={handleHolidayClick}
                                     onShiftUpdate={handleScheduleViewShiftUpdate}
                                     onSelectShift={setSelectedGeneratedShift}
+                                    onCreateShift={openNewScheduleViewShift}
+                                    onCopyShift={handleCopyScheduleViewShift}
+                                    onPasteShift={handlePasteScheduleViewShift}
+                                    onDeleteShift={handleScheduleViewShiftDelete}
+                                    copiedShift={copiedScheduleShift}
                                     readOnly={false}
                                     showUnassigned={(
                                         scheduleShiftMap[
                                             serviceScheduleViewModal.id
                                         ] || []
                                     ).some((shift) => !shift.employeeId)}
+                                    showAllEmployees={
+                                        !(
+                                            scheduleShiftMap[
+                                                serviceScheduleViewModal.id
+                                            ] || []
+                                        ).length
+                                    }
                                 />
                             ) : (
-                                <p className='schedule-empty'>
-                                    Sin turnos para este mes.
-                                </p>
+                                <ServiceScheduleGrid
+                                    month={serviceScheduleViewModal.month}
+                                    shifts={[]}
+                                    employees={employees}
+                                    absencesByEmployee={{}}
+                                    holidaysByDate={buildServiceHolidaysByDate(
+                                        serviceScheduleViewModal
+                                    )}
+                                    onHolidayDrop={handleHolidayDrop}
+                                    onHolidayClick={handleHolidayClick}
+                                    onCreateShift={openNewScheduleViewShift}
+                                    onPasteShift={handlePasteScheduleViewShift}
+                                    copiedShift={copiedScheduleShift}
+                                    readOnly={false}
+                                    showUnassigned={false}
+                                    showAllEmployees
+                                />
                             )}
                         </div>
                     </div>
@@ -2245,12 +2557,16 @@ const ScheduleComponent = () => {
                         <div className='service-schedule-modal-header'>
                             <div>
                                 <h3>
-                                    {generatedSchedulePreview
+                                    {!selectedGeneratedShift.id
+                                        ? 'Nuevo turno'
+                                        : generatedSchedulePreview
                                         ? 'Editar turno de la previsualizacion'
                                         : 'Editar turno'}
                                 </h3>
                                 <p>
-                                    {generatedSchedulePreview
+                                    {!selectedGeneratedShift.id
+                                        ? 'Anade el turno directamente al cuadrante.'
+                                        : generatedSchedulePreview
                                         ? 'Cambia trabajador, dia u horario antes de aplicar el cuadrante.'
                                         : 'Cambia trabajador, dia u horario del cuadrante guardado.'}
                                 </p>
@@ -2350,12 +2666,27 @@ const ScheduleComponent = () => {
                             >
                                 Cancelar
                             </button>
+                            {selectedGeneratedShift.id && (
+                                <button
+                                    type='button'
+                                    className='service-schedule-btn service-schedule-btn--danger'
+                                    onClick={() =>
+                                        handleScheduleViewShiftDelete(
+                                            selectedGeneratedShift
+                                        )
+                                    }
+                                >
+                                    Borrar turno
+                                </button>
+                            )}
                             <button
                                 type='button'
                                 className='service-schedule-btn'
                                 onClick={handleSaveGeneratedShift}
                             >
-                                Guardar cambio
+                                {selectedGeneratedShift.id
+                                    ? 'Guardar cambio'
+                                    : 'Crear turno'}
                             </button>
                         </div>
                     </div>
@@ -2430,6 +2761,12 @@ const ScheduleComponent = () => {
                             </button>
                         </div>
                         <div className='service-schedule-grid-modal__body'>
+                            {renderScheduleRequests(
+                                getScheduleRequestsForEmployee(
+                                    personalModal.id,
+                                    scheduleMonth
+                                )
+                            )}
                             {(() => {
                                 const absences =
                                     employeeAbsencesMap[personalModal.id] || [];

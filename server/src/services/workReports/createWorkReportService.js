@@ -134,6 +134,7 @@ const createInspectionPdf = async (
     logoPath,
     inspectorSignatureSource,
     guardSignatureSource,
+    clientSignatureSource,
     photoPaths = []
 ) => {
     await new Promise((resolve, reject) => {
@@ -257,8 +258,13 @@ const createInspectionPdf = async (
 
         doc.moveDown(2.4);
         doc.fontSize(18).fillColor('#0f172a').text('Parte de inspeccion');
-        doc.fontSize(10).fillColor('#374151').text(`Folio: ${sanitizeText(reportData.folio)}`);
-        doc.text(`Fecha/Hora: ${formatDateTime(reportData.incidentStart)}`);
+        doc.fontSize(10).fillColor('#374151').text(
+            `Folio: ${sanitizeText(reportData.folio)}`,
+            { width: pageWidth }
+        );
+        doc.text(`Fecha/Hora: ${formatDateTime(reportData.incidentStart)}`, {
+            width: pageWidth,
+        });
 
         sectionTitle('Informacion general del servicio');
         twoCols([
@@ -354,14 +360,19 @@ const createInspectionPdf = async (
             }
         }
 
-        if (inspectorSignatureSource || guardSignatureSource) {
+        if (
+            inspectorSignatureSource ||
+            guardSignatureSource ||
+            clientSignatureSource
+        ) {
             ensureSpace(92);
             doc.moveDown(0.8);
-            const signatureWidth = 150;
+            const signatureWidth = 140;
             const signatureHeight = 64;
-            const gap = 24;
+            const gap = 12;
             const leftX = doc.page.margins.left;
             const rightX = leftX + signatureWidth + gap;
+            const clientX = rightX + signatureWidth + gap;
             const y = doc.y;
 
             doc.fontSize(11).text('Firma inspector', leftX, y, {
@@ -369,6 +380,10 @@ const createInspectionPdf = async (
                 align: 'center',
             });
             doc.fontSize(11).text('Firma vigilante', rightX, y, {
+                width: signatureWidth,
+                align: 'center',
+            });
+            doc.fontSize(11).text('Firma cliente', clientX, y, {
                 width: signatureWidth,
                 align: 'center',
             });
@@ -392,6 +407,16 @@ const createInspectionPdf = async (
                     // ignore missing signature
                 }
             }
+
+            if (clientSignatureSource) {
+                try {
+                    doc.image(clientSignatureSource, clientX, y + 18, {
+                        fit: [signatureWidth, signatureHeight],
+                    });
+                } catch (error) {
+                    // ignore missing signature
+                }
+            }
         }
 
         doc.end();
@@ -406,6 +431,7 @@ const createPdfWithIncidents = async (
     incidents,
     logoPath,
     signatureSource,
+    clientSignatureSource,
     tagLogs
 ) => {
     await new Promise((resolve, reject) => {
@@ -434,7 +460,11 @@ const createPdfWithIncidents = async (
         doc.moveDown(0.6);
 
         doc.fontSize(12).fillColor('#111827');
-        doc.text(`Numero de parte: ${sanitizeText(reportData.folio)}`);
+        const pageWidth =
+            doc.page.width - doc.page.margins.left - doc.page.margins.right;
+        const line = (text) => doc.text(text, { width: pageWidth });
+
+        line(`Numero de parte: ${sanitizeText(reportData.folio)}`);
         const formatDate = (value) => {
             const dateText = sanitizeText(value);
             if (!dateText) return '';
@@ -461,13 +491,13 @@ const createPdfWithIncidents = async (
             return dateText;
         };
 
-        doc.text(`Fecha del reporte: ${formatDate(reportData.reportDate)}`);
-        doc.text(`Hora inicio: ${formatDateTime(reportData.incidentStart)}`);
-        doc.text(`Hora fin: ${formatDateTime(reportData.incidentEnd)}`);
-        doc.text(`Lugar: ${sanitizeText(reportData.location)}`);
-        doc.text(`Vigilante: ${sanitizeText(reportData.guardFullName)}`);
-        doc.text(`TIP: ${sanitizeText(reportData.guardEmployeeNumber)}`);
-        doc.text(`Empresa: ${sanitizeText(reportData.securityCompany)}`);
+        line(`Fecha del reporte: ${formatDate(reportData.reportDate)}`);
+        line(`Hora inicio: ${formatDateTime(reportData.incidentStart)}`);
+        line(`Hora fin: ${formatDateTime(reportData.incidentEnd)}`);
+        line(`Lugar: ${sanitizeText(reportData.location)}`);
+        line(`Vigilante: ${sanitizeText(reportData.guardFullName)}`);
+        line(`TIP: ${sanitizeText(reportData.guardEmployeeNumber)}`);
+        line(`Empresa: ${sanitizeText(reportData.securityCompany)}`);
 
         doc.moveDown(0.6);
         doc.fontSize(13).text('Informe');
@@ -485,10 +515,6 @@ const createPdfWithIncidents = async (
             doc.moveDown(0.4);
             doc.fontSize(12);
 
-            const pageWidth =
-                doc.page.width -
-                doc.page.margins.left -
-                doc.page.margins.right;
             const imageGap = 12;
             const imageWidth = (pageWidth - imageGap) / 2;
             const imageHeight = 120;
@@ -562,11 +588,16 @@ const createPdfWithIncidents = async (
             });
         }
 
-        if (signatureSource) {
+        if (signatureSource || clientSignatureSource) {
             const signatureWidth = 140;
             const signatureHeight = 60;
+            const gap = 22;
+            const totalWidth = clientSignatureSource
+                ? signatureWidth * 2 + gap
+                : signatureWidth;
             const signatureX =
-                doc.page.width - doc.page.margins.right - signatureWidth;
+                doc.page.width - doc.page.margins.right - totalWidth;
+            const clientSignatureX = signatureX + signatureWidth + gap;
             const signatureY =
                 doc.page.height - doc.page.margins.bottom - signatureHeight;
 
@@ -574,17 +605,33 @@ const createPdfWithIncidents = async (
                 doc.addPage();
             }
 
-            doc.fontSize(11).text('Firma', signatureX, signatureY - 16, {
+            doc.fontSize(11).text('Firma vigilante', signatureX, signatureY - 16, {
                 width: signatureWidth,
-                align: 'right',
+                align: 'center',
             });
 
-            try {
-                doc.image(signatureSource, signatureX, signatureY, {
-                    fit: [signatureWidth, signatureHeight],
+            if (signatureSource) {
+                try {
+                    doc.image(signatureSource, signatureX, signatureY, {
+                        fit: [signatureWidth, signatureHeight],
+                    });
+                } catch (error) {
+                    // ignore missing signature
+                }
+            }
+
+            if (clientSignatureSource) {
+                doc.fontSize(11).text('Firma cliente', clientSignatureX, signatureY - 16, {
+                    width: signatureWidth,
+                    align: 'center',
                 });
-            } catch (error) {
-                // ignore missing signature
+                try {
+                    doc.image(clientSignatureSource, clientSignatureX, signatureY, {
+                        fit: [signatureWidth, signatureHeight],
+                    });
+                } catch (error) {
+                    // ignore missing signature
+                }
             }
         }
 
@@ -663,6 +710,9 @@ const createWorkReportService = async ({
     const reportPdfPath = path.join(pdfDir, `${reportId}.pdf`);
 
     const signatureImage = await normalizeSignatureImage(reportData.signature);
+    const clientSignatureImage = reportData.clientSignature
+        ? await normalizeSignatureImage(reportData.clientSignature)
+        : null;
     const guardSignatureImage =
         reportData.reportType === 'inspection' && reportData.guardSignature
             ? await normalizeSignatureImage(reportData.guardSignature)
@@ -859,6 +909,7 @@ const createWorkReportService = async ({
             logoPath,
             signatureImage,
             guardSignatureImage,
+            clientSignatureImage,
             inspectionPhotoFiles
         );
     } else if (normalizedIncidents.length) {
@@ -910,6 +961,7 @@ const createWorkReportService = async ({
             incidentsForPdf,
             logoPath,
             signatureImage,
+            clientSignatureImage,
             tagLogs
         );
     } else if (tagLogs.length) {
@@ -923,6 +975,7 @@ const createWorkReportService = async ({
             [],
             logoPath,
             signatureImage,
+            clientSignatureImage,
             tagLogs
         );
     } else {
@@ -936,6 +989,7 @@ const createWorkReportService = async ({
             [],
             logoPath,
             signatureImage,
+            clientSignatureImage,
             []
         );
     }

@@ -4,6 +4,7 @@ import { fetchEmployeeScheduleShifts } from '../../services/serviceService.js';
 import { AuthContext } from '../../context/AuthContext.jsx';
 import { useContext } from 'react';
 import ServiceScheduleGrid from '../serviceSchedule/ServiceScheduleGrid.jsx';
+import { fetchMyShiftSwapRequests } from '../../services/shiftSwapService.js';
 import '../serviceSchedule/ServiceSchedulePanel.css';
 import './EmployeeScheduleComponent.css';
 
@@ -14,6 +15,7 @@ const EmployeeScheduleComponent = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isGridOpen, setIsGridOpen] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
+    const [shiftRequests, setShiftRequests] = useState([]);
 
     const loadShifts = useCallback(async () => {
         if (!authToken) return;
@@ -31,6 +33,68 @@ const EmployeeScheduleComponent = () => {
     useEffect(() => {
         loadShifts();
     }, [loadShifts]);
+
+    useEffect(() => {
+        const loadShiftRequests = async () => {
+            if (!authToken) return;
+            try {
+                const data = await fetchMyShiftSwapRequests(authToken);
+                setShiftRequests(Array.isArray(data) ? data : []);
+            } catch {
+                setShiftRequests([]);
+            }
+        };
+
+        loadShiftRequests();
+    }, [authToken]);
+
+    const visibleShiftRequests = useMemo(() => {
+        const [year, monthNumber] = month.split('-');
+        const monthToken = `${monthNumber}/${year}`;
+        return shiftRequests.filter((request) => {
+            if (!['pending_admin', 'approved'].includes(request.status)) {
+                return false;
+            }
+            const summary = [
+                request.fromShiftSummary,
+                request.toShiftSummary,
+            ]
+                .filter(Boolean)
+                .join(' ');
+            return summary ? summary.includes(monthToken) : true;
+        });
+    }, [month, shiftRequests]);
+
+    const renderShiftRequestSummary = () => {
+        if (!visibleShiftRequests.length) return null;
+        return (
+            <div className='schedule-requests-summary'>
+                <strong>Peticiones aprobadas o en aprobacion</strong>
+                <div className='schedule-requests-summary__list'>
+                    {visibleShiftRequests.map((request) => (
+                        <div
+                            className='schedule-requests-summary__item'
+                            key={request.id}
+                        >
+                            <span>
+                                {request.status === 'approved'
+                                    ? 'Aprobada'
+                                    : 'Pendiente de aprobacion'}
+                            </span>
+                            <small>
+                                {request.serviceName || 'Servicio'}
+                            </small>
+                            <small>
+                                {[request.fromShiftSummary, request.toShiftSummary]
+                                    .filter(Boolean)
+                                    .join(' -> ') || 'Sin detalle de turnos'}
+                            </small>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    };
 
     const serviceRows = useMemo(() => {
         const map = new Map();
@@ -140,6 +204,7 @@ const EmployeeScheduleComponent = () => {
                             </button>
                         </div>
                         <div className='service-schedule-grid-modal__body'>
+                            {renderShiftRequestSummary()}
                             <ServiceScheduleGrid
                                 month={month}
                                 shifts={gridShifts}

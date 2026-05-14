@@ -125,6 +125,7 @@ const ServiceSchedulePanel = ({
     const [isApplyingSimulation, setIsApplyingSimulation] = useState(false);
     const [scheduleImportFile, setScheduleImportFile] = useState(null);
     const [scheduleImportPreview, setScheduleImportPreview] = useState(null);
+    const [showImportGridPreview, setShowImportGridPreview] = useState(true);
     const [isPreviewingImport, setIsPreviewingImport] = useState(false);
     const [isApplyingImport, setIsApplyingImport] = useState(false);
     const [replaceImportedMonth, setReplaceImportedMonth] = useState(true);
@@ -180,6 +181,30 @@ const ServiceSchedulePanel = ({
             label: `${employee.firstName || ''} ${employee.lastName || ''}`.trim(),
         }));
     }, [visibleEmployees]);
+
+    const importPreviewEmployees = useMemo(() => {
+        const map = new Map();
+        (scheduleImportPreview?.shifts || []).forEach((shift) => {
+            if (!shift.employeeId || map.has(shift.employeeId)) return;
+            const fallback = employees.find(
+                (employee) => employee.id === shift.employeeId
+            );
+            map.set(shift.employeeId, {
+                id: shift.employeeId,
+                firstName:
+                    fallback?.firstName ||
+                    String(shift.employeeName || '').split(' ')[0] ||
+                    '',
+                lastName:
+                    fallback?.lastName ||
+                    String(shift.employeeName || '')
+                        .split(' ')
+                        .slice(1)
+                        .join(' '),
+            });
+        });
+        return [...map.values()];
+    }, [employees, scheduleImportPreview]);
 
     const shiftTypeOptions = useMemo(() => {
         return shiftTypes.map((type) => ({
@@ -1122,6 +1147,17 @@ const ServiceSchedulePanel = ({
                                 Servicio Excel:{' '}
                                 {scheduleImportPreview.serviceName || '—'}
                             </span>
+                            <button
+                                type='button'
+                                className='service-schedule-simulate-btn service-schedule-simulate-btn--ghost'
+                                onClick={() =>
+                                    setShowImportGridPreview((prev) => !prev)
+                                }
+                            >
+                                {showImportGridPreview
+                                    ? 'Ocultar vista grafica'
+                                    : 'Ver vista grafica'}
+                            </button>
                         </div>
                         {scheduleImportPreview.unmatchedEmployees?.length ? (
                             <div className='service-schedule-import-warning'>
@@ -1210,6 +1246,22 @@ const ServiceSchedulePanel = ({
                             </span>
                         )}
                         {scheduleImportPreview.shifts?.length ? (
+                            showImportGridPreview ? (
+                                <ServiceScheduleGrid
+                                    month={month}
+                                    shifts={scheduleImportPreview.shifts.map(
+                                        (shift, index) => ({
+                                            ...shift,
+                                            id: `${shift.employeeId}-${shift.scheduleDate}-${shift.startTime}-${index}`,
+                                        })
+                                    )}
+                                    employees={importPreviewEmployees}
+                                    absencesByEmployee={{}}
+                                    holidaysByDate={holidaysByDate}
+                                    readOnly
+                                    showUnassigned={false}
+                                />
+                            ) : (
                             <div className='service-schedule-import-list'>
                                 {scheduleImportPreview.shifts
                                     .slice(0, 10)
@@ -1233,6 +1285,7 @@ const ServiceSchedulePanel = ({
                                     </span>
                                 ) : null}
                             </div>
+                            )
                         ) : null}
                     </div>
                 ) : null}

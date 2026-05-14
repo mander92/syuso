@@ -12,6 +12,7 @@ import {
     fetchShiftRecordsEmployee,
     fetchStartShiftRecord,
 } from '../../services/shiftRecordService.js';
+import { fetchMyShiftSwapRequests } from '../../services/shiftSwapService.js';
 import { createServiceNfcLog } from '../../services/nfcService.js';
 import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 import ServiceChat from '../serviceChat/ServiceChat.jsx';
@@ -119,6 +120,7 @@ const EmployeeServicesComponent = () => {
     const [scheduleShifts, setScheduleShifts] = useState([]);
     const [scheduleLoading, setScheduleLoading] = useState(false);
     const [nextShiftByService, setNextShiftByService] = useState({});
+    const [shiftRequests, setShiftRequests] = useState([]);
 
     const compareText = (a, b) =>
         String(a || '').localeCompare(String(b || ''), 'es', {
@@ -169,6 +171,20 @@ const EmployeeServicesComponent = () => {
 
         loadServices();
     }, [authToken, type]);
+
+    useEffect(() => {
+        const loadShiftRequests = async () => {
+            if (!authToken) return;
+            try {
+                const data = await fetchMyShiftSwapRequests(authToken);
+                setShiftRequests(Array.isArray(data) ? data : []);
+            } catch {
+                setShiftRequests([]);
+            }
+        };
+
+        loadShiftRequests();
+    }, [authToken]);
 
     useEffect(() => {
         const loadNextShifts = async () => {
@@ -339,6 +355,53 @@ const EmployeeServicesComponent = () => {
     const closeScheduleModal = () => {
         setScheduleModal(null);
         setScheduleShifts([]);
+    };
+
+    const modalShiftRequests = useMemo(() => {
+        if (!scheduleModal?.serviceId) return [];
+        const [year, monthNumber] = scheduleMonth.split('-');
+        const monthToken = `${monthNumber}/${year}`;
+        return shiftRequests.filter((request) => {
+            if (request.serviceId !== scheduleModal.serviceId) return false;
+            if (!['pending_admin', 'approved'].includes(request.status)) {
+                return false;
+            }
+            const summary = [
+                request.fromShiftSummary,
+                request.toShiftSummary,
+            ]
+                .filter(Boolean)
+                .join(' ');
+            return summary ? summary.includes(monthToken) : true;
+        });
+    }, [scheduleModal?.serviceId, scheduleMonth, shiftRequests]);
+
+    const renderShiftRequestSummary = () => {
+        if (!modalShiftRequests.length) return null;
+        return (
+            <div className='schedule-requests-summary'>
+                <strong>Peticiones aprobadas o en aprobacion</strong>
+                <div className='schedule-requests-summary__list'>
+                    {modalShiftRequests.map((request) => (
+                        <div
+                            className='schedule-requests-summary__item'
+                            key={request.id}
+                        >
+                            <span>
+                                {request.status === 'approved'
+                                    ? 'Aprobada'
+                                    : 'Pendiente de aprobacion'}
+                            </span>
+                            <small>
+                                {[request.fromShiftSummary, request.toShiftSummary]
+                                    .filter(Boolean)
+                                    .join(' -> ') || 'Sin detalle de turnos'}
+                            </small>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
     };
 
     const handleReadNfc = async (serviceId) => {
@@ -694,6 +757,7 @@ const EmployeeServicesComponent = () => {
                             </button>
                         </div>
                         <div className='service-schedule-grid-modal__body'>
+                            {renderShiftRequestSummary()}
                             {scheduleModal.scheduleView === 'image' &&
                             scheduleModal.scheduleImage ? (
                                 <div className='employee-schedule-image'>

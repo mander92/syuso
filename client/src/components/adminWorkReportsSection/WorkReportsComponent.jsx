@@ -408,11 +408,41 @@ const WorkReportsComponent = () => {
                         'Servicio',
                     startDateTime: service.startDateTime,
                     city: service.city || service.province || '',
+                    address: service.address || '',
+                    assignedEmployeeIds: String(
+                        service.assignedEmployeeIds || ''
+                    )
+                        .split(',')
+                        .map((id) => id.trim())
+                        .filter(Boolean),
                 }))
                 .filter((service) => service.id)
                 .sort((a, b) => compareText(a.name, b.name)),
         [services]
     );
+
+    const selectedManualService = useMemo(
+        () =>
+            serviceOptions.find(
+                (service) => service.id === manualReport.serviceId
+            ) || null,
+        [manualReport.serviceId, serviceOptions]
+    );
+
+    const assignedEmployeesForSelectedService = useMemo(() => {
+        if (!selectedManualService) return [];
+        const assignedIds = selectedManualService.assignedEmployeeIds || [];
+        if (!assignedIds.length) return [];
+        const assignedIdSet = new Set(assignedIds);
+        return employees
+            .filter((employee) => assignedIdSet.has(employee.id))
+            .sort((a, b) =>
+                compareText(
+                    `${a.firstName || ''} ${a.lastName || ''}`,
+                    `${b.firstName || ''} ${b.lastName || ''}`
+                )
+            );
+    }, [employees, selectedManualService]);
 
     const filteredDetails = useMemo(() => {
         const personText = normalizeText(personSearch);
@@ -573,10 +603,49 @@ const WorkReportsComponent = () => {
     };
 
     const handleManualReportChange = (field, value) => {
-        setManualReport((prev) => ({
-            ...prev,
-            [field]: value,
-        }));
+        setManualReport((prev) => {
+            const next = {
+                ...prev,
+                [field]: value,
+            };
+
+            if (field === 'serviceId') {
+                const service = serviceOptions.find(
+                    (option) => option.id === value
+                );
+                next.employeeId = '';
+                next.location =
+                    service?.address || service?.city || prev.location || '';
+                setInspectionReport((current) => ({
+                    ...current,
+                    serviceDenomination: service?.name || '',
+                    address: service?.address || '',
+                    city: service?.city || '',
+                    guardName: '',
+                    tip: '',
+                }));
+            }
+
+            if (field === 'employeeId') {
+                const employee = employees.find((item) => item.id === value);
+                setInspectionReport((current) => ({
+                    ...current,
+                    guardName: employee
+                        ? `${employee.firstName || ''} ${employee.lastName || ''}`.trim()
+                        : '',
+                    tip: next.guardEmployeeNumber || '',
+                }));
+            }
+
+            if (field === 'guardEmployeeNumber') {
+                setInspectionReport((current) => ({
+                    ...current,
+                    tip: value,
+                }));
+            }
+
+            return next;
+        });
     };
 
     const handleInspectionReportChange = (field, value) => {
@@ -992,31 +1061,6 @@ const WorkReportsComponent = () => {
                         </div>
                         <div className='shift-form-grid'>
                             <label className='shift-filter'>
-                                <span>Trabajador</span>
-                                <select
-                                    value={manualReport.employeeId}
-                                    onChange={(event) =>
-                                        handleManualReportChange(
-                                            'employeeId',
-                                            event.target.value
-                                        )
-                                    }
-                                    required
-                                >
-                                    <option value=''>Selecciona</option>
-                                    {employees.map((employee) => (
-                                        <option
-                                            key={employee.id}
-                                            value={employee.id}
-                                        >
-                                            {employee.firstName}{' '}
-                                            {employee.lastName}
-                                        </option>
-                                    ))}
-                                </select>
-                            </label>
-
-                            <label className='shift-filter'>
                                 <span>Servicio</span>
                                 <select
                                     value={manualReport.serviceId}
@@ -1041,6 +1085,45 @@ const WorkReportsComponent = () => {
                                         </option>
                                     ))}
                                 </select>
+                            </label>
+
+                            <label className='shift-filter'>
+                                <span>Trabajador asignado</span>
+                                <select
+                                    value={manualReport.employeeId}
+                                    onChange={(event) =>
+                                        handleManualReportChange(
+                                            'employeeId',
+                                            event.target.value
+                                        )
+                                    }
+                                    required
+                                    disabled={!manualReport.serviceId}
+                                >
+                                    <option value=''>
+                                        {manualReport.serviceId
+                                            ? 'Selecciona'
+                                            : 'Selecciona primero un servicio'}
+                                    </option>
+                                    {assignedEmployeesForSelectedService.map(
+                                        (employee) => (
+                                            <option
+                                                key={employee.id}
+                                                value={employee.id}
+                                            >
+                                                {employee.firstName}{' '}
+                                                {employee.lastName}
+                                            </option>
+                                        )
+                                    )}
+                                </select>
+                                {manualReport.serviceId &&
+                                !assignedEmployeesForSelectedService.length ? (
+                                    <small>
+                                        No hay trabajadores asignados a este
+                                        servicio.
+                                    </small>
+                                ) : null}
                             </label>
 
                             <label className='shift-filter'>
@@ -1118,7 +1201,7 @@ const WorkReportsComponent = () => {
                             </label>
 
                             <label className='shift-filter'>
-                                <span>TIP / numero empleado</span>
+                                <span>TIP</span>
                                 <input
                                     type='text'
                                     value={manualReport.guardEmployeeNumber}

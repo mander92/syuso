@@ -142,16 +142,22 @@ const WorkReport = () => {
         { id: Date.now(), text: '', photoPaths: [], newPhotos: [] },
     ]);
     const [signatureData, setSignatureData] = useState('');
+    const [clientSignatureData, setClientSignatureData] = useState('');
     const [draftReady, setDraftReady] = useState(false);
     const [draftSaving, setDraftSaving] = useState(false);
     const [draftSavedAt, setDraftSavedAt] = useState(null);
     const isApplyingDraftRef = useRef(false);
 
     const canvasRef = useRef(null);
+    const clientCanvasRef = useRef(null);
     const ctxRef = useRef(null);
+    const clientCtxRef = useRef(null);
     const isDrawingRef = useRef(false);
+    const isClientDrawingRef = useRef(false);
     const [hasSignature, setHasSignature] = useState(false);
+    const [hasClientSignature, setHasClientSignature] = useState(false);
     const signatureDataRef = useRef('');
+    const clientSignatureDataRef = useRef('');
 
     const openLocationSettings = () => {
         if (typeof window === 'undefined') return;
@@ -173,7 +179,7 @@ const WorkReport = () => {
 
     useEffect(() => {
         const initCanvas = () => {
-            const canvas = canvasRef.current;
+            const setupCanvas = (canvas, ctxTargetRef) => {
             if (!canvas) return;
             const ratio = window.devicePixelRatio || 1;
             const rect = canvas.getBoundingClientRect();
@@ -187,8 +193,13 @@ const WorkReport = () => {
             ctx.lineJoin = 'round';
             ctx.lineCap = 'round';
             ctx.strokeStyle = '#111';
-            ctxRef.current = ctx;
-            if (signatureDataRef.current) {
+                ctxTargetRef.current = ctx;
+                return { canvas, ctx };
+            };
+
+            const main = setupCanvas(canvasRef.current, ctxRef);
+            if (main && signatureDataRef.current) {
+                const { canvas, ctx } = main;
                 const img = new Image();
                 img.src = signatureDataRef.current;
                 img.onload = () => {
@@ -198,6 +209,20 @@ const WorkReport = () => {
                 };
             } else {
                 setHasSignature(false);
+            }
+
+            const client = setupCanvas(clientCanvasRef.current, clientCtxRef);
+            if (client && clientSignatureDataRef.current) {
+                const { canvas, ctx } = client;
+                const img = new Image();
+                img.src = clientSignatureDataRef.current;
+                img.onload = () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    setHasClientSignature(true);
+                };
+            } else {
+                setHasClientSignature(false);
             }
         };
 
@@ -497,6 +522,90 @@ const WorkReport = () => {
         signatureDataRef.current = '';
     };
 
+    const getClientPoint = useCallback((event) => {
+        const canvas = clientCanvasRef.current;
+        if (!canvas) return { x: 0, y: 0 };
+        const rect = canvas.getBoundingClientRect();
+        const source =
+            event.touches?.[0] || event.changedTouches?.[0] || event;
+        return {
+            x: source.clientX - rect.left,
+            y: source.clientY - rect.top,
+        };
+    }, []);
+
+    const ensureClientContext = useCallback(() => {
+        let ctx = clientCtxRef.current;
+        const canvas = clientCanvasRef.current;
+        if (!canvas) return null;
+        if (!ctx) {
+            const ratio = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            const width = rect.width || canvas.offsetWidth || 600;
+            const height = rect.height || canvas.offsetHeight || 220;
+            canvas.width = width * ratio;
+            canvas.height = height * ratio;
+            ctx = canvas.getContext('2d');
+            ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+            ctx.lineWidth = 2;
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#111';
+            clientCtxRef.current = ctx;
+        }
+        return ctx;
+    }, []);
+
+    const drawClientLine = useCallback((event) => {
+        if (!isClientDrawingRef.current) return;
+        const ctx = ensureClientContext();
+        if (!ctx) return;
+        if (event.cancelable) {
+            event.preventDefault();
+        }
+        const point = getClientPoint(event);
+        ctx.lineTo(point.x, point.y);
+        ctx.stroke();
+    }, [ensureClientContext, getClientPoint]);
+
+    const endClientDrawing = useCallback((event) => {
+        const canvas = clientCanvasRef.current;
+        if (canvas?.releasePointerCapture && event?.pointerId != null) {
+            canvas.releasePointerCapture(event.pointerId);
+        }
+        isClientDrawingRef.current = false;
+        if (canvas) {
+            const dataUrl = canvas.toDataURL('image/png');
+            clientSignatureDataRef.current = dataUrl;
+            setClientSignatureData(dataUrl);
+        }
+    }, []);
+
+    const startClientDrawing = useCallback((event) => {
+        event.preventDefault();
+        const ctx = ensureClientContext();
+        const canvas = clientCanvasRef.current;
+        if (!ctx) return;
+        if (canvas?.setPointerCapture && event.pointerId != null) {
+            canvas.setPointerCapture(event.pointerId);
+        }
+        const point = getClientPoint(event);
+        ctx.beginPath();
+        ctx.moveTo(point.x, point.y);
+        isClientDrawingRef.current = true;
+        setHasClientSignature(true);
+    }, [ensureClientContext, getClientPoint]);
+
+    const clearClientSignature = () => {
+        const canvas = clientCanvasRef.current;
+        const ctx = clientCtxRef.current;
+        if (!canvas || !ctx) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        setHasClientSignature(false);
+        setClientSignatureData('');
+        clientSignatureDataRef.current = '';
+    };
+
     const addIncident = () => {
         setIncidents((prev) => [
             ...prev,
@@ -667,6 +776,8 @@ const WorkReport = () => {
 
         const signaturePayload =
             signatureDataRef.current || signatureData || '';
+        const clientSignaturePayload =
+            clientSignatureDataRef.current || clientSignatureData || '';
 
         if (!hasSignature || !signaturePayload) {
             toast.error('La firma es obligatoria');
@@ -747,6 +858,12 @@ const WorkReport = () => {
             formDataPayload.append('actionsTaken', 'No aplica');
             formDataPayload.append('outcome', 'controlado');
             formDataPayload.append('signature', signaturePayload);
+            if (hasClientSignature && clientSignaturePayload) {
+                formDataPayload.append(
+                    'clientSignature',
+                    clientSignaturePayload
+                );
+            }
             formDataPayload.append(
                 'locationCoords',
                 JSON.stringify(locationCoords)
@@ -1095,6 +1212,36 @@ const WorkReport = () => {
                             onTouchMove={drawLine}
                             onTouchEnd={endDrawing}
                             onTouchCancel={endDrawing}
+                        />
+                    </div>
+                </div>
+
+                <div className='work-report-section'>
+                    <div className='work-report-signature'>
+                        <div className='work-report-signature-header'>
+                            <span>Firma del cliente (opcional)</span>
+                            <button
+                                type='button'
+                                onClick={clearClientSignature}
+                            >
+                                Limpiar firma
+                            </button>
+                        </div>
+                        <canvas
+                            ref={clientCanvasRef}
+                            className='work-report-canvas'
+                            onPointerDown={startClientDrawing}
+                            onPointerMove={drawClientLine}
+                            onPointerUp={endClientDrawing}
+                            onPointerLeave={endClientDrawing}
+                            onMouseDown={startClientDrawing}
+                            onMouseMove={drawClientLine}
+                            onMouseUp={endClientDrawing}
+                            onMouseLeave={endClientDrawing}
+                            onTouchStart={startClientDrawing}
+                            onTouchMove={drawClientLine}
+                            onTouchEnd={endClientDrawing}
+                            onTouchCancel={endClientDrawing}
                         />
                     </div>
                 </div>
