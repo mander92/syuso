@@ -989,6 +989,17 @@ const ScheduleComponent = () => {
         return labels[type] || type || 'Cambio';
     };
 
+    const requestTypeShortLabel = (type) => {
+        const labels = {
+            swap: 'C',
+            give: 'X',
+            take: 'P',
+            transfer: 'X',
+            request: 'P',
+        };
+        return labels[type] || 'C';
+    };
+
     const parseShiftIdList = (value) => {
         if (!value) return [];
         if (Array.isArray(value)) return value.filter(Boolean);
@@ -1035,9 +1046,7 @@ const ScheduleComponent = () => {
                 badges[cellKey].push({
                     id: `${request.id}-${shiftId}`,
                     status: request.status,
-                    label: `${requestTypeLabel(request.requestType)} ${
-                        request.status === 'approved' ? 'OK' : 'Pend.'
-                    }`,
+                    label: requestTypeShortLabel(request.requestType),
                     title: [
                         `${requestTypeLabel(request.requestType)} - ${requestStatusLabel(request.status)}`,
                         `${request.requestorName || 'Solicitante'} con ${request.counterpartName || 'companero'}`,
