@@ -30,6 +30,10 @@ export const buildServiceScheduleSection = ({ service, shifts, month }) => {
                 endsByDay: {},
                 hoursByDay: {},
                 totalHours: 0,
+                totalRealHours: 0,
+                totalNightHours: 0,
+                totalHolidayHours: 0,
+                totalRegularHours: 0,
             });
         }
 
@@ -38,6 +42,10 @@ export const buildServiceScheduleSection = ({ service, shifts, month }) => {
         const startTime = timeShort(shift.startTime);
         const endTime = timeShort(shift.endTime);
         const hoursValue = Number(shift.hours) || 0;
+        const realHoursValue = Number(shift.realHours) || hoursValue;
+        const nightHoursValue = Number(shift.nightHours) || 0;
+        const holidayHoursValue = Number(shift.holidayHours) || 0;
+        const regularHoursValue = Number(shift.regularHours) || 0;
 
         if (!entry.shifts[dateKey]) entry.shifts[dateKey] = [];
         if (!entry.startsByDay[dateKey]) entry.startsByDay[dateKey] = [];
@@ -51,6 +59,10 @@ export const buildServiceScheduleSection = ({ service, shifts, month }) => {
 
         entry.hoursByDay[dateKey] = (entry.hoursByDay[dateKey] || 0) + hoursValue;
         entry.totalHours += hoursValue;
+        entry.totalRealHours += realHoursValue;
+        entry.totalNightHours += nightHoursValue;
+        entry.totalHolidayHours += holidayHoursValue;
+        entry.totalRegularHours += regularHoursValue;
     });
 
     const rows = Array.from(employeeMap.values()).map((entry) => ({
@@ -80,6 +92,18 @@ export const buildServiceScheduleSection = ({ service, shifts, month }) => {
             ])
         ),
         totalHours: entry.totalHours ? entry.totalHours.toFixed(2) : '',
+        totalRealHours: entry.totalRealHours
+            ? entry.totalRealHours.toFixed(2)
+            : '',
+        totalNightHours: entry.totalNightHours
+            ? entry.totalNightHours.toFixed(2)
+            : '',
+        totalHolidayHours: entry.totalHolidayHours
+            ? entry.totalHolidayHours.toFixed(2)
+            : '',
+        totalRegularHours: entry.totalRegularHours
+            ? entry.totalRegularHours.toFixed(2)
+            : '',
     }));
 
     return {
@@ -92,6 +116,7 @@ export const buildServiceScheduleSection = ({ service, shifts, month }) => {
             } ${service?.postCode ? ` ${service.postCode}` : ''}`.trim(),
             category: service?.type || '',
             description: service?.comments || service?.type || '',
+            hourRuleType: service?.hourRuleType || 'standard',
         },
         rows,
     };

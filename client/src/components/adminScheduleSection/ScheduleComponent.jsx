@@ -80,6 +80,12 @@ const calculateShiftHours = (startTime, endTime) => {
 
 const isShiftOverlapError = (error) => error?.code === 'SHIFT_OVERLAP';
 
+const formatOverlapDate = (value) => {
+    if (!value) return '';
+    const [year, month, day] = String(value).slice(0, 10).split('-');
+    return year && month && day ? `${day}-${month}-${year}` : value;
+};
+
 const unusedBuildShiftOverlapMessage = (error) => {
     const details = error?.details || {};
     const line = (label, shift) =>
@@ -2759,6 +2765,10 @@ const ScheduleComponent = () => {
                                         ] || []
                                     ).some((shift) => !shift.employeeId)}
                                     showAllEmployees={false}
+                                    showAgreementHours={
+                                        serviceScheduleViewModal.hourRuleType ===
+                                        'convenio'
+                                    }
                                 />
                             ) : (
                                 <ServiceScheduleGrid
@@ -2781,6 +2791,10 @@ const ScheduleComponent = () => {
                                     readOnly={false}
                                     showUnassigned={false}
                                     showAllEmployees
+                                    showAgreementHours={
+                                        serviceScheduleViewModal.hourRuleType ===
+                                        'convenio'
+                                    }
                                 />
                             )}
                         </div>
@@ -3091,7 +3105,10 @@ const ScheduleComponent = () => {
                                 Nuevo:{' '}
                                 {shiftOverlapModal.details.newShift
                                     ?.serviceName || 'Servicio'}{' '}
-                                · {shiftOverlapModal.details.newShift?.date}{' '}
+                                ·{' '}
+                                {formatOverlapDate(
+                                    shiftOverlapModal.details.newShift?.date
+                                )}{' '}
                                 ·{' '}
                                 {
                                     shiftOverlapModal.details.newShift
@@ -3105,10 +3122,10 @@ const ScheduleComponent = () => {
                                 {shiftOverlapModal.details.existingShift
                                     ?.serviceName || 'Servicio'}{' '}
                                 ·{' '}
-                                {
+                                {formatOverlapDate(
                                     shiftOverlapModal.details.existingShift
                                         ?.date
-                                }{' '}
+                                )}{' '}
                                 ·{' '}
                                 {
                                     shiftOverlapModal.details.existingShift

@@ -104,6 +104,12 @@ const confirmShiftOverlap = (error) =>
 
 const isShiftOverlapError = (error) => error?.code === 'SHIFT_OVERLAP';
 
+const formatOverlapDate = (value) => {
+    if (!value) return '';
+    const [year, month, day] = String(value).slice(0, 10).split('-');
+    return year && month && day ? `${day}-${month}-${year}` : value;
+};
+
 const holidayScopeLabels = {
     national: 'Nacional',
     autonomous: 'Autonomico',
@@ -1347,6 +1353,9 @@ const ServiceSchedulePanel = ({
                                     holidaysByDate={holidaysByDate}
                                     readOnly
                                     showUnassigned={false}
+                                    showAgreementHours={
+                                        serviceInfo?.hourRuleType === 'convenio'
+                                    }
                                 />
                             ) : (
                             <div className='service-schedule-import-list'>
@@ -1690,6 +1699,9 @@ const ServiceSchedulePanel = ({
                                 onHolidayClick={handleHolidayClick}
                                 holidaysByDate={holidaysByDate}
                                 showUnassigned={shifts.some((shift) => !shift.employeeId)}
+                                showAgreementHours={
+                                    serviceInfo?.hourRuleType === 'convenio'
+                                }
                             />
                         </div>
                     </div>
@@ -1858,7 +1870,10 @@ const ServiceSchedulePanel = ({
                                 Nuevo:{' '}
                                 {shiftOverlapModal.details.newShift
                                     ?.serviceName || 'Servicio'}{' '}
-                                · {shiftOverlapModal.details.newShift?.date}{' '}
+                                ·{' '}
+                                {formatOverlapDate(
+                                    shiftOverlapModal.details.newShift?.date
+                                )}{' '}
                                 ·{' '}
                                 {
                                     shiftOverlapModal.details.newShift
@@ -1872,10 +1887,10 @@ const ServiceSchedulePanel = ({
                                 {shiftOverlapModal.details.existingShift
                                     ?.serviceName || 'Servicio'}{' '}
                                 ·{' '}
-                                {
+                                {formatOverlapDate(
                                     shiftOverlapModal.details.existingShift
                                         ?.date
-                                }{' '}
+                                )}{' '}
                                 ·{' '}
                                 {
                                     shiftOverlapModal.details.existingShift

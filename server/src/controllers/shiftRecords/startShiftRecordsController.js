@@ -5,7 +5,7 @@ import generateErrorUtil from '../../utils/generateErrorUtil.js';
 const startShiftRecordsController = async (req, res, next) => {
     try {
 
-        const { location, clockIn, employeeId, serviceId } = req.body;
+        const { location, clockIn, serviceId } = req.body;
 
         // if (!location || !clockIn || employeeId || serviceId) {
         //     generateErrorUtil('Faltan campos obligatorios', 400);
@@ -13,7 +13,12 @@ const startShiftRecordsController = async (req, res, next) => {
 
         const startDateTime = new Date(clockIn);
 
-        const data = await startShiftRecordService(location, startDateTime, employeeId, serviceId);
+        const data = await startShiftRecordService(
+            location,
+            startDateTime,
+            req.userLogged.id,
+            serviceId
+        );
 
         res.send({
             status: 'ok',

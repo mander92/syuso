@@ -109,6 +109,7 @@ const ServiceScheduleGrid = ({
     readOnly = false,
     showUnassigned = true,
     showAllEmployees = false,
+    showAgreementHours = false,
 }) => {
     const [draggedShiftId, setDraggedShiftId] = useState(null);
     const [collapsedRows, setCollapsedRows] = useState(() => new Set());
@@ -188,9 +189,54 @@ const ServiceScheduleGrid = ({
         return totals;
     }, [rows, shifts]);
 
+    const agreementTotals = useMemo(() => {
+        const totals = new Map();
+        rows.forEach((row) => {
+            totals.set(row.id || 'unassigned', {
+                nightHours: 0,
+                holidayHours: 0,
+                regularHours: 0,
+            });
+        });
+        (shifts || []).forEach((shift) => {
+            const key = shift.employeeId || 'unassigned';
+            if (!totals.has(key)) return;
+            const current = totals.get(key);
+            current.nightHours += Number(shift.nightHours) || 0;
+            current.holidayHours += Number(shift.holidayHours) || 0;
+            current.regularHours += Number(shift.regularHours) || 0;
+        });
+        return totals;
+    }, [rows, shifts]);
+
+    const shouldShowAgreementHours = useMemo(
+        () =>
+            showAgreementHours ||
+            (shifts || []).some(
+                (shift) =>
+                    Number(shift.nightHours) > 0 ||
+                    Number(shift.holidayHours) > 0 ||
+                    Number(shift.regularHours) > 0
+            ),
+        [showAgreementHours, shifts]
+    );
+
     const visibleTotalHours = useMemo(
         () => Array.from(rowTotals.values()).reduce((acc, value) => acc + value, 0),
         [rowTotals]
+    );
+
+    const visibleAgreementTotals = useMemo(
+        () =>
+            Array.from(agreementTotals.values()).reduce(
+                (acc, value) => ({
+                    nightHours: acc.nightHours + value.nightHours,
+                    holidayHours: acc.holidayHours + value.holidayHours,
+                    regularHours: acc.regularHours + value.regularHours,
+                }),
+                { nightHours: 0, holidayHours: 0, regularHours: 0 }
+            ),
+        [agreementTotals]
     );
 
     const handleDragStart = (event, shiftId) => {
@@ -289,6 +335,11 @@ const ServiceScheduleGrid = ({
                 const isCollapsed = collapsedRows.has(rowKey);
                 const rowAbsences = row.id ? absencesByEmployee[row.id] || [] : [];
                 const rowTotalHours = rowTotals.get(rowKey) || 0;
+                const rowAgreementTotals = agreementTotals.get(rowKey) || {
+                    nightHours: 0,
+                    holidayHours: 0,
+                    regularHours: 0,
+                };
                 return (
                     <div
                         className={`service-schedule-grid-row ${
@@ -496,7 +547,13 @@ const ServiceScheduleGrid = ({
                             );
                             })}
                         <div className='service-schedule-grid-row-total'>
-                            {formatHours(rowTotalHours)} h
+                            <strong>{formatHours(rowTotalHours)} h</strong>
+                            {shouldShowAgreementHours && (
+                                <span className='service-schedule-grid-agreement-total'>
+                                    N {formatHours(rowAgreementTotals.nightHours)} / F{' '}
+                                    {formatHours(rowAgreementTotals.holidayHours)}
+                                </span>
+                            )}
                         </div>
                     </div>
                 );
@@ -505,7 +562,13 @@ const ServiceScheduleGrid = ({
                 <div className='service-schedule-grid-footer-label'>Total horas</div>
                 <div className='service-schedule-grid-footer-spacer' />
                 <div className='service-schedule-grid-footer-total'>
-                    {formatHours(visibleTotalHours)} h
+                    <strong>{formatHours(visibleTotalHours)} h</strong>
+                    {shouldShowAgreementHours && (
+                        <span className='service-schedule-grid-agreement-total'>
+                            N {formatHours(visibleAgreementTotals.nightHours)} / F{' '}
+                            {formatHours(visibleAgreementTotals.holidayHours)}
+                        </span>
+                    )}
                 </div>
             </div>
         </div>

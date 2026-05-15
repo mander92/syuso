@@ -34,6 +34,10 @@ const ServiceChatDashboard = () => {
         String(a || '').localeCompare(String(b || ''), 'es', {
             sensitivity: 'base',
         });
+    const formatBadgeCount = (value) => {
+        const count = Number(value) || 0;
+        return count > 99 ? '99+' : String(count);
+    };
     useEffect(() => {
         const loadServices = async () => {
             if (!authToken || !user) return;
@@ -151,7 +155,10 @@ const ServiceChatDashboard = () => {
         setExpandedDelegations((prev) => {
             const next = {};
             servicesByDelegation.forEach((group) => {
-                next[group.delegation] = prev[group.delegation] ?? false;
+                next[group.delegation] =
+                    group.unreadCount > 0
+                        ? true
+                        : prev[group.delegation] ?? false;
             });
             return next;
         });
@@ -180,16 +187,23 @@ const ServiceChatDashboard = () => {
     const renderServiceCard = (service) => (
         <div
             key={service.id}
-            className='service-chat-dashboard-card'
+            className={`service-chat-dashboard-card${
+                service.unreadCount > 0
+                    ? ' service-chat-dashboard-card--unread'
+                    : ''
+            }`}
         >
+            {service.unreadCount > 0 ? (
+                <span
+                    className='service-chat-badge service-chat-dashboard-card-badge'
+                    aria-label={`${service.unreadCount} mensajes nuevos`}
+                >
+                    {formatBadgeCount(service.unreadCount)}
+                </span>
+            ) : null}
             <div className='service-chat-dashboard-card-row'>
                 <h3 className='service-chat-dashboard-service-title'>
                     {service.name}
-                    {service.unreadCount > 0 ? (
-                        <span className='service-chat-badge service-chat-badge--inline'>
-                            {service.unreadCount}
-                        </span>
-                    ) : null}
                 </h3>
                 <button
                     type='button'
@@ -199,11 +213,6 @@ const ServiceChatDashboard = () => {
                     {openChats[service.id]
                         ? 'Cerrar chat'
                         : 'Abrir chat'}
-                    {service.unreadCount > 0 ? (
-                        <span className='service-chat-badge'>
-                            {service.unreadCount}
-                        </span>
-                    ) : null}
                 </button>
             </div>
             {openChats[service.id] && (
@@ -306,22 +315,29 @@ const ServiceChatDashboard = () => {
                                   >
                                       <span className='service-chat-dashboard-delegation-name'>
                                           {group.delegation}
-                                          {group.unreadCount > 0 ? (
-                                              <span className='service-chat-badge service-chat-badge--inline'>
-                                                  {group.unreadCount}
-                                              </span>
-                                          ) : null}
                                       </span>
-                                      <strong>
+                                      <strong
+                                          className='service-chat-dashboard-group-count'
+                                          data-count={group.rows.length}
+                                      >
                                           {group.rows.length} chats
                                           {group.unreadCount > 0
                                               ? ` · ${group.unreadCount} nuevos`
                                               : ''}
                                       </strong>
-                                      <span>
+                                      <span className='service-chat-dashboard-group-action'>
+                                          {group.unreadCount > 0 ? (
+                                              <span className='service-chat-badge service-chat-badge--inline'>
+                                                  {formatBadgeCount(
+                                                      group.unreadCount
+                                                  )}
+                                              </span>
+                                          ) : null}
+                                          <span>
                                           {expandedDelegations[group.delegation]
                                               ? 'Ocultar'
                                               : 'Mostrar'}
+                                          </span>
                                       </span>
                                   </button>
                                   {expandedDelegations[group.delegation] ? (

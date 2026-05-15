@@ -249,10 +249,20 @@ const WorkReport = () => {
                     setServiceInfo(serviceDetail);
                 }
 
+                const openShiftStart =
+                    shiftDetail?.realClockIn || shiftDetail?.clockIn;
+                const openShiftEnd =
+                    shiftDetail?.realClockOut ||
+                    shiftDetail?.clockOut ||
+                    new Date().toISOString();
+
                 setFormData((prev) => ({
                     ...prev,
-                    incidentEnd: shiftDetail?.clockOut
-                        ? toLocalInputDateTime(shiftDetail.clockOut)
+                    incidentStart: openShiftStart
+                        ? toLocalInputDateTime(openShiftStart)
+                        : prev.incidentStart,
+                    incidentEnd: openShiftEnd
+                        ? toLocalInputDateTime(openShiftEnd)
                         : prev.incidentEnd,
                 }));
             } catch (error) {
@@ -390,7 +400,7 @@ const WorkReport = () => {
             ...prev,
             folio,
             incidentEnd: endDate
-                ? toLocalInputDateTime(endDate)
+                ? prev.incidentEnd || toLocalInputDateTime(endDate)
                 : prev.incidentEnd,
             totalHours: prev.totalHours || computedTotalHours,
             location: addressLine || prev.location,

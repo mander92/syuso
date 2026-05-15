@@ -6,6 +6,36 @@ import selectEmployeeAbsenceForDateService from '../schedules/selectEmployeeAbse
 import selectScheduledShiftForClockInService from '../schedules/selectScheduledShiftForClockInService.js';
 import { getMadridDateTimeParts } from '../../utils/scheduleTimeUtil.js';
 
+const toSeconds = (value) => {
+    const [hours, minutes, seconds = '0'] = String(value || '0:0:0').split(':');
+    return (
+        Number(hours) * 3600 +
+        Number(minutes) * 60 +
+        Number(seconds)
+    );
+};
+
+const formatShiftTime = (row) => {
+    if (!row) return '';
+    const dateText =
+        row.scheduleDate instanceof Date
+            ? row.scheduleDate.toISOString().slice(0, 10)
+            : String(row.scheduleDate || '').slice(0, 10);
+    const [year, month, day] = dateText.split('-');
+    const start = String(row.startTime || '').slice(0, 5);
+    return day && month && year && start
+        ? `${day}/${month}/${year} a las ${start}`
+        : '';
+};
+
+const getScheduleDateKey = (row) => {
+    if (!row?.scheduleDate) return '';
+    if (row.scheduleDate instanceof Date) {
+        return row.scheduleDate.toISOString().slice(0, 10);
+    }
+    return String(row.scheduleDate).slice(0, 10);
+};
+
 const startShiftRecordService = async (
     location, startDateTime, employeeId, serviceId
 ) => {
@@ -48,55 +78,82 @@ const startShiftRecordService = async (
         generateErrorUtil('No puedes fichar en un dia de ausencia', 403);
     }
 
-    if (!allowUnscheduled) {
-        const scheduledShift = await selectScheduledShiftForClockInService(
-            serviceId,
-            employeeId,
-            localDate,
-            localTime,
-            clockInEarlyMinutes
+    const scheduledShift = await selectScheduledShiftForClockInService(
+        serviceId,
+        employeeId,
+        localDate,
+        localTime,
+        clockInEarlyMinutes
+    );
+
+    if (!scheduledShift) {
+        const [nextRows] = await pool.query(
+            `
+            SELECT scheduleDate, startTime, endTime
+            FROM serviceScheduleShifts
+            WHERE serviceId = ?
+              AND employeeId = ?
+              AND status = 'scheduled'
+              AND deletedAt IS NULL
+              AND (
+                scheduleDate > ?
+                OR (
+                    scheduleDate = ?
+                    AND (
+                        startTime >= ?
+                        OR endTime >= ?
+                        OR endTime <= startTime
+                    )
+                )
+                OR (
+                    scheduleDate < ?
+                    AND endTime <= startTime
+                    AND DATE_ADD(scheduleDate, INTERVAL 1 DAY) = ?
+                    AND endTime >= ?
+                )
+              )
+            ORDER BY scheduleDate ASC, startTime ASC
+            LIMIT 1
+            `,
+            [
+                serviceId,
+                employeeId,
+                localDate,
+                localDate,
+                localTime,
+                localTime,
+                localDate,
+                localDate,
+                localTime,
+            ]
         );
 
-        if (!scheduledShift) {
-            const [todayRows] = await pool.query(
-                `
-                SELECT startTime
-                FROM serviceScheduleShifts
-                WHERE serviceId = ?
-                  AND employeeId = ?
-                  AND status = 'scheduled'
-                  AND deletedAt IS NULL
-                  AND scheduleDate = ?
-                ORDER BY startTime ASC
-                `,
-                [serviceId, employeeId, localDate]
-            );
-
-            if (todayRows.length) {
-                const [startH, startM, startS = '0'] = String(
-                    todayRows[0].startTime
-                ).split(':');
-                const [nowH, nowM, nowS = '0'] = String(localTime).split(':');
-                const startSeconds =
-                    Number(startH) * 3600 +
-                    Number(startM) * 60 +
-                    Number(startS);
-                const nowSeconds =
-                    Number(nowH) * 3600 +
-                    Number(nowM) * 60 +
-                    Number(nowS);
+        if (nextRows.length) {
+            const nextShift = nextRows[0];
+            if (
+                getScheduleDateKey(nextShift) === localDate &&
+                toSeconds(nextShift.startTime) > toSeconds(localTime)
+            ) {
                 const diffMinutes = Math.ceil(
-                    (startSeconds - nowSeconds) / 60
+                    (toSeconds(nextShift.startTime) - toSeconds(localTime)) /
+                        60
                 );
 
                 if (diffMinutes > clockInEarlyMinutes) {
                     generateErrorUtil(
-                        `Inicio demasiado pronto, espera ${clockInEarlyMinutes} min antes del comienzo de tu turno`,
+                        `Inicio demasiado pronto. Tu proximo turno es el ${formatShiftTime(nextShift)}.`,
                         403
                     );
                 }
             }
 
+            generateErrorUtil(
+                `No puedes iniciar ahora. Tu proximo turno es el ${formatShiftTime(nextShift)}.`,
+                403
+            );
+        }
+
+        if (!allowUnscheduled) {
             generateErrorUtil('No hay turno programado', 403);
         }
     }
@@ -135,13 +192,13 @@ const startShiftRecordService = async (
         `
     SELECT id
     FROM shiftRecords
-    WHERE employeeId = ? AND serviceId = ? AND clockOut IS NULL
+    WHERE employeeId = ? AND clockOut IS NULL
     `,
-        [employeeId, serviceId]
+        [employeeId]
     );
 
     if (rows.length > 0) {
-        generateErrorUtil("Ya has fichado la entrada", 401);
+        generateErrorUtil("Ya tienes un turno abierto", 401);
     }
 
     // Insertar nuevo turno

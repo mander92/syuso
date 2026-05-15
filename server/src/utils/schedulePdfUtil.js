@@ -102,7 +102,14 @@ const getStartText = (row, dateKey) =>
 const getEndText = (row, dateKey) =>
     row.endsByDay?.[dateKey] || splitShiftText(row.shifts?.[dateKey], 1);
 
-const drawGrid = (doc, days, rows) => {
+const formatAgreementText = (row) => {
+    const night = Number(row.totalNightHours) || 0;
+    const holiday = Number(row.totalHolidayHours) || 0;
+    if (!night && !holiday) return '';
+    return `N ${night.toFixed(2)}\nF ${holiday.toFixed(2)}`;
+};
+
+const drawGrid = (doc, days, rows, meta = {}) => {
     const startX = doc.page.margins.left;
     let y = doc.y + 8;
     const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
@@ -113,7 +120,8 @@ const drawGrid = (doc, days, rows) => {
     const headerHeight = 18;
     const dayHeight = 20;
     const lineHeight = 18;
-    const rowHeight = lineHeight * 3;
+    const isAgreement = meta.hourRuleType === 'convenio';
+    const rowHeight = isAgreement ? lineHeight * 4 : lineHeight * 3;
 
     doc.font('Helvetica-Bold').fontSize(8).fillColor('#0f172a');
 
@@ -212,6 +220,16 @@ const drawGrid = (doc, days, rows) => {
                 width: totalColWidth - 4,
                 align: 'center',
             });
+        if (isAgreement) {
+            doc
+                .fontSize(6)
+                .fillColor('#475569')
+                .text(formatAgreementText(row), totalX + 2, y + 26, {
+                    width: totalColWidth - 4,
+                    align: 'center',
+                });
+            doc.fontSize(7).fillColor('#0f172a');
+        }
 
         y += rowHeight;
 
@@ -247,7 +265,7 @@ export const createScheduleGridPdfUtil = async ({ sections, fileName }) => {
         const monthLabel = formatMonthLabel(section.month);
 
         drawHeader(doc, section.meta, monthLabel);
-        drawGrid(doc, days, section.rows);
+        drawGrid(doc, days, section.rows, section.meta);
     });
 
     doc.end();

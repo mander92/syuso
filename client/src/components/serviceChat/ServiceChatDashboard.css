@@ -90,7 +90,23 @@
     font-size: 0.86rem;
 }
 
-.service-chat-dashboard-group-toggle span:last-child {
+.service-chat-dashboard-group-count {
+    font-size: 0 !important;
+}
+
+.service-chat-dashboard-group-count::before {
+    content: attr(data-count) ' chats';
+    font-size: 0.86rem;
+}
+
+.service-chat-dashboard-group-action {
+    align-items: center;
+    display: inline-flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.service-chat-dashboard-group-action > span:last-child {
     color: #1d4ed8;
     font-size: 0.86rem;
     font-weight: 700;
@@ -114,6 +130,17 @@
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
+    position: relative;
+}
+
+.service-chat-dashboard-card--unread {
+    border-color: #fecaca;
+    box-shadow: 0 12px 32px rgba(239, 68, 68, 0.14);
+}
+
+.service-chat-dashboard-card-badge {
+    right: 10px;
+    top: 10px;
 }
 
 .service-chat-dashboard-card-row {

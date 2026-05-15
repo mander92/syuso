@@ -9,6 +9,7 @@ const selectServiceByEmployeeIdService = async (status, type, employeeId) => {
                 u.firstName, u.lastName, u.phone, s.type, s.province,
                 s.autonomousCommunity, s.hourRuleType,
                 s.comments, s.startDateTime, s.hours, s.status,
+                s.allowUnscheduledClockIn, s.clockInEarlyMinutes,
                 a.address, a.city, a.postCode,
                 (
                     SELECT COUNT(*)
@@ -23,26 +24,11 @@ const selectServiceByEmployeeIdService = async (status, type, employeeId) => {
         INNER JOIN users u
         ON u.id = s.clientId
         WHERE s.deletedAt IS NULL
-          AND (
-            pa.employeeId IS NOT NULL
-            OR EXISTS (
-                SELECT 1
-                FROM serviceScheduleShifts ss
-                WHERE ss.serviceId = s.id
-                  AND ss.employeeId = ?
-                  AND ss.deletedAt IS NULL
-            )
-            OR EXISTS (
-                SELECT 1
-                FROM shiftRecords sr
-                WHERE sr.serviceId = s.id
-                  AND sr.employeeId = ?
-            )
-          )
+          AND pa.employeeId IS NOT NULL
          
         `;
 
-    let sqlValues = [employeeId, employeeId, employeeId, employeeId];
+    let sqlValues = [employeeId, employeeId];
 
     if (status) {
         sqlQuery += ' AND s.status = ?';

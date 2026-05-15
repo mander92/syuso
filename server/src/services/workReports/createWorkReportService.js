@@ -10,6 +10,8 @@ import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import sendMail from '../../utils/sendBrevoMail.js';
 import { UPLOADS_DIR } from '../../../env.js';
 import { formatDateTimeMadrid } from '../../utils/dateTimeMadrid.js';
+import { getMadridDateTimeParts } from '../../utils/scheduleTimeUtil.js';
+import selectScheduledShiftForClockInService from '../schedules/selectScheduledShiftForClockInService.js';
 
 const ensureDir = async (dirPath) => {
     try {
@@ -757,6 +759,29 @@ const createWorkReportService = async ({
             shiftRecordId,
         ]
     );
+
+    if (realClockInValue) {
+        const { date: localDate, time: localTime } = getMadridDateTimeParts(
+            new Date(realClockInValue)
+        );
+        const scheduledShift = await selectScheduledShiftForClockInService(
+            serviceId,
+            employeeId,
+            localDate,
+            localTime
+        );
+
+        if (scheduledShift) {
+            await pool.query(
+                `
+                UPDATE serviceScheduleShifts
+                SET status = 'completed'
+                WHERE id = ?
+                `,
+                [scheduledShift.id]
+            );
+        }
+    }
 
     const svgPayload = {
         ...reportData,

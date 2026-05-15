@@ -10,6 +10,10 @@ const __dirname = path.dirname(__filename);
 const TEMPLATE_PATH = path.join(__dirname, '../templates/schedule-template.xlsx');
 const DAY_START_COL = 5;
 const DAY_END_COL = 35;
+const TOTAL_HOURS_COL = 36;
+const NIGHT_HOURS_COL = 37;
+const HOLIDAY_HOURS_COL = 38;
+const REGULAR_HOURS_COL = 39;
 const FIRST_EMPLOYEE_ROW = 12;
 const EMPLOYEE_BLOCK_SIZE = 4;
 const EMPLOYEE_BLOCKS_PER_SHEET = 9;
@@ -132,13 +136,23 @@ const clearEmployeeBlock = (worksheet, baseRow) => {
         };
     }
 
-    worksheet.getCell(baseRow, 36).value = {
+    worksheet.getCell(baseRow, TOTAL_HOURS_COL).value = {
         formula: `SUM(E${baseRow + 2}:AI${baseRow + 2})`,
         result: null,
     };
+    worksheet.getCell(baseRow, NIGHT_HOURS_COL).value = null;
+    worksheet.getCell(baseRow, HOLIDAY_HOURS_COL).value = null;
+    worksheet.getCell(baseRow, REGULAR_HOURS_COL).value = null;
 };
 
-const fillEmployeeBlock = (worksheet, row, days, blockIndex, dailyTotals) => {
+const fillEmployeeBlock = (
+    worksheet,
+    row,
+    days,
+    blockIndex,
+    dailyTotals,
+    showAgreementHours
+) => {
     const baseRow = FIRST_EMPLOYEE_ROW + blockIndex * EMPLOYEE_BLOCK_SIZE;
     clearEmployeeBlock(worksheet, baseRow);
     worksheet.getCell(baseRow, 1).value = row.name || '';
@@ -164,13 +178,45 @@ const fillEmployeeBlock = (worksheet, row, days, blockIndex, dailyTotals) => {
         }
     });
 
-    worksheet.getCell(baseRow, 36).value = {
+    worksheet.getCell(baseRow, TOTAL_HOURS_COL).value = {
         formula: `SUM(E${baseRow + 2}:AI${baseRow + 2})`,
         result: employeeTotal || null,
     };
+
+    if (showAgreementHours) {
+        worksheet.getCell(baseRow, NIGHT_HOURS_COL).value =
+            Number(row.totalNightHours) || null;
+        worksheet.getCell(baseRow, HOLIDAY_HOURS_COL).value =
+            Number(row.totalHolidayHours) || null;
+        worksheet.getCell(baseRow, REGULAR_HOURS_COL).value =
+            Number(row.totalRegularHours) || null;
+    }
 };
 
-const fillSheetTotals = (worksheet, dailyTotals) => {
+const fillAgreementHeaders = (worksheet, showAgreementHours) => {
+    if (!showAgreementHours) return;
+    worksheet.getCell(9, NIGHT_HOURS_COL).value = 'NOCT';
+    worksheet.getCell(9, HOLIDAY_HOURS_COL).value = 'FEST';
+    worksheet.getCell(9, REGULAR_HOURS_COL).value = 'ORD';
+    worksheet.getCell(10, NIGHT_HOURS_COL).value = 'HORAS';
+    worksheet.getCell(10, HOLIDAY_HOURS_COL).value = 'HORAS';
+    worksheet.getCell(10, REGULAR_HOURS_COL).value = 'HORAS';
+    [NIGHT_HOURS_COL, HOLIDAY_HOURS_COL, REGULAR_HOURS_COL].forEach((col) => {
+        worksheet.getColumn(col).width = 9;
+        worksheet.getCell(9, col).font = { bold: true };
+        worksheet.getCell(10, col).font = { bold: true };
+        worksheet.getCell(9, col).alignment = {
+            horizontal: 'center',
+            vertical: 'middle',
+        };
+        worksheet.getCell(10, col).alignment = {
+            horizontal: 'center',
+            vertical: 'middle',
+        };
+    });
+};
+
+const fillSheetTotals = (worksheet, dailyTotals, showAgreementHours) => {
     const hourRows = Array.from({ length: EMPLOYEE_BLOCKS_PER_SHEET }, (_, index) =>
         FIRST_EMPLOYEE_ROW + index * EMPLOYEE_BLOCK_SIZE + 2
     );
@@ -188,20 +234,39 @@ const fillSheetTotals = (worksheet, dailyTotals) => {
         };
     }
 
-    worksheet.getCell(48, 36).value = {
+    worksheet.getCell(48, TOTAL_HOURS_COL).value = {
         formula: 'SUM(E48:AI48)',
         result: monthlyTotal || null,
     };
-    worksheet.getCell(50, 36).value = {
+    worksheet.getCell(50, TOTAL_HOURS_COL).value = {
         formula: 'SUM(AJ12,AJ16,AJ20,AJ24,AJ28,AJ32,AJ36,AJ40,AJ44)',
         result: monthlyTotal || null,
     };
+
+    if (showAgreementHours) {
+        [
+            [NIGHT_HOURS_COL, 'AK'],
+            [HOLIDAY_HOURS_COL, 'AL'],
+            [REGULAR_HOURS_COL, 'AM'],
+        ].forEach(([col, letter]) => {
+            worksheet.getCell(48, col).value = {
+                formula: `SUM(${letter}12,${letter}16,${letter}20,${letter}24,${letter}28,${letter}32,${letter}36,${letter}40,${letter}44)`,
+                result: null,
+            };
+            worksheet.getCell(50, col).value = {
+                formula: `SUM(${letter}12,${letter}16,${letter}20,${letter}24,${letter}28,${letter}32,${letter}36,${letter}40,${letter}44)`,
+                result: null,
+            };
+        });
+    }
 };
 
 const prepareSheet = (worksheet, section, rows) => {
+    const showAgreementHours = section.meta?.hourRuleType === 'convenio';
     fillMonth(worksheet, section.month);
     fillServiceMeta(worksheet, section.meta || {});
     fillDays(worksheet, section.month);
+    fillAgreementHeaders(worksheet, showAgreementHours);
 
     for (let index = 0; index < EMPLOYEE_BLOCKS_PER_SHEET; index += 1) {
         clearEmployeeBlock(
@@ -213,9 +278,16 @@ const prepareSheet = (worksheet, section, rows) => {
     const days = getMonthDays(section.month);
     const dailyTotals = Array.from({ length: 31 }, () => 0);
     rows.forEach((row, index) =>
-        fillEmployeeBlock(worksheet, row, days, index, dailyTotals)
+        fillEmployeeBlock(
+            worksheet,
+            row,
+            days,
+            index,
+            dailyTotals,
+            showAgreementHours
+        )
     );
-    fillSheetTotals(worksheet, dailyTotals);
+    fillSheetTotals(worksheet, dailyTotals, showAgreementHours);
 };
 
 export const createScheduleGridExcelUtil = async ({ sections, fileName }) => {

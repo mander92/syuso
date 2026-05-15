@@ -133,6 +133,24 @@ const validateEmployeeShiftOverlapsService = async (
     if (!candidates.length) return;
 
     const employeeIds = [...new Set(candidates.map((shift) => shift.employeeId))];
+    const candidateServiceIds = [
+        ...new Set(candidates.map((shift) => shift.serviceId).filter(Boolean)),
+    ];
+    const serviceNamesById = new Map();
+    if (candidateServiceIds.length) {
+        const [serviceRows] = await pool.query(
+            'SELECT id, name FROM services WHERE id IN (?)',
+            [candidateServiceIds]
+        );
+        serviceRows.forEach((service) => {
+            serviceNamesById.set(service.id, service.name);
+        });
+        candidates.forEach((shift) => {
+            if (!shift.serviceName && serviceNamesById.has(shift.serviceId)) {
+                shift.serviceName = serviceNamesById.get(shift.serviceId);
+            }
+        });
+    }
     const dateKeys = candidates.map((shift) => shift.interval.dateKey).sort();
     const minDate = addDays(dateKeys[0], -1);
     const maxDate = addDays(dateKeys[dateKeys.length - 1], 1);

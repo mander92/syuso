@@ -203,6 +203,11 @@ const EmployeeServicesComponent = () => {
                     hour: '2-digit',
                     minute: '2-digit',
                 }).format(date);
+            const toShiftDateTime = (dateKey, time) => {
+                if (!dateKey || !time) return null;
+                const dateTime = new Date(`${dateKey}T${time}`);
+                return Number.isNaN(dateTime.getTime()) ? null : dateTime;
+            };
 
             try {
                 const results = await Promise.all(
@@ -218,7 +223,11 @@ const EmployeeServicesComponent = () => {
                         );
 
                         const shifts = Array.isArray(data) ? data : [];
-                        const nextShift = shifts
+                        const earlyMinutes =
+                            service.clockInEarlyMinutes != null
+                                ? Number(service.clockInEarlyMinutes)
+                                : 15;
+                        const normalizedShifts = shifts
                             .map((shift) => {
                                 if (!shift.scheduleDate || !shift.startTime) {
                                     return null;
@@ -226,32 +235,73 @@ const EmployeeServicesComponent = () => {
                                 const dateKey = String(
                                     shift.scheduleDate
                                 ).slice(0, 10);
-                                const dateTime = new Date(
-                                    `${dateKey}T${shift.startTime}`
+                                const dateTime = toShiftDateTime(
+                                    dateKey,
+                                    shift.startTime
+                                );
+                                const endDateTime = toShiftDateTime(
+                                    dateKey,
+                                    shift.endTime
+                                );
+                                if (!dateTime || !endDateTime) return null;
+                                const finalEndDateTime =
+                                    endDateTime <= dateTime
+                                        ? new Date(
+                                              endDateTime.getTime() +
+                                                  24 * 60 * 60 * 1000
+                                          )
+                                        : endDateTime;
+                                const windowStart = new Date(
+                                    dateTime.getTime() -
+                                        earlyMinutes * 60 * 1000
                                 );
                                 return {
                                     ...shift,
                                     dateTime,
+                                    endDateTime: finalEndDateTime,
+                                    canStart:
+                                        now >= windowStart &&
+                                        now <= finalEndDateTime,
                                 };
                             })
                             .filter(
                                 (shift) =>
                                     shift &&
                                     shift.dateTime instanceof Date &&
-                                    !Number.isNaN(shift.dateTime.getTime()) &&
-                                    shift.dateTime >= now
-                            )
+                                    !Number.isNaN(shift.dateTime.getTime())
+                            );
+                        const currentShift = normalizedShifts.find(
+                            (shift) => shift.canStart
+                        );
+                        const nextShift = normalizedShifts
+                            .filter((shift) => shift.dateTime >= now)
                             .sort(
                                 (a, b) =>
                                     a.dateTime.getTime() -
                                     b.dateTime.getTime()
                             )[0];
 
-                        if (!nextShift) return [serviceId, null];
+                        if (!nextShift && !currentShift) {
+                            return [
+                                serviceId,
+                                {
+                                    label: null,
+                                    canStart:
+                                        Boolean(
+                                            service.allowUnscheduledClockIn
+                                        ),
+                                },
+                            ];
+                        }
+
+                        const visibleShift = currentShift || nextShift;
 
                         return [
                             serviceId,
-                            formatNextShift(nextShift.dateTime),
+                            {
+                                label: formatNextShift(visibleShift.dateTime),
+                                canStart: Boolean(currentShift),
+                            },
                         ];
                     })
                 );
@@ -588,6 +638,12 @@ const EmployeeServicesComponent = () => {
                         if (!serviceId) return null;
                         const isOpen = Boolean(openShifts[serviceId]);
                         const hasNfc = Number(service.nfcCount || 0) > 0;
+                        const nextShiftInfo = nextShiftByService[serviceId];
+                        const startDisabled =
+                            isOpen ||
+                            (nextShiftInfo &&
+                                nextShiftInfo.label &&
+                                !nextShiftInfo.canStart);
                         return (
                             <li key={serviceId} className='employee-card'>
                                 <div className='employee-card-row'>
@@ -639,10 +695,10 @@ const EmployeeServicesComponent = () => {
                                                 )}
                                             </p>
                                         ) : null}
-                                        {nextShiftByService[serviceId] ? (
+                                        {nextShiftInfo?.label ? (
                                             <p className='employee-card-next-shift'>
                                                 Tu proximo turno es:{' '}
-                                                {nextShiftByService[serviceId]}
+                                                {nextShiftInfo.label}
                                             </p>
                                         ) : null}
                                     </div>
@@ -653,7 +709,7 @@ const EmployeeServicesComponent = () => {
                                             onClick={() =>
                                                 handleStart(serviceId)
                                             }
-                                            disabled={isOpen}
+                                            disabled={startDisabled}
                                         >
                                             {isOpen ? 'En curso' : 'Iniciar'}
                                         </button>
