@@ -740,6 +740,54 @@
     margin: 0;
 }
 
+.schedule-personal-modal-summary {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    display: grid;
+    gap: 0.75rem;
+    margin-bottom: 0.9rem;
+    padding: 0.85rem;
+}
+
+.schedule-personal-modal-summary__header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    justify-content: space-between;
+}
+
+.schedule-personal-modal-summary__header strong {
+    color: #0f172a;
+}
+
+.schedule-personal-modal-summary__header span,
+.schedule-personal-modal-summary__item span,
+.schedule-personal-modal-summary__item small {
+    color: #475569;
+    font-size: 0.84rem;
+}
+
+.schedule-personal-modal-summary__grid {
+    display: grid;
+    gap: 0.55rem;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.schedule-personal-modal-summary__item {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.65rem;
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.65rem;
+}
+
+.schedule-personal-modal-summary__item strong {
+    color: #0f172a;
+    font-size: 0.9rem;
+}
+
 .schedule-personal-absence-form {
     display: grid;
     gap: 0.75rem;

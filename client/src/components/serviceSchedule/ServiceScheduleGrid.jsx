@@ -210,15 +210,8 @@ const ServiceScheduleGrid = ({
     }, [rows, shifts]);
 
     const shouldShowAgreementHours = useMemo(
-        () =>
-            showAgreementHours ||
-            (shifts || []).some(
-                (shift) =>
-                    Number(shift.nightHours) > 0 ||
-                    Number(shift.holidayHours) > 0 ||
-                    Number(shift.regularHours) > 0
-            ),
-        [showAgreementHours, shifts]
+        () => Boolean(showAgreementHours),
+        [showAgreementHours]
     );
 
     const visibleTotalHours = useMemo(

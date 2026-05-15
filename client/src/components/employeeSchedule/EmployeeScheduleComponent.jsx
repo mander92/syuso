@@ -13,8 +13,6 @@ const EmployeeScheduleComponent = () => {
     const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
     const [shifts, setShifts] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [isGridOpen, setIsGridOpen] = useState(false);
-    const [isDownloading, setIsDownloading] = useState(false);
     const [shiftRequests, setShiftRequests] = useState([]);
 
     const loadShifts = useCallback(async () => {
@@ -120,28 +118,6 @@ const EmployeeScheduleComponent = () => {
         [shifts]
     );
 
-    const handleExport = async () => {
-        if (!authToken) return;
-        try {
-            setIsDownloading(true);
-            const data = await fetchEmployeeScheduleShifts(
-                authToken,
-                month,
-                true
-            );
-            if (data?.excelFilePath) {
-                const baseUrl = import.meta.env.VITE_API_URL || '/api';
-                window.open(`${baseUrl}${data.excelFilePath}`, '_blank');
-            } else {
-                toast.error('No se pudo generar el Excel');
-            }
-        } catch (error) {
-            toast.error(error.message || 'No se pudo generar el Excel');
-        } finally {
-            setIsDownloading(false);
-        }
-    };
-
     return (
         <section className='employee-schedule'>
             <header className='employee-schedule-header'>
@@ -157,66 +133,26 @@ const EmployeeScheduleComponent = () => {
                         value={month}
                         onChange={(event) => setMonth(event.target.value)}
                     />
-                    <button
-                        type='button'
-                        className='employee-schedule-btn'
-                        onClick={() => setIsGridOpen(true)}
-                    >
-                        Ver cuadrante
-                    </button>
-                    <button
-                        type='button'
-                        className='employee-schedule-btn employee-schedule-btn--primary'
-                        onClick={handleExport}
-                        disabled={isDownloading}
-                    >
-                        {isDownloading ? 'Generando...' : 'Exportar Excel'}
-                    </button>
                 </div>
             </header>
 
             {isLoading ? (
                 <p className='employee-schedule-empty'>Cargando turnos...</p>
-            ) : shifts.length ? null : (
-                <p className='employee-schedule-empty'>Sin turnos programados.</p>
-            )}
-
-            {isGridOpen && (
-                <div className='service-schedule-grid-modal'>
-                    <button
-                        type='button'
-                        className='service-schedule-grid-modal__backdrop'
-                        onClick={() => setIsGridOpen(false)}
-                        aria-label='Cerrar cuadrante'
+            ) : shifts.length ? (
+                <div className='employee-schedule-grid'>
+                    {renderShiftRequestSummary()}
+                    <ServiceScheduleGrid
+                        month={month}
+                        shifts={gridShifts}
+                        employees={serviceRows}
+                        absencesByEmployee={{}}
+                        onShiftUpdate={() => {}}
+                        readOnly
+                        showUnassigned={false}
                     />
-                    <div className='service-schedule-grid-modal__panel'>
-                        <div className='service-schedule-grid-modal__header'>
-                            <div>
-                                <h3>Mis Cuadrantes</h3>
-                                <p>{month}</p>
-                            </div>
-                            <button
-                                type='button'
-                                className='service-schedule-grid-modal__close'
-                                onClick={() => setIsGridOpen(false)}
-                            >
-                                Cerrar
-                            </button>
-                        </div>
-                        <div className='service-schedule-grid-modal__body'>
-                            {renderShiftRequestSummary()}
-                            <ServiceScheduleGrid
-                                month={month}
-                                shifts={gridShifts}
-                                employees={serviceRows}
-                                absencesByEmployee={{}}
-                                onShiftUpdate={() => {}}
-                                readOnly
-                                showUnassigned={false}
-                            />
-                        </div>
-                    </div>
                 </div>
+            ) : (
+                <p className='employee-schedule-empty'>Sin turnos programados.</p>
             )}
         </section>
     );

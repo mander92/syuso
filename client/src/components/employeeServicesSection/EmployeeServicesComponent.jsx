@@ -7,6 +7,7 @@ import useUser from '../../hooks/useUser.js';
 import {
     fetchEmployeeAllServicesServices,
     fetchEmployeeScheduleShifts,
+    fetchServiceScheduleShifts,
 } from '../../services/serviceService.js';
 import {
     fetchShiftRecordsEmployee,
@@ -547,7 +548,7 @@ const EmployeeServicesComponent = () => {
 
     useEffect(() => {
         const loadScheduleShifts = async () => {
-            if (!authToken || !scheduleModal?.serviceId || !user?.id) return;
+            if (!authToken || !scheduleModal?.serviceId) return;
             if (
                 scheduleModal.scheduleView === 'image' &&
                 scheduleModal.scheduleImage
@@ -557,19 +558,12 @@ const EmployeeServicesComponent = () => {
             }
             try {
                 setScheduleLoading(true);
-                const data = await fetchEmployeeScheduleShifts(
+                const data = await fetchServiceScheduleShifts(
                     authToken,
+                    scheduleModal.serviceId,
                     scheduleMonth,
-                    false,
-                    scheduleModal.serviceId
                 );
-                const normalized = (Array.isArray(data) ? data : []).map(
-                    (shift) => ({
-                        ...shift,
-                        employeeId: user.id,
-                    })
-                );
-                setScheduleShifts(normalized);
+                setScheduleShifts(Array.isArray(data) ? data : []);
             } catch (error) {
                 toast.error(
                     error.message || 'No se pudieron cargar los turnos'
@@ -580,18 +574,26 @@ const EmployeeServicesComponent = () => {
         };
 
         loadScheduleShifts();
-    }, [authToken, scheduleModal, scheduleMonth, user?.id]);
+    }, [authToken, scheduleModal, scheduleMonth]);
 
     const scheduleEmployees = useMemo(() => {
-        if (!user?.id) return [];
-        return [
-            {
-                id: user.id,
-                firstName: user.firstName || 'Empleado',
-                lastName: user.lastName || '',
-            },
-        ];
-    }, [user]);
+        const employeeMap = new Map();
+        scheduleShifts.forEach((shift) => {
+            if (!shift.employeeId || employeeMap.has(shift.employeeId)) return;
+            employeeMap.set(shift.employeeId, {
+                id: shift.employeeId,
+                firstName: shift.firstName || 'Empleado',
+                lastName: shift.lastName || '',
+            });
+        });
+        return Array.from(employeeMap.values()).sort((a, b) =>
+            `${a.firstName || ''} ${a.lastName || ''}`.localeCompare(
+                `${b.firstName || ''} ${b.lastName || ''}`,
+                'es',
+                { sensitivity: 'base' }
+            )
+        );
+    }, [scheduleShifts]);
 
     return (
         <section className='employee-services'>

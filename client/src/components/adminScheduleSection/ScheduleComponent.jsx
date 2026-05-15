@@ -1455,12 +1455,22 @@ const ScheduleComponent = () => {
                 (acc, shift) => acc + (Number(shift.hours) || 0),
                 0
             );
+            const totalNightHours = shifts.reduce(
+                (acc, shift) => acc + (Number(shift.nightHours) || 0),
+                0
+            );
+            const totalHolidayHours = shifts.reduce(
+                (acc, shift) => acc + (Number(shift.holidayHours) || 0),
+                0
+            );
             return {
                 id: employee.id,
                 name: `${employee.firstName} ${employee.lastName}`,
                 delegation: employee.delegations || employee.city || 'Sin delegacion',
                 shifts,
                 totalHours,
+                totalNightHours,
+                totalHolidayHours,
             };
         });
     }, [scheduleShiftMap, filteredEmployees]);
@@ -3022,6 +3032,8 @@ const ScheduleComponent = () => {
                                 const absences =
                                     employeeAbsencesMap[personalModal.id] || [];
                                 const absenceRowId = `absences-${personalModal.id}`;
+                                const formatModalHours = (value) =>
+                                    (Number(value) || 0).toFixed(2);
                                 const serviceRows = personalModal.shifts.reduce(
                                     (acc, shift) => {
                                         if (!shift.serviceId) return acc;
@@ -3063,19 +3075,130 @@ const ScheduleComponent = () => {
                                     },
                                     { [absenceRowId]: absences }
                                 );
+                                const serviceSummaries = serviceRows.map((row) => {
+                                    const serviceShifts =
+                                        personalModal.shifts.filter(
+                                            (shift) =>
+                                                shift.serviceId === row.id
+                                        );
+                                    return {
+                                        id: row.id,
+                                        name: row.firstName || 'Servicio',
+                                        totalHours: serviceShifts.reduce(
+                                            (acc, shift) =>
+                                                acc +
+                                                (Number(shift.hours) || 0),
+                                            0
+                                        ),
+                                        nightHours: serviceShifts.reduce(
+                                            (acc, shift) =>
+                                                acc +
+                                                (Number(shift.nightHours) || 0),
+                                            0
+                                        ),
+                                        holidayHours: serviceShifts.reduce(
+                                            (acc, shift) =>
+                                                acc +
+                                                (Number(shift.holidayHours) ||
+                                                    0),
+                                            0
+                                        ),
+                                    };
+                                });
+                                const modalTotals = serviceSummaries.reduce(
+                                    (acc, item) => ({
+                                        totalHours:
+                                            acc.totalHours + item.totalHours,
+                                        nightHours:
+                                            acc.nightHours + item.nightHours,
+                                        holidayHours:
+                                            acc.holidayHours +
+                                            item.holidayHours,
+                                    }),
+                                    {
+                                        totalHours: 0,
+                                        nightHours: 0,
+                                        holidayHours: 0,
+                                    }
+                                );
                                 return (
-                                    <ServiceScheduleGrid
-                                        month={scheduleMonth}
-                                        shifts={personalModal.shifts.map((shift) => ({
-                                            ...shift,
-                                            employeeId: shift.serviceId,
-                                        }))}
-                                        employees={employees}
-                                        absencesByEmployee={serviceAbsenceMap}
-                                        onShiftUpdate={() => {}}
-                                        readOnly
-                                        showUnassigned={false}
-                                    />
+                                    <>
+                                        <div className='schedule-personal-modal-summary'>
+                                            <div className='schedule-personal-modal-summary__header'>
+                                                <strong>
+                                                    {personalModal.name}
+                                                </strong>
+                                                <span>
+                                                    Total:{' '}
+                                                    {formatModalHours(
+                                                        modalTotals.totalHours
+                                                    )}{' '}
+                                                    h
+                                                    {modalTotals.nightHours ||
+                                                    modalTotals.holidayHours
+                                                        ? ` | N ${formatModalHours(
+                                                              modalTotals.nightHours
+                                                          )} h | F ${formatModalHours(
+                                                              modalTotals.holidayHours
+                                                          )} h`
+                                                        : ''}
+                                                </span>
+                                            </div>
+                                            <div className='schedule-personal-modal-summary__grid'>
+                                                {serviceSummaries.map(
+                                                    (item) => (
+                                                        <div
+                                                            key={item.id}
+                                                            className='schedule-personal-modal-summary__item'
+                                                        >
+                                                            <strong>
+                                                                {item.name}
+                                                            </strong>
+                                                            <span>
+                                                                Total:{' '}
+                                                                {formatModalHours(
+                                                                    item.totalHours
+                                                                )}{' '}
+                                                                h
+                                                            </span>
+                                                            {(item.nightHours >
+                                                                0 ||
+                                                                item.holidayHours >
+                                                                    0) && (
+                                                                <small>
+                                                                    N{' '}
+                                                                    {formatModalHours(
+                                                                        item.nightHours
+                                                                    )}{' '}
+                                                                    h | F{' '}
+                                                                    {formatModalHours(
+                                                                        item.holidayHours
+                                                                    )}{' '}
+                                                                    h
+                                                                </small>
+                                                            )}
+                                                        </div>
+                                                    )
+                                                )}
+                                            </div>
+                                        </div>
+                                        <ServiceScheduleGrid
+                                            month={scheduleMonth}
+                                            shifts={personalModal.shifts.map((shift) => ({
+                                                ...shift,
+                                                employeeId: shift.serviceId,
+                                            }))}
+                                            employees={employees}
+                                            absencesByEmployee={serviceAbsenceMap}
+                                            onShiftUpdate={() => {}}
+                                            readOnly
+                                            showUnassigned={false}
+                                            showAgreementHours={
+                                                modalTotals.nightHours > 0 ||
+                                                modalTotals.holidayHours > 0
+                                            }
+                                        />
+                                    </>
                                 );
                             })()}
                         </div>
