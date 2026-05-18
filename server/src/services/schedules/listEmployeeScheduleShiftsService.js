@@ -40,6 +40,7 @@ const listEmployeeScheduleShiftsService = async (
             ss.status,
             ss.shiftTypeId,
             s.name AS serviceName,
+            s.hourRuleType,
             st.name AS shiftTypeName,
             st.color AS shiftTypeColor
         FROM serviceScheduleShifts ss

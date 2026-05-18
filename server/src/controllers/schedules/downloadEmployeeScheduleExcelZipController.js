@@ -3,13 +3,13 @@ import path from 'path';
 import archiver from 'archiver';
 import listEmployeeScheduleShiftsService from '../../services/schedules/listEmployeeScheduleShiftsService.js';
 import selectUserByIdService from '../../services/users/selectUserByIdService.js';
-import { createScheduleGridPdfUtil } from '../../utils/schedulePdfUtil.js';
+import { createScheduleGridExcelUtil } from '../../utils/scheduleExcelUtil.js';
 import {
     buildEmployeeScheduleSection,
     getEmployeeScheduleFileBaseName,
 } from '../../utils/scheduleExportUtil.js';
 
-const downloadEmployeeScheduleZipController = async (req, res, next) => {
+const downloadEmployeeScheduleExcelZipController = async (req, res, next) => {
     try {
         const { employeeIds, month, serviceId } = req.query;
         const { id: userId, role } = req.userLogged;
@@ -32,7 +32,7 @@ const downloadEmployeeScheduleZipController = async (req, res, next) => {
         }
 
         const archive = archiver('zip', { zlib: { level: 9 } });
-        res.attachment(`personal-schedules-${effectiveMonth}.zip`);
+        res.attachment(`cuadrantes-personales-excel-${effectiveMonth}.zip`);
         archive.pipe(res);
 
         for (const employeeId of ids) {
@@ -44,7 +44,7 @@ const downloadEmployeeScheduleZipController = async (req, res, next) => {
                 serviceId || null
             );
 
-            const filePath = await createScheduleGridPdfUtil({
+            const filePath = await createScheduleGridExcelUtil({
                 sections: [
                     buildEmployeeScheduleSection({
                         employee,
@@ -56,7 +56,7 @@ const downloadEmployeeScheduleZipController = async (req, res, next) => {
                     employee,
                     employeeId,
                     effectiveMonth
-                )}.pdf`,
+                )}.xlsx`,
             });
 
             archive.append(fs.createReadStream(filePath), {
@@ -70,4 +70,4 @@ const downloadEmployeeScheduleZipController = async (req, res, next) => {
     }
 };
 
-export default downloadEmployeeScheduleZipController;
+export default downloadEmployeeScheduleExcelZipController;

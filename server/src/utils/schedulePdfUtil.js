@@ -126,7 +126,7 @@ const drawGrid = (doc, days, rows, meta = {}) => {
     doc.font('Helvetica-Bold').fontSize(8).fillColor('#0f172a');
 
     doc.rect(startX, y, nameColWidth, headerHeight).stroke('#cbd5f1');
-    doc.text('Dos apellidos y nombre', startX + 4, y + 5, {
+    doc.text(meta.rowHeader || 'Dos apellidos y nombre', startX + 4, y + 5, {
         width: nameColWidth - 8,
     });
 

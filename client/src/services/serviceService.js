@@ -742,6 +742,20 @@ export const downloadEmployeeSchedulePdf = async (
     return downloadScheduleFile(authToken, url, 'cuadrante_personal.pdf');
 };
 
+export const downloadEmployeeScheduleExcel = async (
+    authToken,
+    month,
+    employeeId = ''
+) => {
+    const params = new URLSearchParams();
+    if (month) params.append('month', month);
+    if (employeeId) params.append('employeeId', employeeId);
+    const url = params.toString()
+        ? `${VITE_API_URL}/services/employee/schedule/excel?${params.toString()}`
+        : `${VITE_API_URL}/services/employee/schedule/excel`;
+    return downloadScheduleFile(authToken, url, 'cuadrante_personal.xlsx');
+};
+
 export const downloadEmployeeScheduleZip = async (
     authToken,
     month,
@@ -756,6 +770,26 @@ export const downloadEmployeeScheduleZip = async (
         ? `${VITE_API_URL}/services/employee/schedule/zip?${params.toString()}`
         : `${VITE_API_URL}/services/employee/schedule/zip`;
     return downloadScheduleFile(authToken, url, 'cuadrantes_personales.zip');
+};
+
+export const downloadEmployeeScheduleExcelZip = async (
+    authToken,
+    month,
+    employeeIds = []
+) => {
+    const params = new URLSearchParams();
+    if (month) params.append('month', month);
+    if (Array.isArray(employeeIds) && employeeIds.length) {
+        params.append('employeeIds', employeeIds.join(','));
+    }
+    const url = params.toString()
+        ? `${VITE_API_URL}/services/employee/schedule/excel-zip?${params.toString()}`
+        : `${VITE_API_URL}/services/employee/schedule/excel-zip`;
+    return downloadScheduleFile(
+        authToken,
+        url,
+        'cuadrantes_personales_excel.zip'
+    );
 };
 
 export const importServiceScheduleExcel = async (

@@ -1,13 +1,13 @@
 import path from 'path';
 import listEmployeeScheduleShiftsService from '../../services/schedules/listEmployeeScheduleShiftsService.js';
 import selectUserByIdService from '../../services/users/selectUserByIdService.js';
-import { createScheduleGridPdfUtil } from '../../utils/schedulePdfUtil.js';
+import { createScheduleGridExcelUtil } from '../../utils/scheduleExcelUtil.js';
 import {
     buildEmployeeScheduleSection,
     getEmployeeScheduleFileBaseName,
 } from '../../utils/scheduleExportUtil.js';
 
-const downloadEmployeeSchedulePdfController = async (req, res, next) => {
+const downloadEmployeeScheduleExcelController = async (req, res, next) => {
     try {
         const { employeeId: employeeIdParam, month, serviceId } = req.query;
         const { id: userId, role } = req.userLogged;
@@ -24,12 +24,7 @@ const downloadEmployeeSchedulePdfController = async (req, res, next) => {
             serviceId || null
         );
 
-        const fileName = `${getEmployeeScheduleFileBaseName(
-            employee,
-            employeeId,
-            effectiveMonth
-        )}.pdf`;
-        const filePath = await createScheduleGridPdfUtil({
+        const filePath = await createScheduleGridExcelUtil({
             sections: [
                 buildEmployeeScheduleSection({
                     employee,
@@ -37,7 +32,11 @@ const downloadEmployeeSchedulePdfController = async (req, res, next) => {
                     month: effectiveMonth,
                 }),
             ],
-            fileName,
+            fileName: `${getEmployeeScheduleFileBaseName(
+                employee,
+                employeeId,
+                effectiveMonth
+            )}.xlsx`,
         });
 
         return res.download(filePath, path.basename(filePath));
@@ -46,4 +45,4 @@ const downloadEmployeeSchedulePdfController = async (req, res, next) => {
     }
 };
 
-export default downloadEmployeeSchedulePdfController;
+export default downloadEmployeeScheduleExcelController;

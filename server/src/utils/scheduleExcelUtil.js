@@ -265,6 +265,8 @@ const prepareSheet = (worksheet, section, rows) => {
     const showAgreementHours = section.meta?.hourRuleType === 'convenio';
     fillMonth(worksheet, section.month);
     fillServiceMeta(worksheet, section.meta || {});
+    worksheet.getCell(11, 1).value =
+        section.meta?.rowHeader || 'Dos apellidos y nombre';
     fillDays(worksheet, section.month);
     fillAgreementHeaders(worksheet, showAgreementHours);
 

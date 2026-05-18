@@ -22,6 +22,8 @@ import {
     downloadServiceScheduleExcelZip,
     downloadEmployeeSchedulePdf,
     downloadEmployeeScheduleZip,
+    downloadEmployeeScheduleExcel,
+    downloadEmployeeScheduleExcelZip,
     fetchHolidays,
     createHoliday,
     deleteHoliday,
@@ -168,7 +170,11 @@ const ScheduleComponent = () => {
     const [isDownloadingServiceExcelZip, setIsDownloadingServiceExcelZip] =
         useState(false);
     const [isDownloadingPersonalZip, setIsDownloadingPersonalZip] = useState(false);
+    const [isDownloadingPersonalExcelZip, setIsDownloadingPersonalExcelZip] =
+        useState(false);
     const [downloadingPersonalId, setDownloadingPersonalId] = useState('');
+    const [downloadingPersonalExcelId, setDownloadingPersonalExcelId] =
+        useState('');
     const [employeeRulesMap, setEmployeeRulesMap] = useState({});
     const [employeeAbsencesMap, setEmployeeAbsencesMap] = useState({});
     const [employeePanelsOpen, setEmployeePanelsOpen] = useState({});
@@ -1780,6 +1786,28 @@ const ScheduleComponent = () => {
         }
     };
 
+    const handlePersonalExcelZipDownload = async () => {
+        if (!authToken) return;
+        const employeeIds = personalScheduleRows.map((row) => row.id).filter(Boolean);
+        if (!employeeIds.length) {
+            toast.error('No hay cuadrantes personales para descargar');
+            return;
+        }
+        try {
+            setIsDownloadingPersonalExcelZip(true);
+            const data = await downloadEmployeeScheduleExcelZip(
+                authToken,
+                scheduleMonth,
+                employeeIds
+            );
+            triggerDownload(data);
+        } catch (error) {
+            toast.error(error.message || 'No se pudo descargar el ZIP Excel');
+        } finally {
+            setIsDownloadingPersonalExcelZip(false);
+        }
+    };
+
     const handlePersonalPdfDownload = async (employeeId) => {
         if (!authToken || !employeeId) return;
         try {
@@ -1794,6 +1822,23 @@ const ScheduleComponent = () => {
             toast.error(error.message || 'No se pudo descargar el PDF');
         } finally {
             setDownloadingPersonalId('');
+        }
+    };
+
+    const handlePersonalExcelDownload = async (employeeId) => {
+        if (!authToken || !employeeId) return;
+        try {
+            setDownloadingPersonalExcelId(employeeId);
+            const data = await downloadEmployeeScheduleExcel(
+                authToken,
+                scheduleMonth,
+                employeeId
+            );
+            triggerDownload(data);
+        } catch (error) {
+            toast.error(error.message || 'No se pudo descargar el Excel');
+        } finally {
+            setDownloadingPersonalExcelId('');
         }
     };
 
@@ -2000,14 +2045,34 @@ const ScheduleComponent = () => {
                         </button>
                     </>
                 ) : (
-                    <button
-                        type='button'
-                        className='schedule-btn schedule-btn--ghost'
-                        onClick={handlePersonalZipDownload}
-                        disabled={!personalScheduleRows.length || isDownloadingPersonalZip}
-                    >
-                        {isDownloadingPersonalZip ? 'Generando...' : 'ZIP personales'}
-                    </button>
+                    <>
+                        <button
+                            type='button'
+                            className='schedule-btn schedule-btn--ghost'
+                            onClick={handlePersonalZipDownload}
+                            disabled={
+                                !personalScheduleRows.length ||
+                                isDownloadingPersonalZip
+                            }
+                        >
+                            {isDownloadingPersonalZip
+                                ? 'Generando...'
+                                : 'ZIP PDF personales'}
+                        </button>
+                        <button
+                            type='button'
+                            className='schedule-btn'
+                            onClick={handlePersonalExcelZipDownload}
+                            disabled={
+                                !personalScheduleRows.length ||
+                                isDownloadingPersonalExcelZip
+                            }
+                        >
+                            {isDownloadingPersonalExcelZip
+                                ? 'Generando...'
+                                : 'ZIP Excel personales'}
+                        </button>
+                    </>
                 )}
             </div>
 
@@ -2251,6 +2316,20 @@ const ScheduleComponent = () => {
                                             {downloadingPersonalId === item.id
                                                 ? 'Generando...'
                                                 : 'PDF'}
+                                        </button>
+                                        <button
+                                            type='button'
+                                            className='schedule-btn schedule-btn--ghost'
+                                            onClick={() =>
+                                                handlePersonalExcelDownload(item.id)
+                                            }
+                                            disabled={
+                                                downloadingPersonalExcelId === item.id
+                                            }
+                                        >
+                                            {downloadingPersonalExcelId === item.id
+                                                ? 'Generando...'
+                                                : 'Excel'}
                                         </button>
                                         <button
                                             type='button'

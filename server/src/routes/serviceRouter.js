@@ -45,6 +45,8 @@ import downloadServiceScheduleExcelController from '../controllers/schedules/dow
 import downloadServiceScheduleExcelZipController from '../controllers/schedules/downloadServiceScheduleExcelZipController.js';
 import downloadEmployeeSchedulePdfController from '../controllers/schedules/downloadEmployeeSchedulePdfController.js';
 import downloadEmployeeScheduleZipController from '../controllers/schedules/downloadEmployeeScheduleZipController.js';
+import downloadEmployeeScheduleExcelController from '../controllers/schedules/downloadEmployeeScheduleExcelController.js';
+import downloadEmployeeScheduleExcelZipController from '../controllers/schedules/downloadEmployeeScheduleExcelZipController.js';
 import listServiceShiftTypesController from '../controllers/schedules/listServiceShiftTypesController.js';
 import createServiceShiftTypeController from '../controllers/schedules/createServiceShiftTypeController.js';
 import updateServiceShiftTypeController from '../controllers/schedules/updateServiceShiftTypeController.js';
@@ -80,9 +82,21 @@ router.get(
 );
 
 router.get(
+    '/services/employee/schedule/excel',
+    authUser,
+    downloadEmployeeScheduleExcelController
+);
+
+router.get(
     '/services/employee/schedule/zip',
     authUser,
     downloadEmployeeScheduleZipController
+);
+
+router.get(
+    '/services/employee/schedule/excel-zip',
+    authUser,
+    downloadEmployeeScheduleExcelZipController
 );
 
 router.get('/services/in-progress', authUser, listInProgressServicesController);
