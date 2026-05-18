@@ -110,6 +110,11 @@ const unusedConfirmShiftOverlap = (error) =>
     isShiftOverlapError(error) &&
     window.confirm(unusedBuildShiftOverlapMessage(error));
 
+const isPersistedShiftId = (id) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        String(id || '')
+    );
+
 const ScheduleComponent = () => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
@@ -702,7 +707,7 @@ const ScheduleComponent = () => {
         if (!window.confirm('Borrar este turno del cuadrante?')) return;
         const serviceId = serviceScheduleViewModal.id;
 
-        if (generatedSchedulePreview) {
+        if (generatedSchedulePreview || !isPersistedShiftId(shift.id)) {
             setScheduleShiftMap((prev) => ({
                 ...prev,
                 [serviceId]: (prev[serviceId] || []).filter(

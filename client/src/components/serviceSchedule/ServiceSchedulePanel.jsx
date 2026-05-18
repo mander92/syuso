@@ -104,6 +104,11 @@ const confirmShiftOverlap = (error) =>
 
 const isShiftOverlapError = (error) => error?.code === 'SHIFT_OVERLAP';
 
+const isPersistedShiftId = (id) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        String(id || '')
+    );
+
 const formatOverlapDate = (value) => {
     if (!value) return '';
     const [year, month, day] = String(value).slice(0, 10).split('-');
@@ -602,6 +607,13 @@ const ServiceSchedulePanel = ({
 
     const handleShiftDelete = async (shiftId) => {
         if (isSimulationActive) {
+            setShifts((prev) => prev.filter((shift) => shift.id !== shiftId));
+            if (selectedShift?.id === shiftId) {
+                setSelectedShift(null);
+            }
+            return;
+        }
+        if (!isPersistedShiftId(shiftId)) {
             setShifts((prev) => prev.filter((shift) => shift.id !== shiftId));
             if (selectedShift?.id === shiftId) {
                 setSelectedShift(null);
@@ -1239,6 +1251,23 @@ const ServiceSchedulePanel = ({
                                 Hoja: {scheduleImportPreview.worksheetName} ·
                                 Servicio Excel:{' '}
                                 {scheduleImportPreview.serviceName || '—'}
+                                {scheduleImportPreview.duplicateShiftCount ? (
+                                    <>
+                                        {' '}
+                                        · {scheduleImportPreview.duplicateShiftCount}{' '}
+                                        duplicados ignorados
+                                    </>
+                                ) : null}
+                                {scheduleImportPreview.skippedExistingShiftCount ? (
+                                    <>
+                                        {' '}
+                                        ·{' '}
+                                        {
+                                            scheduleImportPreview.skippedExistingShiftCount
+                                        }{' '}
+                                        ya existian
+                                    </>
+                                ) : null}
                             </span>
                             <button
                                 type='button'

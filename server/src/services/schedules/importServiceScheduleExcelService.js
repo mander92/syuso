@@ -102,6 +102,23 @@ const suggestEmployees = (employees, excelName) =>
 
 const pad = (value) => String(value).padStart(2, '0');
 
+const normalizeDateKey = (value) => {
+    if (!value) return '';
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+        return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(
+            value.getDate()
+        )}`;
+    }
+    const match = String(value).match(/^(\d{4}-\d{2}-\d{2})/);
+    return match ? match[1] : '';
+};
+
+const normalizeTimeKey = (value) => {
+    const [hours, minutes, seconds = '00'] = String(value || '').split(':');
+    if (!hours || !minutes) return '';
+    return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+};
+
 const getCellPlainValue = (cell) => {
     const value = cell?.value;
     if (value && typeof value === 'object' && 'result' in value) {
@@ -186,6 +203,63 @@ const rowHasShiftTimes = (worksheet, rowNumber, dayColumns) =>
         const endTime = getExcelTime(worksheet.getCell(rowNumber + 1, col));
         return Boolean(startTime && endTime);
     });
+
+const buildShiftKey = (shift) =>
+    [
+        shift.employeeId || '',
+        normalizeDateKey(shift.scheduleDate),
+        normalizeTimeKey(shift.startTime),
+        normalizeTimeKey(shift.endTime),
+    ].join('|');
+
+const dedupeShifts = (shifts) => {
+    const seen = new Set();
+    const unique = [];
+    const duplicates = [];
+
+    shifts.forEach((shift) => {
+        const key = buildShiftKey(shift);
+        if (seen.has(key)) {
+            duplicates.push(shift);
+            return;
+        }
+
+        seen.add(key);
+        unique.push(shift);
+    });
+
+    return { unique, duplicates };
+};
+
+const filterExistingDuplicateShifts = async (pool, serviceId, month, shifts) => {
+    if (!shifts.length) return { shifts, skipped: 0 };
+
+    const [existingRows] = await pool.query(
+        `
+        SELECT employeeId, scheduleDate, startTime, endTime
+        FROM serviceScheduleShifts
+        WHERE serviceId = ?
+          AND DATE_FORMAT(scheduleDate, "%Y-%m") = ?
+          AND status = 'scheduled'
+          AND deletedAt IS NULL
+        `,
+        [serviceId, month]
+    );
+
+    const existingKeys = new Set(existingRows.map(buildShiftKey));
+    const filtered = [];
+    let skipped = 0;
+
+    shifts.forEach((shift) => {
+        if (existingKeys.has(buildShiftKey(shift))) {
+            skipped += 1;
+            return;
+        }
+        filtered.push(shift);
+    });
+
+    return { shifts: filtered, skipped };
+};
 
 const loadEmployees = async (pool) => {
     const [rows] = await pool.query(
@@ -317,6 +391,8 @@ const parseWorkbook = async ({ filePath, month, employees, employeeMappings = {}
         rowNumber += EMPLOYEE_BLOCK_SIZE - 1;
     }
 
+    const { unique: uniqueShifts, duplicates } = dedupeShifts(shifts);
+
     return {
         worksheetName: worksheet.name,
         serviceName: String(serviceName || '').trim(),
@@ -324,8 +400,9 @@ const parseWorkbook = async ({ filePath, month, employees, employeeMappings = {}
         employeeRows,
         unknownEmployees: [...unknownEmployees],
         unmatchedEmployees: [...unmatchedMap.values()],
-        shifts,
-        shiftCount: shifts.length,
+        shifts: uniqueShifts,
+        shiftCount: uniqueShifts.length,
+        duplicateShiftCount: duplicates.length,
     };
 };
 
@@ -367,15 +444,25 @@ const importServiceScheduleExcelService = async ({
         );
     }
 
+    const existingFilter = replace
+        ? { shifts: preview.shifts, skipped: 0 }
+        : await filterExistingDuplicateShifts(
+              pool,
+              serviceId,
+              month,
+              preview.shifts
+          );
+    const shiftsToInsert = existingFilter.shifts;
+
     const breakdowns = await calculateShiftHourBreakdowns(
         pool,
         serviceId,
-        preview.shifts
+        shiftsToInsert
     );
 
     await validateEmployeeShiftOverlapsService(
         pool,
-        preview.shifts.map((shift) => ({
+        shiftsToInsert.map((shift) => ({
             ...shift,
             serviceId,
         })),
@@ -406,8 +493,8 @@ const importServiceScheduleExcelService = async ({
             );
         }
 
-        for (let index = 0; index < preview.shifts.length; index += 1) {
-            const shift = preview.shifts[index];
+        for (let index = 0; index < shiftsToInsert.length; index += 1) {
+            const shift = shiftsToInsert[index];
             const breakdown = breakdowns[index] || {};
             await conn.query(
                 `
@@ -446,8 +533,11 @@ const importServiceScheduleExcelService = async ({
 
     return {
         ...preview,
+        shifts: shiftsToInsert,
+        shiftCount: shiftsToInsert.length,
         applied: true,
         replaced: replace,
+        skippedExistingShiftCount: existingFilter.skipped,
     };
 };
 

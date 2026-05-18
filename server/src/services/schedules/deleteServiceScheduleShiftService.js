@@ -6,15 +6,19 @@ const deleteServiceScheduleShiftService = async (shiftId) => {
 
     const [rows] = await pool.query(
         `
-        SELECT id
+        SELECT id, deletedAt
         FROM serviceScheduleShifts
-        WHERE id = ? AND deletedAt IS NULL
+        WHERE id = ?
         `,
         [shiftId]
     );
 
     if (!rows.length) {
         generateErrorUtil('Turno no encontrado', 404);
+    }
+
+    if (rows[0].deletedAt) {
+        return true;
     }
 
     await pool.query(
