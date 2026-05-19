@@ -16,6 +16,7 @@ const ServiceChatDashboard = () => {
     const { user } = useUser();
     const { unreadByService } = useChatNotifications();
     const [services, setServices] = useState([]);
+    const [allChatServices, setAllChatServices] = useState([]);
     const [openChats, setOpenChats] = useState({});
     const [expandedDelegations, setExpandedDelegations] = useState({});
     const [searchText, setSearchText] = useState('');
@@ -59,11 +60,12 @@ const ServiceChatDashboard = () => {
                         params.append('startDateTo', dateTo);
                     }
 
-                    const data = await fetchAllServicesServices(
-                        params.toString(),
-                        authToken
-                    );
-                    setServices(data?.data || []);
+                    const [filteredData, allData] = await Promise.all([
+                        fetchAllServicesServices(params.toString(), authToken),
+                        fetchAllServicesServices('', authToken),
+                    ]);
+                    setServices(filteredData?.data || []);
+                    setAllChatServices(allData?.data || []);
                     return;
                 }
 
@@ -73,11 +75,14 @@ const ServiceChatDashboard = () => {
                         authToken
                     );
                     setServices(data || []);
+                    setAllChatServices(data || []);
                     return;
                 }
 
                 setServices([]);
+                setAllChatServices([]);
             } catch (error) {
+                setAllChatServices([]);
                 toast.error(
                     error.message || 'No se pudieron cargar los chats'
                 );
@@ -93,7 +98,7 @@ const ServiceChatDashboard = () => {
         () => {
             const query = normalizeText(searchText);
             const uniqueMap = new Map();
-            services.forEach((service) => {
+            const addService = (service) => {
                 const id = service.serviceId || service.id;
                 if (!id || uniqueMap.has(id)) return;
                 const delegation =
@@ -108,6 +113,13 @@ const ServiceChatDashboard = () => {
                     delegation,
                     displayName: delegation ? `${name} - ${delegation}` : name,
                 });
+            };
+
+            services.forEach(addService);
+            allChatServices.forEach((service) => {
+                const id = service.serviceId || service.id;
+                if (!id || !Number(unreadByService?.[id])) return;
+                addService(service);
             });
 
             return Array.from(uniqueMap.values())
@@ -120,7 +132,7 @@ const ServiceChatDashboard = () => {
                 )
                 .sort((a, b) => compareText(a.name, b.name));
         },
-        [services, searchText]
+        [services, allChatServices, searchText, unreadByService]
     );
 
     const servicesByDelegation = useMemo(() => {
