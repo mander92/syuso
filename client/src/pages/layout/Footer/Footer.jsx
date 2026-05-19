@@ -70,14 +70,11 @@ export default function Footer() {
                     <h4>Contacto</h4>
                     <ul>
                         <li>
-                            Av. de la Innovación, 6, Edificio Convención, 2 planta, puerta 210, 41020 Sevilla
+                            Av. de la Innovación, 6, Edificio Convención, 2
+                            planta, puerta 210, 41020 Sevilla
                         </li>
-                        <li>
-                            +34 621 00 84 48
-                        </li>
-                        <li>
-                            administracion@syuso.es
-                        </li>
+                        <li>955 23 67 87</li>
+                        <li>administracion@syuso.es</li>
                     </ul>
                 </div>
             </div>

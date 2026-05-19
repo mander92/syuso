@@ -1,7 +1,7 @@
 .work-wrapper {
     background: var(--color-bg);
     min-height: calc(100vh - 80px);
-    padding: 3rem 1.6rem 4rem;
+    padding: 4rem 1.8rem 5rem;
     box-sizing: border-box;
     display: flex;
     justify-content: center;
@@ -12,33 +12,47 @@
     width: 100%;
     display: grid;
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-    gap: 2.5rem;
+    gap: 4rem;
     align-items: flex-start;
 }
 
 /* Lado texto */
+.work-info {
+    padding-top: 1.4rem;
+}
+
 .work-info h1 {
     margin: 0;
     font-size: 2rem;
+    line-height: 1.15;
     color: var(--color-text);
 }
 
 .work-subtitle {
-    margin: 0.6rem 0 1.4rem;
+    margin: 0.85rem 0 1.8rem;
     font-size: 0.98rem;
+    line-height: 1.55;
     color: var(--color-text-muted);
+    max-width: 560px;
 }
 
 .work-list {
-    margin: 0 0 1.2rem 1.2rem;
+    margin: 0 0 1.8rem 1.2rem;
     padding: 0;
     font-size: 0.95rem;
+    line-height: 1.45;
     color: var(--color-text);
+}
+
+.work-list li + li {
+    margin-top: 0.45rem;
 }
 
 .work-note {
     font-size: 0.9rem;
+    line-height: 1.55;
     color: var(--color-text-muted);
+    max-width: 620px;
 }
 
 /* Formulario */
@@ -52,23 +66,24 @@
     max-width: 480px;
     background: var(--color-surface);
     border-radius: 18px;
-    padding: 2rem 2.1rem;
+    padding: 2.2rem 2.2rem;
     box-shadow: 0 18px 40px rgba(0, 21, 59, 0.16);
     border: 1px solid var(--color-border-soft);
     box-sizing: border-box;
 }
 
 .work-form h2 {
-    margin: 0 0 1.1rem;
+    margin: 0 0 1.4rem;
     font-size: 1.4rem;
+    line-height: 1.2;
     color: var(--color-text);
 }
 
 .work-form .form-group {
-    margin-bottom: 0.9rem;
+    margin-bottom: 1.15rem;
     display: flex;
     flex-direction: column;
-    gap: 0.3rem;
+    gap: 0.45rem;
 }
 
 .work-form .form-group label {
@@ -79,7 +94,7 @@
 
 .work-form .form-group input,
 .work-form .form-group textarea {
-    padding: 0.55rem 0.8rem;
+    padding: 0.72rem 0.9rem;
     border-radius: 10px;
     border: 1px solid var(--color-border);
     font-size: 0.95rem;
@@ -99,16 +114,21 @@
 }
 
 .work-form-actions {
-    margin-top: 1.4rem;
+    margin-top: 1.7rem;
     display: flex;
     justify-content: space-between;
-    gap: 0.8rem;
+    gap: 1rem;
 }
 
 /* Responsive */
 @media (max-width: 900px) {
     .work-layout {
         grid-template-columns: minmax(0, 1fr);
+        gap: 2.5rem;
+    }
+
+    .work-info {
+        padding-top: 0;
     }
 }
 

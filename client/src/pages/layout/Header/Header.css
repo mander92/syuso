@@ -17,6 +17,10 @@
 }
 
 /* ---- Logo ---- */
+.header > a {
+    text-decoration: none;
+}
+
 .header-left {
     display: flex;
     flex-direction: column;
