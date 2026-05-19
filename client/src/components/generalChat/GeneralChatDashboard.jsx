@@ -40,6 +40,8 @@ const GeneralChatDashboard = () => {
     const [newChatName, setNewChatName] = useState('');
     const [newChatType, setNewChatType] = useState('standard');
     const [newChatMembers, setNewChatMembers] = useState([]);
+    const [directEmployeeId, setDirectEmployeeId] = useState('');
+    const [directSearch, setDirectSearch] = useState('');
     const [creating, setCreating] = useState(false);
     const [memberModalOpen, setMemberModalOpen] = useState(false);
     const [memberSearch, setMemberSearch] = useState('');
@@ -135,6 +137,21 @@ const GeneralChatDashboard = () => {
             .sort();
     }, [userOptions]);
 
+    const directEmployeeOptions = useMemo(() => {
+        const query = normalizeText(directSearch);
+        return userOptions
+            .filter((option) => option.role === 'employee')
+            .filter((option) => {
+                if (!query) return true;
+                return normalizeText(
+                    `${option.firstName || ''} ${option.lastName || ''} ${
+                        option.email || ''
+                    } ${option.city || ''}`
+                ).includes(query);
+            })
+            .slice(0, 30);
+    }, [directSearch, userOptions]);
+
     const toggleMemberSelection = (memberId) => {
         setNewChatMembers((prev) =>
             prev.includes(memberId)
@@ -167,6 +184,44 @@ const GeneralChatDashboard = () => {
 
     const handleCreateChat = async (event) => {
         event.preventDefault();
+        if (newChatType === 'direct') {
+            if (!directEmployeeId) {
+                toast.error('Selecciona un trabajador');
+                return;
+            }
+            const selectedEmployee = userOptions.find(
+                (option) => option.id === directEmployeeId
+            );
+            const employeeName =
+                `${selectedEmployee?.firstName || ''} ${
+                    selectedEmployee?.lastName || ''
+                }`.trim() ||
+                selectedEmployee?.email ||
+                'Trabajador';
+
+            try {
+                setCreating(true);
+                const chat = await createGeneralChat(
+                    authToken,
+                    employeeName,
+                    'direct',
+                    [directEmployeeId]
+                );
+                setDirectEmployeeId('');
+                setDirectSearch('');
+                await loadChats();
+                if (chat?.id) {
+                    setOpenChats((prev) => ({ ...prev, [chat.id]: true }));
+                }
+                toast.success('Chat individual listo');
+            } catch (error) {
+                toast.error(error.message || 'No se pudo crear el chat');
+            } finally {
+                setCreating(false);
+            }
+            return;
+        }
+
         if (!newChatName.trim()) {
             toast.error('Nombre requerido');
             return;
@@ -304,27 +359,75 @@ const GeneralChatDashboard = () => {
                         >
                             <option value='standard'>Chat normal</option>
                             <option value='announcement'>Anuncios</option>
+                            <option value='direct'>Individual</option>
                         </select>
                     </div>
-                    <div className='general-chat-create-field'>
-                        <label htmlFor='general-chat-members'>Miembros</label>
-                        <div className='general-chat-member-picker'>
-                            <button
-                                type='button'
-                                className='general-chat-member-btn'
-                                onClick={() => setMemberModalOpen(true)}
-                            >
-                                {newChatMembers.length
-                                    ? `${newChatMembers.length} seleccionados`
-                                    : 'Seleccionar miembros'}
-                            </button>
-                            <span className='general-chat-member-hint'>
-                                Solo empleados y admins segun permisos.
-                            </span>
+                    {newChatType === 'direct' ? (
+                        <div className='general-chat-create-field general-chat-create-field--wide'>
+                            <label htmlFor='general-chat-direct-search'>
+                                Trabajador
+                            </label>
+                            <input
+                                id='general-chat-direct-search'
+                                type='text'
+                                value={directSearch}
+                                onChange={(event) =>
+                                    setDirectSearch(event.target.value)
+                                }
+                                placeholder='Buscar trabajador...'
+                            />
+                            <div className='general-chat-direct-list'>
+                                {directEmployeeOptions.map((employee) => (
+                                    <button
+                                        key={employee.id}
+                                        type='button'
+                                        className={
+                                            'general-chat-direct-item' +
+                                            (directEmployeeId === employee.id
+                                                ? ' general-chat-direct-item--active'
+                                                : '')
+                                        }
+                                        onClick={() =>
+                                            setDirectEmployeeId(employee.id)
+                                        }
+                                    >
+                                        <strong>
+                                            {employee.firstName || ''}{' '}
+                                            {employee.lastName || ''}
+                                        </strong>
+                                        <span>
+                                            {employee.city || 'Sin delegacion'} ·{' '}
+                                            {employee.email}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className='general-chat-create-field'>
+                            <label htmlFor='general-chat-members'>Miembros</label>
+                            <div className='general-chat-member-picker'>
+                                <button
+                                    type='button'
+                                    className='general-chat-member-btn'
+                                    onClick={() => setMemberModalOpen(true)}
+                                >
+                                    {newChatMembers.length
+                                        ? `${newChatMembers.length} seleccionados`
+                                        : 'Seleccionar miembros'}
+                                </button>
+                                <span className='general-chat-member-hint'>
+                                    Solo empleados y admins segun permisos.
+                                </span>
+                            </div>
+                        </div>
+                    )}
                     <button type='submit' disabled={creating}>
-                        {creating ? 'Creando...' : 'Crear chat'}
+                        {creating
+                            ? 'Creando...'
+                            : newChatType === 'direct'
+                              ? 'Abrir chat individual'
+                              : 'Crear chat'}
                     </button>
                 </form>
             )}
@@ -452,6 +555,8 @@ const GeneralChatDashboard = () => {
                                     <p>
                                         {chat.type === 'announcement'
                                             ? 'Anuncios'
+                                            : chat.type === 'direct'
+                                              ? 'Individual'
                                             : 'Chat normal'}
                                     </p>
                                 </div>

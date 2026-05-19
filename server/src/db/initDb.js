@@ -441,7 +441,7 @@ const initDb = async () => {
             CREATE TABLE IF NOT EXISTS generalChats (
                 id CHAR(36) PRIMARY KEY NOT NULL,
                 name VARCHAR(120) NOT NULL,
-                type ENUM('standard','announcement') NOT NULL DEFAULT 'standard',
+                type ENUM('standard','announcement','direct') NOT NULL DEFAULT 'standard',
                 createdBy CHAR(36) NOT NULL,
                 createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 deletedAt TIMESTAMP,

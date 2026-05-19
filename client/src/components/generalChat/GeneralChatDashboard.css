@@ -51,6 +51,10 @@
     gap: 6px;
 }
 
+.general-chat-create-field--wide {
+    grid-column: span 2;
+}
+
 .general-chat-create-field label {
     font-size: 0.85rem;
     color: #475569;
@@ -83,6 +87,38 @@
 .general-chat-member-hint {
     color: #94a3b8;
     font-size: 0.8rem;
+}
+
+.general-chat-direct-list {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    display: grid;
+    gap: 6px;
+    max-height: 220px;
+    overflow: auto;
+    padding: 8px;
+}
+
+.general-chat-create .general-chat-direct-item {
+    align-items: flex-start;
+    background: #f8fafc;
+    border: 1px solid transparent;
+    color: #0f172a;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    text-align: left;
+}
+
+.general-chat-create .general-chat-direct-item:hover,
+.general-chat-create .general-chat-direct-item--active {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+.general-chat-direct-item span {
+    color: #64748b;
+    font-size: 0.82rem;
 }
 
 .general-chat-create button {

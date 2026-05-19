@@ -14,8 +14,13 @@ const createGeneralChatController = async (req, res, next) => {
             generateErrorUtil('Nombre requerido', 400);
         }
 
-        const normalizedType =
-            type === 'announcement' ? 'announcement' : 'standard';
+        const normalizedType = ['announcement', 'direct'].includes(type)
+            ? type
+            : 'standard';
+
+        if (normalizedType === 'direct' && !Array.isArray(memberIds)) {
+            generateErrorUtil('Trabajador requerido', 400);
+        }
 
         const data = await createGeneralChatService(
             name.trim(),
