@@ -19,13 +19,24 @@
 /* ---- Logo ---- */
 .header-left {
     display: flex;
+    flex-direction: column;
     align-items: center;
+    gap: 2px;
 }
 
 .header-logo {
     height: 55px;
     width: auto;
     object-fit: contain;
+}
+
+.header-registry {
+    color: var(--color-primary);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    white-space: nowrap;
 }
 
 /* ---- Navegación desktop ---- */
@@ -250,6 +261,14 @@
     .header {
         height: 70px;
         padding: 0 1rem;
+    }
+
+    .header-logo {
+        height: 48px;
+    }
+
+    .header-registry {
+        font-size: 0.62rem;
     }
 
     /* Escondemos nav desktop en móvil */

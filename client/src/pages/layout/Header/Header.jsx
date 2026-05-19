@@ -38,6 +38,7 @@ export default function Header() {
                         alt='SYUSO Seguridad'
                         className='header-logo'
                     />
+                    <span className='header-registry'>R.N.S.P. 4670</span>
                 </div>
             </NavLink>
 
