@@ -51,6 +51,52 @@
     gap: 16px;
 }
 
+.shift-swaps-filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    padding: 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+.shift-swaps-filters label {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    color: #334155;
+    font-size: 0.86rem;
+    font-weight: 600;
+}
+
+.shift-swaps-filters select,
+.shift-swaps-filters input {
+    border: 1px solid #d5dce6;
+    border-radius: 10px;
+    padding: 9px 11px;
+    font: inherit;
+    font-weight: 400;
+    color: #0f172a;
+    background: #ffffff;
+}
+
+.shift-swaps-filters__search {
+    grid-column: span 2;
+}
+
+.shift-swaps-filter-clear {
+    align-self: end;
+    border: 0;
+    border-radius: 999px;
+    padding: 10px 14px;
+    background: #e2e8f0;
+    color: #0f172a;
+    cursor: pointer;
+    font-weight: 700;
+}
+
 .shift-swaps-card {
     background: #ffffff;
     border: 1px solid #e2e8f0;
@@ -402,7 +448,60 @@
     justify-content: flex-end;
 }
 
+.shift-swaps-pagination {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 12px;
+    color: #475569;
+    font-size: 0.9rem;
+}
+
+.shift-swaps-pagination label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.shift-swaps-pagination select {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 6px 8px;
+}
+
+.shift-swaps-pagination__actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.shift-swaps-pagination button {
+    border: 1px solid #cbd5e1;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #0f172a;
+    padding: 7px 11px;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.shift-swaps-pagination button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 @media (max-width: 640px) {
+    .shift-swaps-filters {
+        grid-template-columns: 1fr;
+    }
+
+    .shift-swaps-filters__search {
+        grid-column: auto;
+    }
+
     .shift-swaps-inline {
         grid-template-columns: 1fr;
     }

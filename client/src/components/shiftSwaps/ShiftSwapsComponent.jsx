@@ -44,6 +44,9 @@ const normalizeServices = (data) => {
     return [];
 };
 
+const pageSizeOptions = [10, 20, 50];
+const getDateKey = (value) => (value ? String(value).slice(0, 10) : '');
+
 const ShiftSwapsComponent = () => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
@@ -77,6 +80,18 @@ const ShiftSwapsComponent = () => {
     const [creating, setCreating] = useState(false);
     const [actioningId, setActioningId] = useState('');
     const [rejectNotes, setRejectNotes] = useState({});
+    const [filters, setFilters] = useState({
+        employeeId: '',
+        serviceId: '',
+        requestType: '',
+        status: '',
+        dateFrom: '',
+        dateTo: '',
+        search: '',
+    });
+    const [myPage, setMyPage] = useState(1);
+    const [adminPage, setAdminPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     const serviceNameMap = useMemo(() => {
         const map = new Map();
@@ -136,6 +151,20 @@ const ShiftSwapsComponent = () => {
             .toLowerCase()
             .normalize('NFD')
             .replace(/[\u0300-\u036f]/g, '');
+
+    const getRequestPersonLabel = (request, kind) => {
+        const name =
+            kind === 'requestor'
+                ? request.requestorName || request.requestorEmail
+                : request.counterpartName || request.counterpartEmail;
+        const id =
+            kind === 'requestor' ? request.requestorId : request.counterpartId;
+        return (
+            String(name || '').trim() ||
+            employeeNameMap.get(id) ||
+            ''
+        );
+    };
 
     const getShiftEmployeeName = (shift) => {
         if (!shift?.employeeId) return 'Empleado';
@@ -496,7 +525,7 @@ const ShiftSwapsComponent = () => {
                 : request.counterpartName || request.counterpartEmail;
         const id =
             kind === 'requestor' ? request.requestorId : request.counterpartId;
-        const cleanName = String(name || '').trim();
+        const cleanName = getRequestPersonLabel(request, kind);
         const suffix = id === user?.id ? ' (Tú)' : '';
         return `${cleanName || describeUser(id)}${suffix}`;
     };
@@ -508,6 +537,217 @@ const ShiftSwapsComponent = () => {
         if (!userId) return '—';
         if (userId === user?.id) return 'Tú';
         return employeeNameMap.get(userId) || `ID ${userId.slice(0, 8)}…`;
+    };
+
+    const allRequestRows = useMemo(
+        () =>
+            [...myRequests, ...adminRequests].filter(
+                (request, index, list) =>
+                    request?.id &&
+                    list.findIndex((item) => item?.id === request.id) === index
+            ),
+        [adminRequests, myRequests]
+    );
+
+    const requestEmployeeOptions = useMemo(() => {
+        const map = new Map();
+        allRequestRows.forEach((request) => {
+            [
+                ['requestor', request.requestorId],
+                ['counterpart', request.counterpartId],
+            ].forEach(([kind, id]) => {
+                if (!id || map.has(id)) return;
+                map.set(id, getRequestPersonLabel(request, kind) || describeUser(id));
+            });
+        });
+        return [...map.entries()]
+            .map(([id, name]) => ({ id, name }))
+            .sort((a, b) =>
+                String(a.name || '').localeCompare(String(b.name || ''), 'es', {
+                    sensitivity: 'base',
+                })
+            );
+    }, [allRequestRows, employeeNameMap, user?.id]);
+
+    const requestServiceOptions = useMemo(() => {
+        const map = new Map();
+        allRequestRows.forEach((request) => {
+            if (!request.serviceId || map.has(request.serviceId)) return;
+            map.set(request.serviceId, describeRequestService(request));
+        });
+        return [...map.entries()]
+            .map(([id, name]) => ({ id, name }))
+            .sort((a, b) =>
+                String(a.name || '').localeCompare(String(b.name || ''), 'es', {
+                    sensitivity: 'base',
+                })
+            );
+    }, [allRequestRows, serviceNameMap]);
+
+    const filterRequests = (rows) => {
+        const query = normalizeSearch(filters.search);
+        return rows.filter((request) => {
+            if (filters.employeeId) {
+                const matchesEmployee =
+                    request.requestorId === filters.employeeId ||
+                    request.counterpartId === filters.employeeId;
+                if (!matchesEmployee) return false;
+            }
+            if (filters.serviceId && request.serviceId !== filters.serviceId) {
+                return false;
+            }
+            if (
+                filters.requestType &&
+                request.requestType !== filters.requestType
+            ) {
+                return false;
+            }
+            if (filters.status && request.status !== filters.status) {
+                return false;
+            }
+
+            const createdDate = getDateKey(request.createdAt);
+            if (filters.dateFrom && createdDate < filters.dateFrom) return false;
+            if (filters.dateTo && createdDate > filters.dateTo) return false;
+
+            if (!query) return true;
+            return normalizeSearch(
+                [
+                    describeRequestService(request),
+                    getRequestPersonLabel(request, 'requestor'),
+                    getRequestPersonLabel(request, 'counterpart'),
+                    requestTypeLabels[request.requestType || 'swap'],
+                    request.requestType,
+                    statusLabels[request.status],
+                    request.status,
+                    request.reason,
+                    getShiftDescriptions(request, 'fromShiftIds', 'fromShiftId').join(' '),
+                    getShiftDescriptions(request, 'toShiftIds', 'toShiftId').join(' '),
+                ].join(' ')
+            ).includes(query);
+        });
+    };
+
+    const filteredMyRequests = useMemo(
+        () => filterRequests(myRequests),
+        [filters, myRequests, serviceNameMap, employeeNameMap, shiftMap]
+    );
+
+    const filteredAdminRequests = useMemo(
+        () => filterRequests(adminRequests),
+        [filters, adminRequests, serviceNameMap, employeeNameMap, shiftMap]
+    );
+
+    const getPaginated = (rows, page) => {
+        const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+        const safePage = Math.min(page, totalPages);
+        const items = rows.slice((safePage - 1) * pageSize, safePage * pageSize);
+        return {
+            items,
+            totalPages,
+            safePage,
+            firstVisible: rows.length ? (safePage - 1) * pageSize + 1 : 0,
+            lastVisible: Math.min(safePage * pageSize, rows.length),
+        };
+    };
+
+    const myPagination = getPaginated(filteredMyRequests, myPage);
+    const adminPagination = getPaginated(filteredAdminRequests, adminPage);
+    const filteredTotal = isAdminLike
+        ? filteredAdminRequests.length
+        : filteredMyRequests.length;
+    const pendingFilteredCount = (isAdminLike
+        ? filteredAdminRequests
+        : filteredMyRequests
+    ).filter((request) =>
+        ['pending', 'pending_admin', 'pending_counterpart'].includes(
+            request.status
+        )
+    ).length;
+
+    useEffect(() => {
+        setMyPage(1);
+        setAdminPage(1);
+    }, [filters, pageSize]);
+
+    useEffect(() => {
+        if (myPage > myPagination.totalPages) setMyPage(myPagination.totalPages);
+        if (adminPage > adminPagination.totalPages) {
+            setAdminPage(adminPagination.totalPages);
+        }
+    }, [
+        adminPage,
+        adminPagination.totalPages,
+        myPage,
+        myPagination.totalPages,
+    ]);
+
+    const updateFilter = (field, value) => {
+        setFilters((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const clearFilters = () => {
+        setFilters({
+            employeeId: '',
+            serviceId: '',
+            requestType: '',
+            status: '',
+            dateFrom: '',
+            dateTo: '',
+            search: '',
+        });
+    };
+
+    const renderPagination = (rows, pagination, pageSetter) => {
+        if (!rows.length) return null;
+        return (
+            <div className='shift-swaps-pagination'>
+                <span>
+                    Mostrando {pagination.firstVisible}-{pagination.lastVisible}{' '}
+                    de {rows.length}
+                </span>
+                <label>
+                    Por pagina
+                    <select
+                        value={pageSize}
+                        onChange={(event) =>
+                            setPageSize(Number(event.target.value))
+                        }
+                    >
+                        {pageSizeOptions.map((option) => (
+                            <option key={option} value={option}>
+                                {option}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+                <div className='shift-swaps-pagination__actions'>
+                    <button
+                        type='button'
+                        onClick={() =>
+                            pageSetter((current) => Math.max(1, current - 1))
+                        }
+                        disabled={pagination.safePage <= 1}
+                    >
+                        Anterior
+                    </button>
+                    <strong>
+                        {pagination.safePage} / {pagination.totalPages}
+                    </strong>
+                    <button
+                        type='button'
+                        onClick={() =>
+                            pageSetter((current) =>
+                                Math.min(pagination.totalPages, current + 1)
+                            )
+                        }
+                        disabled={pagination.safePage >= pagination.totalPages}
+                    >
+                        Siguiente
+                    </button>
+                </div>
+            </div>
+        );
     };
 
     const handleFieldChange = (field, value) => {
@@ -754,7 +994,10 @@ const ShiftSwapsComponent = () => {
                 </div>
                 <div className='shift-swaps__meta'>
                     <span className='shift-swaps__badge'>
-                        {myRequests.length} solicitudes
+                        {filteredTotal} filtradas
+                    </span>
+                    <span className='shift-swaps__badge'>
+                        {pendingFilteredCount} pendientes
                     </span>
                     {isAdminLike ? (
                         <span className='shift-swaps__badge shift-swaps__badge--accent'>
@@ -768,6 +1011,113 @@ const ShiftSwapsComponent = () => {
                     ) : null}
                 </div>
             </header>
+
+            <div className='shift-swaps-filters'>
+                <label>
+                    Empleado
+                    <select
+                        value={filters.employeeId}
+                        onChange={(event) =>
+                            updateFilter('employeeId', event.target.value)
+                        }
+                    >
+                        <option value=''>Todos</option>
+                        {requestEmployeeOptions.map((employee) => (
+                            <option key={employee.id} value={employee.id}>
+                                {employee.name}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+                <label>
+                    Servicio
+                    <select
+                        value={filters.serviceId}
+                        onChange={(event) =>
+                            updateFilter('serviceId', event.target.value)
+                        }
+                    >
+                        <option value=''>Todos</option>
+                        {requestServiceOptions.map((service) => (
+                            <option key={service.id} value={service.id}>
+                                {service.name}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+                <label>
+                    Tipo
+                    <select
+                        value={filters.requestType}
+                        onChange={(event) =>
+                            updateFilter('requestType', event.target.value)
+                        }
+                    >
+                        <option value=''>Todos</option>
+                        {Object.entries(requestTypeLabels).map(
+                            ([value, label]) => (
+                                <option key={value} value={value}>
+                                    {label}
+                                </option>
+                            )
+                        )}
+                    </select>
+                </label>
+                <label>
+                    Estado
+                    <select
+                        value={filters.status}
+                        onChange={(event) =>
+                            updateFilter('status', event.target.value)
+                        }
+                    >
+                        <option value=''>Todos</option>
+                        {Object.entries(statusLabels).map(([value, label]) => (
+                            <option key={value} value={value}>
+                                {label}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+                <label>
+                    Desde
+                    <input
+                        type='date'
+                        value={filters.dateFrom}
+                        onChange={(event) =>
+                            updateFilter('dateFrom', event.target.value)
+                        }
+                    />
+                </label>
+                <label>
+                    Hasta
+                    <input
+                        type='date'
+                        value={filters.dateTo}
+                        onChange={(event) =>
+                            updateFilter('dateTo', event.target.value)
+                        }
+                    />
+                </label>
+                <label className='shift-swaps-filters__search'>
+                    Buscar
+                    <input
+                        type='search'
+                        value={filters.search}
+                        onChange={(event) =>
+                            updateFilter('search', event.target.value)
+                        }
+                        placeholder='Nombre, servicio, turno...'
+                    />
+                </label>
+                <button
+                    type='button'
+                    className='shift-swaps-filter-clear'
+                    onClick={clearFilters}
+                >
+                    Limpiar filtros
+                </button>
+            </div>
 
             <div className='shift-swaps__grid'>
                 <form className='shift-swaps-card' onSubmit={handleSubmit}>
@@ -1077,13 +1427,14 @@ const ShiftSwapsComponent = () => {
 
                     {loadingRequests ? (
                         <p className='shift-swaps-empty'>Cargando...</p>
-                    ) : !myRequests.length ? (
+                    ) : !filteredMyRequests.length ? (
                         <p className='shift-swaps-empty'>
                             Aún no has enviado solicitudes.
                         </p>
                     ) : (
-                        <ul className='shift-swaps-list'>
-                            {myRequests.map((req) => (
+                        <>
+                            <ul className='shift-swaps-list'>
+                            {myPagination.items.map((req) => (
                                 <li
                                     key={req.id}
                                     className='shift-swaps-item'
@@ -1205,7 +1556,13 @@ const ShiftSwapsComponent = () => {
                                     </div>
                                 </li>
                             ))}
-                        </ul>
+                            </ul>
+                            {renderPagination(
+                                filteredMyRequests,
+                                myPagination,
+                                setMyPage
+                            )}
+                        </>
                     )}
                 </div>
             </div>
@@ -1222,13 +1579,14 @@ const ShiftSwapsComponent = () => {
                     </div>
                     {loadingAdmin ? (
                         <p className='shift-swaps-empty'>Cargando...</p>
-                    ) : !adminRequests.length ? (
+                    ) : !filteredAdminRequests.length ? (
                         <p className='shift-swaps-empty'>
                             No hay solicitudes registradas.
                         </p>
                     ) : (
-                        <ul className='shift-swaps-list'>
-                            {adminRequests.map((req) => (
+                        <>
+                            <ul className='shift-swaps-list'>
+                            {adminPagination.items.map((req) => (
                                 <li
                                     key={req.id}
                                     className='shift-swaps-item'
@@ -1347,7 +1705,13 @@ const ShiftSwapsComponent = () => {
                                     ) : null}
                                 </li>
                             ))}
-                        </ul>
+                            </ul>
+                            {renderPagination(
+                                filteredAdminRequests,
+                                adminPagination,
+                                setAdminPage
+                            )}
+                        </>
                     )}
                 </div>
             ) : null}
