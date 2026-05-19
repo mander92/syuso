@@ -14,7 +14,7 @@ import './ServiceChatDashboard.css';
 const ServiceChatDashboard = () => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
-    const { unreadByService, resetServiceUnread } = useChatNotifications();
+    const { unreadByService } = useChatNotifications();
     const [services, setServices] = useState([]);
     const [openChats, setOpenChats] = useState({});
     const [expandedDelegations, setExpandedDelegations] = useState({});
@@ -176,7 +176,6 @@ const ServiceChatDashboard = () => {
             ...prev,
             [serviceId]: !prev[serviceId],
         }));
-        resetServiceUnread(serviceId);
     };
 
     const shouldGroupByDelegation =

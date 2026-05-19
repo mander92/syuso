@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 import ServiceChatDashboard from '../serviceChat/ServiceChatDashboard.jsx';
@@ -6,13 +6,8 @@ import GeneralChatDashboard from '../generalChat/GeneralChatDashboard.jsx';
 import './ChatHub.css';
 
 const ChatHub = () => {
-    const { unreadByService, unreadByGeneral, resetChatUnread } =
-        useChatNotifications();
+    const { unreadByService, unreadByGeneral } = useChatNotifications();
     const [activeTab, setActiveTab] = useState('services');
-
-    useEffect(() => {
-        resetChatUnread();
-    }, [resetChatUnread]);
 
     const serviceUnreadTotal = useMemo(
         () =>

@@ -153,7 +153,6 @@ const GeneralChatDashboard = () => {
             ...prev,
             [chatId]: !prev[chatId],
         }));
-        resetGeneralUnread(chatId);
     };
 
     const toggleMembers = (chatId) => {
