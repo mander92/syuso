@@ -15,7 +15,7 @@ const createEmployeeRequestService = async ({
 }) => {
     const pool = await getPool();
     const type = normalizeEmployeeRequestType(requestType);
-    const allowedTypes = ['vacation', 'days_off', 'weekend_rest', 'availability', 'other'];
+    const allowedTypes = ['vacation', 'days_off', 'weekend_rest', 'availability'];
 
     if (!allowedTypes.includes(type)) {
         generateErrorUtil('Tipo de peticion no valido', 400);

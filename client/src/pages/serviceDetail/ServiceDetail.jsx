@@ -99,7 +99,6 @@ const ServiceDetail = () => {
             'employees',
             'nfc',
             'schedule',
-            'status',
             'reports',
         ];
         if (allowedTabs.includes(tab)) {
@@ -563,15 +562,6 @@ const ServiceDetail = () => {
                                 onClick={() => setActiveTab('schedule')}
                             >
                                 Cuadrante
-                            </button>
-                        )}
-                        {(user?.role === 'admin' || user?.role === 'sudo') && (
-                            <button
-                                type='button'
-                                className={activeTab === 'status' ? 'is-active' : ''}
-                                onClick={() => setActiveTab('status')}
-                            >
-                                Estado
                             </button>
                         )}
                         <button

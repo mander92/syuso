@@ -3,7 +3,6 @@ export const employeeRequestTypeLabels = {
     days_off: 'Dias libres',
     weekend_rest: 'Fin de semana de descanso',
     availability: 'Disponibilidad eventual',
-    other: 'Otra peticion',
 };
 
 export const absenceTypeByRequestType = {
@@ -29,8 +28,6 @@ export const normalizeEmployeeRequestType = (value) => {
         disponibilidad: 'availability',
         available: 'availability',
         availability: 'availability',
-        otra: 'other',
-        other: 'other',
     };
     return map[normalized] || normalized;
 };

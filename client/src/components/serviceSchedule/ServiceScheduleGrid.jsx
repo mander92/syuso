@@ -51,7 +51,7 @@ const isDateInRange = (date, start, end) => {
 
 const absenceColor = (type) => {
     if (type === 'vacation') return '#fde68a';
-    if (type === 'free' || type === 'leave') return '#c7d2fe';
+    if (type === 'free' || type === 'leave' || type === 'off') return '#c7d2fe';
     if (type === 'sick') return '#fecaca';
     if (type === 'available') return '#bbf7d0';
     return '#e2e8f0';
@@ -59,7 +59,7 @@ const absenceColor = (type) => {
 
 const absenceLabel = (type) => {
     if (type === 'vacation') return 'Vacaciones';
-    if (type === 'free' || type === 'leave') return 'Libre';
+    if (type === 'free' || type === 'leave' || type === 'off') return 'Libre';
     if (type === 'sick') return 'Baja';
     if (type === 'available') return 'Disponible';
     return 'Ausencia';
@@ -67,7 +67,7 @@ const absenceLabel = (type) => {
 
 const absenceShort = (type) => {
     if (type === 'vacation') return 'V';
-    if (type === 'free' || type === 'leave') return 'L';
+    if (type === 'free' || type === 'leave' || type === 'off') return 'L';
     if (type === 'sick') return 'B';
     if (type === 'available') return 'D';
     return 'A';
@@ -101,10 +101,14 @@ const ServiceScheduleGrid = ({
     onCopyShift,
     onPasteShift,
     onDeleteShift,
+    onCopyAbsence,
+    onPasteAbsence,
+    onDeleteAbsence,
     onHolidayDrop,
     onHolidayClick,
     holidaysByDate = {},
     copiedShift = null,
+    copiedAbsence = null,
     requestBadgesByCell = {},
     readOnly = false,
     showUnassigned = true,
@@ -465,20 +469,27 @@ const ServiceScheduleGrid = ({
                                             >
                                                 +
                                             </button>
-                                            {copiedShift && (
+                                            {(copiedShift || copiedAbsence) && (
                                                 <button
                                                     type='button'
                                                     className='service-schedule-grid-action'
                                                     onClick={(event) => {
                                                         event.stopPropagation();
-                                                        onPasteShift?.({
-                                                            employeeId:
-                                                                row.id || '',
-                                                            scheduleDate:
-                                                                dateKey,
-                                                        });
+                                                        const target = {
+                                                            employeeId: row.id || '',
+                                                            scheduleDate: dateKey,
+                                                        };
+                                                        if (copiedAbsence) {
+                                                            onPasteAbsence?.(target);
+                                                        } else {
+                                                            onPasteShift?.(target);
+                                                        }
                                                     }}
-                                                    title='Pegar turno'
+                                                    title={
+                                                        copiedAbsence
+                                                            ? 'Pegar ausencia'
+                                                            : 'Pegar turno'
+                                                    }
                                                 >
                                                     P
                                                 </button>
@@ -536,6 +547,36 @@ const ServiceScheduleGrid = ({
                                             )}
                                         </div>
                                     ))}
+                                    {!readOnly &&
+                                        absencesForDay.map((absence) => (
+                                            <span
+                                                key={`absence-actions-${absence.id || `${absence.type}-${dateKey}`}`}
+                                                className='service-schedule-grid-absence-actions'
+                                            >
+                                                <button
+                                                    type='button'
+                                                    onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        onCopyAbsence?.(absence);
+                                                    }}
+                                                    title='Copiar ausencia'
+                                                >
+                                                    C
+                                                </button>
+                                                {absence.id && (
+                                                    <button
+                                                        type='button'
+                                                        onClick={(event) => {
+                                                            event.stopPropagation();
+                                                            onDeleteAbsence?.(absence);
+                                                        }}
+                                                        title='Borrar ausencia'
+                                                    >
+                                                        X
+                                                    </button>
+                                                )}
+                                            </span>
+                                        ))}
                                 </div>
                             );
                             })}

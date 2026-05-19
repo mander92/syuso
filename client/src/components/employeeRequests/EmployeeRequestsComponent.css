@@ -146,8 +146,27 @@
 }
 
 .employee-requests-filter-clear {
-    background: #f3f4f6;
-    color: #111827;
+    align-self: end;
+    justify-self: start;
+    min-height: 38px;
+    border: 1px solid #d1d5db;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #0f172a;
+    padding: 0.52rem 0.95rem;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        box-shadow 0.15s ease,
+        transform 0.15s ease;
+}
+
+.employee-requests-filter-clear:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+    box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+    transform: translateY(-1px);
 }
 
 .employee-requests-list {

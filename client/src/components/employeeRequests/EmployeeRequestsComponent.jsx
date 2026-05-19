@@ -18,7 +18,6 @@ const requestTypeLabels = {
     days_off: 'Dias libres',
     weekend_rest: 'Fin de semana de descanso',
     availability: 'Disponibilidad eventual',
-    other: 'Otra peticion',
 };
 
 const statusLabels = {
@@ -288,7 +287,6 @@ const EmployeeRequestsComponent = () => {
                             <option value='days_off'>Dias libres</option>
                             <option value='weekend_rest'>Fin de semana de descanso</option>
                             <option value='availability'>Disponibilidad eventual</option>
-                            <option value='other'>Otra peticion</option>
                         </select>
                     </label>
                     <label>

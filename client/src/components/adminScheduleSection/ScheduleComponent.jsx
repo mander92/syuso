@@ -46,6 +46,14 @@ const holidayScopeLabels = {
     local: 'Local',
 };
 
+const scheduleEntryTypeLabels = {
+    shift: 'Turno',
+    off: 'Libre',
+    vacation: 'Vacaciones',
+    sick: 'Baja',
+    available: 'Disponibilidad',
+};
+
 const toLocalDateInput = (date = new Date()) => {
     const offset = date.getTimezoneOffset();
     const local = new Date(date.getTime() - offset * 60000);
@@ -741,6 +749,9 @@ const ScheduleComponent = () => {
 
     const openNewScheduleViewShift = ({ employeeId, scheduleDate }) => {
         setSelectedGeneratedShift({
+            entryType: copiedScheduleShift?.kind === 'absence'
+                ? copiedScheduleShift.type
+                : 'shift',
             scheduleDate,
             employeeId: employeeId || '',
             startTime: copiedScheduleShift?.startTime || '18:00',
@@ -754,11 +765,13 @@ const ScheduleComponent = () => {
             shiftTypeId: copiedScheduleShift?.shiftTypeId || '',
             shiftTypeName: copiedScheduleShift?.shiftTypeName || '',
             shiftTypeColor: copiedScheduleShift?.shiftTypeColor || '',
+            notes: copiedScheduleShift?.notes || '',
         });
     };
 
     const handleCopyScheduleViewShift = (shift) => {
         setCopiedScheduleShift({
+            kind: 'shift',
             startTime: shift.startTime,
             endTime: shift.endTime,
             hours: shift.hours,
@@ -767,6 +780,15 @@ const ScheduleComponent = () => {
             shiftTypeColor: shift.shiftTypeColor || '',
         });
         toast.success('Turno copiado');
+    };
+
+    const handleCopyScheduleViewAbsence = (absence) => {
+        setCopiedScheduleShift({
+            kind: 'absence',
+            type: absence.type || 'off',
+            notes: absence.notes || '',
+        });
+        toast.success('Ausencia copiada');
     };
 
     const handlePasteScheduleViewShift = async (targetOrTargets) => {
@@ -784,6 +806,47 @@ const ScheduleComponent = () => {
             }))
             .filter((target) => target.scheduleDate);
         if (!normalizedTargets.length) return;
+
+        if (copiedScheduleShift.kind === 'absence') {
+            const validTargets = normalizedTargets.filter(
+                (target) => target.employeeId
+            );
+            if (!validTargets.length) {
+                toast.error('Selecciona una celda de empleado para pegar.');
+                return;
+            }
+            try {
+                const created = await Promise.all(
+                    validTargets.map((target) =>
+                        createEmployeeAbsence(authToken, target.employeeId, {
+                            startDate: target.scheduleDate,
+                            endDate: target.scheduleDate,
+                            type: copiedScheduleShift.type || 'off',
+                            notes: copiedScheduleShift.notes || '',
+                        })
+                    )
+                );
+                setEmployeeAbsencesMap((prev) => {
+                    const next = { ...prev };
+                    created.forEach((absence) => {
+                        if (!absence?.employeeId) return;
+                        next[absence.employeeId] = [
+                            absence,
+                            ...(next[absence.employeeId] || []),
+                        ];
+                    });
+                    return next;
+                });
+                toast.success(
+                    created.length === 1
+                        ? 'Ausencia pegada'
+                        : `${created.length} ausencias pegadas`
+                );
+            } catch (error) {
+                toast.error(error.message || 'No se pudo pegar la ausencia');
+            }
+            return;
+        }
 
         const serviceId = serviceScheduleViewModal.id;
         const buildPayload = (target) => ({
@@ -850,6 +913,22 @@ const ScheduleComponent = () => {
         }
     };
 
+    const handleDeleteScheduleViewAbsence = async (absence) => {
+        if (!absence?.id || !absence?.employeeId) return;
+        try {
+            await deleteEmployeeAbsence(authToken, absence.employeeId, absence.id);
+            setEmployeeAbsencesMap((prev) => ({
+                ...prev,
+                [absence.employeeId]: (prev[absence.employeeId] || []).filter(
+                    (item) => item.id !== absence.id
+                ),
+            }));
+            toast.success('Ausencia eliminada');
+        } catch (error) {
+            toast.error(error.message || 'No se pudo eliminar la ausencia');
+        }
+    };
+
     const handleGeneratedShiftFieldChange = (field, value) => {
         setSelectedGeneratedShift((prev) => {
             if (!prev) return prev;
@@ -869,6 +948,36 @@ const ScheduleComponent = () => {
 
     const handleSaveGeneratedShift = async () => {
         if (!selectedGeneratedShift) return;
+        if (selectedGeneratedShift.entryType !== 'shift') {
+            if (!selectedGeneratedShift.employeeId) {
+                toast.error('Selecciona un empleado para crear la ausencia');
+                return;
+            }
+            try {
+                const absence = await createEmployeeAbsence(
+                    authToken,
+                    selectedGeneratedShift.employeeId,
+                    {
+                        startDate: selectedGeneratedShift.scheduleDate,
+                        endDate: selectedGeneratedShift.scheduleDate,
+                        type: selectedGeneratedShift.entryType || 'off',
+                        notes: selectedGeneratedShift.notes || '',
+                    }
+                );
+                setEmployeeAbsencesMap((prev) => ({
+                    ...prev,
+                    [absence.employeeId]: [
+                        absence,
+                        ...(prev[absence.employeeId] || []),
+                    ],
+                }));
+                toast.success('Marca creada');
+                setSelectedGeneratedShift(null);
+            } catch (error) {
+                toast.error(error.message || 'No se pudo crear la marca');
+            }
+            return;
+        }
         if (!selectedGeneratedShift.id) {
             if (!serviceScheduleViewModal?.id) return;
             const serviceId = serviceScheduleViewModal.id;
@@ -2851,12 +2960,29 @@ const ScheduleComponent = () => {
                                     onHolidayDrop={handleHolidayDrop}
                                     onHolidayClick={handleHolidayClick}
                                     onShiftUpdate={handleScheduleViewShiftUpdate}
-                                    onSelectShift={setSelectedGeneratedShift}
+                                    onSelectShift={(shift) =>
+                                        setSelectedGeneratedShift({
+                                            ...shift,
+                                            entryType: 'shift',
+                                        })
+                                    }
                                     onCreateShift={openNewScheduleViewShift}
                                     onCopyShift={handleCopyScheduleViewShift}
                                     onPasteShift={handlePasteScheduleViewShift}
                                     onDeleteShift={handleScheduleViewShiftDelete}
-                                    copiedShift={copiedScheduleShift}
+                                    onCopyAbsence={handleCopyScheduleViewAbsence}
+                                    onPasteAbsence={handlePasteScheduleViewShift}
+                                    onDeleteAbsence={handleDeleteScheduleViewAbsence}
+                                    copiedShift={
+                                        copiedScheduleShift?.kind === 'shift'
+                                            ? copiedScheduleShift
+                                            : null
+                                    }
+                                    copiedAbsence={
+                                        copiedScheduleShift?.kind === 'absence'
+                                            ? copiedScheduleShift
+                                            : null
+                                    }
                                     requestBadgesByCell={getRequestBadgesForService(
                                         serviceScheduleViewModal.id,
                                         serviceScheduleViewModal.month
@@ -2886,7 +3012,17 @@ const ScheduleComponent = () => {
                                     onHolidayClick={handleHolidayClick}
                                     onCreateShift={openNewScheduleViewShift}
                                     onPasteShift={handlePasteScheduleViewShift}
-                                    copiedShift={copiedScheduleShift}
+                                    onPasteAbsence={handlePasteScheduleViewShift}
+                                    copiedShift={
+                                        copiedScheduleShift?.kind === 'shift'
+                                            ? copiedScheduleShift
+                                            : null
+                                    }
+                                    copiedAbsence={
+                                        copiedScheduleShift?.kind === 'absence'
+                                            ? copiedScheduleShift
+                                            : null
+                                    }
                                     requestBadgesByCell={getRequestBadgesForService(
                                         serviceScheduleViewModal.id,
                                         serviceScheduleViewModal.month
@@ -2934,6 +3070,31 @@ const ScheduleComponent = () => {
                             </button>
                         </div>
                         <div className='service-schedule-modal-grid'>
+                            {!selectedGeneratedShift.id && (
+                                <label>
+                                    Que quieres crear
+                                    <select
+                                        value={
+                                            selectedGeneratedShift.entryType ||
+                                            'shift'
+                                        }
+                                        onChange={(event) =>
+                                            handleGeneratedShiftFieldChange(
+                                                'entryType',
+                                                event.target.value
+                                            )
+                                        }
+                                    >
+                                        {Object.entries(
+                                            scheduleEntryTypeLabels
+                                        ).map(([value, label]) => (
+                                            <option key={value} value={value}>
+                                                {label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+                            )}
                             <label>
                                 Fecha
                                 <input
@@ -2949,47 +3110,60 @@ const ScheduleComponent = () => {
                                     }
                                 />
                             </label>
-                            <label>
-                                Inicio
-                                <input
-                                    type='time'
-                                    value={selectedGeneratedShift.startTime || ''}
-                                    onChange={(event) =>
-                                        handleGeneratedShiftFieldChange(
-                                            'startTime',
-                                            event.target.value
-                                        )
-                                    }
-                                />
-                            </label>
-                            <label>
-                                Fin
-                                <input
-                                    type='time'
-                                    value={selectedGeneratedShift.endTime || ''}
-                                    onChange={(event) =>
-                                        handleGeneratedShiftFieldChange(
-                                            'endTime',
-                                            event.target.value
-                                        )
-                                    }
-                                />
-                            </label>
-                            <label>
-                                Horas
-                                <input
-                                    type='number'
-                                    step='0.25'
-                                    min='0'
-                                    value={selectedGeneratedShift.hours || ''}
-                                    onChange={(event) =>
-                                        handleGeneratedShiftFieldChange(
-                                            'hours',
-                                            event.target.value
-                                        )
-                                    }
-                                />
-                            </label>
+                            {(selectedGeneratedShift.entryType || 'shift') ===
+                                'shift' && (
+                                <>
+                                    <label>
+                                        Inicio
+                                        <input
+                                            type='time'
+                                            value={
+                                                selectedGeneratedShift.startTime ||
+                                                ''
+                                            }
+                                            onChange={(event) =>
+                                                handleGeneratedShiftFieldChange(
+                                                    'startTime',
+                                                    event.target.value
+                                                )
+                                            }
+                                        />
+                                    </label>
+                                    <label>
+                                        Fin
+                                        <input
+                                            type='time'
+                                            value={
+                                                selectedGeneratedShift.endTime ||
+                                                ''
+                                            }
+                                            onChange={(event) =>
+                                                handleGeneratedShiftFieldChange(
+                                                    'endTime',
+                                                    event.target.value
+                                                )
+                                            }
+                                        />
+                                    </label>
+                                    <label>
+                                        Horas
+                                        <input
+                                            type='number'
+                                            step='0.25'
+                                            min='0'
+                                            value={
+                                                selectedGeneratedShift.hours || ''
+                                            }
+                                            onChange={(event) =>
+                                                handleGeneratedShiftFieldChange(
+                                                    'hours',
+                                                    event.target.value
+                                                )
+                                            }
+                                        />
+                                    </label>
+                                </>
+                            )}
                             <label>
                                 Trabajador
                                 <select
@@ -3011,6 +3185,23 @@ const ScheduleComponent = () => {
                                     ))}
                                 </select>
                             </label>
+                            {(selectedGeneratedShift.entryType || 'shift') !==
+                                'shift' && (
+                                <label>
+                                    Nota
+                                    <input
+                                        type='text'
+                                        value={selectedGeneratedShift.notes || ''}
+                                        onChange={(event) =>
+                                            handleGeneratedShiftFieldChange(
+                                                'notes',
+                                                event.target.value
+                                            )
+                                        }
+                                        placeholder='Opcional'
+                                    />
+                                </label>
+                            )}
                         </div>
                         <div className='service-schedule-modal-actions'>
                             <button
@@ -3040,7 +3231,10 @@ const ScheduleComponent = () => {
                             >
                                 {selectedGeneratedShift.id
                                     ? 'Guardar cambio'
-                                    : 'Crear turno'}
+                                    : (selectedGeneratedShift.entryType || 'shift') ===
+                                        'shift'
+                                      ? 'Crear turno'
+                                      : 'Crear marca'}
                             </button>
                         </div>
                     </div>

@@ -257,6 +257,27 @@
     display: inline;
 }
 
+.service-schedule-grid-absence-actions {
+    display: inline-flex;
+    gap: 2px;
+    margin-left: 2px;
+    vertical-align: top;
+}
+
+.service-schedule-grid-absence-actions button {
+    border: 1px solid #cbd5e1;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #0f172a;
+    width: 17px;
+    height: 17px;
+    padding: 0;
+    font-size: 0.58rem;
+    font-weight: 800;
+    line-height: 1;
+    cursor: pointer;
+}
+
 .service-schedule-grid-absence--vacation {
     background: #fef3c7;
     border-color: #f59e0b;
@@ -264,7 +285,8 @@
 }
 
 .service-schedule-grid-absence--free,
-.service-schedule-grid-absence--leave {
+.service-schedule-grid-absence--leave,
+.service-schedule-grid-absence--off {
     background: #e0e7ff;
     border-color: #818cf8;
     color: #312e81;
