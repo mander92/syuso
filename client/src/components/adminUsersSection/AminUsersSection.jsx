@@ -24,6 +24,63 @@ import {
 } from '../../services/delegationService.js';
 import './AdminUsersSection.css';
 
+const dashboardPermissionOptions = [
+    { id: 'contracts', label: 'Servicios' },
+    { id: 'schedules', label: 'Cuadrantes' },
+    { id: 'shifts', label: 'Turnos' },
+    { id: 'shiftSwaps', label: 'Cambios de turno' },
+    { id: 'employeeRequests', label: 'Peticiones' },
+    { id: 'chats', label: 'Chats' },
+    { id: 'alerts', label: 'Alertas' },
+    { id: 'workReports', label: 'Partes de trabajo' },
+    { id: 'users', label: 'Usuarios' },
+    { id: 'cleanup', label: 'Limpieza' },
+    { id: 'cv', label: 'CV' },
+    { id: 'services', label: 'Mis servicios / servicios activos' },
+    { id: 'schedule', label: 'Mi cuadrante' },
+];
+
+const defaultDashboardPermissionsByRole = {
+    sudo: dashboardPermissionOptions.map((option) => option.id),
+    admin: [
+        'contracts',
+        'schedules',
+        'shifts',
+        'shiftSwaps',
+        'employeeRequests',
+        'chats',
+        'alerts',
+        'workReports',
+        'users',
+    ],
+    employee: [
+        'services',
+        'schedule',
+        'shiftSwaps',
+        'employeeRequests',
+        'chats',
+        'alerts',
+    ],
+    client: ['contracts', 'services'],
+};
+
+const parseDashboardPermissions = (value) => {
+    if (Array.isArray(value)) return value;
+    if (!value || typeof value !== 'string') return [];
+    try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+};
+
+const hasDashboardPermissionsValue = (value) =>
+    value !== null && value !== undefined && value !== '';
+
+const getDefaultDashboardPermissions = (role) =>
+    defaultDashboardPermissionsByRole[role] || [];
+
 const AdminUsersSection = () => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
@@ -87,6 +144,7 @@ const AdminUsersSection = () => {
         city: '',
         job: '',
         role: 'client',
+        dashboardPermissions: getDefaultDashboardPermissions('client'),
     });
 
     // ===============================
@@ -266,12 +324,30 @@ const AdminUsersSection = () => {
                 return;
             }
 
+            const nextPermissions = getDefaultDashboardPermissions(newRole);
+
             await fetchAdminUpdateUserServices(authToken, userId, {
                 role: newRole,
+                ...(isSudo && newRole !== 'sudo'
+                    ? { dashboardPermissions: nextPermissions }
+                    : {}),
             });
 
             setUsers((prev) =>
-                prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
+                prev.map((u) =>
+                    u.id === userId
+                        ? {
+                              ...u,
+                              role: newRole,
+                              ...(isSudo && newRole !== 'sudo'
+                                  ? {
+                                        dashboardPermissions:
+                                            nextPermissions,
+                                    }
+                                  : {}),
+                          }
+                        : u
+                )
             );
         } catch (error) {
             console.error(error);
@@ -360,6 +436,11 @@ const AdminUsersSection = () => {
             dni: user.dni ?? '',
             city: user.city ?? '',
             job: user.job ?? '',
+            dashboardPermissions: hasDashboardPermissionsValue(
+                user.dashboardPermissions
+            )
+                ? parseDashboardPermissions(user.dashboardPermissions)
+                : getDefaultDashboardPermissions(user.role),
         });
 
         if (isSudo && user.role === 'admin') {
@@ -418,6 +499,12 @@ const AdminUsersSection = () => {
 
             if (isSudo && editingUser.role === 'admin') {
                 payload.delegationIds = editingDelegations;
+            }
+
+            if (isSudo) {
+                payload.dashboardPermissions = parseDashboardPermissions(
+                    editingUser.dashboardPermissions
+                );
             }
 
             if (Object.keys(payload).length === 0) {
@@ -496,10 +583,35 @@ const AdminUsersSection = () => {
     // ===============================
     // Crear usuario nuevo (ADMIN)
     // ===============================
+    const handleDashboardPermissionToggle = (target, permissionId) => {
+        const setter =
+            target === 'new' ? setNewUser : setEditingUser;
+
+        setter((prev) => {
+            if (!prev) return prev;
+            const current = parseDashboardPermissions(
+                prev.dashboardPermissions
+            );
+            const hasPermission = current.includes(permissionId);
+            return {
+                ...prev,
+                dashboardPermissions: hasPermission
+                    ? current.filter((item) => item !== permissionId)
+                    : [...current, permissionId],
+            };
+        });
+    };
+
     const handleNewUserChange = (field, value) => {
         setNewUser((prev) => ({
             ...prev,
             [field]: value,
+            ...(field === 'role'
+                ? {
+                      dashboardPermissions:
+                          getDefaultDashboardPermissions(value),
+                  }
+                : {}),
         }));
 
         if (field === 'role' && value !== 'admin') {
@@ -520,8 +632,17 @@ const AdminUsersSection = () => {
         try {
             setSavingNew(true);
 
-            const { email, firstName, lastName, dni, phone, job, city, role } =
-                newUser;
+            const {
+                email,
+                firstName,
+                lastName,
+                dni,
+                phone,
+                job,
+                city,
+                role,
+                dashboardPermissions,
+            } = newUser;
 
             if (!email || !firstName || !lastName || !dni || !phone) {
                 alert(
@@ -553,7 +674,8 @@ const AdminUsersSection = () => {
                 city,
                 role,
                 role === 'admin' ? newUserDelegations : [],
-                authToken
+                authToken,
+                isSudo ? dashboardPermissions : null
             );
 
             alert(
@@ -569,6 +691,7 @@ const AdminUsersSection = () => {
                 city: '',
                 job: '',
                 role: 'client',
+                dashboardPermissions: getDefaultDashboardPermissions('client'),
             });
             setNewUserDelegations([]);
 
@@ -1110,6 +1233,40 @@ const AdminUsersSection = () => {
                                     </select>
                                 </div>
                             )}
+                            {isSudo && newUser.role !== 'sudo' && (
+                                <div className='admin-users-edit-field admin-users-permissions-field'>
+                                    <label>Accesos del dashboard</label>
+                                    <div className='admin-users-permissions-grid'>
+                                        {dashboardPermissionOptions.map(
+                                            (option) => (
+                                                <label
+                                                    key={option.id}
+                                                    className='admin-users-permission-option'
+                                                >
+                                                    <input
+                                                        type='checkbox'
+                                                        checked={parseDashboardPermissions(
+                                                            newUser.dashboardPermissions
+                                                        ).includes(option.id)}
+                                                        onChange={() =>
+                                                            handleDashboardPermissionToggle(
+                                                                'new',
+                                                                option.id
+                                                            )
+                                                        }
+                                                    />
+                                                    <span>{option.label}</span>
+                                                </label>
+                                            )
+                                        )}
+                                    </div>
+                                    <p className='admin-users-permissions-note'>
+                                        Mi perfil siempre queda disponible. Los
+                                        permisos solo muestran u ocultan
+                                        secciones compatibles con el rol.
+                                    </p>
+                                </div>
+                            )}
                         </div>
 
                         <div className='admin-users-edit-actions'>
@@ -1551,6 +1708,52 @@ const AdminUsersSection = () => {
                                                                                 </button>
                                                                             </div>
                                                                         )}
+                                                                    {isSudo &&
+                                                                        editingUser.role !==
+                                                                            'sudo' && (
+                                                                            <div className='admin-users-edit-field admin-users-permissions-field'>
+                                                                                <label>
+                                                                                    Accesos del dashboard
+                                                                                </label>
+                                                                                <div className='admin-users-permissions-grid'>
+                                                                                    {dashboardPermissionOptions.map(
+                                                                                        (
+                                                                                            option
+                                                                                        ) => (
+                                                                                            <label
+                                                                                                key={
+                                                                                                    option.id
+                                                                                                }
+                                                                                                className='admin-users-permission-option'
+                                                                                            >
+                                                                                                <input
+                                                                                                    type='checkbox'
+                                                                                                    checked={parseDashboardPermissions(
+                                                                                                        editingUser.dashboardPermissions
+                                                                                                    ).includes(
+                                                                                                        option.id
+                                                                                                    )}
+                                                                                                    onChange={() =>
+                                                                                                        handleDashboardPermissionToggle(
+                                                                                                            'edit',
+                                                                                                            option.id
+                                                                                                        )
+                                                                                                    }
+                                                                                                />
+                                                                                                <span>
+                                                                                                    {
+                                                                                                        option.label
+                                                                                                    }
+                                                                                                </span>
+                                                                                            </label>
+                                                                                        )
+                                                                                    )}
+                                                                                </div>
+                                                                                <p className='admin-users-permissions-note'>
+                                                                                    Mi perfil siempre queda disponible. Los permisos solo muestran u ocultan secciones compatibles con el rol.
+                                                                                </p>
+                                                                            </div>
+                                                                        )}
                                                                 </div>
 
                                                                 <div className='admin-users-edit-actions'>
@@ -1637,7 +1840,19 @@ const AdminUsersSection = () => {
                                             );
                                             setActionUser((prev) =>
                                                 prev
-                                                    ? { ...prev, role: newRole }
+                                                    ? {
+                                                          ...prev,
+                                                          role: newRole,
+                                                          ...(isSudo &&
+                                                          newRole !== 'sudo'
+                                                              ? {
+                                                                    dashboardPermissions:
+                                                                        getDefaultDashboardPermissions(
+                                                                            newRole
+                                                                        ),
+                                                                }
+                                                              : {}),
+                                                      }
                                                     : prev
                                             );
                                         }}

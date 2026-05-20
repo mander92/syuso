@@ -64,7 +64,8 @@ export const fetchRegisterAdminUserServices = async (
     city,
     role,
     delegationIds,
-    authToken
+    authToken,
+    dashboardPermissions = null
 ) => {
     const res = await fetch(`${VITE_API_URL}/users/admin/register`, {
         method: 'POST',
@@ -82,6 +83,7 @@ export const fetchRegisterAdminUserServices = async (
             city,
             role,
             delegationIds,
+            dashboardPermissions,
         }),
     });
 

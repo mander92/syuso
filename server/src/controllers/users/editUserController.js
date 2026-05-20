@@ -40,6 +40,9 @@ const editUserController = async (req, res, next) => {
                 active: Joi.number().valid(0, 1),
                 deletedAt: Joi.any().valid(null),
                 delegationIds: Joi.array().items(Joi.string().length(36)),
+                dashboardPermissions: Joi.array()
+                    .items(Joi.string().max(50))
+                    .allow(null),
             }).min(1);
         } else {
             // USUARIO normal: solo su propio perfil
@@ -71,7 +74,22 @@ const editUserController = async (req, res, next) => {
                 );
             }
 
-            const { delegationIds, ...updatePayload } = value;
+            if (value.dashboardPermissions !== undefined && !isSudo) {
+                generateErrorUtil(
+                    'Solo sudo puede gestionar permisos del dashboard',
+                    403
+                );
+            }
+
+            const { delegationIds, dashboardPermissions, ...updatePayload } =
+                value;
+
+            if (dashboardPermissions !== undefined) {
+                updatePayload.dashboardPermissions =
+                    dashboardPermissions === null
+                        ? null
+                        : JSON.stringify([...new Set(dashboardPermissions)]);
+            }
 
             await updateUserAdminService(userId, updatePayload);
 

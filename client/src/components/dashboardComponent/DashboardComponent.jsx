@@ -32,6 +32,19 @@ const formatAlertDate = (value) => {
     });
 };
 
+const parseDashboardPermissions = (value) => {
+    if (value === null || value === undefined || value === '') return null;
+    if (Array.isArray(value)) return value;
+    if (typeof value !== 'string') return null;
+
+    try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+};
+
 const AlertsPanel = ({
     notifications,
     onOpenSection,
@@ -150,12 +163,20 @@ const DashboardComponent = () => {
     const isAdminLike = userRole === 'admin' || userRole === 'sudo';
     const isEmployeeLike = userRole === 'employee' || userRole === 'empleado';
     const isClient = userRole === 'client';
+    const allowedDashboardSections = useMemo(() => {
+        if (!user || userRole === 'sudo') return null;
+        const permissions = parseDashboardPermissions(user.dashboardPermissions);
+        if (permissions === null) return null;
+        return new Set([...permissions, 'profile']);
+    }, [user, userRole]);
 
     const sections = useMemo(() => {
         if (!user) return [];
 
+        let roleSections;
+
         if (isAdminLike) {
-            const adminSections = [
+            roleSections = [
                 { id: 'contracts', label: 'Servicios' },
                 { id: 'schedules', label: 'Cuadrantes' },
                 { id: 'shifts', label: 'Turnos' },
@@ -168,22 +189,19 @@ const DashboardComponent = () => {
                 { id: 'profile', label: 'Mi perfil' },
             ];
             if (userRole === 'sudo') {
-                adminSections.splice(
-                    adminSections.length - 1,
+                roleSections.splice(
+                    roleSections.length - 1,
                     0,
                     { id: 'cleanup', label: 'Limpieza' }
                 );
-                adminSections.splice(
-                    adminSections.length - 1,
+                roleSections.splice(
+                    roleSections.length - 1,
                     0,
                     { id: 'cv', label: 'CV' }
                 );
             }
-            return adminSections;
-        }
-
-        if (isEmployeeLike) {
-            return [
+        } else if (isEmployeeLike) {
+            roleSections = [
                 { id: 'services', label: 'Mis servicios' },
                 { id: 'schedule', label: 'Mi cuadrante' },
                 { id: 'shiftSwaps', label: 'Cambios de turno' },
@@ -192,10 +210,8 @@ const DashboardComponent = () => {
                 { id: 'alerts', label: 'Alertas' },
                 { id: 'profile', label: 'Mi perfil' },
             ];
-        }
-
-        if (!isClient) {
-            return [
+        } else if (!isClient) {
+            roleSections = [
                 { id: 'services', label: 'Mis servicios' },
                 { id: 'schedule', label: 'Mi cuadrante' },
                 { id: 'shiftSwaps', label: 'Cambios de turno' },
@@ -204,14 +220,27 @@ const DashboardComponent = () => {
                 { id: 'alerts', label: 'Alertas' },
                 { id: 'profile', label: 'Mi perfil' },
             ];
+        } else {
+            roleSections = [
+                { id: 'profile', label: 'Mi perfil' },
+                { id: 'contracts', label: 'Mis contratos' },
+                { id: 'services', label: 'Servicios activos' },
+            ];
         }
 
-        return [
-            { id: 'profile', label: 'Mi perfil' },
-            { id: 'contracts', label: 'Mis contratos' },
-            { id: 'services', label: 'Servicios activos' },
-        ];
-    }, [isAdminLike, isClient, isEmployeeLike, user, userRole]);
+        if (!allowedDashboardSections) return roleSections;
+
+        return roleSections.filter((section) =>
+            allowedDashboardSections.has(section.id)
+        );
+    }, [
+        allowedDashboardSections,
+        isAdminLike,
+        isClient,
+        isEmployeeLike,
+        user,
+        userRole,
+    ]);
 
     useEffect(() => {
         if (!sections.length) return;
@@ -268,6 +297,9 @@ const DashboardComponent = () => {
 
     const renderSectionContent = () => {
         if (!user) return null;
+        if (!sections.some((section) => section.id === activeSection)) {
+            return null;
+        }
 
         switch (activeSection) {
             case 'alerts':

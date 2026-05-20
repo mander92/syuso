@@ -18,7 +18,8 @@ const insertAdminService = async (
     phone,
     job,
     city,
-    delegationIds = []
+    delegationIds = [],
+    dashboardPermissions = null
 ) => {
     const pool = await getPool();
 
@@ -42,8 +43,8 @@ const insertAdminService = async (
     await pool.query(
         `
             INSERT INTO users
-                (id, email, password, firstName, lastName, dni, phone, recoverPasswordCode, role, job, city, active)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                (id, email, password, firstName, lastName, dni, phone, recoverPasswordCode, role, dashboardPermissions, job, city, active)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
         `,
         [
             userId,
@@ -55,6 +56,7 @@ const insertAdminService = async (
             phone,
             recoverPasswordCode,
             role,
+            dashboardPermissions,
             job,
             city,
             1,

@@ -14,6 +14,7 @@ const updateUserAdminService = async (userId, data) => {
         'city',
         'job',
         'role',
+        'dashboardPermissions',
         'active',
         'deletedAt',
     ];

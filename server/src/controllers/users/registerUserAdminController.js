@@ -20,6 +20,10 @@ const registerUserAdminController = async (req, res, next) => {
             job: Joi.string().max(25).allow('', null),
             city: Joi.string().max(25).allow('', null),
             delegationIds: Joi.array().items(Joi.string().length(36)).default([]),
+            dashboardPermissions: Joi.array()
+                .items(Joi.string().max(50))
+                .allow(null)
+                .default(null),
         });
 
         const { error, value } = schema.validate(req.body, {
@@ -41,6 +45,7 @@ const registerUserAdminController = async (req, res, next) => {
             job,
             city,
             delegationIds,
+            dashboardPermissions,
         } = value;
 
         // ✅ Generamos una contraseña aleatoria
@@ -53,6 +58,13 @@ const registerUserAdminController = async (req, res, next) => {
 
         if ((normalizedRole === 'admin' || normalizedRole === 'sudo') && loggedRole !== 'sudo') {
             generateErrorUtil('Solo sudo puede crear administradores', 403);
+        }
+
+        if (dashboardPermissions && loggedRole !== 'sudo') {
+            generateErrorUtil(
+                'Solo sudo puede asignar permisos del dashboard',
+                403
+            );
         }
 
         if (normalizedRole === 'admin' && !delegationIds.length) {
@@ -69,7 +81,10 @@ const registerUserAdminController = async (req, res, next) => {
             phone,
             job,
             city,
-            delegationIds
+            delegationIds,
+            dashboardPermissions
+                ? JSON.stringify([...new Set(dashboardPermissions)])
+                : null
         );
 
         res.send({

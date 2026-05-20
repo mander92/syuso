@@ -14,6 +14,7 @@ const selectUsersService = async (
         SELECT 
             u.id AS id,
             u.role,
+            u.dashboardPermissions,
             u.avatar,
             u.email,
             u.firstName,
