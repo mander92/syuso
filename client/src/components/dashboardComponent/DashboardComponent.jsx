@@ -45,6 +45,15 @@ const parseDashboardPermissions = (value) => {
     }
 };
 
+const operativeSectionIds = [
+    'contracts',
+    'schedules',
+    'shifts',
+    'shiftSwaps',
+    'employeeRequests',
+    'workReports',
+];
+
 const AlertsPanel = ({
     notifications,
     onOpenSection,
@@ -158,6 +167,7 @@ const DashboardComponent = () => {
     } =
         useChatNotifications();
     const [activeSection, setActiveSection] = useState('profile');
+    const [isOperativeOpen, setIsOperativeOpen] = useState(true);
     const hasSetDefault = useRef(false);
     const userRole = String(user?.role || '').trim().toLowerCase();
     const isAdminLike = userRole === 'admin' || userRole === 'sudo';
@@ -295,6 +305,81 @@ const DashboardComponent = () => {
         resetShiftSwapUnread,
     ]);
 
+    const operativeSections = useMemo(
+        () =>
+            isAdminLike
+                ? sections.filter((section) =>
+                      operativeSectionIds.includes(section.id)
+                  )
+                : [],
+        [isAdminLike, sections]
+    );
+
+    const topLevelSections = useMemo(
+        () =>
+            isAdminLike
+                ? sections.filter(
+                      (section) => !operativeSectionIds.includes(section.id)
+                  )
+                : sections,
+        [isAdminLike, sections]
+    );
+
+    const operativeUnreadTotal =
+        operativeSections.some((section) => section.id === 'shiftSwaps')
+            ? shiftSwapUnread
+            : 0;
+    const operativeRequestUnread =
+        operativeSections.some((section) => section.id === 'employeeRequests')
+            ? employeeRequestUnread
+            : 0;
+    const operativeBadgeTotal = operativeUnreadTotal + operativeRequestUnread;
+
+    useEffect(() => {
+        if (operativeSectionIds.includes(activeSection)) {
+            setIsOperativeOpen(true);
+        }
+    }, [activeSection]);
+
+    const renderNavItem = (section) => (
+        <button
+            key={section.id}
+            type='button'
+            className={
+                'dashboard-navitem' +
+                (activeSection === section.id
+                    ? ' dashboard-navitem--active'
+                    : '')
+            }
+            onClick={() => setActiveSection(section.id)}
+        >
+            <span className='dashboard-navitem-label'>
+                {section.label}
+            </span>
+            {section.id === 'chats' && unreadTotal > 0 ? (
+                <span className='dashboard-nav-badge'>
+                    {unreadTotal}
+                </span>
+            ) : null}
+            {section.id === 'alerts' && alertUnreadTotal > 0 ? (
+                <span className='dashboard-nav-badge'>
+                    {alertUnreadTotal}
+                </span>
+            ) : null}
+            {section.id === 'shiftSwaps' && shiftSwapUnread > 0 ? (
+                <span className='dashboard-nav-badge'>
+                    {shiftSwapUnread}
+                </span>
+            ) : null}
+            {section.id === 'employeeRequests' &&
+            employeeRequestUnread > 0 ? (
+                <span className='dashboard-nav-badge'>
+                    {employeeRequestUnread}
+                </span>
+            ) : null}
+        </button>
+    );
+
     const renderSectionContent = () => {
         if (!user) return null;
         if (!sections.some((section) => section.id === activeSection)) {
@@ -413,46 +498,45 @@ const DashboardComponent = () => {
                     </div>
 
                     <nav className='dashboard-nav'>
-                        {sections.map((section) => (
-                            <button
-                                key={section.id}
-                                type='button'
-                                className={
-                                    'dashboard-navitem' +
-                                    (activeSection === section.id
-                                        ? ' dashboard-navitem--active'
-                                        : '')
-                                }
-                                onClick={() => setActiveSection(section.id)}
-                            >
-                                <span className='dashboard-navitem-label'>
-                                    {section.label}
-                                </span>
-                                {section.id === 'chats' && unreadTotal > 0 ? (
-                                    <span className='dashboard-nav-badge'>
-                                        {unreadTotal}
+                        {isAdminLike && operativeSections.length > 0 ? (
+                            <div className='dashboard-navgroup'>
+                                <button
+                                    type='button'
+                                    className={
+                                        'dashboard-navitem dashboard-navgroup-toggle' +
+                                        (operativeSectionIds.includes(
+                                            activeSection
+                                        )
+                                            ? ' dashboard-navitem--active'
+                                            : '')
+                                    }
+                                    onClick={() =>
+                                        setIsOperativeOpen((prev) => !prev)
+                                    }
+                                    aria-expanded={isOperativeOpen}
+                                >
+                                    <span className='dashboard-navitem-label'>
+                                        Operativa
                                     </span>
-                                ) : null}
-                                {section.id === 'alerts' &&
-                                alertUnreadTotal > 0 ? (
-                                    <span className='dashboard-nav-badge'>
-                                        {alertUnreadTotal}
+                                    <span className='dashboard-navgroup-meta'>
+                                        {operativeBadgeTotal > 0 ? (
+                                            <span className='dashboard-nav-badge'>
+                                                {operativeBadgeTotal}
+                                            </span>
+                                        ) : null}
+                                        <span className='dashboard-nav-chevron'>
+                                            {isOperativeOpen ? '-' : '+'}
+                                        </span>
                                     </span>
+                                </button>
+                                {isOperativeOpen ? (
+                                    <div className='dashboard-navsub'>
+                                        {operativeSections.map(renderNavItem)}
+                                    </div>
                                 ) : null}
-                                {section.id === 'shiftSwaps' &&
-                                shiftSwapUnread > 0 ? (
-                                    <span className='dashboard-nav-badge'>
-                                        {shiftSwapUnread}
-                                    </span>
-                                ) : null}
-                                {section.id === 'employeeRequests' &&
-                                employeeRequestUnread > 0 ? (
-                                    <span className='dashboard-nav-badge'>
-                                        {employeeRequestUnread}
-                                    </span>
-                                ) : null}
-                            </button>
-                        ))}
+                            </div>
+                        ) : null}
+                        {topLevelSections.map(renderNavItem)}
                     </nav>
                 </aside>
 
