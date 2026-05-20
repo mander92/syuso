@@ -113,6 +113,7 @@
     flex-direction: column;
     gap: 4px;
     justify-content: flex-start;
+    position: relative;
 }
 
 .service-schedule-grid-cell-actions {
@@ -259,16 +260,20 @@
 }
 
 .service-schedule-grid-absence-actions {
-    display: flex;
+    display: inline-flex;
     gap: 3px;
-    margin-left: 2px;
+    position: absolute;
+    right: 3px;
+    top: 22px;
+    z-index: 3;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.15s ease;
 }
 
-.service-schedule-grid-absence:hover .service-schedule-grid-absence-actions,
-.service-schedule-grid-absence:focus-within .service-schedule-grid-absence-actions {
+.service-schedule-grid-cell:hover .service-schedule-grid-absence-actions,
+.service-schedule-grid-cell:focus-within .service-schedule-grid-absence-actions,
+.service-schedule-grid-cell--selected .service-schedule-grid-absence-actions {
     opacity: 1;
     pointer-events: auto;
 }

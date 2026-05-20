@@ -442,34 +442,38 @@ const ServiceScheduleGrid = ({
                                             <span className='service-schedule-grid-absence-short'>
                                                 {absenceShort(absence.type)}
                                             </span>
-                                            {!readOnly && (
-                                                <span className='service-schedule-grid-absence-actions'>
+                                        </span>
+                                    ))}
+                                    {!readOnly &&
+                                        absencesForDay.map((absence) => (
+                                            <span
+                                                key={`absence-actions-${absence.id || `${absence.type}-${dateKey}`}`}
+                                                className='service-schedule-grid-absence-actions'
+                                            >
+                                                <button
+                                                    type='button'
+                                                    onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        onCopyAbsence?.(absence);
+                                                    }}
+                                                    title='Copiar ausencia'
+                                                >
+                                                    C
+                                                </button>
+                                                {absence.id && (
                                                     <button
                                                         type='button'
                                                         onClick={(event) => {
                                                             event.stopPropagation();
-                                                            onCopyAbsence?.(absence);
+                                                            onDeleteAbsence?.(absence);
                                                         }}
-                                                        title='Copiar ausencia'
+                                                        title='Borrar ausencia'
                                                     >
-                                                        C
+                                                        X
                                                     </button>
-                                                    {absence.id && (
-                                                        <button
-                                                            type='button'
-                                                            onClick={(event) => {
-                                                                event.stopPropagation();
-                                                                onDeleteAbsence?.(absence);
-                                                            }}
-                                                            title='Borrar ausencia'
-                                                        >
-                                                            X
-                                                        </button>
-                                                    )}
-                                                </span>
-                                            )}
-                                        </span>
-                                    ))}
+                                                )}
+                                            </span>
+                                        ))}
                                     {requestBadges.map((badge) => (
                                         <span
                                             key={badge.id}
