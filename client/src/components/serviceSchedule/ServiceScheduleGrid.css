@@ -133,7 +133,8 @@
 }
 
 .service-schedule-grid-action,
-.service-schedule-grid-shift-actions button {
+.service-schedule-grid-shift-actions button,
+.service-schedule-grid-absence-actions button {
     align-items: center;
     background: #f8fafc;
     border: 1px solid #cbd5e1;
@@ -258,24 +259,18 @@
 }
 
 .service-schedule-grid-absence-actions {
-    display: inline-flex;
-    gap: 2px;
+    display: flex;
+    gap: 3px;
     margin-left: 2px;
-    vertical-align: top;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
 }
 
-.service-schedule-grid-absence-actions button {
-    border: 1px solid #cbd5e1;
-    border-radius: 999px;
-    background: #ffffff;
-    color: #0f172a;
-    width: 17px;
-    height: 17px;
-    padding: 0;
-    font-size: 0.58rem;
-    font-weight: 800;
-    line-height: 1;
-    cursor: pointer;
+.service-schedule-grid-absence:hover .service-schedule-grid-absence-actions,
+.service-schedule-grid-absence:focus-within .service-schedule-grid-absence-actions {
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .service-schedule-grid-absence--vacation {
@@ -482,7 +477,8 @@
     }
 
     .service-schedule-grid-action,
-    .service-schedule-grid-shift-actions button {
+    .service-schedule-grid-shift-actions button,
+    .service-schedule-grid-absence-actions button {
         font-size: 0.55rem;
         height: 16px;
         min-width: 16px;
