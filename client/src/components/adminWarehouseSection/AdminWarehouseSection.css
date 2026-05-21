@@ -1,6 +1,9 @@
 .warehouse {
     display: grid;
     gap: 1rem;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
 }
 
 .warehouse-header,
@@ -8,6 +11,9 @@
     background: #ffffff;
     border: 1px solid #e5e7eb;
     border-radius: 0.75rem;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
     padding: 1rem;
 }
 
@@ -34,6 +40,7 @@
     display: grid;
     gap: 1rem;
     grid-template-columns: minmax(0, 1fr) minmax(240px, 340px);
+    min-width: 0;
 }
 
 .warehouse-form,
@@ -41,12 +48,14 @@
     display: grid;
     gap: 1rem;
     align-content: start;
+    min-width: 0;
 }
 
 .warehouse-side {
     display: grid;
     gap: 1rem;
     align-content: start;
+    min-width: 0;
 }
 
 .warehouse-stock-header {
@@ -90,6 +99,8 @@
     border: 1px solid #dbe3ef;
     border-radius: 0.55rem;
     font: inherit;
+    min-width: 0;
+    width: 100%;
     padding: 0.55rem 0.7rem;
 }
 
@@ -208,7 +219,9 @@
 }
 
 .warehouse-table-wrap {
-    overflow: auto;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .warehouse-table {
@@ -302,5 +315,43 @@
     .warehouse-filters {
         grid-template-columns: 1fr;
         max-width: none;
+    }
+}
+
+@media (max-width: 640px) {
+    .warehouse {
+        gap: 0.75rem;
+    }
+
+    .warehouse-header,
+    .warehouse-card {
+        border-radius: 0.65rem;
+        padding: 0.75rem;
+    }
+
+    .warehouse-stock-item {
+        align-items: stretch;
+        display: grid;
+        gap: 0.6rem;
+    }
+
+    .warehouse-stock-actions {
+        align-items: center;
+        display: flex;
+        justify-content: space-between;
+        justify-items: stretch;
+    }
+
+    .warehouse-btn {
+        justify-self: stretch;
+        width: 100%;
+    }
+
+    .warehouse-pagination {
+        justify-content: space-between;
+    }
+
+    .warehouse-table {
+        min-width: 720px;
     }
 }
