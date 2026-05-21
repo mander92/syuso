@@ -5,6 +5,7 @@ import insertAdminService from '../../services/users/insertUserAdminService.js';
 import selectEmployeeDocumentationDraftService from '../../services/employeeDocumentation/selectEmployeeDocumentationDraftService.js';
 import upsertEmployeeDocumentationDraftService from '../../services/employeeDocumentation/upsertEmployeeDocumentationDraftService.js';
 import upsertEmployeeDocumentationService from '../../services/employeeDocumentation/upsertEmployeeDocumentationService.js';
+import { emitDocumentationChanged } from '../../utils/documentationNotificationUtil.js';
 
 const createUserFromDocumentationDraftController = async (req, res, next) => {
     try {
@@ -59,6 +60,18 @@ const createUserFromDocumentationDraftController = async (req, res, next) => {
         });
 
         const data = await selectEmployeeDocumentationDraftService(draftId);
+        const fullName =
+            `${data.firstName || ''} ${data.lastName || ''}`.trim() ||
+            data.email ||
+            'Trabajador';
+        emitDocumentationChanged({
+            changedBy: req.userLogged.id,
+            subjectId: draftId,
+            subjectType: 'employeeDraft',
+            userIds: [userId],
+            title: 'Alta convertida',
+            message: `${fullName}: ficha convertida en trabajador`,
+        });
         res.send({ status: 'ok', data });
     } catch (error) {
         next(error);
@@ -66,4 +79,3 @@ const createUserFromDocumentationDraftController = async (req, res, next) => {
 };
 
 export default createUserFromDocumentationDraftController;
-

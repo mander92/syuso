@@ -353,6 +353,18 @@ const DashboardComponent = () => {
             ? employeeRequestUnread
             : 0;
     const operativeBadgeTotal = operativeUnreadTotal + operativeRequestUnread;
+    const documentationUnread = useMemo(
+        () =>
+            alertNotifications.reduce((sum, item) => {
+                if (item.read || item.section !== 'documentations') return sum;
+                return sum + 1;
+            }, 0),
+        [alertNotifications]
+    );
+    const administrationBadgeTotal =
+        administrationSections.some((section) => section.id === 'documentations')
+            ? documentationUnread
+            : 0;
 
     useEffect(() => {
         if (operativeSectionIds.includes(activeSection)) {
@@ -397,6 +409,11 @@ const DashboardComponent = () => {
             employeeRequestUnread > 0 ? (
                 <span className='dashboard-nav-badge'>
                     {employeeRequestUnread}
+                </span>
+            ) : null}
+            {section.id === 'documentations' && documentationUnread > 0 ? (
+                <span className='dashboard-nav-badge'>
+                    {documentationUnread}
                 </span>
             ) : null}
         </button>
@@ -581,6 +598,11 @@ const DashboardComponent = () => {
                                         Administracion
                                     </span>
                                     <span className='dashboard-navgroup-meta'>
+                                        {administrationBadgeTotal > 0 ? (
+                                            <span className='dashboard-nav-badge'>
+                                                {administrationBadgeTotal}
+                                            </span>
+                                        ) : null}
                                         <span className='dashboard-nav-chevron'>
                                             {isAdministrationOpen ? '-' : '+'}
                                         </span>

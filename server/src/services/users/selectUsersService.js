@@ -29,7 +29,7 @@ const selectUsersService = async (
         FROM users u
         LEFT JOIN adminDelegations ad ON ad.adminId = u.id
         LEFT JOIN delegations d ON d.id = ad.delegationId
-        WHERE 1=1
+        WHERE u.deletedAt IS NULL
     `;
 
     let sqlValues = [];

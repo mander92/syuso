@@ -19,7 +19,7 @@ const initDb = async () => {
 
         await pool.query(
             `
-            DROP TABLE IF EXISTS serviceNfcTagLogs, workReportIncidentPhotos, workReportPhotos, workReportIncidents, workReportDrafts, workReports, employeeRequests, shiftSwapRequests, generalChatMessages, generalChatReads, generalChatMembers, generalChats, serviceChatMessages, serviceChatReads, serviceScheduleShifts, serviceScheduleTemplates, serviceShiftTypes, holidays, employeeAbsences, employeeRules, personsAssigned, serviceNfcTags, shiftRecords, adminDelegations, delegations, services, typeOfServices, users, addresses, consulting_requests, job_applications
+            DROP TABLE IF EXISTS serviceNfcTagLogs, workReportIncidentPhotos, workReportPhotos, workReportIncidents, workReportDrafts, workReports, employeeRequests, shiftSwapRequests, generalChatMessages, generalChatReads, generalChatMembers, generalChats, serviceChatMessages, serviceChatReads, serviceScheduleShifts, serviceScheduleTemplates, serviceShiftTypes, holidays, employeeAbsences, employeeRules, personsAssigned, serviceNfcTags, shiftRecords, adminDelegations, delegations, services, clientDocumentations, typeOfServices, users, addresses, consulting_requests, job_applications
             `
         );
 
@@ -96,6 +96,7 @@ const initDb = async () => {
                 startDateTime TIMESTAMP NOT NULL,
                 endDateTime TIMESTAMP,
                 hours INT UNSIGNED NOT NULL CHECK (hours BETWEEN 1 AND 24),
+                hourlyRate DECIMAL(10,2),
                 numberOfPeople INT UNSIGNED NOT NULL,
                 comments VARCHAR(250),
                 reportEmail VARCHAR(255),
@@ -624,6 +625,28 @@ const initDb = async () => {
             createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (draftId) REFERENCES employeeDocumentationDrafts(id)
                 ON DELETE CASCADE);
+            `
+        );
+
+        await pool.query(
+            `
+            CREATE TABLE IF NOT EXISTS clientDocumentations (
+            id CHAR(36) PRIMARY KEY NOT NULL,
+            clientId CHAR(36) NOT NULL UNIQUE,
+            displayName VARCHAR(150),
+            taxId VARCHAR(20),
+            phone VARCHAR(30),
+            email VARCHAR(150),
+            contactPerson VARCHAR(150),
+            acceptedBudgetPath VARCHAR(255),
+            serviceContractPath VARCHAR(255),
+            authorizations TEXT,
+            paymentMethod VARCHAR(100),
+            status ENUM('pending', 'reviewed', 'rejected') DEFAULT 'pending',
+            reviewNotes VARCHAR(500),
+            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            modifiedAt TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (clientId) REFERENCES users(id));
             `
         );
 

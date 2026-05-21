@@ -173,6 +173,7 @@ export const ChatNotificationsProvider = ({ children }) => {
             shiftSwaps: 'Mi cuenta > Cambios de turno',
             employeeRequests: 'Mi cuenta > Peticiones',
             chats: 'Mi cuenta > Chats',
+            documentations: 'Mi cuenta > Documentacion',
         };
         return labels[section] || 'Mi cuenta';
     };
@@ -710,10 +711,31 @@ export const ChatNotificationsProvider = ({ children }) => {
             });
         };
 
+        const handleDocumentationChanged = (event) => {
+            if (!event?.notificationId) return;
+            if (event.changedBy && event.changedBy === user.id) return;
+
+            addAlertNotification({
+                id: event.notificationId,
+                type: 'documentation',
+                section: 'documentations',
+                title: event.title || 'Documentacion',
+                message:
+                    event.message ||
+                    'Hay una actualizacion en documentacion.',
+                routeLabel:
+                    event.routeLabel || buildAlertRoute('documentations'),
+            });
+            toast(event.message || 'Documentacion actualizada', {
+                id: event.notificationId,
+            });
+        };
+
         socket.on('connect', handleConnect);
         socket.on('chat:message', handleMessage);
         socket.on('generalChat:message', handleGeneralMessage);
         socket.on('serviceSchedule:changed', handleServiceScheduleChanged);
+        socket.on('documentation:changed', handleDocumentationChanged);
         socket.on('shiftSwap:created', handleShiftSwapEvent);
         socket.on('shiftSwap:confirmed', handleShiftSwapEvent);
         socket.on('shiftSwap:approved', handleShiftSwapEvent);
@@ -727,6 +749,7 @@ export const ChatNotificationsProvider = ({ children }) => {
             socket.off('chat:message', handleMessage);
             socket.off('generalChat:message', handleGeneralMessage);
             socket.off('serviceSchedule:changed', handleServiceScheduleChanged);
+            socket.off('documentation:changed', handleDocumentationChanged);
             socket.off('shiftSwap:created', handleShiftSwapEvent);
             socket.off('shiftSwap:confirmed', handleShiftSwapEvent);
             socket.off('shiftSwap:approved', handleShiftSwapEvent);

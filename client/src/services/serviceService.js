@@ -14,7 +14,8 @@ export const fetchNewServiceServices = async (
     description = '',
     province = '',
     autonomousCommunity = '',
-    hourRuleType = 'standard'
+    hourRuleType = 'standard',
+    hourlyRate = ''
 ) => {
     const url = typeOfServiceId
         ? `${VITE_API_URL}/services/${typeOfServiceId}`
@@ -38,6 +39,7 @@ export const fetchNewServiceServices = async (
             province,
             autonomousCommunity,
             hourRuleType,
+            hourlyRate,
         }),
     });
 

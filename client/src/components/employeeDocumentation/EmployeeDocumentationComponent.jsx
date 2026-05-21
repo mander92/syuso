@@ -3,6 +3,7 @@ import { AuthContext } from '../../context/AuthContext.jsx';
 import useUser from '../../hooks/useUser.js';
 import {
     fetchEmployeeDocumentation,
+    fetchClientDocumentations,
     fetchEmployeeDocumentationDrafts,
     fetchEmployeeDocumentations,
     fetchMyEmployeeDocumentation,
@@ -10,6 +11,8 @@ import {
     createUserFromDocumentationDraft,
     openEmployeeDocumentationFile,
     openEmployeeDocumentationDraftFile,
+    openClientDocumentationFile,
+    saveClientDocumentation,
     saveEmployeeDocumentation,
     saveEmployeeDocumentationDraft,
 } from '../../services/employeeDocumentationService.js';
@@ -20,6 +23,11 @@ const fileFields = [
     ['dniBackPath', 'DNI reverso'],
     ['tipFrontPath', 'TIP anverso'],
     ['tipBackPath', 'TIP reverso'],
+];
+
+const clientFileFields = [
+    ['acceptedBudgetPath', 'Presupuesto aceptado'],
+    ['serviceContractPath', 'Contrato de prestacion del servicio'],
 ];
 
 const statusLabels = {
@@ -43,6 +51,18 @@ const emptyForm = {
     reviewNotes: '',
 };
 
+const emptyClientForm = {
+    displayName: '',
+    taxId: '',
+    phone: '',
+    email: '',
+    contactPerson: '',
+    authorizations: '',
+    paymentMethod: '',
+    status: 'pending',
+    reviewNotes: '',
+};
+
 const toDateInput = (value) => {
     if (!value) return '';
     const match = String(value).match(/^(\d{4}-\d{2}-\d{2})/);
@@ -54,6 +74,18 @@ const normalizeDocumentation = (data) => ({
     ...data,
     phone: data?.phone || data?.userPhone || '',
     birthDate: toDateInput(data?.birthDate),
+    status: data?.status || 'pending',
+});
+
+const normalizeClientDocumentation = (data) => ({
+    ...emptyClientForm,
+    ...data,
+    displayName:
+        data?.displayName ||
+        `${data?.firstName || ''} ${data?.lastName || ''}`.trim(),
+    taxId: data?.taxId || data?.userTaxId || '',
+    phone: data?.phone || data?.userPhone || '',
+    email: data?.email || data?.userEmail || '',
     status: data?.status || 'pending',
 });
 
@@ -70,6 +102,10 @@ const EmployeeDocumentationComponent = () => {
     const [search, setSearch] = useState('');
     const [activeFilter, setActiveFilter] = useState('active');
     const [adminMode, setAdminMode] = useState('employees');
+    const [clientItems, setClientItems] = useState([]);
+    const [selectedClientId, setSelectedClientId] = useState('');
+    const [clientForm, setClientForm] = useState(emptyClientForm);
+    const [clientFiles, setClientFiles] = useState({});
     const [drafts, setDrafts] = useState([]);
     const [selectedDraftId, setSelectedDraftId] = useState('');
     const [draftForm, setDraftForm] = useState({
@@ -118,6 +154,27 @@ const EmployeeDocumentationComponent = () => {
         });
     }, [drafts, search]);
 
+    const filteredClients = useMemo(() => {
+        const term = search.trim().toLowerCase();
+        return clientItems.filter((item) => {
+            const isActive =
+                item.active === 1 || item.active === true || item.active === '1';
+            if (activeFilter === 'active' && !isActive) return false;
+            if (activeFilter === 'inactive' && isActive) return false;
+
+            if (!term) return true;
+
+            const label =
+                item.displayName ||
+                `${item.firstName || ''} ${item.lastName || ''}`;
+            return (
+                String(label).toLowerCase().includes(term) ||
+                String(item.email || item.userEmail || '').toLowerCase().includes(term) ||
+                String(item.taxId || item.userTaxId || '').toLowerCase().includes(term)
+            );
+        });
+    }, [activeFilter, clientItems, search]);
+
     const load = async () => {
         if (!authToken) return;
         setLoading(true);
@@ -125,8 +182,10 @@ const EmployeeDocumentationComponent = () => {
             if (isAdminLike) {
                 const data = await fetchEmployeeDocumentations(authToken);
                 const draftData = await fetchEmployeeDocumentationDrafts(authToken);
+                const clientData = await fetchClientDocumentations(authToken);
                 setItems(data || []);
                 setDrafts(draftData || []);
+                setClientItems(clientData || []);
                 const firstId = data?.[0]?.userId || '';
                 setSelectedUserId((prev) => prev || firstId);
                 if (firstId && !selectedUserId) {
@@ -170,6 +229,51 @@ const EmployeeDocumentationComponent = () => {
 
     const handleDraftChange = (field, value) => {
         setDraftForm((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const selectClient = (client) => {
+        setSelectedClientId(client?.clientId || '');
+        setClientFiles({});
+        setClientForm(normalizeClientDocumentation(client));
+    };
+
+    const handleClientChange = (field, value) => {
+        setClientForm((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const handleSaveClient = async (event) => {
+        event.preventDefault();
+        setSaving(true);
+        try {
+            const data = await saveClientDocumentation({
+                authToken,
+                clientId: selectedClientId || null,
+                data: clientForm,
+                files: clientFiles,
+            });
+            setSelectedClientId(data.clientId);
+            setClientForm(normalizeClientDocumentation(data));
+            setClientFiles({});
+            const list = await fetchClientDocumentations(authToken);
+            setClientItems(list || []);
+            alert('Ficha de cliente guardada correctamente.');
+        } catch (error) {
+            alert(error.message || 'Error guardando cliente');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleOpenClientFile = async (field) => {
+        try {
+            await openClientDocumentationFile({
+                authToken,
+                clientId: selectedClientId,
+                field,
+            });
+        } catch (error) {
+            alert(error.message || 'No se pudo abrir el archivo');
+        }
     };
 
     const handleSubmit = async (event) => {
@@ -404,7 +508,10 @@ const EmployeeDocumentationComponent = () => {
                     <button
                         type='button'
                         className={adminMode === 'employees' ? 'active' : ''}
-                        onClick={() => setAdminMode('employees')}
+                        onClick={() => {
+                            setAdminMode('employees');
+                            setActiveFilter('active');
+                        }}
                     >
                         Trabajadores
                     </button>
@@ -420,10 +527,214 @@ const EmployeeDocumentationComponent = () => {
                     >
                         Altas pendientes
                     </button>
+                    <button
+                        type='button'
+                        className={adminMode === 'clients' ? 'active' : ''}
+                        onClick={() => {
+                            setAdminMode('clients');
+                            setActiveFilter('all');
+                            if (!selectedClientId && clientItems[0]) {
+                                selectClient(clientItems[0]);
+                            }
+                        }}
+                    >
+                        Clientes
+                    </button>
                 </div>
             ) : null}
 
-            {isAdminLike && adminMode === 'drafts' ? (
+            {isAdminLike && adminMode === 'clients' ? (
+                <div className='employee-documentation-layout'>
+                    <aside className='employee-documentation-list'>
+                        <div className='employee-documentation-list-filters'>
+                            <input
+                                type='search'
+                                placeholder='Buscar cliente...'
+                                value={search}
+                                onChange={(event) => setSearch(event.target.value)}
+                            />
+                            <select
+                                value={activeFilter}
+                                onChange={(event) =>
+                                    setActiveFilter(event.target.value)
+                                }
+                            >
+                                <option value='active'>Activos</option>
+                                <option value='inactive'>Internos/inactivos</option>
+                                <option value='all'>Todos</option>
+                            </select>
+                            <button
+                                type='button'
+                                className='employee-documentation-btn'
+                                onClick={() => {
+                                    setSelectedClientId('');
+                                    setClientFiles({});
+                                    setClientForm(emptyClientForm);
+                                }}
+                            >
+                                Nuevo cliente
+                            </button>
+                        </div>
+                        <p className='employee-documentation-list-count'>
+                            {filteredClients.length} clientes
+                        </p>
+                        {filteredClients.map((item) => {
+                            const label =
+                                item.displayName ||
+                                `${item.firstName || ''} ${item.lastName || ''}`.trim() ||
+                                item.userEmail ||
+                                'Cliente';
+                            return (
+                                <button
+                                    key={item.clientId}
+                                    type='button'
+                                    className={
+                                        item.clientId === selectedClientId
+                                            ? 'active'
+                                            : ''
+                                    }
+                                    onClick={() => selectClient(item)}
+                                >
+                                    <span>{label}</span>
+                                    <span className='employee-documentation-list-badges'>
+                                        <span className='employee-documentation-status'>
+                                            {statusLabels[item.status || 'pending']}
+                                        </span>
+                                        <span className='employee-documentation-status'>
+                                            {item.active ? 'Activo' : 'Interno'}
+                                        </span>
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </aside>
+
+                    <form
+                        className='employee-documentation-form'
+                        onSubmit={handleSaveClient}
+                    >
+                        <div className='employee-documentation-grid'>
+                            {[
+                                ['displayName', 'Nombre y apellidos / razon social'],
+                                ['taxId', 'DNI/NIE/CIF'],
+                                ['phone', 'Telefono de contacto'],
+                                ['email', 'Correo electronico'],
+                                ['contactPerson', 'Persona responsable/contacto'],
+                                ['paymentMethod', 'Metodo de pago'],
+                            ].map(([field, label]) => (
+                                <div
+                                    key={field}
+                                    className='employee-documentation-field'
+                                >
+                                    <label>{label}</label>
+                                    <input
+                                        type={field === 'email' ? 'email' : 'text'}
+                                        value={clientForm[field] || ''}
+                                        onChange={(event) =>
+                                            handleClientChange(
+                                                field,
+                                                event.target.value
+                                            )
+                                        }
+                                        required={
+                                            field === 'displayName' ||
+                                            field === 'email'
+                                        }
+                                    />
+                                </div>
+                            ))}
+                            <div className='employee-documentation-field'>
+                                <label>Estado</label>
+                                <select
+                                    value={clientForm.status || 'pending'}
+                                    onChange={(event) =>
+                                        handleClientChange(
+                                            'status',
+                                            event.target.value
+                                        )
+                                    }
+                                >
+                                    <option value='pending'>Pendiente</option>
+                                    <option value='reviewed'>Revisado</option>
+                                    <option value='rejected'>Rechazado</option>
+                                </select>
+                            </div>
+                            <div className='employee-documentation-field employee-documentation-field--wide'>
+                                <label>Autorizaciones necesarias</label>
+                                <textarea
+                                    rows='3'
+                                    value={clientForm.authorizations || ''}
+                                    onChange={(event) =>
+                                        handleClientChange(
+                                            'authorizations',
+                                            event.target.value
+                                        )
+                                    }
+                                />
+                            </div>
+                            <div className='employee-documentation-field employee-documentation-field--wide'>
+                                <label>Notas internas</label>
+                                <textarea
+                                    rows='3'
+                                    value={clientForm.reviewNotes || ''}
+                                    onChange={(event) =>
+                                        handleClientChange(
+                                            'reviewNotes',
+                                            event.target.value
+                                        )
+                                    }
+                                />
+                            </div>
+                        </div>
+
+                        <div className='employee-documentation-files'>
+                            {clientFileFields.map(([field, label]) => (
+                                <div
+                                    key={field}
+                                    className='employee-documentation-file'
+                                >
+                                    <span>{label}</span>
+                                    <input
+                                        type='file'
+                                        accept='application/pdf'
+                                        onChange={(event) =>
+                                            setClientFiles((prev) => ({
+                                                ...prev,
+                                                [field]: event.target.files?.[0],
+                                            }))
+                                        }
+                                    />
+                                    <div className='employee-documentation-file-actions'>
+                                        {clientForm?.[field] && selectedClientId ? (
+                                            <button
+                                                type='button'
+                                                className='employee-documentation-btn employee-documentation-btn--ghost'
+                                                onClick={() =>
+                                                    handleOpenClientFile(field)
+                                                }
+                                            >
+                                                Ver PDF
+                                            </button>
+                                        ) : (
+                                            <span>Sin archivo</span>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className='employee-documentation-actions'>
+                            <button
+                                type='submit'
+                                className='employee-documentation-btn'
+                                disabled={saving}
+                            >
+                                {saving ? 'Guardando...' : 'Guardar cliente'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            ) : isAdminLike && adminMode === 'drafts' ? (
                 <div className='employee-documentation-layout'>
                     <aside className='employee-documentation-list'>
                         <div className='employee-documentation-list-filters'>

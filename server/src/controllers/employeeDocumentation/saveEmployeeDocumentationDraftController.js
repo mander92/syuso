@@ -7,6 +7,7 @@ import {
     allowedDocumentationFileFields,
     saveEmployeeDocumentationFile,
 } from '../../utils/employeeDocumentationFileUtil.js';
+import { emitDocumentationChanged } from '../../utils/documentationNotificationUtil.js';
 
 const schema = Joi.object({
     firstName: Joi.string().max(25).allow('', null),
@@ -57,6 +58,17 @@ const saveEmployeeDocumentationDraftController = async (req, res, next) => {
         }
 
         const data = await selectEmployeeDocumentationDraftService(id);
+        const fullName =
+            `${data.firstName || ''} ${data.lastName || ''}`.trim() ||
+            data.email ||
+            'Alta pendiente';
+        emitDocumentationChanged({
+            changedBy: req.userLogged.id,
+            subjectId: id,
+            subjectType: 'employeeDraft',
+            title: 'Alta documental',
+            message: `${fullName}: alta pendiente actualizada`,
+        });
         res.send({ status: 'ok', data });
     } catch (error) {
         next(error);
@@ -64,4 +76,3 @@ const saveEmployeeDocumentationDraftController = async (req, res, next) => {
 };
 
 export default saveEmployeeDocumentationDraftController;
-

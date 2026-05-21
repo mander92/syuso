@@ -20,6 +20,7 @@ const selectServiceByIdService = async (serviceId) => {
                 s.hourRuleType,
                 s.image,
                 s.hours, 
+                s.hourlyRate,
                 s.numberOfPeople,
                 s.name, 
                 s.startDateTime,

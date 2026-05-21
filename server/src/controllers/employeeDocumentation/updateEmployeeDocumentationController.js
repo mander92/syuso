@@ -7,6 +7,7 @@ import {
     allowedDocumentationFileFields,
     saveEmployeeDocumentationFile,
 } from '../../utils/employeeDocumentationFileUtil.js';
+import { emitDocumentationChanged } from '../../utils/documentationNotificationUtil.js';
 
 const updateEmployeeDocumentationController = async (req, res, next) => {
     try {
@@ -63,6 +64,18 @@ const updateEmployeeDocumentationController = async (req, res, next) => {
         });
 
         const data = await selectEmployeeDocumentationService(targetUserId);
+        const fullName =
+            `${data.firstName || ''} ${data.lastName || ''}`.trim() ||
+            data.email ||
+            'Trabajador';
+        emitDocumentationChanged({
+            changedBy: req.userLogged.id,
+            subjectId: targetUserId,
+            subjectType: 'employee',
+            userIds: targetUserId !== req.userLogged.id ? [targetUserId] : [],
+            title: 'Documentacion de trabajador',
+            message: `${fullName}: ficha documental actualizada`,
+        });
         res.send({ status: 'ok', data });
     } catch (error) {
         next(error);
@@ -70,4 +83,3 @@ const updateEmployeeDocumentationController = async (req, res, next) => {
 };
 
 export default updateEmployeeDocumentationController;
-

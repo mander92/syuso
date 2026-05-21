@@ -28,6 +28,61 @@ export const fetchEmployeeDocumentations = async (authToken) => {
     return assertOk(await readJsonBody(res));
 };
 
+export const fetchClientDocumentations = async (authToken) => {
+    const res = await fetch(`${VITE_API_URL}/client-documentations`, {
+        headers: { Authorization: authToken },
+    });
+    return assertOk(await readJsonBody(res));
+};
+
+export const saveClientDocumentation = async ({
+    authToken,
+    clientId = null,
+    data,
+    files = {},
+}) => {
+    const formData = new FormData();
+    Object.entries(data || {}).forEach(([key, value]) => {
+        formData.append(key, value ?? '');
+    });
+    Object.entries(files || {}).forEach(([key, file]) => {
+        if (file) formData.append(key, file);
+    });
+
+    const endpoint = clientId
+        ? `${VITE_API_URL}/client-documentations/${clientId}`
+        : `${VITE_API_URL}/client-documentations`;
+
+    const res = await fetch(endpoint, {
+        method: clientId ? 'PUT' : 'POST',
+        headers: { Authorization: authToken },
+        body: formData,
+    });
+
+    return assertOk(await readJsonBody(res));
+};
+
+export const openClientDocumentationFile = async ({
+    authToken,
+    clientId,
+    field,
+}) => {
+    const res = await fetch(
+        `${VITE_API_URL}/client-documentations/${clientId}/files/${field}`,
+        { headers: { Authorization: authToken } }
+    );
+
+    if (!res.ok) {
+        const body = await readJsonBody(res);
+        throw new Error(body.message || 'No se pudo abrir el archivo');
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank', 'noopener,noreferrer');
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+};
+
 export const fetchMyEmployeeDocumentation = async (authToken) => {
     const res = await fetch(`${VITE_API_URL}/employee-documentations/me`, {
         headers: { Authorization: authToken },

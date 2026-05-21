@@ -13,6 +13,7 @@ const updateServiceByIdService = async (
     startDateTime,
     endDateTime,
     hours,
+    hourlyRate,
     numberOfPeople,
     reportEmail,
     locationLink,
@@ -33,7 +34,7 @@ const updateServiceByIdService = async (
 
     const [serviceInfo] = await pool.query(
         `
-        SELECT s.id, s.status, s.startDateTime, s.hours, s.numberOfPeople, s.comments,
+        SELECT s.id, s.status, s.startDateTime, s.hours, s.hourlyRate, s.numberOfPeople, s.comments,
                s.reportEmail, s.locationLink, s.name, s.endDateTime, s.clientId,
                s.allowUnscheduledClockIn,
                s.clockInEarlyMinutes,
@@ -83,6 +84,13 @@ const updateServiceByIdService = async (
         hours !== undefined && hours !== null && hours !== ''
             ? Number(hours)
             : Number(current.hours);
+    const resolvedHourlyRate =
+        role === 'sudo' &&
+        hourlyRate !== undefined &&
+        hourlyRate !== null &&
+        hourlyRate !== ''
+            ? Number(hourlyRate)
+            : current.hourlyRate;
     const resolvedNumberOfPeople =
         numberOfPeople !== undefined &&
         numberOfPeople !== null &&
@@ -151,6 +159,7 @@ const updateServiceByIdService = async (
         'status = ?',
         'comments = ?',
         'hours = ?',
+        'hourlyRate = ?',
         'numberOfPeople = ?',
         'reportEmail = ?',
         'locationLink = ?',
@@ -171,6 +180,7 @@ const updateServiceByIdService = async (
         resolvedStatus,
         resolvedComments,
         resolvedHours,
+        resolvedHourlyRate,
         resolvedNumberOfPeople,
         resolvedReportEmail,
         resolvedLocationLink,
@@ -285,7 +295,7 @@ const updateServiceByIdService = async (
 
     const [data] = await pool.query(
         `
-        SELECT s.startDateTime, s.hours, s.numberOfPeople, s.reportEmail,
+        SELECT s.startDateTime, s.hours, s.hourlyRate, s.numberOfPeople, s.reportEmail,
                s.locationLink, s.name, s.status, s.endDateTime, s.clientId,
                s.allowUnscheduledClockIn,
                s.clockInEarlyMinutes,

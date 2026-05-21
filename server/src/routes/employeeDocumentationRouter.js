@@ -13,6 +13,9 @@ import getEmployeeDocumentationDraftFileController from '../controllers/employee
 import createDocumentationDraftTokenController from '../controllers/employeeDocumentation/createDocumentationDraftTokenController.js';
 import getPublicDocumentationDraftController from '../controllers/employeeDocumentation/getPublicDocumentationDraftController.js';
 import savePublicDocumentationDraftController from '../controllers/employeeDocumentation/savePublicDocumentationDraftController.js';
+import listClientDocumentationsController from '../controllers/clientDocumentation/listClientDocumentationsController.js';
+import saveClientDocumentationController from '../controllers/clientDocumentation/saveClientDocumentationController.js';
+import getClientDocumentationFileController from '../controllers/clientDocumentation/getClientDocumentationFileController.js';
 
 const router = express.Router();
 
@@ -21,6 +24,30 @@ router.get(
     authUser,
     isAdmin,
     listEmployeeDocumentationsController
+);
+router.get(
+    '/client-documentations',
+    authUser,
+    isAdmin,
+    listClientDocumentationsController
+);
+router.post(
+    '/client-documentations',
+    authUser,
+    isAdmin,
+    saveClientDocumentationController
+);
+router.put(
+    '/client-documentations/:clientId',
+    authUser,
+    isAdmin,
+    saveClientDocumentationController
+);
+router.get(
+    '/client-documentations/:clientId/files/:field',
+    authUser,
+    isAdmin,
+    getClientDocumentationFileController
 );
 router.get(
     '/employee-documentation-drafts',

@@ -8,6 +8,7 @@ import {
     allowedDocumentationFileFields,
     saveEmployeeDocumentationFile,
 } from '../../utils/employeeDocumentationFileUtil.js';
+import { emitDocumentationChanged } from '../../utils/documentationNotificationUtil.js';
 
 const schema = Joi.object({
     firstName: Joi.string().max(25).allow('', null),
@@ -56,6 +57,16 @@ const savePublicDocumentationDraftController = async (req, res, next) => {
         await markDocumentationDraftTokenUsedService(token);
 
         const updated = await selectDocumentationDraftByTokenService(token);
+        const fullName =
+            `${updated.firstName || ''} ${updated.lastName || ''}`.trim() ||
+            updated.email ||
+            'Alta pendiente';
+        emitDocumentationChanged({
+            subjectId: updated.id,
+            subjectType: 'employeeDraft',
+            title: 'Ficha recibida',
+            message: `${fullName}: ha enviado su ficha documental`,
+        });
         res.send({ status: 'ok', data: updated });
     } catch (error) {
         next(error);
@@ -63,4 +74,3 @@ const savePublicDocumentationDraftController = async (req, res, next) => {
 };
 
 export default savePublicDocumentationDraftController;
-

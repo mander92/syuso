@@ -58,6 +58,7 @@ const ServiceDetail = () => {
         startDateTime: '',
         endDateTime: '',
         hours: '',
+        hourlyRate: '',
         numberOfPeople: '',
         allowUnscheduledClockIn: false,
         clockInEarlyMinutes: '15',
@@ -143,6 +144,10 @@ const ServiceDetail = () => {
                 endDateTime: formatDateTimeInput(rows[0]?.endDateTime),
                 hours:
                     rows[0]?.hours != null ? String(rows[0].hours) : '',
+                hourlyRate:
+                    rows[0]?.hourlyRate != null
+                        ? String(rows[0].hourlyRate)
+                        : '',
                 numberOfPeople:
                     rows[0]?.numberOfPeople != null
                         ? String(rows[0].numberOfPeople)
@@ -187,7 +192,7 @@ const ServiceDetail = () => {
         const loadOptions = async () => {
             try {
                 const clientRows = await fetchAllUsersServices(
-                    'role=client&active=1',
+                    'role=client',
                     authToken
                 );
                 setClients(Array.isArray(clientRows) ? clientRows : []);
@@ -394,6 +399,9 @@ const ServiceDetail = () => {
                 name: summaryForm.name,
                 status: summaryForm.status,
                 hours: summaryForm.hours,
+                ...(user?.role === 'sudo'
+                    ? { hourlyRate: summaryForm.hourlyRate }
+                    : {}),
                 numberOfPeople: summaryForm.numberOfPeople,
                 address: summaryForm.address,
                 city: summaryForm.city,
@@ -701,6 +709,24 @@ const ServiceDetail = () => {
                                             onChange={handleSummaryChange('hours')}
                                         />
                                     </div>
+                                    {user?.role === 'sudo' ? (
+                                        <div className='service-detail-summary-field'>
+                                            <label htmlFor='serviceHourlyRate'>
+                                                Precio/h
+                                            </label>
+                                            <input
+                                                id='serviceHourlyRate'
+                                                type='number'
+                                                min='0'
+                                                step='0.01'
+                                                value={summaryForm.hourlyRate}
+                                                onChange={handleSummaryChange(
+                                                    'hourlyRate'
+                                                )}
+                                                placeholder='0.00'
+                                            />
+                                        </div>
+                                    ) : null}
                                     <div className='service-detail-summary-field'>
                                         <label htmlFor='servicePeople'>Personas</label>
                                         <input
