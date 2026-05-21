@@ -302,21 +302,58 @@ const EmployeeDocumentationComponent = () => {
     };
 
     const handleCreateDraftLink = async () => {
-        if (!selectedDraftId) {
-            alert('Guarda primero la alta pendiente.');
-            return;
-        }
         try {
+            let draftId = selectedDraftId;
+
+            if (!draftId) {
+                const savedDraft = await saveEmployeeDocumentationDraft({
+                    authToken,
+                    draftId: null,
+                    data: {
+                        firstName: draftForm.firstName,
+                        lastName: draftForm.lastName,
+                        email: draftForm.email,
+                        dni: draftForm.dni,
+                        birthDate: draftForm.birthDate,
+                        bankAccount: draftForm.bankAccount,
+                        address: draftForm.address,
+                        phone: draftForm.phone,
+                        socialSecurityNumber: draftForm.socialSecurityNumber,
+                        status: draftForm.status || 'draft',
+                        reviewNotes: draftForm.reviewNotes,
+                    },
+                    files: draftFiles,
+                });
+
+                draftId = savedDraft.id;
+                setSelectedDraftId(savedDraft.id);
+                setDraftForm({
+                    ...emptyForm,
+                    ...savedDraft,
+                    birthDate: toDateInput(savedDraft.birthDate),
+                    status: savedDraft.status || 'draft',
+                });
+                setDraftFiles({});
+
+                const list = await fetchEmployeeDocumentationDrafts(authToken);
+                setDrafts(list || []);
+            }
+
             const data = await createDocumentationDraftLink(
                 authToken,
-                selectedDraftId
+                draftId
             );
             const employeeName =
                 `${draftForm.firstName || ''} ${draftForm.lastName || ''}`.trim() ||
                 'compañero/a';
             const text = `Hola ${employeeName}, por favor completa tu ficha de alta de SYUSO en este enlace privado: ${data.url}. El enlace caduca en 7 dias.`;
-            await navigator.clipboard.writeText(text);
-            alert('Enlace copiado para enviarlo por WhatsApp.');
+
+            try {
+                await navigator.clipboard.writeText(text);
+                alert('Enlace copiado para enviarlo por WhatsApp.');
+            } catch {
+                window.prompt('Copia este texto para WhatsApp:', text);
+            }
         } catch (error) {
             alert(error.message || 'No se pudo generar el enlace');
         }
@@ -549,7 +586,7 @@ const EmployeeDocumentationComponent = () => {
                             <button
                                 type='button'
                                 className='employee-documentation-btn employee-documentation-btn--ghost'
-                                disabled={!selectedDraftId || draftForm.linkedUserId}
+                                disabled={saving || draftForm.linkedUserId}
                                 onClick={handleCreateDraftLink}
                             >
                                 Copiar enlace WhatsApp
