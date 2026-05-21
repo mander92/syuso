@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS employeeDocumentationDrafts (
+    id CHAR(36) PRIMARY KEY NOT NULL,
+    firstName VARCHAR(25),
+    lastName VARCHAR(50),
+    email VARCHAR(100),
+    dni VARCHAR(20),
+    birthDate DATE,
+    bankAccount VARCHAR(40),
+    dniFrontPath VARCHAR(255),
+    dniBackPath VARCHAR(255),
+    tipFrontPath VARCHAR(255),
+    tipBackPath VARCHAR(255),
+    address VARCHAR(255),
+    phone VARCHAR(20),
+    socialSecurityNumber VARCHAR(40),
+    status ENUM('draft', 'pending', 'reviewed', 'converted', 'rejected') DEFAULT 'draft',
+    reviewNotes VARCHAR(500),
+    linkedUserId CHAR(36),
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    modifiedAt TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (linkedUserId) REFERENCES users(id)
+);

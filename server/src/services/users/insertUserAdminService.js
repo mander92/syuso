@@ -121,6 +121,8 @@ const insertAdminService = async (
 
     // no hace falta await, pero si quieres controlar errores, pon await
     sendMail(firstName, email, emailSubject, emailBody);
+
+    return userId;
 };
 
 export default insertAdminService;

@@ -3,9 +3,13 @@ import express from 'express';
 import authUser from '../middleware/authUser.js';
 import isAdmin from '../middleware/isAdmin.js';
 import listEmployeeDocumentationsController from '../controllers/employeeDocumentation/listEmployeeDocumentationsController.js';
+import listEmployeeDocumentationDraftsController from '../controllers/employeeDocumentation/listEmployeeDocumentationDraftsController.js';
 import getEmployeeDocumentationController from '../controllers/employeeDocumentation/getEmployeeDocumentationController.js';
 import updateEmployeeDocumentationController from '../controllers/employeeDocumentation/updateEmployeeDocumentationController.js';
 import getEmployeeDocumentationFileController from '../controllers/employeeDocumentation/getEmployeeDocumentationFileController.js';
+import saveEmployeeDocumentationDraftController from '../controllers/employeeDocumentation/saveEmployeeDocumentationDraftController.js';
+import createUserFromDocumentationDraftController from '../controllers/employeeDocumentation/createUserFromDocumentationDraftController.js';
+import getEmployeeDocumentationDraftFileController from '../controllers/employeeDocumentation/getEmployeeDocumentationDraftFileController.js';
 
 const router = express.Router();
 
@@ -14,6 +18,36 @@ router.get(
     authUser,
     isAdmin,
     listEmployeeDocumentationsController
+);
+router.get(
+    '/employee-documentation-drafts',
+    authUser,
+    isAdmin,
+    listEmployeeDocumentationDraftsController
+);
+router.post(
+    '/employee-documentation-drafts',
+    authUser,
+    isAdmin,
+    saveEmployeeDocumentationDraftController
+);
+router.put(
+    '/employee-documentation-drafts/:draftId',
+    authUser,
+    isAdmin,
+    saveEmployeeDocumentationDraftController
+);
+router.post(
+    '/employee-documentation-drafts/:draftId/create-user',
+    authUser,
+    isAdmin,
+    createUserFromDocumentationDraftController
+);
+router.get(
+    '/employee-documentation-drafts/:draftId/files/:field',
+    authUser,
+    isAdmin,
+    getEmployeeDocumentationDraftFileController
 );
 router.get('/employee-documentations/me', authUser, getEmployeeDocumentationController);
 router.put('/employee-documentations/me', authUser, updateEmployeeDocumentationController);

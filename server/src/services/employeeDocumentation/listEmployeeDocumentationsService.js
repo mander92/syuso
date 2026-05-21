@@ -12,6 +12,7 @@ const listEmployeeDocumentationsService = async () => {
                 u.email,
                 u.phone AS userPhone,
                 u.city,
+                u.active,
                 d.id,
                 d.birthDate,
                 d.bankAccount,
@@ -36,4 +37,3 @@ const listEmployeeDocumentationsService = async () => {
 };
 
 export default listEmployeeDocumentationsService;
-

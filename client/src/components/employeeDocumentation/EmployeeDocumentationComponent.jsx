@@ -3,10 +3,14 @@ import { AuthContext } from '../../context/AuthContext.jsx';
 import useUser from '../../hooks/useUser.js';
 import {
     fetchEmployeeDocumentation,
+    fetchEmployeeDocumentationDrafts,
     fetchEmployeeDocumentations,
     fetchMyEmployeeDocumentation,
+    createUserFromDocumentationDraft,
     openEmployeeDocumentationFile,
+    openEmployeeDocumentationDraftFile,
     saveEmployeeDocumentation,
+    saveEmployeeDocumentationDraft,
 } from '../../services/employeeDocumentationService.js';
 import './EmployeeDocumentationComponent.css';
 
@@ -33,6 +37,7 @@ const emptyForm = {
     address: '',
     phone: '',
     socialSecurityNumber: '',
+    dni: '',
     status: 'pending',
     reviewNotes: '',
 };
@@ -61,6 +66,16 @@ const EmployeeDocumentationComponent = () => {
     const [files, setFiles] = useState({});
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [search, setSearch] = useState('');
+    const [activeFilter, setActiveFilter] = useState('active');
+    const [adminMode, setAdminMode] = useState('employees');
+    const [drafts, setDrafts] = useState([]);
+    const [selectedDraftId, setSelectedDraftId] = useState('');
+    const [draftForm, setDraftForm] = useState({
+        ...emptyForm,
+        status: 'draft',
+    });
+    const [draftFiles, setDraftFiles] = useState({});
 
     const selectedItem = useMemo(
         () =>
@@ -70,13 +85,47 @@ const EmployeeDocumentationComponent = () => {
         [form, isAdminLike, items, selectedUserId]
     );
 
+    const filteredItems = useMemo(() => {
+        const term = search.trim().toLowerCase();
+        return items.filter((item) => {
+            const isActive =
+                item.active === 1 || item.active === true || item.active === '1';
+            if (activeFilter === 'active' && !isActive) return false;
+            if (activeFilter === 'inactive' && isActive) return false;
+
+            if (!term) return true;
+
+            const fullName = `${item.firstName || ''} ${item.lastName || ''}`.toLowerCase();
+            return (
+                fullName.includes(term) ||
+                String(item.email || '').toLowerCase().includes(term) ||
+                String(item.city || '').toLowerCase().includes(term)
+            );
+        });
+    }, [activeFilter, items, search]);
+
+    const filteredDrafts = useMemo(() => {
+        const term = search.trim().toLowerCase();
+        return drafts.filter((item) => {
+            if (!term) return true;
+            const fullName = `${item.firstName || ''} ${item.lastName || ''}`.toLowerCase();
+            return (
+                fullName.includes(term) ||
+                String(item.email || '').toLowerCase().includes(term) ||
+                String(item.dni || '').toLowerCase().includes(term)
+            );
+        });
+    }, [drafts, search]);
+
     const load = async () => {
         if (!authToken) return;
         setLoading(true);
         try {
             if (isAdminLike) {
                 const data = await fetchEmployeeDocumentations(authToken);
+                const draftData = await fetchEmployeeDocumentationDrafts(authToken);
                 setItems(data || []);
+                setDrafts(draftData || []);
                 const firstId = data?.[0]?.userId || '';
                 setSelectedUserId((prev) => prev || firstId);
                 if (firstId && !selectedUserId) {
@@ -103,8 +152,23 @@ const EmployeeDocumentationComponent = () => {
         setForm(normalizeDocumentation(data));
     };
 
+    const selectDraft = (draft) => {
+        setSelectedDraftId(draft?.id || '');
+        setDraftFiles({});
+        setDraftForm({
+            ...emptyForm,
+            ...draft,
+            birthDate: toDateInput(draft?.birthDate),
+            status: draft?.status || 'draft',
+        });
+    };
+
     const handleChange = (field, value) => {
         setForm((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const handleDraftChange = (field, value) => {
+        setDraftForm((prev) => ({ ...prev, [field]: value }));
     };
 
     const handleSubmit = async (event) => {
@@ -152,6 +216,105 @@ const EmployeeDocumentationComponent = () => {
         }
     };
 
+    const handleOpenDraftFile = async (field) => {
+        try {
+            await openEmployeeDocumentationDraftFile({
+                authToken,
+                draftId: selectedDraftId,
+                field,
+            });
+        } catch (error) {
+            alert(error.message || 'No se pudo abrir el archivo');
+        }
+    };
+
+    const handleSaveDraft = async (event) => {
+        event.preventDefault();
+        setSaving(true);
+        try {
+            const data = await saveEmployeeDocumentationDraft({
+                authToken,
+                draftId: selectedDraftId || null,
+                data: {
+                    firstName: draftForm.firstName,
+                    lastName: draftForm.lastName,
+                    email: draftForm.email,
+                    dni: draftForm.dni,
+                    birthDate: draftForm.birthDate,
+                    bankAccount: draftForm.bankAccount,
+                    address: draftForm.address,
+                    phone: draftForm.phone,
+                    socialSecurityNumber: draftForm.socialSecurityNumber,
+                    status: draftForm.status,
+                    reviewNotes: draftForm.reviewNotes,
+                },
+                files: draftFiles,
+            });
+            setSelectedDraftId(data.id);
+            setDraftForm({
+                ...emptyForm,
+                ...data,
+                birthDate: toDateInput(data.birthDate),
+                status: data.status || 'draft',
+            });
+            setDraftFiles({});
+            const list = await fetchEmployeeDocumentationDrafts(authToken);
+            setDrafts(list || []);
+            alert('Alta pendiente guardada.');
+        } catch (error) {
+            alert(error.message || 'Error guardando alta pendiente');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleCreateWorkerFromDraft = async () => {
+        if (!selectedDraftId) return;
+        if (
+            !window.confirm(
+                'Se creara un trabajador con esta ficha y se le enviaran credenciales por email. Continuar?'
+            )
+        ) {
+            return;
+        }
+        try {
+            const data = await createUserFromDocumentationDraft(
+                authToken,
+                selectedDraftId
+            );
+            setDraftForm({
+                ...emptyForm,
+                ...data,
+                birthDate: toDateInput(data.birthDate),
+                status: data.status || 'converted',
+            });
+            const [draftList, employeeList] = await Promise.all([
+                fetchEmployeeDocumentationDrafts(authToken),
+                fetchEmployeeDocumentations(authToken),
+            ]);
+            setDrafts(draftList || []);
+            setItems(employeeList || []);
+            alert('Trabajador creado y documentacion vinculada.');
+        } catch (error) {
+            alert(error.message || 'No se pudo crear el trabajador');
+        }
+    };
+
+    const handleCopyInstructions = async () => {
+        const employeeName =
+            `${form.firstName || ''} ${form.lastName || ''}`.trim() ||
+            'compañero/a';
+        const loginUrl = `${window.location.origin}/login`;
+        const text = `Hola ${employeeName}, por favor entra en ${loginUrl} con tu usuario de SYUSO y completa tu ficha en Mi cuenta > Mi documentacion. Ahi podras rellenar tus datos y subir DNI/TIP de forma privada.`;
+
+        try {
+            await navigator.clipboard.writeText(text);
+            alert('Texto copiado para enviarlo por WhatsApp o email.');
+        } catch {
+            window.prompt('Copia este texto:', text);
+        }
+    };
+
     if (loading) {
         return <p>Cargando documentacion...</p>;
     }
@@ -165,12 +328,249 @@ const EmployeeDocumentationComponent = () => {
                         Gestiona la ficha documental y las imagenes de DNI/TIP.
                     </p>
                 </div>
+                {isAdminLike ? (
+                    <button
+                        type='button'
+                        className='employee-documentation-btn employee-documentation-btn--ghost'
+                        onClick={handleCopyInstructions}
+                        disabled={!selectedUserId}
+                    >
+                        Copiar instrucciones
+                    </button>
+                ) : null}
             </header>
+
+            {isAdminLike ? (
+                <div className='employee-documentation-tabs'>
+                    <button
+                        type='button'
+                        className={adminMode === 'employees' ? 'active' : ''}
+                        onClick={() => setAdminMode('employees')}
+                    >
+                        Trabajadores
+                    </button>
+                    <button
+                        type='button'
+                        className={adminMode === 'drafts' ? 'active' : ''}
+                        onClick={() => {
+                            setAdminMode('drafts');
+                            if (!selectedDraftId && drafts[0]) {
+                                selectDraft(drafts[0]);
+                            }
+                        }}
+                    >
+                        Altas pendientes
+                    </button>
+                </div>
+            ) : null}
+
+            {isAdminLike && adminMode === 'drafts' ? (
+                <div className='employee-documentation-layout'>
+                    <aside className='employee-documentation-list'>
+                        <div className='employee-documentation-list-filters'>
+                            <input
+                                type='search'
+                                placeholder='Buscar alta...'
+                                value={search}
+                                onChange={(event) => setSearch(event.target.value)}
+                            />
+                            <button
+                                type='button'
+                                className='employee-documentation-btn'
+                                onClick={() => {
+                                    setSelectedDraftId('');
+                                    setDraftFiles({});
+                                    setDraftForm({
+                                        ...emptyForm,
+                                        status: 'draft',
+                                    });
+                                }}
+                            >
+                                Nueva alta
+                            </button>
+                        </div>
+                        <p className='employee-documentation-list-count'>
+                            {filteredDrafts.length} altas
+                        </p>
+                        {filteredDrafts.map((item) => (
+                            <button
+                                key={item.id}
+                                type='button'
+                                className={item.id === selectedDraftId ? 'active' : ''}
+                                onClick={() => selectDraft(item)}
+                            >
+                                <span>
+                                    {item.firstName || 'Sin nombre'}{' '}
+                                    {item.lastName || ''}
+                                </span>
+                                <span className='employee-documentation-status'>
+                                    {item.status || 'draft'}
+                                </span>
+                            </button>
+                        ))}
+                    </aside>
+
+                    <form
+                        className='employee-documentation-form'
+                        onSubmit={handleSaveDraft}
+                    >
+                        <div className='employee-documentation-grid'>
+                            {[
+                                ['firstName', 'Nombre'],
+                                ['lastName', 'Apellidos'],
+                                ['email', 'Email'],
+                                ['dni', 'DNI'],
+                                ['birthDate', 'Fecha de nacimiento'],
+                                ['bankAccount', 'Numero de cuenta bancaria'],
+                                ['socialSecurityNumber', 'Numero Seguridad Social'],
+                                ['phone', 'Telefono'],
+                            ].map(([field, label]) => (
+                                <div
+                                    key={field}
+                                    className='employee-documentation-field'
+                                >
+                                    <label>{label}</label>
+                                    <input
+                                        type={field === 'birthDate' ? 'date' : 'text'}
+                                        value={draftForm[field] || ''}
+                                        onChange={(event) =>
+                                            handleDraftChange(
+                                                field,
+                                                event.target.value
+                                            )
+                                        }
+                                    />
+                                </div>
+                            ))}
+                            <div className='employee-documentation-field'>
+                                <label>Estado</label>
+                                <select
+                                    value={draftForm.status || 'draft'}
+                                    onChange={(event) =>
+                                        handleDraftChange(
+                                            'status',
+                                            event.target.value
+                                        )
+                                    }
+                                >
+                                    <option value='draft'>Borrador</option>
+                                    <option value='pending'>Pendiente</option>
+                                    <option value='reviewed'>Revisada</option>
+                                    <option value='converted'>Convertida</option>
+                                    <option value='rejected'>Rechazada</option>
+                                </select>
+                            </div>
+                            <div className='employee-documentation-field employee-documentation-field--wide'>
+                                <label>Direccion</label>
+                                <input
+                                    value={draftForm.address || ''}
+                                    onChange={(event) =>
+                                        handleDraftChange(
+                                            'address',
+                                            event.target.value
+                                        )
+                                    }
+                                />
+                            </div>
+                            <div className='employee-documentation-field employee-documentation-field--wide'>
+                                <label>Notas internas</label>
+                                <textarea
+                                    rows='3'
+                                    value={draftForm.reviewNotes || ''}
+                                    onChange={(event) =>
+                                        handleDraftChange(
+                                            'reviewNotes',
+                                            event.target.value
+                                        )
+                                    }
+                                />
+                            </div>
+                        </div>
+
+                        <div className='employee-documentation-files'>
+                            {fileFields.map(([field, label]) => (
+                                <div
+                                    key={field}
+                                    className='employee-documentation-file'
+                                >
+                                    <span>{label}</span>
+                                    <input
+                                        type='file'
+                                        accept='image/png,image/jpeg,image/webp'
+                                        onChange={(event) =>
+                                            setDraftFiles((prev) => ({
+                                                ...prev,
+                                                [field]: event.target.files?.[0],
+                                            }))
+                                        }
+                                    />
+                                    <div className='employee-documentation-file-actions'>
+                                        {draftForm?.[field] && selectedDraftId ? (
+                                            <button
+                                                type='button'
+                                                className='employee-documentation-btn employee-documentation-btn--ghost'
+                                                onClick={() =>
+                                                    handleOpenDraftFile(field)
+                                                }
+                                            >
+                                                Ver archivo
+                                            </button>
+                                        ) : (
+                                            <span>Sin archivo</span>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className='employee-documentation-actions'>
+                            <button
+                                type='button'
+                                className='employee-documentation-btn employee-documentation-btn--ghost'
+                                disabled={!selectedDraftId || draftForm.linkedUserId}
+                                onClick={handleCreateWorkerFromDraft}
+                            >
+                                Crear trabajador
+                            </button>
+                            <button
+                                type='submit'
+                                className='employee-documentation-btn'
+                                disabled={saving}
+                            >
+                                {saving ? 'Guardando...' : 'Guardar alta'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            ) : (
 
             <div className='employee-documentation-layout'>
                 {isAdminLike ? (
                     <aside className='employee-documentation-list'>
-                        {items.map((item) => (
+                        <div className='employee-documentation-list-filters'>
+                            <input
+                                type='search'
+                                placeholder='Buscar trabajador...'
+                                value={search}
+                                onChange={(event) =>
+                                    setSearch(event.target.value)
+                                }
+                            />
+                            <select
+                                value={activeFilter}
+                                onChange={(event) =>
+                                    setActiveFilter(event.target.value)
+                                }
+                            >
+                                <option value='active'>Activos</option>
+                                <option value='inactive'>Inactivos</option>
+                                <option value='all'>Todos</option>
+                            </select>
+                        </div>
+                        <p className='employee-documentation-list-count'>
+                            {filteredItems.length} trabajadores
+                        </p>
+                        {filteredItems.map((item) => (
                             <button
                                 key={item.userId}
                                 type='button'
@@ -188,11 +588,21 @@ const EmployeeDocumentationComponent = () => {
                                 <span>
                                     {item.firstName} {item.lastName}
                                 </span>
-                                <span className='employee-documentation-status'>
-                                    {statusLabels[item.status || 'pending']}
+                                <span className='employee-documentation-list-badges'>
+                                    <span className='employee-documentation-status'>
+                                        {statusLabels[item.status || 'pending']}
+                                    </span>
+                                    <span className='employee-documentation-status'>
+                                        {item.active ? 'Activo' : 'Inactivo'}
+                                    </span>
                                 </span>
                             </button>
                         ))}
+                        {!filteredItems.length ? (
+                            <p className='employee-documentation-empty'>
+                                No hay trabajadores con ese filtro.
+                            </p>
+                        ) : null}
                     </aside>
                 ) : null}
 
@@ -340,6 +750,7 @@ const EmployeeDocumentationComponent = () => {
                     </div>
                 </form>
             </div>
+            )}
         </section>
     );
 };
