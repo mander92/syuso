@@ -6,6 +6,7 @@ import {
     fetchEmployeeDocumentationDrafts,
     fetchEmployeeDocumentations,
     fetchMyEmployeeDocumentation,
+    createDocumentationDraftLink,
     createUserFromDocumentationDraft,
     openEmployeeDocumentationFile,
     openEmployeeDocumentationDraftFile,
@@ -300,6 +301,27 @@ const EmployeeDocumentationComponent = () => {
         }
     };
 
+    const handleCreateDraftLink = async () => {
+        if (!selectedDraftId) {
+            alert('Guarda primero la alta pendiente.');
+            return;
+        }
+        try {
+            const data = await createDocumentationDraftLink(
+                authToken,
+                selectedDraftId
+            );
+            const employeeName =
+                `${draftForm.firstName || ''} ${draftForm.lastName || ''}`.trim() ||
+                'compañero/a';
+            const text = `Hola ${employeeName}, por favor completa tu ficha de alta de SYUSO en este enlace privado: ${data.url}. El enlace caduca en 7 dias.`;
+            await navigator.clipboard.writeText(text);
+            alert('Enlace copiado para enviarlo por WhatsApp.');
+        } catch (error) {
+            alert(error.message || 'No se pudo generar el enlace');
+        }
+    };
+
     const handleCopyInstructions = async () => {
         const employeeName =
             `${form.firstName || ''} ${form.lastName || ''}`.trim() ||
@@ -524,6 +546,14 @@ const EmployeeDocumentationComponent = () => {
                         </div>
 
                         <div className='employee-documentation-actions'>
+                            <button
+                                type='button'
+                                className='employee-documentation-btn employee-documentation-btn--ghost'
+                                disabled={!selectedDraftId || draftForm.linkedUserId}
+                                onClick={handleCreateDraftLink}
+                            >
+                                Copiar enlace WhatsApp
+                            </button>
                             <button
                                 type='button'
                                 className='employee-documentation-btn employee-documentation-btn--ghost'

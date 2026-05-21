@@ -19,6 +19,7 @@ import CreateContract from './pages/CreateContract/CreateContact';
 import ServiceDetail from './pages/serviceDetail/ServiceDetail';
 import ShiftCreate from './pages/ShiftCreate/ShiftCreate';
 import WorkReport from './pages/WorkReport/WorkReport';
+import EmployeeDocumentationPublic from './pages/EmployeeDocumentationPublic/EmployeeDocumentationPublic';
 
 import NotFound from './pages/NotFoundPage/NotFound';
 
@@ -49,6 +50,10 @@ const App = () => {
                     element={<ServiceContact />}
                 />
                 <Route path='/work' element={<Work />} />
+                <Route
+                    path='/documentacion-alta/:token'
+                    element={<EmployeeDocumentationPublic />}
+                />
                 <Route path='/account' element={<DashboardComponent />} />
 
                 <Route

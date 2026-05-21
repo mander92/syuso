@@ -155,3 +155,45 @@ export const openEmployeeDocumentationDraftFile = async ({
     window.open(url, '_blank', 'noopener,noreferrer');
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
 };
+
+export const createDocumentationDraftLink = async (authToken, draftId) => {
+    const res = await fetch(
+        `${VITE_API_URL}/employee-documentation-drafts/${draftId}/token`,
+        {
+            method: 'POST',
+            headers: { Authorization: authToken },
+        }
+    );
+    return assertOk(await readJsonBody(res));
+};
+
+export const fetchPublicDocumentationDraft = async (token) => {
+    const res = await fetch(
+        `${VITE_API_URL}/public/employee-documentation-drafts/${token}`
+    );
+    return assertOk(await readJsonBody(res));
+};
+
+export const savePublicDocumentationDraft = async ({
+    token,
+    data,
+    files = {},
+}) => {
+    const formData = new FormData();
+    Object.entries(data || {}).forEach(([key, value]) => {
+        formData.append(key, value ?? '');
+    });
+    Object.entries(files || {}).forEach(([key, file]) => {
+        if (file) formData.append(key, file);
+    });
+
+    const res = await fetch(
+        `${VITE_API_URL}/public/employee-documentation-drafts/${token}`,
+        {
+            method: 'PUT',
+            body: formData,
+        }
+    );
+
+    return assertOk(await readJsonBody(res));
+};

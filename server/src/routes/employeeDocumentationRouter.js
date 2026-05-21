@@ -10,6 +10,9 @@ import getEmployeeDocumentationFileController from '../controllers/employeeDocum
 import saveEmployeeDocumentationDraftController from '../controllers/employeeDocumentation/saveEmployeeDocumentationDraftController.js';
 import createUserFromDocumentationDraftController from '../controllers/employeeDocumentation/createUserFromDocumentationDraftController.js';
 import getEmployeeDocumentationDraftFileController from '../controllers/employeeDocumentation/getEmployeeDocumentationDraftFileController.js';
+import createDocumentationDraftTokenController from '../controllers/employeeDocumentation/createDocumentationDraftTokenController.js';
+import getPublicDocumentationDraftController from '../controllers/employeeDocumentation/getPublicDocumentationDraftController.js';
+import savePublicDocumentationDraftController from '../controllers/employeeDocumentation/savePublicDocumentationDraftController.js';
 
 const router = express.Router();
 
@@ -43,11 +46,25 @@ router.post(
     isAdmin,
     createUserFromDocumentationDraftController
 );
+router.post(
+    '/employee-documentation-drafts/:draftId/token',
+    authUser,
+    isAdmin,
+    createDocumentationDraftTokenController
+);
 router.get(
     '/employee-documentation-drafts/:draftId/files/:field',
     authUser,
     isAdmin,
     getEmployeeDocumentationDraftFileController
+);
+router.get(
+    '/public/employee-documentation-drafts/:token',
+    getPublicDocumentationDraftController
+);
+router.put(
+    '/public/employee-documentation-drafts/:token',
+    savePublicDocumentationDraftController
 );
 router.get('/employee-documentations/me', authUser, getEmployeeDocumentationController);
 router.put('/employee-documentations/me', authUser, updateEmployeeDocumentationController);
