@@ -24,22 +24,51 @@ import {
 } from '../../services/delegationService.js';
 import './AdminUsersSection.css';
 
-const dashboardPermissionOptions = [
-    { id: 'contracts', label: 'Servicios' },
-    { id: 'schedules', label: 'Cuadrantes' },
-    { id: 'shifts', label: 'Turnos' },
-    { id: 'shiftSwaps', label: 'Cambios de turno' },
-    { id: 'employeeRequests', label: 'Peticiones' },
-    { id: 'chats', label: 'Chats' },
-    { id: 'alerts', label: 'Alertas' },
-    { id: 'workReports', label: 'Partes de trabajo' },
-    { id: 'documentations', label: 'Documentacion' },
-    { id: 'users', label: 'Usuarios' },
-    { id: 'cleanup', label: 'Limpieza' },
-    { id: 'cv', label: 'CV' },
-    { id: 'services', label: 'Mis servicios / servicios activos' },
-    { id: 'schedule', label: 'Mi cuadrante' },
+const dashboardPermissionGroups = [
+    {
+        title: 'Operativa',
+        options: [
+            { id: 'contracts', label: 'Servicios' },
+            { id: 'schedules', label: 'Cuadrantes' },
+            { id: 'shifts', label: 'Turnos' },
+            { id: 'shiftSwaps', label: 'Cambios de turno' },
+            { id: 'employeeRequests', label: 'Peticiones' },
+            { id: 'workReports', label: 'Partes de trabajo' },
+        ],
+    },
+    {
+        title: 'Administracion',
+        options: [
+            { id: 'documentations', label: 'Documentacion' },
+        ],
+    },
+    {
+        title: 'Comunicacion',
+        options: [
+            { id: 'chats', label: 'Chats' },
+            { id: 'alerts', label: 'Alertas' },
+        ],
+    },
+    {
+        title: 'Gestion',
+        options: [
+            { id: 'users', label: 'Usuarios' },
+            { id: 'cleanup', label: 'Limpieza' },
+            { id: 'cv', label: 'CV' },
+        ],
+    },
+    {
+        title: 'Empleado / cliente',
+        options: [
+            { id: 'services', label: 'Mis servicios / servicios activos' },
+            { id: 'schedule', label: 'Mi cuadrante' },
+        ],
+    },
 ];
+
+const dashboardPermissionOptions = dashboardPermissionGroups.flatMap(
+    (group) => group.options
+);
 
 const defaultDashboardPermissionsByRole = {
     sudo: dashboardPermissionOptions.map((option) => option.id),
@@ -603,6 +632,43 @@ const AdminUsersSection = () => {
                     : [...current, permissionId],
             };
         });
+    };
+
+    const renderDashboardPermissionGroups = (target, permissions) => {
+        const selectedPermissions = parseDashboardPermissions(permissions);
+
+        return dashboardPermissionGroups.map((group) => (
+            <div
+                key={group.title}
+                className='admin-users-permission-group'
+            >
+                <p className='admin-users-permission-group-title'>
+                    {group.title}
+                </p>
+                <div className='admin-users-permission-group-options'>
+                    {group.options.map((option) => (
+                        <label
+                            key={option.id}
+                            className='admin-users-permission-option'
+                        >
+                            <input
+                                type='checkbox'
+                                checked={selectedPermissions.includes(
+                                    option.id
+                                )}
+                                onChange={() =>
+                                    handleDashboardPermissionToggle(
+                                        target,
+                                        option.id
+                                    )
+                                }
+                            />
+                            <span>{option.label}</span>
+                        </label>
+                    ))}
+                </div>
+            </div>
+        ));
     };
 
     const handleNewUserChange = (field, value) => {
@@ -1240,27 +1306,9 @@ const AdminUsersSection = () => {
                                 <div className='admin-users-edit-field admin-users-permissions-field'>
                                     <label>Accesos del dashboard</label>
                                     <div className='admin-users-permissions-grid'>
-                                        {dashboardPermissionOptions.map(
-                                            (option) => (
-                                                <label
-                                                    key={option.id}
-                                                    className='admin-users-permission-option'
-                                                >
-                                                    <input
-                                                        type='checkbox'
-                                                        checked={parseDashboardPermissions(
-                                                            newUser.dashboardPermissions
-                                                        ).includes(option.id)}
-                                                        onChange={() =>
-                                                            handleDashboardPermissionToggle(
-                                                                'new',
-                                                                option.id
-                                                            )
-                                                        }
-                                                    />
-                                                    <span>{option.label}</span>
-                                                </label>
-                                            )
+                                        {renderDashboardPermissionGroups(
+                                            'new',
+                                            newUser.dashboardPermissions
                                         )}
                                     </div>
                                     <p className='admin-users-permissions-note'>
@@ -1719,37 +1767,9 @@ const AdminUsersSection = () => {
                                                                                     Accesos del dashboard
                                                                                 </label>
                                                                                 <div className='admin-users-permissions-grid'>
-                                                                                    {dashboardPermissionOptions.map(
-                                                                                        (
-                                                                                            option
-                                                                                        ) => (
-                                                                                            <label
-                                                                                                key={
-                                                                                                    option.id
-                                                                                                }
-                                                                                                className='admin-users-permission-option'
-                                                                                            >
-                                                                                                <input
-                                                                                                    type='checkbox'
-                                                                                                    checked={parseDashboardPermissions(
-                                                                                                        editingUser.dashboardPermissions
-                                                                                                    ).includes(
-                                                                                                        option.id
-                                                                                                    )}
-                                                                                                    onChange={() =>
-                                                                                                        handleDashboardPermissionToggle(
-                                                                                                            'edit',
-                                                                                                            option.id
-                                                                                                        )
-                                                                                                    }
-                                                                                                />
-                                                                                                <span>
-                                                                                                    {
-                                                                                                        option.label
-                                                                                                    }
-                                                                                                </span>
-                                                                                            </label>
-                                                                                        )
+                                                                                    {renderDashboardPermissionGroups(
+                                                                                        'edit',
+                                                                                        editingUser.dashboardPermissions
                                                                                     )}
                                                                                 </div>
                                                                                 <p className='admin-users-permissions-note'>

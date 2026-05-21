@@ -551,12 +551,35 @@
 
 .admin-users-permissions-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 0.45rem;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 0.65rem;
     padding: 0.65rem;
     border: 1px solid #e2e8f0;
     border-radius: 0.75rem;
     background: #f8fafc;
+}
+
+.admin-users-permission-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    padding: 0.6rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.6rem;
+    background: #fff;
+}
+
+.admin-users-permission-group-title {
+    margin: 0;
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #001b48;
+    text-transform: uppercase;
+}
+
+.admin-users-permission-group-options {
+    display: grid;
+    gap: 0.4rem;
 }
 
 .admin-users-permission-option {

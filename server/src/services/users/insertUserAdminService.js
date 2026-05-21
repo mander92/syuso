@@ -26,42 +26,81 @@ const insertAdminService = async (
     // ¿ya existe el email?
     const [user] = await pool.query(
         `
-            SELECT id FROM users WHERE email = ?
+            SELECT id, deletedAt FROM users WHERE email = ?
         `,
         [email]
     );
 
-    if (user.length) {
+    const existingUser = user[0];
+
+    if (existingUser && !existingUser.deletedAt) {
         generateErrorUtil('El email ya se encuentra registrado', 409);
     }
 
     const recoverPasswordCode = randomstring.generate(10);
     const passwordHashed = await bcrypt.hash(password, 10);
 
-    const userId = uuid();
+    const userId = existingUser?.id || uuid();
 
-    await pool.query(
-        `
-            INSERT INTO users
-                (id, email, password, firstName, lastName, dni, phone, recoverPasswordCode, role, dashboardPermissions, job, city, active)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
-        `,
-        [
-            userId,
-            email,
-            passwordHashed,
-            firstName,
-            lastName,
-            dni,
-            phone,
-            recoverPasswordCode,
-            role,
-            dashboardPermissions,
-            job,
-            city,
-            1,
-        ]
-    );
+    if (existingUser?.deletedAt) {
+        await pool.query(
+            `
+                UPDATE users
+                SET
+                    email = ?,
+                    password = ?,
+                    firstName = ?,
+                    lastName = ?,
+                    dni = ?,
+                    phone = ?,
+                    recoverPasswordCode = ?,
+                    role = ?,
+                    dashboardPermissions = ?,
+                    job = ?,
+                    city = ?,
+                    active = 1,
+                    deletedAt = NULL
+                WHERE id = ?
+            `,
+            [
+                email,
+                passwordHashed,
+                firstName,
+                lastName,
+                dni,
+                phone,
+                recoverPasswordCode,
+                role,
+                dashboardPermissions,
+                job,
+                city,
+                userId,
+            ]
+        );
+    } else {
+        await pool.query(
+            `
+                INSERT INTO users
+                    (id, email, password, firstName, lastName, dni, phone, recoverPasswordCode, role, dashboardPermissions, job, city, active)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+            `,
+            [
+                userId,
+                email,
+                passwordHashed,
+                firstName,
+                lastName,
+                dni,
+                phone,
+                recoverPasswordCode,
+                role,
+                dashboardPermissions,
+                job,
+                city,
+                1,
+            ]
+        );
+    }
 
     if (role === 'admin' && Array.isArray(delegationIds)) {
         await replaceAdminDelegationsService(userId, delegationIds);
