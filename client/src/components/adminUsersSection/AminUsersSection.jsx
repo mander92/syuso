@@ -33,6 +33,7 @@ const dashboardPermissionOptions = [
     { id: 'chats', label: 'Chats' },
     { id: 'alerts', label: 'Alertas' },
     { id: 'workReports', label: 'Partes de trabajo' },
+    { id: 'documentations', label: 'Documentacion' },
     { id: 'users', label: 'Usuarios' },
     { id: 'cleanup', label: 'Limpieza' },
     { id: 'cv', label: 'CV' },
@@ -51,6 +52,7 @@ const defaultDashboardPermissionsByRole = {
         'chats',
         'alerts',
         'workReports',
+        'documentations',
         'users',
     ],
     employee: [
@@ -58,6 +60,7 @@ const defaultDashboardPermissionsByRole = {
         'schedule',
         'shiftSwaps',
         'employeeRequests',
+        'documentations',
         'chats',
         'alerts',
     ],

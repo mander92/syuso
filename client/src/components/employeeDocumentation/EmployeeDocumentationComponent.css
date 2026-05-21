@@ -1,0 +1,166 @@
+.employee-documentation {
+    display: grid;
+    gap: 1rem;
+}
+
+.employee-documentation-header {
+    align-items: flex-start;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.employee-documentation-header h2 {
+    color: #0f172a;
+    margin: 0;
+}
+
+.employee-documentation-header p {
+    color: #64748b;
+    margin: 0.25rem 0 0;
+}
+
+.employee-documentation-layout {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+}
+
+.employee-documentation-list,
+.employee-documentation-form {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 1rem;
+}
+
+.employee-documentation-list {
+    display: grid;
+    gap: 0.5rem;
+    align-content: start;
+}
+
+.employee-documentation-list button {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.6rem;
+    color: #0f172a;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    text-align: left;
+}
+
+.employee-documentation-list button.active {
+    background: #0f172a;
+    color: #ffffff;
+}
+
+.employee-documentation-status {
+    border-radius: 999px;
+    background: #e2e8f0;
+    color: #0f172a;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 0.15rem 0.5rem;
+    white-space: nowrap;
+}
+
+.employee-documentation-list button.active .employee-documentation-status {
+    background: #ffffff;
+}
+
+.employee-documentation-form {
+    display: grid;
+    gap: 1rem;
+}
+
+.employee-documentation-grid {
+    display: grid;
+    gap: 0.8rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.employee-documentation-field {
+    display: grid;
+    gap: 0.3rem;
+}
+
+.employee-documentation-field label {
+    color: #0f172a;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.employee-documentation-field input,
+.employee-documentation-field select,
+.employee-documentation-field textarea {
+    border: 1px solid #dbe3ef;
+    border-radius: 0.55rem;
+    font: inherit;
+    padding: 0.55rem 0.7rem;
+}
+
+.employee-documentation-field--wide {
+    grid-column: 1 / -1;
+}
+
+.employee-documentation-files {
+    display: grid;
+    gap: 0.7rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.employee-documentation-file {
+    border: 1px solid #e2e8f0;
+    border-radius: 0.65rem;
+    display: grid;
+    gap: 0.45rem;
+    padding: 0.75rem;
+}
+
+.employee-documentation-file span {
+    color: #0f172a;
+    font-weight: 700;
+}
+
+.employee-documentation-file-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.employee-documentation-btn {
+    background: #0f172a;
+    border: 0;
+    border-radius: 999px;
+    color: #ffffff;
+    cursor: pointer;
+    font-weight: 800;
+    padding: 0.55rem 0.95rem;
+}
+
+.employee-documentation-btn--ghost {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.employee-documentation-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+@media (max-width: 900px) {
+    .employee-documentation-layout,
+    .employee-documentation-grid,
+    .employee-documentation-files {
+        grid-template-columns: 1fr;
+    }
+}
+

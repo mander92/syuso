@@ -17,6 +17,7 @@ import EmployeeServicesComponent from '../employeeServicesSection/EmployeeServic
 import ClientServicesComponent from '../clientServicesSection/ClientServicesComponent.jsx';
 import ChatHub from '../chatHub/ChatHub.jsx';
 import EmployeeScheduleComponent from '../employeeSchedule/EmployeeScheduleComponent.jsx';
+import EmployeeDocumentationComponent from '../employeeDocumentation/EmployeeDocumentationComponent.jsx';
 import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 
 const formatAlertDate = (value) => {
@@ -53,6 +54,8 @@ const operativeSectionIds = [
     'employeeRequests',
     'workReports',
 ];
+
+const administrationSectionIds = ['documentations'];
 
 const AlertsPanel = ({
     notifications,
@@ -168,6 +171,7 @@ const DashboardComponent = () => {
         useChatNotifications();
     const [activeSection, setActiveSection] = useState('profile');
     const [isOperativeOpen, setIsOperativeOpen] = useState(true);
+    const [isAdministrationOpen, setIsAdministrationOpen] = useState(true);
     const hasSetDefault = useRef(false);
     const userRole = String(user?.role || '').trim().toLowerCase();
     const isAdminLike = userRole === 'admin' || userRole === 'sudo';
@@ -195,6 +199,7 @@ const DashboardComponent = () => {
                 { id: 'chats', label: 'Chats' },
                 { id: 'alerts', label: 'Alertas' },
                 { id: 'workReports', label: 'Partes de trabajo' },
+                { id: 'documentations', label: 'Documentacion' },
                 { id: 'users', label: 'Usuarios' },
                 { id: 'profile', label: 'Mi perfil' },
             ];
@@ -216,6 +221,7 @@ const DashboardComponent = () => {
                 { id: 'schedule', label: 'Mi cuadrante' },
                 { id: 'shiftSwaps', label: 'Cambios de turno' },
                 { id: 'employeeRequests', label: 'Peticiones' },
+                { id: 'documentations', label: 'Mi documentacion' },
                 { id: 'chats', label: 'Chats' },
                 { id: 'alerts', label: 'Alertas' },
                 { id: 'profile', label: 'Mi perfil' },
@@ -226,6 +232,7 @@ const DashboardComponent = () => {
                 { id: 'schedule', label: 'Mi cuadrante' },
                 { id: 'shiftSwaps', label: 'Cambios de turno' },
                 { id: 'employeeRequests', label: 'Peticiones' },
+                { id: 'documentations', label: 'Mi documentacion' },
                 { id: 'chats', label: 'Chats' },
                 { id: 'alerts', label: 'Alertas' },
                 { id: 'profile', label: 'Mi perfil' },
@@ -319,9 +326,21 @@ const DashboardComponent = () => {
         () =>
             isAdminLike
                 ? sections.filter(
-                      (section) => !operativeSectionIds.includes(section.id)
+                      (section) =>
+                          !operativeSectionIds.includes(section.id) &&
+                          !administrationSectionIds.includes(section.id)
                   )
                 : sections,
+        [isAdminLike, sections]
+    );
+
+    const administrationSections = useMemo(
+        () =>
+            isAdminLike
+                ? sections.filter((section) =>
+                      administrationSectionIds.includes(section.id)
+                  )
+                : [],
         [isAdminLike, sections]
     );
 
@@ -338,6 +357,9 @@ const DashboardComponent = () => {
     useEffect(() => {
         if (operativeSectionIds.includes(activeSection)) {
             setIsOperativeOpen(true);
+        }
+        if (administrationSectionIds.includes(activeSection)) {
+            setIsAdministrationOpen(true);
         }
     }, [activeSection]);
 
@@ -443,6 +465,8 @@ const DashboardComponent = () => {
                 return <ShiftSwapsComponent />;
             case 'employeeRequests':
                 return <EmployeeRequestsComponent />;
+            case 'documentations':
+                return <EmployeeDocumentationComponent />;
 
             default:
                 return null;
@@ -532,6 +556,39 @@ const DashboardComponent = () => {
                                 {isOperativeOpen ? (
                                     <div className='dashboard-navsub'>
                                         {operativeSections.map(renderNavItem)}
+                                    </div>
+                                ) : null}
+                            </div>
+                        ) : null}
+                        {isAdminLike && administrationSections.length > 0 ? (
+                            <div className='dashboard-navgroup'>
+                                <button
+                                    type='button'
+                                    className={
+                                        'dashboard-navitem dashboard-navgroup-toggle' +
+                                        (administrationSectionIds.includes(
+                                            activeSection
+                                        )
+                                            ? ' dashboard-navitem--active'
+                                            : '')
+                                    }
+                                    onClick={() =>
+                                        setIsAdministrationOpen((prev) => !prev)
+                                    }
+                                    aria-expanded={isAdministrationOpen}
+                                >
+                                    <span className='dashboard-navitem-label'>
+                                        Administracion
+                                    </span>
+                                    <span className='dashboard-navgroup-meta'>
+                                        <span className='dashboard-nav-chevron'>
+                                            {isAdministrationOpen ? '-' : '+'}
+                                        </span>
+                                    </span>
+                                </button>
+                                {isAdministrationOpen ? (
+                                    <div className='dashboard-navsub'>
+                                        {administrationSections.map(renderNavItem)}
                                     </div>
                                 ) : null}
                             </div>

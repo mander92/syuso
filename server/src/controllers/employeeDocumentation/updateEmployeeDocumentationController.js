@@ -1,0 +1,73 @@
+import Joi from 'joi';
+
+import selectEmployeeDocumentationService from '../../services/employeeDocumentation/selectEmployeeDocumentationService.js';
+import upsertEmployeeDocumentationService from '../../services/employeeDocumentation/upsertEmployeeDocumentationService.js';
+import generateErrorUtil from '../../utils/generateErrorUtil.js';
+import {
+    allowedDocumentationFileFields,
+    saveEmployeeDocumentationFile,
+} from '../../utils/employeeDocumentationFileUtil.js';
+
+const updateEmployeeDocumentationController = async (req, res, next) => {
+    try {
+        const targetUserId = req.params.userId || req.userLogged.id;
+        const isAdmin =
+            req.userLogged.role === 'admin' || req.userLogged.role === 'sudo';
+
+        if (!isAdmin && targetUserId !== req.userLogged.id) {
+            generateErrorUtil('Acceso denegado', 403);
+        }
+
+        const schema = Joi.object({
+            birthDate: Joi.date().allow('', null),
+            bankAccount: Joi.string().max(40).allow('', null),
+            address: Joi.string().max(255).allow('', null),
+            phone: Joi.string().max(20).allow('', null),
+            socialSecurityNumber: Joi.string().max(40).allow('', null),
+            status: Joi.string()
+                .valid('pending', 'submitted', 'reviewed', 'rejected')
+                .allow(null),
+            reviewNotes: Joi.string().max(500).allow('', null),
+        });
+
+        const { error, value } = schema.validate(req.body || {}, {
+            abortEarly: true,
+            stripUnknown: true,
+        });
+
+        if (error) generateErrorUtil(error.message, 400);
+
+        if (!isAdmin) {
+            value.status = 'submitted';
+            delete value.reviewNotes;
+        }
+
+        const existing = await selectEmployeeDocumentationService(targetUserId);
+        if (!existing) generateErrorUtil('Usuario no encontrado', 404);
+
+        const filesPayload = {};
+        for (const field of allowedDocumentationFileFields) {
+            const file = req.files?.[field];
+            if (file) {
+                filesPayload[field] = await saveEmployeeDocumentationFile(
+                    file,
+                    targetUserId,
+                    field
+                );
+            }
+        }
+
+        await upsertEmployeeDocumentationService(targetUserId, {
+            ...value,
+            ...filesPayload,
+        });
+
+        const data = await selectEmployeeDocumentationService(targetUserId);
+        res.send({ status: 'ok', data });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export default updateEmployeeDocumentationController;
+

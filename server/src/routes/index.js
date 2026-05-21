@@ -13,6 +13,7 @@ import generalChatRouter from './generalChatRouter.js';
 import shiftSwapRouter from './shiftSwapRouter.js';
 import employeeRequestRouter from './employeeRequestRouter.js';
 import holidayRouter from './holidayRouter.js';
+import employeeDocumentationRouter from './employeeDocumentationRouter.js';
 
 const router = express.Router();
 
@@ -29,5 +30,6 @@ router.use(generalChatRouter);
 router.use(shiftSwapRouter);
 router.use(employeeRequestRouter);
 router.use(holidayRouter);
+router.use(employeeDocumentationRouter);
 
 export default router;
