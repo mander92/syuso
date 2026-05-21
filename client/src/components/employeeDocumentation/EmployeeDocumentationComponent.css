@@ -131,8 +131,18 @@
     white-space: nowrap;
 }
 
+.employee-documentation-status--submitted {
+    background: #dcfce7;
+    color: #166534;
+}
+
 .employee-documentation-list button.active .employee-documentation-status {
     background: #ffffff;
+}
+
+.employee-documentation-list button.active .employee-documentation-status--submitted {
+    background: #dcfce7;
+    color: #166534;
 }
 
 .employee-documentation-form {

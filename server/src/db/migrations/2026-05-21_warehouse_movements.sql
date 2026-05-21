@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS warehouseMovements (
+    id CHAR(36) PRIMARY KEY NOT NULL,
+    movementType ENUM('in', 'out') NOT NULL,
+    itemName VARCHAR(150) NOT NULL,
+    category VARCHAR(80),
+    size VARCHAR(30),
+    quantity INT UNSIGNED NOT NULL,
+    unitPrice DECIMAL(10,2),
+    movementDate DATE NOT NULL,
+    employeeId CHAR(36),
+    recipientName VARCHAR(150),
+    notes VARCHAR(500),
+    createdBy CHAR(36),
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    modifiedAt TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deletedAt TIMESTAMP,
+    INDEX idx_warehouse_type_date (movementType, movementDate),
+    INDEX idx_warehouse_item (itemName, category, size),
+    INDEX idx_warehouse_employee (employeeId),
+    FOREIGN KEY (employeeId) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE SET NULL
+);

@@ -18,6 +18,7 @@ import ClientServicesComponent from '../clientServicesSection/ClientServicesComp
 import ChatHub from '../chatHub/ChatHub.jsx';
 import EmployeeScheduleComponent from '../employeeSchedule/EmployeeScheduleComponent.jsx';
 import EmployeeDocumentationComponent from '../employeeDocumentation/EmployeeDocumentationComponent.jsx';
+import AdminWarehouseSection from '../adminWarehouseSection/AdminWarehouseSection.jsx';
 import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 
 const formatAlertDate = (value) => {
@@ -55,7 +56,7 @@ const operativeSectionIds = [
     'workReports',
 ];
 
-const administrationSectionIds = ['documentations'];
+const administrationSectionIds = ['documentations', 'warehouse'];
 
 const AlertsPanel = ({
     notifications,
@@ -200,6 +201,7 @@ const DashboardComponent = () => {
                 { id: 'alerts', label: 'Alertas' },
                 { id: 'workReports', label: 'Partes de trabajo' },
                 { id: 'documentations', label: 'Documentacion' },
+                { id: 'warehouse', label: 'Almacen' },
                 { id: 'users', label: 'Usuarios' },
                 { id: 'profile', label: 'Mi perfil' },
             ];
@@ -484,6 +486,8 @@ const DashboardComponent = () => {
                 return <EmployeeRequestsComponent />;
             case 'documentations':
                 return <EmployeeDocumentationComponent />;
+            case 'warehouse':
+                return <AdminWarehouseSection />;
 
             default:
                 return null;

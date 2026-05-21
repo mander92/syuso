@@ -42,6 +42,11 @@ const statusLabels = {
     rejected: 'Rechazada',
 };
 
+const getStatusClassName = (status) =>
+    `employee-documentation-status employee-documentation-status--${
+        status || 'pending'
+    }`;
+
 const emptyForm = {
     firstName: '',
     lastName: '',
@@ -677,7 +682,7 @@ const EmployeeDocumentationComponent = () => {
                             }
                         }}
                     >
-                        Altas pendientes
+                        Alta trabajadores
                     </button>
                     <button
                         type='button'
@@ -955,7 +960,7 @@ const EmployeeDocumentationComponent = () => {
                                 >
                                     <span>{label}</span>
                                     <span className='employee-documentation-list-badges'>
-                                        <span className='employee-documentation-status'>
+                                        <span className={getStatusClassName(item.status)}>
                                             {statusLabels[item.status || 'pending']}
                                         </span>
                                         <span className='employee-documentation-status'>
@@ -1325,7 +1330,7 @@ const EmployeeDocumentationComponent = () => {
                                     {item.firstName} {item.lastName}
                                 </span>
                                 <span className='employee-documentation-list-badges'>
-                                    <span className='employee-documentation-status'>
+                                    <span className={getStatusClassName(item.status)}>
                                         {statusLabels[item.status || 'pending']}
                                     </span>
                                     <span className='employee-documentation-status'>
