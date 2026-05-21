@@ -21,19 +21,33 @@ const initialForm = {
     unitPrice: '',
     movementDate: today(),
     employeeId: '',
-    recipientName: '',
     notes: '',
 };
 
-const formatDate = (value) => {
-    if (!value) return '';
-    const date = new Date(`${value}T00:00:00`);
-    if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleDateString('es-ES', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-    });
+const formatMovementDateTime = (movement) => {
+    const datePart = String(movement?.movementDate || '').slice(0, 10);
+    const timeSource = movement?.createdAt || movement?.movementDate;
+    const date = datePart ? new Date(`${datePart}T00:00:00`) : null;
+    const time = timeSource ? new Date(timeSource) : null;
+
+    const formattedDate =
+        date && !Number.isNaN(date.getTime())
+            ? date.toLocaleDateString('es-ES', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+              })
+            : movement?.movementDate || '';
+
+    const formattedTime =
+        time && !Number.isNaN(time.getTime())
+            ? time.toLocaleTimeString('es-ES', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+              })
+            : '';
+
+    return [formattedDate, formattedTime].filter(Boolean).join(' ');
 };
 
 const formatMoney = (value) => {
@@ -48,6 +62,7 @@ const AdminWarehouseSection = () => {
     const { authToken } = useContext(AuthContext);
     const [movements, setMovements] = useState([]);
     const [stock, setStock] = useState([]);
+    const [employeeStock, setEmployeeStock] = useState([]);
     const [employees, setEmployees] = useState([]);
     const [filters, setFilters] = useState({
         movementType: '',
@@ -57,6 +72,7 @@ const AdminWarehouseSection = () => {
         toDate: '',
     });
     const [form, setForm] = useState(initialForm);
+    const [stockItemFilter, setStockItemFilter] = useState('');
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
 
@@ -74,6 +90,53 @@ const AdminWarehouseSection = () => {
         [employees]
     );
 
+    const itemOptions = useMemo(() => {
+        const values = new Set();
+        movements.forEach((movement) => {
+            if (movement.itemName) values.add(movement.itemName);
+        });
+        stock.forEach((item) => {
+            if (item.itemName) values.add(item.itemName);
+        });
+        return [...values].sort((a, b) =>
+            a.localeCompare(b, 'es', { sensitivity: 'base' })
+        );
+    }, [movements, stock]);
+
+    const filteredStock = useMemo(
+        () =>
+            stockItemFilter
+                ? stock.filter((item) => item.itemName === stockItemFilter)
+                : stock,
+        [stock, stockItemFilter]
+    );
+
+    const availableOutItems = useMemo(
+        () =>
+            [...new Set(stock.map((item) => item.itemName).filter(Boolean))].sort(
+                (a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' })
+            ),
+        [stock]
+    );
+
+    const employeeStockByEmployee = useMemo(() => {
+        const groups = new Map();
+
+        employeeStock.forEach((item) => {
+            const key = item.employeeId || item.employeeName || 'unknown';
+            if (!groups.has(key)) {
+                groups.set(key, {
+                    employeeId: item.employeeId,
+                    employeeName: item.employeeName || 'Sin nombre',
+                    items: [],
+                });
+            }
+            groups.get(key).items.push(item);
+        });
+
+        return [...groups.values()];
+    }, [employeeStock]);
+
     const loadWarehouse = async (nextFilters = filters) => {
         if (!authToken) return;
         try {
@@ -81,6 +144,7 @@ const AdminWarehouseSection = () => {
             const data = await fetchWarehouse(authToken, nextFilters);
             setMovements(data.movements || []);
             setStock(data.stock || []);
+            setEmployeeStock(data.employeeStock || []);
         } catch (error) {
             toast.error(error.message || 'No se pudo cargar almacen');
         } finally {
@@ -112,7 +176,21 @@ const AdminWarehouseSection = () => {
 
     const handleFormChange = (event) => {
         const { name, value } = event.target;
-        setForm((prev) => ({ ...prev, [name]: value }));
+        setForm((prev) => ({
+            ...prev,
+            [name]: value,
+            ...(name === 'movementType'
+                ? {
+                      employeeId: value === 'in' ? '' : prev.employeeId,
+                      itemName:
+                          value === 'out' &&
+                          prev.itemName &&
+                          !availableOutItems.includes(prev.itemName)
+                              ? ''
+                              : prev.itemName,
+                  }
+                : {}),
+        }));
     };
 
     const handleSubmit = async (event) => {
@@ -124,7 +202,11 @@ const AdminWarehouseSection = () => {
 
         try {
             setSaving(true);
-            await createWarehouseMovement(authToken, form);
+            await createWarehouseMovement(authToken, {
+                ...form,
+                employeeId: form.movementType === 'out' ? form.employeeId : '',
+                recipientName: '',
+            });
             toast.success('Movimiento guardado');
             setForm((prev) => ({
                 ...initialForm,
@@ -180,12 +262,38 @@ const AdminWarehouseSection = () => {
                         </label>
                         <label>
                             Prenda
-                            <input
-                                name='itemName'
-                                value={form.itemName}
-                                onChange={handleFormChange}
-                                placeholder='Camisa, pantalon, chaqueta...'
-                            />
+                            {form.movementType === 'out' ? (
+                                <select
+                                    name='itemName'
+                                    value={form.itemName}
+                                    onChange={handleFormChange}
+                                >
+                                    <option value=''>Selecciona prenda</option>
+                                    {availableOutItems.map((itemName) => (
+                                        <option key={itemName} value={itemName}>
+                                            {itemName}
+                                        </option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <>
+                                    <input
+                                        name='itemName'
+                                        value={form.itemName}
+                                        onChange={handleFormChange}
+                                        list='warehouse-item-options'
+                                        placeholder='Camisa, pantalon, chaqueta...'
+                                    />
+                                    <datalist id='warehouse-item-options'>
+                                        {itemOptions.map((itemName) => (
+                                            <option
+                                                key={itemName}
+                                                value={itemName}
+                                            />
+                                        ))}
+                                    </datalist>
+                                </>
+                            )}
                         </label>
                         <label>
                             Categoria
@@ -236,30 +344,23 @@ const AdminWarehouseSection = () => {
                                 onChange={handleFormChange}
                             />
                         </label>
-                        <label>
-                            Trabajador
-                            <select
-                                name='employeeId'
-                                value={form.employeeId}
-                                onChange={handleFormChange}
-                            >
-                                <option value=''>Sin asignar</option>
-                                {employeeOptions.map((employee) => (
-                                    <option key={employee.id} value={employee.id}>
-                                        {employee.firstName} {employee.lastName}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-                        <label>
-                            Entregado a
-                            <input
-                                name='recipientName'
-                                value={form.recipientName}
-                                onChange={handleFormChange}
-                                placeholder='Nombre si no esta en usuarios'
-                            />
-                        </label>
+                        {form.movementType === 'out' ? (
+                            <label>
+                                Trabajador
+                                <select
+                                    name='employeeId'
+                                    value={form.employeeId}
+                                    onChange={handleFormChange}
+                                >
+                                    <option value=''>Sin asignar</option>
+                                    {employeeOptions.map((employee) => (
+                                        <option key={employee.id} value={employee.id}>
+                                            {employee.firstName} {employee.lastName}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+                        ) : null}
                         <label className='warehouse-field-wide'>
                             Notas
                             <textarea
@@ -275,11 +376,27 @@ const AdminWarehouseSection = () => {
                     </button>
                 </form>
 
+                <div className='warehouse-side'>
                 <aside className='warehouse-card warehouse-stock'>
-                    <h3>Stock actual</h3>
-                    {stock.length ? (
+                    <div className='warehouse-stock-header'>
+                        <h3>Stock actual</h3>
+                        <select
+                            value={stockItemFilter}
+                            onChange={(event) =>
+                                setStockItemFilter(event.target.value)
+                            }
+                        >
+                            <option value=''>Todas las prendas</option>
+                            {itemOptions.map((itemName) => (
+                                <option key={itemName} value={itemName}>
+                                    {itemName}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    {filteredStock.length ? (
                         <div className='warehouse-stock-list'>
-                            {stock.map((item) => (
+                            {filteredStock.map((item) => (
                                 <article
                                     key={`${item.itemName}-${item.category}-${item.size}`}
                                     className='warehouse-stock-item'
@@ -297,9 +414,52 @@ const AdminWarehouseSection = () => {
                             ))}
                         </div>
                     ) : (
-                        <p className='warehouse-empty'>Sin stock registrado.</p>
+                        <p className='warehouse-empty'>
+                            Sin stock registrado para ese filtro.
+                        </p>
                     )}
                 </aside>
+
+                <aside className='warehouse-card warehouse-stock'>
+                    <h3>Ropa en trabajadores</h3>
+                    {employeeStockByEmployee.length ? (
+                        <div className='warehouse-employee-stock-list'>
+                            {employeeStockByEmployee.map((employee) => (
+                                <article
+                                    key={employee.employeeId || employee.employeeName}
+                                    className='warehouse-employee-stock'
+                                >
+                                    <strong>{employee.employeeName}</strong>
+                                    <div>
+                                        {employee.items.map((item) => (
+                                            <span
+                                                key={`${item.itemName}-${item.category}-${item.size}`}
+                                            >
+                                                {Number(item.quantity || 0)} x{' '}
+                                                {item.itemName}
+                                                {[item.category, item.size].filter(
+                                                    Boolean
+                                                ).length
+                                                    ? ` (${[
+                                                          item.category,
+                                                          item.size,
+                                                      ]
+                                                          .filter(Boolean)
+                                                          .join(' · ')})`
+                                                    : ''}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </article>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className='warehouse-empty'>
+                            No hay ropa entregada a trabajadores.
+                        </p>
+                    )}
+                </aside>
+                </div>
             </div>
 
             <section className='warehouse-card'>
@@ -361,7 +521,7 @@ const AdminWarehouseSection = () => {
                                 <th>Talla</th>
                                 <th>Cantidad</th>
                                 <th>Precio</th>
-                                <th>Trabajador / destino</th>
+                                <th>Trabajador</th>
                                 <th>Notas</th>
                                 <th />
                             </tr>
@@ -369,7 +529,7 @@ const AdminWarehouseSection = () => {
                         <tbody>
                             {movements.map((movement) => (
                                 <tr key={movement.id}>
-                                    <td>{formatDate(movement.movementDate)}</td>
+                                    <td>{formatMovementDateTime(movement)}</td>
                                     <td>
                                         <span
                                             className={`warehouse-pill warehouse-pill--${movement.movementType}`}
@@ -391,9 +551,7 @@ const AdminWarehouseSection = () => {
                                             : '-'}
                                     </td>
                                     <td>
-                                        {movement.employeeName ||
-                                            movement.recipientName ||
-                                            '-'}
+                                        {movement.employeeName || '-'}
                                     </td>
                                     <td>{movement.notes || '-'}</td>
                                     <td>

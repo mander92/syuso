@@ -43,6 +43,24 @@
     align-content: start;
 }
 
+.warehouse-side {
+    display: grid;
+    gap: 1rem;
+    align-content: start;
+}
+
+.warehouse-stock-header {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.warehouse-stock-header select {
+    border: 1px solid #dbe3ef;
+    border-radius: 0.55rem;
+    font: inherit;
+    padding: 0.55rem 0.7rem;
+}
+
 .warehouse-grid {
     display: grid;
     gap: 0.75rem;
@@ -121,6 +139,32 @@
     color: #64748b;
     display: block;
     font-size: 0.8rem;
+}
+
+.warehouse-employee-stock-list {
+    display: grid;
+    gap: 0.65rem;
+    max-height: 360px;
+    overflow: auto;
+}
+
+.warehouse-employee-stock {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.65rem;
+    display: grid;
+    gap: 0.45rem;
+    padding: 0.75rem;
+}
+
+.warehouse-employee-stock div {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.warehouse-employee-stock span {
+    color: #475569;
+    font-size: 0.82rem;
 }
 
 .warehouse-list-header {
