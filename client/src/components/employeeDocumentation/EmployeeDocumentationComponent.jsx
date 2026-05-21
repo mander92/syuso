@@ -4,15 +4,20 @@ import useUser from '../../hooks/useUser.js';
 import {
     fetchEmployeeDocumentation,
     fetchClientDocumentations,
+    fetchClientDocumentationDrafts,
     fetchEmployeeDocumentationDrafts,
     fetchEmployeeDocumentations,
     fetchMyEmployeeDocumentation,
     createDocumentationDraftLink,
+    createClientDocumentationDraftLink,
+    createClientFromDocumentationDraft,
     createUserFromDocumentationDraft,
     openEmployeeDocumentationFile,
     openEmployeeDocumentationDraftFile,
     openClientDocumentationFile,
+    openClientDocumentationDraftFile,
     saveClientDocumentation,
+    saveClientDocumentationDraft,
     saveEmployeeDocumentation,
     saveEmployeeDocumentationDraft,
 } from '../../services/employeeDocumentationService.js';
@@ -106,6 +111,13 @@ const EmployeeDocumentationComponent = () => {
     const [selectedClientId, setSelectedClientId] = useState('');
     const [clientForm, setClientForm] = useState(emptyClientForm);
     const [clientFiles, setClientFiles] = useState({});
+    const [clientDrafts, setClientDrafts] = useState([]);
+    const [selectedClientDraftId, setSelectedClientDraftId] = useState('');
+    const [clientDraftForm, setClientDraftForm] = useState({
+        ...emptyClientForm,
+        status: 'draft',
+    });
+    const [clientDraftFiles, setClientDraftFiles] = useState({});
     const [drafts, setDrafts] = useState([]);
     const [selectedDraftId, setSelectedDraftId] = useState('');
     const [draftForm, setDraftForm] = useState({
@@ -175,6 +187,18 @@ const EmployeeDocumentationComponent = () => {
         });
     }, [activeFilter, clientItems, search]);
 
+    const filteredClientDrafts = useMemo(() => {
+        const term = search.trim().toLowerCase();
+        return clientDrafts.filter((item) => {
+            if (!term) return true;
+            return (
+                String(item.displayName || '').toLowerCase().includes(term) ||
+                String(item.email || '').toLowerCase().includes(term) ||
+                String(item.taxId || '').toLowerCase().includes(term)
+            );
+        });
+    }, [clientDrafts, search]);
+
     const load = async () => {
         if (!authToken) return;
         setLoading(true);
@@ -183,9 +207,12 @@ const EmployeeDocumentationComponent = () => {
                 const data = await fetchEmployeeDocumentations(authToken);
                 const draftData = await fetchEmployeeDocumentationDrafts(authToken);
                 const clientData = await fetchClientDocumentations(authToken);
+                const clientDraftData =
+                    await fetchClientDocumentationDrafts(authToken);
                 setItems(data || []);
                 setDrafts(draftData || []);
                 setClientItems(clientData || []);
+                setClientDrafts(clientDraftData || []);
                 const firstId = data?.[0]?.userId || '';
                 setSelectedUserId((prev) => prev || firstId);
                 if (firstId && !selectedUserId) {
@@ -241,6 +268,20 @@ const EmployeeDocumentationComponent = () => {
         setClientForm((prev) => ({ ...prev, [field]: value }));
     };
 
+    const selectClientDraft = (draft) => {
+        setSelectedClientDraftId(draft?.id || '');
+        setClientDraftFiles({});
+        setClientDraftForm({
+            ...emptyClientForm,
+            ...draft,
+            status: draft?.status || 'draft',
+        });
+    };
+
+    const handleClientDraftChange = (field, value) => {
+        setClientDraftForm((prev) => ({ ...prev, [field]: value }));
+    };
+
     const handleSaveClient = async (event) => {
         event.preventDefault();
         setSaving(true);
@@ -273,6 +314,117 @@ const EmployeeDocumentationComponent = () => {
             });
         } catch (error) {
             alert(error.message || 'No se pudo abrir el archivo');
+        }
+    };
+
+    const handleOpenClientDraftFile = async (field) => {
+        try {
+            await openClientDocumentationDraftFile({
+                authToken,
+                draftId: selectedClientDraftId,
+                field,
+            });
+        } catch (error) {
+            alert(error.message || 'No se pudo abrir el archivo');
+        }
+    };
+
+    const handleSaveClientDraft = async (event) => {
+        event.preventDefault();
+        setSaving(true);
+        try {
+            const data = await saveClientDocumentationDraft({
+                authToken,
+                draftId: selectedClientDraftId || null,
+                data: clientDraftForm,
+                files: clientDraftFiles,
+            });
+            setSelectedClientDraftId(data.id);
+            setClientDraftForm({
+                ...emptyClientForm,
+                ...data,
+                status: data.status || 'draft',
+            });
+            setClientDraftFiles({});
+            const list = await fetchClientDocumentationDrafts(authToken);
+            setClientDrafts(list || []);
+            alert('Alta de cliente guardada.');
+        } catch (error) {
+            alert(error.message || 'Error guardando alta de cliente');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleCreateClientDraftLink = async () => {
+        try {
+            let draftId = selectedClientDraftId;
+
+            if (!draftId) {
+                const savedDraft = await saveClientDocumentationDraft({
+                    authToken,
+                    draftId: null,
+                    data: clientDraftForm,
+                    files: clientDraftFiles,
+                });
+                draftId = savedDraft.id;
+                setSelectedClientDraftId(savedDraft.id);
+                setClientDraftForm({
+                    ...emptyClientForm,
+                    ...savedDraft,
+                    status: savedDraft.status || 'draft',
+                });
+                setClientDraftFiles({});
+                const list = await fetchClientDocumentationDrafts(authToken);
+                setClientDrafts(list || []);
+            }
+
+            const data = await createClientDocumentationDraftLink(
+                authToken,
+                draftId
+            );
+            const clientName = clientDraftForm.displayName || 'cliente';
+            const text = `Hola ${clientName}, por favor completa la ficha de cliente de SYUSO en este enlace privado: ${data.url}. El enlace caduca en 7 dias.`;
+
+            try {
+                await navigator.clipboard.writeText(text);
+                alert('Enlace copiado para enviarlo por WhatsApp.');
+            } catch {
+                window.prompt('Copia este texto para WhatsApp:', text);
+            }
+        } catch (error) {
+            alert(error.message || 'No se pudo generar el enlace');
+        }
+    };
+
+    const handleCreateClientFromDraft = async () => {
+        if (!selectedClientDraftId) return;
+        if (
+            !window.confirm(
+                'Se creara un cliente interno con esta ficha. Continuar?'
+            )
+        ) {
+            return;
+        }
+        try {
+            const data = await createClientFromDocumentationDraft(
+                authToken,
+                selectedClientDraftId
+            );
+            setClientDraftForm({
+                ...emptyClientForm,
+                ...data,
+                status: data.status || 'converted',
+            });
+            const [draftList, clientList] = await Promise.all([
+                fetchClientDocumentationDrafts(authToken),
+                fetchClientDocumentations(authToken),
+            ]);
+            setClientDrafts(draftList || []);
+            setClientItems(clientList || []);
+            alert('Cliente creado y documentacion vinculada.');
+        } catch (error) {
+            alert(error.message || 'No se pudo crear el cliente');
         }
     };
 
@@ -540,10 +692,216 @@ const EmployeeDocumentationComponent = () => {
                     >
                         Clientes
                     </button>
+                    <button
+                        type='button'
+                        className={adminMode === 'clientDrafts' ? 'active' : ''}
+                        onClick={() => {
+                            setAdminMode('clientDrafts');
+                            if (!selectedClientDraftId && clientDrafts[0]) {
+                                selectClientDraft(clientDrafts[0]);
+                            }
+                        }}
+                    >
+                        Altas clientes
+                    </button>
                 </div>
             ) : null}
 
-            {isAdminLike && adminMode === 'clients' ? (
+            {isAdminLike && adminMode === 'clientDrafts' ? (
+                <div className='employee-documentation-layout'>
+                    <aside className='employee-documentation-list'>
+                        <div className='employee-documentation-list-filters'>
+                            <input
+                                type='search'
+                                placeholder='Buscar alta cliente...'
+                                value={search}
+                                onChange={(event) => setSearch(event.target.value)}
+                            />
+                            <button
+                                type='button'
+                                className='employee-documentation-btn'
+                                onClick={() => {
+                                    setSelectedClientDraftId('');
+                                    setClientDraftFiles({});
+                                    setClientDraftForm({
+                                        ...emptyClientForm,
+                                        status: 'draft',
+                                    });
+                                }}
+                            >
+                                Nueva alta
+                            </button>
+                        </div>
+                        <p className='employee-documentation-list-count'>
+                            {filteredClientDrafts.length} altas
+                        </p>
+                        {filteredClientDrafts.map((item) => (
+                            <button
+                                key={item.id}
+                                type='button'
+                                className={
+                                    item.id === selectedClientDraftId
+                                        ? 'active'
+                                        : ''
+                                }
+                                onClick={() => selectClientDraft(item)}
+                            >
+                                <span>
+                                    {item.displayName ||
+                                        item.email ||
+                                        'Sin nombre'}
+                                </span>
+                                <span className='employee-documentation-status'>
+                                    {item.status || 'draft'}
+                                </span>
+                            </button>
+                        ))}
+                    </aside>
+
+                    <form
+                        className='employee-documentation-form'
+                        onSubmit={handleSaveClientDraft}
+                    >
+                        <div className='employee-documentation-grid'>
+                            {[
+                                ['displayName', 'Nombre y apellidos / razon social'],
+                                ['taxId', 'DNI/NIE/CIF'],
+                                ['phone', 'Telefono de contacto'],
+                                ['email', 'Correo electronico'],
+                                ['contactPerson', 'Persona responsable/contacto'],
+                                ['paymentMethod', 'Metodo de pago'],
+                            ].map(([field, label]) => (
+                                <div
+                                    key={field}
+                                    className='employee-documentation-field'
+                                >
+                                    <label>{label}</label>
+                                    <input
+                                        type={field === 'email' ? 'email' : 'text'}
+                                        value={clientDraftForm[field] || ''}
+                                        onChange={(event) =>
+                                            handleClientDraftChange(
+                                                field,
+                                                event.target.value
+                                            )
+                                        }
+                                    />
+                                </div>
+                            ))}
+                            <div className='employee-documentation-field'>
+                                <label>Estado</label>
+                                <select
+                                    value={clientDraftForm.status || 'draft'}
+                                    onChange={(event) =>
+                                        handleClientDraftChange(
+                                            'status',
+                                            event.target.value
+                                        )
+                                    }
+                                >
+                                    <option value='draft'>Borrador</option>
+                                    <option value='pending'>Pendiente</option>
+                                    <option value='reviewed'>Revisada</option>
+                                    <option value='converted'>Convertida</option>
+                                    <option value='rejected'>Rechazada</option>
+                                </select>
+                            </div>
+                            <div className='employee-documentation-field employee-documentation-field--wide'>
+                                <label>Autorizaciones necesarias</label>
+                                <textarea
+                                    rows='3'
+                                    value={clientDraftForm.authorizations || ''}
+                                    onChange={(event) =>
+                                        handleClientDraftChange(
+                                            'authorizations',
+                                            event.target.value
+                                        )
+                                    }
+                                />
+                            </div>
+                            <div className='employee-documentation-field employee-documentation-field--wide'>
+                                <label>Notas internas</label>
+                                <textarea
+                                    rows='3'
+                                    value={clientDraftForm.reviewNotes || ''}
+                                    onChange={(event) =>
+                                        handleClientDraftChange(
+                                            'reviewNotes',
+                                            event.target.value
+                                        )
+                                    }
+                                />
+                            </div>
+                        </div>
+
+                        <div className='employee-documentation-files'>
+                            {clientFileFields.map(([field, label]) => (
+                                <div
+                                    key={field}
+                                    className='employee-documentation-file'
+                                >
+                                    <span>{label}</span>
+                                    <input
+                                        type='file'
+                                        accept='application/pdf'
+                                        onChange={(event) =>
+                                            setClientDraftFiles((prev) => ({
+                                                ...prev,
+                                                [field]: event.target.files?.[0],
+                                            }))
+                                        }
+                                    />
+                                    <div className='employee-documentation-file-actions'>
+                                        {clientDraftForm?.[field] &&
+                                        selectedClientDraftId ? (
+                                            <button
+                                                type='button'
+                                                className='employee-documentation-btn employee-documentation-btn--ghost'
+                                                onClick={() =>
+                                                    handleOpenClientDraftFile(field)
+                                                }
+                                            >
+                                                Ver PDF
+                                            </button>
+                                        ) : (
+                                            <span>Sin archivo</span>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className='employee-documentation-actions'>
+                            <button
+                                type='button'
+                                className='employee-documentation-btn employee-documentation-btn--ghost'
+                                disabled={saving || clientDraftForm.linkedClientId}
+                                onClick={handleCreateClientDraftLink}
+                            >
+                                Copiar enlace WhatsApp
+                            </button>
+                            <button
+                                type='button'
+                                className='employee-documentation-btn employee-documentation-btn--ghost'
+                                disabled={
+                                    !selectedClientDraftId ||
+                                    clientDraftForm.linkedClientId
+                                }
+                                onClick={handleCreateClientFromDraft}
+                            >
+                                Crear cliente
+                            </button>
+                            <button
+                                type='submit'
+                                className='employee-documentation-btn'
+                                disabled={saving}
+                            >
+                                {saving ? 'Guardando...' : 'Guardar alta'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            ) : isAdminLike && adminMode === 'clients' ? (
                 <div className='employee-documentation-layout'>
                     <aside className='employee-documentation-list'>
                         <div className='employee-documentation-list-filters'>

@@ -35,6 +35,114 @@ export const fetchClientDocumentations = async (authToken) => {
     return assertOk(await readJsonBody(res));
 };
 
+export const fetchClientDocumentationDrafts = async (authToken) => {
+    const res = await fetch(`${VITE_API_URL}/client-documentation-drafts`, {
+        headers: { Authorization: authToken },
+    });
+    return assertOk(await readJsonBody(res));
+};
+
+export const saveClientDocumentationDraft = async ({
+    authToken,
+    draftId = null,
+    data,
+    files = {},
+}) => {
+    const formData = new FormData();
+    Object.entries(data || {}).forEach(([key, value]) => {
+        formData.append(key, value ?? '');
+    });
+    Object.entries(files || {}).forEach(([key, file]) => {
+        if (file) formData.append(key, file);
+    });
+
+    const endpoint = draftId
+        ? `${VITE_API_URL}/client-documentation-drafts/${draftId}`
+        : `${VITE_API_URL}/client-documentation-drafts`;
+
+    const res = await fetch(endpoint, {
+        method: draftId ? 'PUT' : 'POST',
+        headers: { Authorization: authToken },
+        body: formData,
+    });
+
+    return assertOk(await readJsonBody(res));
+};
+
+export const createClientDocumentationDraftLink = async (authToken, draftId) => {
+    const res = await fetch(
+        `${VITE_API_URL}/client-documentation-drafts/${draftId}/token`,
+        {
+            method: 'POST',
+            headers: { Authorization: authToken },
+        }
+    );
+    return assertOk(await readJsonBody(res));
+};
+
+export const createClientFromDocumentationDraft = async (authToken, draftId) => {
+    const res = await fetch(
+        `${VITE_API_URL}/client-documentation-drafts/${draftId}/create-client`,
+        {
+            method: 'POST',
+            headers: { Authorization: authToken },
+        }
+    );
+    return assertOk(await readJsonBody(res));
+};
+
+export const openClientDocumentationDraftFile = async ({
+    authToken,
+    draftId,
+    field,
+}) => {
+    const res = await fetch(
+        `${VITE_API_URL}/client-documentation-drafts/${draftId}/files/${field}`,
+        { headers: { Authorization: authToken } }
+    );
+
+    if (!res.ok) {
+        const body = await readJsonBody(res);
+        throw new Error(body.message || 'No se pudo abrir el archivo');
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank', 'noopener,noreferrer');
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+};
+
+export const fetchPublicClientDocumentationDraft = async (token) => {
+    const res = await fetch(
+        `${VITE_API_URL}/public/client-documentation-drafts/${token}`
+    );
+    return assertOk(await readJsonBody(res));
+};
+
+export const savePublicClientDocumentationDraft = async ({
+    token,
+    data,
+    files = {},
+}) => {
+    const formData = new FormData();
+    Object.entries(data || {}).forEach(([key, value]) => {
+        formData.append(key, value ?? '');
+    });
+    Object.entries(files || {}).forEach(([key, file]) => {
+        if (file) formData.append(key, file);
+    });
+
+    const res = await fetch(
+        `${VITE_API_URL}/public/client-documentation-drafts/${token}`,
+        {
+            method: 'PUT',
+            body: formData,
+        }
+    );
+
+    return assertOk(await readJsonBody(res));
+};
+
 export const saveClientDocumentation = async ({
     authToken,
     clientId = null,

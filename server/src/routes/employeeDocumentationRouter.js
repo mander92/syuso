@@ -16,6 +16,13 @@ import savePublicDocumentationDraftController from '../controllers/employeeDocum
 import listClientDocumentationsController from '../controllers/clientDocumentation/listClientDocumentationsController.js';
 import saveClientDocumentationController from '../controllers/clientDocumentation/saveClientDocumentationController.js';
 import getClientDocumentationFileController from '../controllers/clientDocumentation/getClientDocumentationFileController.js';
+import listClientDocumentationDraftsController from '../controllers/clientDocumentation/listClientDocumentationDraftsController.js';
+import saveClientDocumentationDraftController from '../controllers/clientDocumentation/saveClientDocumentationDraftController.js';
+import createClientDocumentationDraftTokenController from '../controllers/clientDocumentation/createClientDocumentationDraftTokenController.js';
+import getPublicClientDocumentationDraftController from '../controllers/clientDocumentation/getPublicClientDocumentationDraftController.js';
+import savePublicClientDocumentationDraftController from '../controllers/clientDocumentation/savePublicClientDocumentationDraftController.js';
+import getClientDocumentationDraftFileController from '../controllers/clientDocumentation/getClientDocumentationDraftFileController.js';
+import createClientFromDocumentationDraftController from '../controllers/clientDocumentation/createClientFromDocumentationDraftController.js';
 
 const router = express.Router();
 
@@ -48,6 +55,42 @@ router.get(
     authUser,
     isAdmin,
     getClientDocumentationFileController
+);
+router.get(
+    '/client-documentation-drafts',
+    authUser,
+    isAdmin,
+    listClientDocumentationDraftsController
+);
+router.post(
+    '/client-documentation-drafts',
+    authUser,
+    isAdmin,
+    saveClientDocumentationDraftController
+);
+router.put(
+    '/client-documentation-drafts/:draftId',
+    authUser,
+    isAdmin,
+    saveClientDocumentationDraftController
+);
+router.post(
+    '/client-documentation-drafts/:draftId/token',
+    authUser,
+    isAdmin,
+    createClientDocumentationDraftTokenController
+);
+router.post(
+    '/client-documentation-drafts/:draftId/create-client',
+    authUser,
+    isAdmin,
+    createClientFromDocumentationDraftController
+);
+router.get(
+    '/client-documentation-drafts/:draftId/files/:field',
+    authUser,
+    isAdmin,
+    getClientDocumentationDraftFileController
 );
 router.get(
     '/employee-documentation-drafts',
@@ -92,6 +135,14 @@ router.get(
 router.put(
     '/public/employee-documentation-drafts/:token',
     savePublicDocumentationDraftController
+);
+router.get(
+    '/public/client-documentation-drafts/:token',
+    getPublicClientDocumentationDraftController
+);
+router.put(
+    '/public/client-documentation-drafts/:token',
+    savePublicClientDocumentationDraftController
 );
 router.get('/employee-documentations/me', authUser, getEmployeeDocumentationController);
 router.put('/employee-documentations/me', authUser, updateEmployeeDocumentationController);

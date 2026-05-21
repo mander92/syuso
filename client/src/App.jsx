@@ -20,6 +20,7 @@ import ServiceDetail from './pages/serviceDetail/ServiceDetail';
 import ShiftCreate from './pages/ShiftCreate/ShiftCreate';
 import WorkReport from './pages/WorkReport/WorkReport';
 import EmployeeDocumentationPublic from './pages/EmployeeDocumentationPublic/EmployeeDocumentationPublic';
+import ClientDocumentationPublic from './pages/ClientDocumentationPublic/ClientDocumentationPublic';
 
 import NotFound from './pages/NotFoundPage/NotFound';
 
@@ -53,6 +54,10 @@ const App = () => {
                 <Route
                     path='/documentacion-alta/:token'
                     element={<EmployeeDocumentationPublic />}
+                />
+                <Route
+                    path='/documentacion-cliente/:token'
+                    element={<ClientDocumentationPublic />}
                 />
                 <Route path='/account' element={<DashboardComponent />} />
 
