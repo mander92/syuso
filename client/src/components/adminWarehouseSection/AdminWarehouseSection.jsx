@@ -6,6 +6,7 @@ import { fetchAllUsersServices } from '../../services/userService.js';
 import {
     createWarehouseMovement,
     deleteWarehouseMovement,
+    deleteWarehouseStockItem,
     fetchWarehouse,
 } from '../../services/warehouseService.js';
 import './AdminWarehouseSection.css';
@@ -326,6 +327,33 @@ const AdminWarehouseSection = () => {
         }
     };
 
+    const handleDeleteStockItem = async (item) => {
+        const detail = [item.itemName, item.category, item.size]
+            .filter(Boolean)
+            .join(' · ');
+
+        if (
+            !window.confirm(
+                `Quieres borrar ${detail}? Se eliminaran sus movimientos de almacen.`
+            )
+        ) {
+            return;
+        }
+
+        try {
+            await deleteWarehouseStockItem(authToken, {
+                itemName: item.itemName,
+                category: item.category,
+                size: item.size,
+            });
+            toast.success('Tipo de prenda borrado');
+            setStockPage(1);
+            await loadWarehouse();
+        } catch (error) {
+            toast.error(error.message || 'No se pudo borrar la prenda');
+        }
+    };
+
     return (
         <section className='warehouse'>
             <header className='warehouse-header'>
@@ -502,7 +530,17 @@ const AdminWarehouseSection = () => {
                                                 .join(' · ') || 'Sin detalle'}
                                         </span>
                                     </div>
-                                    <strong>{Number(item.stock || 0)}</strong>
+                                    <div className='warehouse-stock-actions'>
+                                        <strong>{Number(item.stock || 0)}</strong>
+                                        <button
+                                            type='button'
+                                            onClick={() =>
+                                                handleDeleteStockItem(item)
+                                            }
+                                        >
+                                            Borrar
+                                        </button>
+                                    </div>
                                 </article>
                             ))}
                             <Pagination

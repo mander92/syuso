@@ -139,6 +139,24 @@
     gap: 0.15rem;
 }
 
+.warehouse-stock-actions {
+    align-items: end;
+    display: grid;
+    gap: 0.35rem;
+    justify-items: end;
+}
+
+.warehouse-stock-actions button {
+    background: #fee2e2;
+    border: 0;
+    border-radius: 999px;
+    color: #991b1b;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 900;
+    padding: 0.3rem 0.6rem;
+}
+
 .warehouse-stock-item span,
 .warehouse-table td span {
     color: #64748b;

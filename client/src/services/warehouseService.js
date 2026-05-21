@@ -46,3 +46,16 @@ export const deleteWarehouseMovement = async (authToken, movementId) => {
 
     return readBody(res);
 };
+
+export const deleteWarehouseStockItem = async (authToken, item) => {
+    const res = await fetch(`${VITE_API_URL}/warehouse/stock-item`, {
+        method: 'DELETE',
+        headers: {
+            Authorization: authToken,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(item),
+    });
+
+    return readBody(res);
+};

@@ -14,7 +14,7 @@ const listWarehouseStockService = async () => {
         FROM warehouseMovements
         WHERE deletedAt IS NULL
         GROUP BY itemName, category, size
-        HAVING stock <> 0
+        HAVING stock > 0
         ORDER BY itemName ASC, category ASC, size ASC
         `
     );
