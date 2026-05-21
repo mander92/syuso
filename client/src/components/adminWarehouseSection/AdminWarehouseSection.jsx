@@ -175,6 +175,28 @@ const AdminWarehouseSection = () => {
         [stock, stockItemFilter]
     );
 
+    const stockGroups = useMemo(() => {
+        const groups = new Map();
+
+        filteredStock.forEach((item) => {
+            const key = `${item.itemName || ''}__${item.category || ''}`;
+            if (!groups.has(key)) {
+                groups.set(key, {
+                    itemName: item.itemName,
+                    category: item.category,
+                    total: 0,
+                    sizes: [],
+                });
+            }
+
+            const group = groups.get(key);
+            group.total += Number(item.stock || 0);
+            group.sizes.push(item);
+        });
+
+        return [...groups.values()];
+    }, [filteredStock]);
+
     const availableOutItems = useMemo(
         () =>
             [...new Set(stock.map((item) => item.itemName).filter(Boolean))].sort(
@@ -206,7 +228,7 @@ const AdminWarehouseSection = () => {
         );
     }, [employeeStock, employeeStockFilter]);
 
-    const paginatedStock = paginate(filteredStock, stockPage);
+    const paginatedStock = paginate(stockGroups, stockPage);
     const paginatedEmployeeStock = paginate(
         employeeStockByEmployee,
         employeeStockPage
@@ -517,31 +539,36 @@ const AdminWarehouseSection = () => {
                     </div>
                     {filteredStock.length ? (
                         <div className='warehouse-stock-list'>
-                            {paginatedStock.items.map((item) => (
-                                <article
-                                    key={`${item.itemName}-${item.category}-${item.size}`}
-                                    className='warehouse-stock-item'
+                            {paginatedStock.items.map((group) => (
+                                <details
+                                    key={`${group.itemName}-${group.category}`}
+                                    className='warehouse-stock-group'
                                 >
-                                    <div>
-                                        <strong>{item.itemName}</strong>
-                                        <span>
-                                            {[item.category, item.size]
-                                                .filter(Boolean)
-                                                .join(' · ') || 'Sin detalle'}
-                                        </span>
+                                    <summary>
+                                        <div>
+                                            <strong>{group.itemName}</strong>
+                                            <span>{group.category || 'Sin categoria'}</span>
+                                        </div>
+                                        <strong>{group.total}</strong>
+                                    </summary>
+                                    <div className='warehouse-stock-size-list'>
+                                        {group.sizes.map((item) => (
+                                            <article
+                                                key={`${item.itemName}-${item.category}-${item.size}`}
+                                                className='warehouse-stock-size'
+                                            >
+                                                <span>Talla: <strong>{item.size || '-'}</strong></span>
+                                                <span>Cantidad: <strong>{Number(item.stock || 0)}</strong></span>
+                                                <button
+                                                    type='button'
+                                                    onClick={() => handleDeleteStockItem(item)}
+                                                >
+                                                    Borrar
+                                                </button>
+                                            </article>
+                                        ))}
                                     </div>
-                                    <div className='warehouse-stock-actions'>
-                                        <strong>{Number(item.stock || 0)}</strong>
-                                        <button
-                                            type='button'
-                                            onClick={() =>
-                                                handleDeleteStockItem(item)
-                                            }
-                                        >
-                                            Borrar
-                                        </button>
-                                    </div>
-                                </article>
+                                </details>
                             ))}
                             <Pagination
                                 page={paginatedStock.currentPage}
