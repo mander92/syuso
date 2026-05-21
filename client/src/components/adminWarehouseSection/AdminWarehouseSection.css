@@ -61,6 +61,13 @@
     padding: 0.55rem 0.7rem;
 }
 
+.warehouse-stock-header input {
+    border: 1px solid #dbe3ef;
+    border-radius: 0.55rem;
+    font: inherit;
+    padding: 0.55rem 0.7rem;
+}
+
 .warehouse-grid {
     display: grid;
     gap: 0.75rem;
@@ -114,8 +121,6 @@
 .warehouse-stock-list {
     display: grid;
     gap: 0.5rem;
-    max-height: 420px;
-    overflow: auto;
 }
 
 .warehouse-stock-item {
@@ -144,8 +149,6 @@
 .warehouse-employee-stock-list {
     display: grid;
     gap: 0.65rem;
-    max-height: 360px;
-    overflow: auto;
 }
 
 .warehouse-employee-stock {
@@ -237,6 +240,35 @@
     cursor: pointer;
     font-weight: 800;
     padding: 0.45rem 0.75rem;
+}
+
+.warehouse-pagination {
+    align-items: center;
+    display: flex;
+    gap: 0.6rem;
+    justify-content: flex-end;
+    padding-top: 0.5rem;
+}
+
+.warehouse-pagination button {
+    background: #e2e8f0;
+    border: 0;
+    border-radius: 999px;
+    color: #0f172a;
+    cursor: pointer;
+    font-weight: 800;
+    padding: 0.45rem 0.75rem;
+}
+
+.warehouse-pagination button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.warehouse-pagination span {
+    color: #475569;
+    font-size: 0.82rem;
+    font-weight: 800;
 }
 
 @media (max-width: 1000px) {

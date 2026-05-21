@@ -11,6 +11,7 @@ import {
 import './AdminWarehouseSection.css';
 
 const today = () => new Date().toISOString().slice(0, 10);
+const pageSize = 6;
 
 const initialForm = {
     movementType: 'in',
@@ -58,6 +59,56 @@ const formatMoney = (value) => {
     });
 };
 
+const normalizeText = (value) =>
+    String(value || '')
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+
+const getEmployeeLabel = (employee) =>
+    `${employee.firstName || ''} ${employee.lastName || ''}`.trim() ||
+    employee.email ||
+    'Empleado';
+
+const paginate = (items, page) => {
+    const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+    const currentPage = Math.min(Math.max(1, page), totalPages);
+    const start = (currentPage - 1) * pageSize;
+
+    return {
+        currentPage,
+        totalPages,
+        items: items.slice(start, start + pageSize),
+    };
+};
+
+const Pagination = ({ page, totalPages, onChange }) => {
+    if (totalPages <= 1) return null;
+
+    return (
+        <div className='warehouse-pagination'>
+            <button
+                type='button'
+                onClick={() => onChange(page - 1)}
+                disabled={page <= 1}
+            >
+                Anterior
+            </button>
+            <span>
+                {page} / {totalPages}
+            </span>
+            <button
+                type='button'
+                onClick={() => onChange(page + 1)}
+                disabled={page >= totalPages}
+            >
+                Siguiente
+            </button>
+        </div>
+    );
+};
+
 const AdminWarehouseSection = () => {
     const { authToken } = useContext(AuthContext);
     const [movements, setMovements] = useState([]);
@@ -73,6 +124,11 @@ const AdminWarehouseSection = () => {
     });
     const [form, setForm] = useState(initialForm);
     const [stockItemFilter, setStockItemFilter] = useState('');
+    const [employeeStockFilter, setEmployeeStockFilter] = useState('');
+    const [formEmployeeSearch, setFormEmployeeSearch] = useState('');
+    const [stockPage, setStockPage] = useState(1);
+    const [employeeStockPage, setEmployeeStockPage] = useState(1);
+    const [movementPage, setMovementPage] = useState(1);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
 
@@ -104,10 +160,17 @@ const AdminWarehouseSection = () => {
     }, [movements, stock]);
 
     const filteredStock = useMemo(
-        () =>
-            stockItemFilter
-                ? stock.filter((item) => item.itemName === stockItemFilter)
-                : stock,
+        () => {
+            const search = normalizeText(stockItemFilter);
+            if (!search) return stock;
+            return stock.filter((item) =>
+                normalizeText(
+                    `${item.itemName || ''} ${item.category || ''} ${
+                        item.size || ''
+                    }`
+                ).includes(search)
+            );
+        },
         [stock, stockItemFilter]
     );
 
@@ -134,8 +197,20 @@ const AdminWarehouseSection = () => {
             groups.get(key).items.push(item);
         });
 
-        return [...groups.values()];
-    }, [employeeStock]);
+        const search = normalizeText(employeeStockFilter);
+        const grouped = [...groups.values()];
+        if (!search) return grouped;
+        return grouped.filter((employee) =>
+            normalizeText(employee.employeeName).includes(search)
+        );
+    }, [employeeStock, employeeStockFilter]);
+
+    const paginatedStock = paginate(filteredStock, stockPage);
+    const paginatedEmployeeStock = paginate(
+        employeeStockByEmployee,
+        employeeStockPage
+    );
+    const paginatedMovements = paginate(movements, movementPage);
 
     const loadWarehouse = async (nextFilters = filters) => {
         if (!authToken) return;
@@ -171,6 +246,7 @@ const AdminWarehouseSection = () => {
         const { name, value } = event.target;
         const nextFilters = { ...filters, [name]: value };
         setFilters(nextFilters);
+        setMovementPage(1);
         loadWarehouse(nextFilters);
     };
 
@@ -190,6 +266,23 @@ const AdminWarehouseSection = () => {
                               : prev.itemName,
                   }
                 : {}),
+        }));
+        if (name === 'movementType' && value === 'in') {
+            setFormEmployeeSearch('');
+        }
+    };
+
+    const handleFormEmployeeSearchChange = (event) => {
+        const value = event.target.value;
+        const match = employeeOptions.find(
+            (employee) =>
+                normalizeText(getEmployeeLabel(employee)) === normalizeText(value)
+        );
+
+        setFormEmployeeSearch(value);
+        setForm((prev) => ({
+            ...prev,
+            employeeId: match ? match.id : '',
         }));
     };
 
@@ -213,6 +306,7 @@ const AdminWarehouseSection = () => {
                 movementType: prev.movementType,
                 movementDate: today(),
             }));
+            setFormEmployeeSearch('');
             await loadWarehouse();
         } catch (error) {
             toast.error(error.message || 'No se pudo guardar');
@@ -347,18 +441,20 @@ const AdminWarehouseSection = () => {
                         {form.movementType === 'out' ? (
                             <label>
                                 Trabajador
-                                <select
-                                    name='employeeId'
-                                    value={form.employeeId}
-                                    onChange={handleFormChange}
-                                >
-                                    <option value=''>Sin asignar</option>
+                                <input
+                                    value={formEmployeeSearch}
+                                    onChange={handleFormEmployeeSearchChange}
+                                    list='warehouse-employee-options'
+                                    placeholder='Busca por nombre...'
+                                />
+                                <datalist id='warehouse-employee-options'>
                                     {employeeOptions.map((employee) => (
-                                        <option key={employee.id} value={employee.id}>
-                                            {employee.firstName} {employee.lastName}
-                                        </option>
+                                        <option
+                                            key={employee.id}
+                                            value={getEmployeeLabel(employee)}
+                                        />
                                     ))}
-                                </select>
+                                </datalist>
                             </label>
                         ) : null}
                         <label className='warehouse-field-wide'>
@@ -380,23 +476,20 @@ const AdminWarehouseSection = () => {
                 <aside className='warehouse-card warehouse-stock'>
                     <div className='warehouse-stock-header'>
                         <h3>Stock actual</h3>
-                        <select
+                        <input
                             value={stockItemFilter}
                             onChange={(event) =>
-                                setStockItemFilter(event.target.value)
+                                {
+                                    setStockItemFilter(event.target.value);
+                                    setStockPage(1);
+                                }
                             }
-                        >
-                            <option value=''>Todas las prendas</option>
-                            {itemOptions.map((itemName) => (
-                                <option key={itemName} value={itemName}>
-                                    {itemName}
-                                </option>
-                            ))}
-                        </select>
+                            placeholder='Buscar prenda, talla...'
+                        />
                     </div>
                     {filteredStock.length ? (
                         <div className='warehouse-stock-list'>
-                            {filteredStock.map((item) => (
+                            {paginatedStock.items.map((item) => (
                                 <article
                                     key={`${item.itemName}-${item.category}-${item.size}`}
                                     className='warehouse-stock-item'
@@ -412,6 +505,11 @@ const AdminWarehouseSection = () => {
                                     <strong>{Number(item.stock || 0)}</strong>
                                 </article>
                             ))}
+                            <Pagination
+                                page={paginatedStock.currentPage}
+                                totalPages={paginatedStock.totalPages}
+                                onChange={setStockPage}
+                            />
                         </div>
                     ) : (
                         <p className='warehouse-empty'>
@@ -421,10 +519,20 @@ const AdminWarehouseSection = () => {
                 </aside>
 
                 <aside className='warehouse-card warehouse-stock'>
-                    <h3>Ropa en trabajadores</h3>
+                    <div className='warehouse-stock-header'>
+                        <h3>Ropa en trabajadores</h3>
+                        <input
+                            value={employeeStockFilter}
+                            onChange={(event) => {
+                                setEmployeeStockFilter(event.target.value);
+                                setEmployeeStockPage(1);
+                            }}
+                            placeholder='Buscar trabajador...'
+                        />
+                    </div>
                     {employeeStockByEmployee.length ? (
                         <div className='warehouse-employee-stock-list'>
-                            {employeeStockByEmployee.map((employee) => (
+                            {paginatedEmployeeStock.items.map((employee) => (
                                 <article
                                     key={employee.employeeId || employee.employeeName}
                                     className='warehouse-employee-stock'
@@ -452,6 +560,11 @@ const AdminWarehouseSection = () => {
                                     </div>
                                 </article>
                             ))}
+                            <Pagination
+                                page={paginatedEmployeeStock.currentPage}
+                                totalPages={paginatedEmployeeStock.totalPages}
+                                onChange={setEmployeeStockPage}
+                            />
                         </div>
                     ) : (
                         <p className='warehouse-empty'>
@@ -527,7 +640,7 @@ const AdminWarehouseSection = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {movements.map((movement) => (
+                            {paginatedMovements.items.map((movement) => (
                                 <tr key={movement.id}>
                                     <td>{formatMovementDateTime(movement)}</td>
                                     <td>
@@ -575,6 +688,11 @@ const AdminWarehouseSection = () => {
                         </tbody>
                     </table>
                 </div>
+                <Pagination
+                    page={paginatedMovements.currentPage}
+                    totalPages={paginatedMovements.totalPages}
+                    onChange={setMovementPage}
+                />
             </section>
         </section>
     );
