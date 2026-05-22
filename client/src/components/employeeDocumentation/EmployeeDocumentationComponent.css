@@ -220,6 +220,11 @@
     color: #0f172a;
 }
 
+.employee-documentation-btn--danger {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
 .employee-documentation-actions {
     display: flex;
     gap: 0.6rem;

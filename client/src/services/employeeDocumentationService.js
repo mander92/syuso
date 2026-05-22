@@ -91,6 +91,17 @@ export const createClientFromDocumentationDraft = async (authToken, draftId) => 
     return assertOk(await readJsonBody(res));
 };
 
+export const deleteClientDocumentationDraft = async (authToken, draftId) => {
+    const res = await fetch(
+        `${VITE_API_URL}/client-documentation-drafts/${draftId}`,
+        {
+            method: 'DELETE',
+            headers: { Authorization: authToken },
+        }
+    );
+    return assertOk(await readJsonBody(res));
+};
+
 export const openClientDocumentationDraftFile = async ({
     authToken,
     draftId,
@@ -292,6 +303,17 @@ export const createUserFromDocumentationDraft = async (authToken, draftId) => {
         `${VITE_API_URL}/employee-documentation-drafts/${draftId}/create-user`,
         {
             method: 'POST',
+            headers: { Authorization: authToken },
+        }
+    );
+    return assertOk(await readJsonBody(res));
+};
+
+export const deleteEmployeeDocumentationDraft = async (authToken, draftId) => {
+    const res = await fetch(
+        `${VITE_API_URL}/employee-documentation-drafts/${draftId}`,
+        {
+            method: 'DELETE',
             headers: { Authorization: authToken },
         }
     );

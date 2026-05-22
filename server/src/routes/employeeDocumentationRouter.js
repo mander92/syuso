@@ -11,6 +11,7 @@ import saveEmployeeDocumentationDraftController from '../controllers/employeeDoc
 import createUserFromDocumentationDraftController from '../controllers/employeeDocumentation/createUserFromDocumentationDraftController.js';
 import getEmployeeDocumentationDraftFileController from '../controllers/employeeDocumentation/getEmployeeDocumentationDraftFileController.js';
 import createDocumentationDraftTokenController from '../controllers/employeeDocumentation/createDocumentationDraftTokenController.js';
+import deleteEmployeeDocumentationDraftController from '../controllers/employeeDocumentation/deleteEmployeeDocumentationDraftController.js';
 import getPublicDocumentationDraftController from '../controllers/employeeDocumentation/getPublicDocumentationDraftController.js';
 import savePublicDocumentationDraftController from '../controllers/employeeDocumentation/savePublicDocumentationDraftController.js';
 import listClientDocumentationsController from '../controllers/clientDocumentation/listClientDocumentationsController.js';
@@ -23,6 +24,7 @@ import getPublicClientDocumentationDraftController from '../controllers/clientDo
 import savePublicClientDocumentationDraftController from '../controllers/clientDocumentation/savePublicClientDocumentationDraftController.js';
 import getClientDocumentationDraftFileController from '../controllers/clientDocumentation/getClientDocumentationDraftFileController.js';
 import createClientFromDocumentationDraftController from '../controllers/clientDocumentation/createClientFromDocumentationDraftController.js';
+import deleteClientDocumentationDraftController from '../controllers/clientDocumentation/deleteClientDocumentationDraftController.js';
 
 const router = express.Router();
 
@@ -74,6 +76,12 @@ router.put(
     isAdmin,
     saveClientDocumentationDraftController
 );
+router.delete(
+    '/client-documentation-drafts/:draftId',
+    authUser,
+    isAdmin,
+    deleteClientDocumentationDraftController
+);
 router.post(
     '/client-documentation-drafts/:draftId/token',
     authUser,
@@ -109,6 +117,12 @@ router.put(
     authUser,
     isAdmin,
     saveEmployeeDocumentationDraftController
+);
+router.delete(
+    '/employee-documentation-drafts/:draftId',
+    authUser,
+    isAdmin,
+    deleteEmployeeDocumentationDraftController
 );
 router.post(
     '/employee-documentation-drafts/:draftId/create-user',

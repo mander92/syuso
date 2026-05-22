@@ -11,6 +11,8 @@ import {
     createDocumentationDraftLink,
     createClientDocumentationDraftLink,
     createClientFromDocumentationDraft,
+    deleteClientDocumentationDraft,
+    deleteEmployeeDocumentationDraft,
     createUserFromDocumentationDraft,
     openEmployeeDocumentationFile,
     openEmployeeDocumentationDraftFile,
@@ -433,6 +435,37 @@ const EmployeeDocumentationComponent = () => {
         }
     };
 
+    const handleDeleteClientDraft = async () => {
+        if (!selectedClientDraftId) return;
+        if (
+            !window.confirm(
+                'Se borrara esta alta de cliente. Si ya creo un cliente interno y no tiene servicios, tambien se liberara su correo. Continuar?'
+            )
+        ) {
+            return;
+        }
+
+        try {
+            await deleteClientDocumentationDraft(authToken, selectedClientDraftId);
+            const list = await fetchClientDocumentationDrafts(authToken);
+            setClientDrafts(list || []);
+            const nextDraft = list?.[0] || null;
+            if (nextDraft) {
+                selectClientDraft(nextDraft);
+            } else {
+                setSelectedClientDraftId('');
+                setClientDraftFiles({});
+                setClientDraftForm({
+                    ...emptyClientForm,
+                    status: 'draft',
+                });
+            }
+            alert('Alta de cliente borrada.');
+        } catch (error) {
+            alert(error.message || 'No se pudo borrar el alta de cliente');
+        }
+    };
+
     const handleSubmit = async (event) => {
         event.preventDefault();
         setSaving(true);
@@ -559,6 +592,37 @@ const EmployeeDocumentationComponent = () => {
             alert('Trabajador creado y documentacion vinculada.');
         } catch (error) {
             alert(error.message || 'No se pudo crear el trabajador');
+        }
+    };
+
+    const handleDeleteEmployeeDraft = async () => {
+        if (!selectedDraftId) return;
+        if (
+            !window.confirm(
+                'Se borrara esta alta de trabajador y sus enlaces de formulario. Si ya creo un trabajador y no tiene actividad, tambien se liberara su correo. Continuar?'
+            )
+        ) {
+            return;
+        }
+
+        try {
+            await deleteEmployeeDocumentationDraft(authToken, selectedDraftId);
+            const list = await fetchEmployeeDocumentationDrafts(authToken);
+            setDrafts(list || []);
+            const nextDraft = list?.[0] || null;
+            if (nextDraft) {
+                selectDraft(nextDraft);
+            } else {
+                setSelectedDraftId('');
+                setDraftFiles({});
+                setDraftForm({
+                    ...emptyForm,
+                    status: 'draft',
+                });
+            }
+            alert('Alta de trabajador borrada.');
+        } catch (error) {
+            alert(error.message || 'No se pudo borrar el alta de trabajador');
         }
     };
 
@@ -902,6 +966,14 @@ const EmployeeDocumentationComponent = () => {
                                 disabled={saving}
                             >
                                 {saving ? 'Guardando...' : 'Guardar alta'}
+                            </button>
+                            <button
+                                type='button'
+                                className='employee-documentation-btn employee-documentation-btn--danger'
+                                disabled={!selectedClientDraftId || saving}
+                                onClick={handleDeleteClientDraft}
+                            >
+                                Borrar alta
                             </button>
                         </div>
                     </form>
@@ -1279,6 +1351,14 @@ const EmployeeDocumentationComponent = () => {
                                 disabled={saving}
                             >
                                 {saving ? 'Guardando...' : 'Guardar alta'}
+                            </button>
+                            <button
+                                type='button'
+                                className='employee-documentation-btn employee-documentation-btn--danger'
+                                disabled={!selectedDraftId || saving}
+                                onClick={handleDeleteEmployeeDraft}
+                            >
+                                Borrar alta
                             </button>
                         </div>
                     </form>
