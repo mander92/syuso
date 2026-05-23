@@ -1,5 +1,6 @@
 import fs from 'fs';
 
+import ensureEmployeeDocumentationAccessService from '../../services/employeeDocumentation/ensureEmployeeDocumentationAccessService.js';
 import selectEmployeeDocumentationService from '../../services/employeeDocumentation/selectEmployeeDocumentationService.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import {
@@ -16,6 +17,12 @@ const getEmployeeDocumentationFileController = async (req, res, next) => {
         if (!isAdmin && userId !== req.userLogged.id) {
             generateErrorUtil('Acceso denegado', 403);
         }
+
+        await ensureEmployeeDocumentationAccessService({
+            viewerId: req.userLogged.id,
+            viewerRole: req.userLogged.role,
+            employeeId: userId,
+        });
 
         if (!allowedDocumentationFileFields.has(field)) {
             generateErrorUtil('Archivo no permitido', 400);
@@ -37,4 +44,3 @@ const getEmployeeDocumentationFileController = async (req, res, next) => {
 };
 
 export default getEmployeeDocumentationFileController;
-

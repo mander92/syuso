@@ -1,7 +1,17 @@
 import getPool from '../../db/getPool.js';
+import selectAdminDelegationNamesService from '../delegations/selectAdminDelegationNamesService.js';
 
-const listEmployeeDocumentationsService = async () => {
+const listEmployeeDocumentationsService = async ({ viewerId, viewerRole } = {}) => {
     const pool = await getPool();
+    const values = [];
+    let delegationFilter = '';
+
+    if (viewerRole === 'admin') {
+        const delegations = await selectAdminDelegationNamesService(viewerId);
+        if (!delegations.length) return [];
+        delegationFilter = ` AND u.city IN (${delegations.map(() => '?').join(', ')})`;
+        values.push(...delegations);
+    }
 
     const [rows] = await pool.query(
         `
@@ -29,8 +39,10 @@ const listEmployeeDocumentationsService = async () => {
             FROM users u
             LEFT JOIN employeeDocumentations d ON d.userId = u.id
             WHERE u.role = 'employee' AND u.deletedAt IS NULL
+            ${delegationFilter}
             ORDER BY u.firstName, u.lastName
-        `
+        `,
+        values
     );
 
     return rows;

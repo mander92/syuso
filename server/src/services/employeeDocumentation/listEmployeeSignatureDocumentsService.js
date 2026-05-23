@@ -1,4 +1,5 @@
 import getPool from '../../db/getPool.js';
+import selectAdminDelegationNamesService from '../delegations/selectAdminDelegationNamesService.js';
 
 const listEmployeeSignatureDocumentsService = async ({
     viewerId,
@@ -10,6 +11,17 @@ const listEmployeeSignatureDocumentsService = async ({
     const targetEmployeeId = isAdmin ? employeeId : viewerId;
 
     const values = [];
+    let delegationFilter = '';
+
+    if (viewerRole === 'admin') {
+        const delegations = await selectAdminDelegationNamesService(viewerId);
+        if (!delegations.length) return [];
+        delegationFilter = ` AND u.city IN (${delegations
+            .map(() => '?')
+            .join(', ')})`;
+        values.push(...delegations);
+    }
+
     let sql = `
         SELECT
             d.id,
@@ -29,6 +41,7 @@ const listEmployeeSignatureDocumentsService = async ({
         FROM employeeSignatureDocuments d
         INNER JOIN users u ON u.id = d.employeeId
         WHERE d.deletedAt IS NULL
+        ${delegationFilter}
     `;
 
     if (targetEmployeeId) {

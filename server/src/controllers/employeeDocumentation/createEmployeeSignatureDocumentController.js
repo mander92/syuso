@@ -1,6 +1,7 @@
 import Joi from 'joi';
 
 import createEmployeeSignatureDocumentService from '../../services/employeeDocumentation/createEmployeeSignatureDocumentService.js';
+import ensureEmployeeDocumentationAccessService from '../../services/employeeDocumentation/ensureEmployeeDocumentationAccessService.js';
 import selectEmployeeDocumentationService from '../../services/employeeDocumentation/selectEmployeeDocumentationService.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import { saveEmployeeSignatureDocumentFile } from '../../utils/employeeDocumentationFileUtil.js';
@@ -24,7 +25,6 @@ const createEmployeeSignatureDocumentController = async (req, res, next) => {
                     'medical',
                     'riskAssessment',
                     'tax',
-                    'workday',
                     'other'
                 )
                 .default('other'),
@@ -40,6 +40,12 @@ const createEmployeeSignatureDocumentController = async (req, res, next) => {
         if (!employee || employee.role !== 'employee') {
             generateErrorUtil('Trabajador no encontrado', 404);
         }
+
+        await ensureEmployeeDocumentationAccessService({
+            viewerId: req.userLogged.id,
+            viewerRole: req.userLogged.role,
+            employeeId: value.employeeId,
+        });
 
         const file = req.files?.document;
         if (!file) generateErrorUtil('Documento requerido', 400);

@@ -82,7 +82,7 @@
 }
 
 .employee-documentation-list--worker-browser .employee-documentation-list-filters {
-    grid-template-columns: minmax(220px, 1fr) minmax(150px, 220px);
+    grid-template-columns: minmax(220px, 1fr) minmax(140px, 180px) minmax(180px, 240px);
 }
 
 .employee-documentation-worker-grid {
@@ -142,7 +142,21 @@
 }
 
 .employee-documentation-worker-card {
+    align-content: start;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
     min-height: 5.25rem;
+}
+
+.employee-documentation-card-checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    grid-column: 1 / -1;
+}
+
+.employee-documentation-card-checks .employee-documentation-status {
+    font-size: 0.68rem;
 }
 
 .employee-documentation-status {

@@ -2,7 +2,10 @@ import listEmployeeDocumentationsService from '../../services/employeeDocumentat
 
 const listEmployeeDocumentationsController = async (req, res, next) => {
     try {
-        const data = await listEmployeeDocumentationsService();
+        const data = await listEmployeeDocumentationsService({
+            viewerId: req.userLogged.id,
+            viewerRole: req.userLogged.role,
+        });
         res.send({ status: 'ok', data });
     } catch (error) {
         next(error);
@@ -10,4 +13,3 @@ const listEmployeeDocumentationsController = async (req, res, next) => {
 };
 
 export default listEmployeeDocumentationsController;
-

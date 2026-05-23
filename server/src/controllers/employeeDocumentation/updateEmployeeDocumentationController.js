@@ -1,5 +1,6 @@
 import Joi from 'joi';
 
+import ensureEmployeeDocumentationAccessService from '../../services/employeeDocumentation/ensureEmployeeDocumentationAccessService.js';
 import selectEmployeeDocumentationService from '../../services/employeeDocumentation/selectEmployeeDocumentationService.js';
 import upsertEmployeeDocumentationService from '../../services/employeeDocumentation/upsertEmployeeDocumentationService.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
@@ -18,6 +19,12 @@ const updateEmployeeDocumentationController = async (req, res, next) => {
         if (!isAdmin && targetUserId !== req.userLogged.id) {
             generateErrorUtil('Acceso denegado', 403);
         }
+
+        await ensureEmployeeDocumentationAccessService({
+            viewerId: req.userLogged.id,
+            viewerRole: req.userLogged.role,
+            employeeId: targetUserId,
+        });
 
         const schema = Joi.object({
             birthDate: Joi.date().allow('', null),

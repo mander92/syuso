@@ -1,5 +1,6 @@
 import fs from 'fs';
 
+import ensureEmployeeDocumentationAccessService from '../../services/employeeDocumentation/ensureEmployeeDocumentationAccessService.js';
 import selectEmployeeSignatureDocumentService from '../../services/employeeDocumentation/selectEmployeeSignatureDocumentService.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import { getEmployeeDocumentationFilePath } from '../../utils/employeeDocumentationFileUtil.js';
@@ -15,6 +16,12 @@ const getEmployeeSignatureDocumentFileController = async (req, res, next) => {
         if (!isAdmin && document.employeeId !== req.userLogged.id) {
             generateErrorUtil('Acceso denegado', 403);
         }
+
+        await ensureEmployeeDocumentationAccessService({
+            viewerId: req.userLogged.id,
+            viewerRole: req.userLogged.role,
+            employeeId: document.employeeId,
+        });
 
         const relativePath =
             fileType === 'signature'

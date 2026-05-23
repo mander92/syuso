@@ -49,7 +49,6 @@ const signatureDocumentTypes = [
     ['medical', 'Reconocimiento medico'],
     ['riskAssessment', 'Evaluacion de riesgos'],
     ['tax', 'Modelo 145'],
-    ['workday', 'Registro jornada'],
     ['other', 'Otro'],
 ];
 
@@ -157,6 +156,7 @@ const EmployeeDocumentationComponent = () => {
     const [saving, setSaving] = useState(false);
     const [search, setSearch] = useState('');
     const [activeFilter, setActiveFilter] = useState('active');
+    const [delegationFilter, setDelegationFilter] = useState('all');
     const [adminMode, setAdminMode] = useState('employees');
     const [clientItems, setClientItems] = useState([]);
     const [selectedClientId, setSelectedClientId] = useState('');
@@ -180,8 +180,6 @@ const EmployeeDocumentationComponent = () => {
     const [signatureDocumentForm, setSignatureDocumentForm] = useState({
         title: '',
         documentType: 'other',
-        dueDate: '',
-        periodMonth: '',
     });
     const [signatureDocumentFile, setSignatureDocumentFile] = useState(null);
     const [signatureTypeFilter, setSignatureTypeFilter] = useState('all');
@@ -204,6 +202,12 @@ const EmployeeDocumentationComponent = () => {
                 item.active === 1 || item.active === true || item.active === '1';
             if (activeFilter === 'active' && !isActive) return false;
             if (activeFilter === 'inactive' && isActive) return false;
+            if (
+                delegationFilter !== 'all' &&
+                String(item.city || 'Sin delegacion') !== delegationFilter
+            ) {
+                return false;
+            }
 
             if (!term) return true;
 
@@ -214,7 +218,19 @@ const EmployeeDocumentationComponent = () => {
                 String(item.city || '').toLowerCase().includes(term)
             );
         });
-    }, [activeFilter, items, search]);
+    }, [activeFilter, delegationFilter, items, search]);
+
+    const delegationOptions = useMemo(
+        () =>
+            Array.from(
+                new Set(
+                    items.map((item) =>
+                        String(item.city || 'Sin delegacion').trim()
+                    )
+                )
+            ).sort((a, b) => a.localeCompare(b, 'es')),
+        [items]
+    );
 
     const filteredDrafts = useMemo(() => {
         const term = search.trim().toLowerCase();
@@ -292,17 +308,21 @@ const EmployeeDocumentationComponent = () => {
         );
     }, [isAdminLike, selectedUserId, signatureDocuments, user?.id]);
 
-    const getSignatureTypeDeliveryStatus = (type) => {
+    const getSignatureTypeDeliveryStatusForEmployee = (type, employeeId) => {
+        const documentsForEmployee = signatureDocuments.filter(
+            (document) => !employeeId || document.employeeId === employeeId
+        );
+
         if (type === 'all') {
-            if (!signatureDocumentsForSelectedEmployee.length) return 'missing';
-            return signatureDocumentsForSelectedEmployee.some(
+            if (!documentsForEmployee.length) return 'missing';
+            return documentsForEmployee.some(
                 (document) => document.status !== 'signed'
             )
                 ? 'pending'
                 : 'signed';
         }
 
-        const documentsForType = signatureDocumentsForSelectedEmployee.filter(
+        const documentsForType = documentsForEmployee.filter(
             (document) => document.documentType === type
         );
         if (!documentsForType.length) return 'missing';
@@ -310,6 +330,12 @@ const EmployeeDocumentationComponent = () => {
             ? 'pending'
             : 'signed';
     };
+
+    const getSignatureTypeDeliveryStatus = (type) =>
+        getSignatureTypeDeliveryStatusForEmployee(
+            type,
+            isAdminLike ? selectedUserId : user?.id
+        );
 
     const load = async () => {
         if (!authToken) return;
@@ -401,15 +427,11 @@ const EmployeeDocumentationComponent = () => {
                 employeeId: selectedUserId,
                 title: signatureDocumentForm.title,
                 documentType: signatureDocumentForm.documentType,
-                dueDate: signatureDocumentForm.dueDate,
-                periodMonth: signatureDocumentForm.periodMonth,
                 document: signatureDocumentFile,
             });
             setSignatureDocumentForm({
                 title: '',
                 documentType: 'other',
-                dueDate: '',
-                periodMonth: '',
             });
             setSignatureDocumentFile(null);
             await reloadSignatureDocuments();
@@ -959,16 +981,6 @@ const EmployeeDocumentationComponent = () => {
                         Gestiona la ficha documental y las imagenes de DNI/TIP.
                     </p>
                 </div>
-                {isAdminLike ? (
-                    <button
-                        type='button'
-                        className='employee-documentation-btn employee-documentation-btn--ghost'
-                        onClick={handleCopyInstructions}
-                        disabled={!selectedUserId}
-                    >
-                        Copiar instrucciones
-                    </button>
-                ) : null}
             </header>
 
             {isAdminLike ? (
@@ -1640,6 +1652,19 @@ const EmployeeDocumentationComponent = () => {
                                 <option value='inactive'>Inactivos</option>
                                 <option value='all'>Todos</option>
                             </select>
+                            <select
+                                value={delegationFilter}
+                                onChange={(event) =>
+                                    setDelegationFilter(event.target.value)
+                                }
+                            >
+                                <option value='all'>Todas las delegaciones</option>
+                                {delegationOptions.map((delegation) => (
+                                    <option key={delegation} value={delegation}>
+                                        {delegation}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                         <p className='employee-documentation-list-count'>
                             {filteredItems.length} trabajadores
@@ -1681,6 +1706,36 @@ const EmployeeDocumentationComponent = () => {
                                         <span className='employee-documentation-status'>
                                             {item.active ? 'Activo' : 'Inactivo'}
                                         </span>
+                                        <span className='employee-documentation-status'>
+                                            {item.city || 'Sin delegacion'}
+                                        </span>
+                                    </span>
+                                    <span className='employee-documentation-card-checks'>
+                                        {fileFields.map(([field, label]) => (
+                                            <span
+                                                key={field}
+                                                className={getDeliveryStatusClassName(
+                                                    item[field] ? 'complete' : 'missing'
+                                                )}
+                                            >
+                                                {label}
+                                            </span>
+                                        ))}
+                                        {signatureDocumentTypes.map(
+                                            ([value, label]) => (
+                                                <span
+                                                    key={value}
+                                                    className={getDeliveryStatusClassName(
+                                                        getSignatureTypeDeliveryStatusForEmployee(
+                                                            value,
+                                                            item.userId
+                                                        )
+                                                    )}
+                                                >
+                                                    {label}
+                                                </span>
+                                            )
+                                        )}
                                     </span>
                                 </button>
                             ))}
@@ -1930,32 +1985,6 @@ const EmployeeDocumentationComponent = () => {
                                     </select>
                                 </div>
                                 <div className='employee-documentation-field'>
-                                    <label>Fecha limite</label>
-                                    <input
-                                        type='date'
-                                        value={signatureDocumentForm.dueDate}
-                                        onChange={(event) =>
-                                            setSignatureDocumentForm((prev) => ({
-                                                ...prev,
-                                                dueDate: event.target.value,
-                                            }))
-                                        }
-                                    />
-                                </div>
-                                <div className='employee-documentation-field'>
-                                    <label>Mes</label>
-                                    <input
-                                        type='month'
-                                        value={signatureDocumentForm.periodMonth}
-                                        onChange={(event) =>
-                                            setSignatureDocumentForm((prev) => ({
-                                                ...prev,
-                                                periodMonth: event.target.value,
-                                            }))
-                                        }
-                                    />
-                                </div>
-                                <div className='employee-documentation-field'>
                                     <label>Documento</label>
                                     <input
                                         type='file'
@@ -1996,15 +2025,6 @@ const EmployeeDocumentationComponent = () => {
                                                 document.documentType
                                             ] || 'Otro'}
                                         </span>
-                                        {document.periodMonth ? (
-                                            <small>Mes: {document.periodMonth}</small>
-                                        ) : null}
-                                        {document.dueDate ? (
-                                            <small>
-                                                Fecha limite:{' '}
-                                                {String(document.dueDate).slice(0, 10)}
-                                            </small>
-                                        ) : null}
                                         {isAdminLike ? (
                                             <small>
                                                 {document.firstName}{' '}
