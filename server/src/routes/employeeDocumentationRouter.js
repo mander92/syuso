@@ -19,6 +19,7 @@ import saveEmployeeDocumentationDraftController from '../controllers/employeeDoc
 import createUserFromDocumentationDraftController from '../controllers/employeeDocumentation/createUserFromDocumentationDraftController.js';
 import getEmployeeDocumentationDraftFileController from '../controllers/employeeDocumentation/getEmployeeDocumentationDraftFileController.js';
 import createDocumentationDraftTokenController from '../controllers/employeeDocumentation/createDocumentationDraftTokenController.js';
+import sendDocumentationDraftLinkController from '../controllers/employeeDocumentation/sendDocumentationDraftLinkController.js';
 import deleteEmployeeDocumentationDraftController from '../controllers/employeeDocumentation/deleteEmployeeDocumentationDraftController.js';
 import getPublicDocumentationDraftController from '../controllers/employeeDocumentation/getPublicDocumentationDraftController.js';
 import savePublicDocumentationDraftController from '../controllers/employeeDocumentation/savePublicDocumentationDraftController.js';
@@ -182,6 +183,12 @@ router.post(
     authUser,
     isAdmin,
     createDocumentationDraftTokenController
+);
+router.post(
+    '/employee-documentation-drafts/:draftId/send-link',
+    authUser,
+    isAdmin,
+    sendDocumentationDraftLinkController
 );
 router.get(
     '/employee-documentation-drafts/:draftId/files/:field',

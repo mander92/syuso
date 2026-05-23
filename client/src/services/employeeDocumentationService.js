@@ -481,6 +481,25 @@ export const createDocumentationDraftLink = async (authToken, draftId) => {
     return assertOk(await readJsonBody(res));
 };
 
+export const sendDocumentationDraftLink = async ({
+    authToken,
+    draftId,
+    emails,
+}) => {
+    const res = await fetch(
+        `${VITE_API_URL}/employee-documentation-drafts/${draftId}/send-link`,
+        {
+            method: 'POST',
+            headers: {
+                Authorization: authToken,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ emails }),
+        }
+    );
+    return assertOk(await readJsonBody(res));
+};
+
 export const fetchPublicDocumentationDraft = async (token) => {
     const res = await fetch(
         `${VITE_API_URL}/public/employee-documentation-drafts/${token}`

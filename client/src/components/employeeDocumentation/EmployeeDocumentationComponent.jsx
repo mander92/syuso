@@ -29,6 +29,7 @@ import {
     saveClientDocumentationDraft,
     saveEmployeeDocumentation,
     saveEmployeeDocumentationDraft,
+    sendDocumentationDraftLink,
     uploadEmployeeSignatureDocument,
     validateEmployeeSignatureDocument,
 } from '../../services/employeeDocumentationService.js';
@@ -189,6 +190,7 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
         status: 'draft',
     });
     const [draftFiles, setDraftFiles] = useState({});
+    const [draftLinkEmails, setDraftLinkEmails] = useState('');
     const [signatureDocuments, setSignatureDocuments] = useState([]);
     const [signatureDocumentForm, setSignatureDocumentForm] = useState({
         title: '',
@@ -451,6 +453,7 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
     const selectDraft = (draft) => {
         setSelectedDraftId(draft?.id || '');
         setDraftFiles({});
+        setDraftLinkEmails(draft?.email || '');
         setDraftForm({
             ...emptyForm,
             ...draft,
@@ -950,6 +953,7 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
             } else {
                 setSelectedDraftId('');
                 setDraftFiles({});
+                setDraftLinkEmails('');
                 setDraftForm({
                     ...emptyForm,
                     status: 'draft',
@@ -1016,6 +1020,63 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
             }
         } catch (error) {
             alert(error.message || 'No se pudo generar el enlace');
+        }
+    };
+
+    const handleSendDraftLinkByEmail = async () => {
+        if (!draftLinkEmails.trim()) {
+            alert('Indica al menos un correo');
+            return;
+        }
+
+        try {
+            setSaving(true);
+            let draftId = selectedDraftId;
+
+            if (!draftId) {
+                const savedDraft = await saveEmployeeDocumentationDraft({
+                    authToken,
+                    draftId: null,
+                    data: {
+                        firstName: draftForm.firstName,
+                        lastName: draftForm.lastName,
+                        email: draftForm.email,
+                        dni: draftForm.dni,
+                        birthDate: draftForm.birthDate,
+                        bankAccount: draftForm.bankAccount,
+                        address: draftForm.address,
+                        phone: draftForm.phone,
+                        socialSecurityNumber: draftForm.socialSecurityNumber,
+                        status: draftForm.status || 'draft',
+                        reviewNotes: draftForm.reviewNotes,
+                    },
+                    files: draftFiles,
+                });
+
+                draftId = savedDraft.id;
+                setSelectedDraftId(savedDraft.id);
+                setDraftForm({
+                    ...emptyForm,
+                    ...savedDraft,
+                    birthDate: toDateInput(savedDraft.birthDate),
+                    status: savedDraft.status || 'draft',
+                });
+                setDraftFiles({});
+
+                const list = await fetchEmployeeDocumentationDrafts(authToken);
+                setDrafts(list || []);
+            }
+
+            const data = await sendDocumentationDraftLink({
+                authToken,
+                draftId,
+                emails: draftLinkEmails,
+            });
+            alert(`Alta enviada a ${data.sentTo?.length || 0} correo(s).`);
+        } catch (error) {
+            alert(error.message || 'No se pudo enviar el alta');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -1265,6 +1326,18 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                             ))}
                         </div>
 
+                        <div className='employee-documentation-field employee-documentation-field--wide'>
+                            <label>Correos para enviar alta</label>
+                            <input
+                                type='text'
+                                value={draftLinkEmails}
+                                onChange={(event) =>
+                                    setDraftLinkEmails(event.target.value)
+                                }
+                                placeholder='correo1@empresa.com, correo2@empresa.com'
+                            />
+                        </div>
+
                         <div className='employee-documentation-actions'>
                             <button
                                 type='button'
@@ -1273,6 +1346,18 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                                 onClick={handleCreateClientDraftLink}
                             >
                                 Copiar enlace WhatsApp
+                            </button>
+                            <button
+                                type='button'
+                                className='employee-documentation-btn'
+                                disabled={
+                                    saving ||
+                                    draftForm.linkedUserId ||
+                                    !draftLinkEmails.trim()
+                                }
+                                onClick={handleSendDraftLinkByEmail}
+                            >
+                                Enviar alta
                             </button>
                             <button
                                 type='button'
@@ -1510,6 +1595,7 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                                 onClick={() => {
                                     setSelectedDraftId('');
                                     setDraftFiles({});
+                                    setDraftLinkEmails('');
                                     setDraftForm({
                                         ...emptyForm,
                                         status: 'draft',
