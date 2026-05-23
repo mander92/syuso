@@ -79,6 +79,7 @@ const updateEmployeeDocumentationController = async (req, res, next) => {
             changedBy: req.userLogged.id,
             subjectId: targetUserId,
             subjectType: 'employee',
+            employeeId: targetUserId,
             userIds: targetUserId !== req.userLogged.id ? [targetUserId] : [],
             title: 'Documentacion de trabajador',
             message: `${fullName}: ficha documental actualizada`,

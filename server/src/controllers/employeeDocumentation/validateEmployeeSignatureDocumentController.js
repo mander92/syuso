@@ -30,6 +30,7 @@ const validateEmployeeSignatureDocumentController = async (req, res, next) => {
             changedBy: req.userLogged.id,
             subjectId: documentId,
             subjectType: 'employeeSignatureDocument',
+            employeeId: document.employeeId,
             userIds: [document.employeeId],
             title: 'Documento validado',
             message: `${data.title}: validado por administracion`,

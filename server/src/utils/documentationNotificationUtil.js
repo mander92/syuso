@@ -14,6 +14,7 @@ export const emitDocumentationChanged = (options = {}) => {
         changedBy: options.changedBy || null,
         subjectId: options.subjectId || null,
         subjectType: options.subjectType || 'documentation',
+        employeeId: options.employeeId || null,
         title: options.title || 'Documentacion',
         message: options.message || 'Hay cambios en documentacion.',
         routeLabel: options.routeLabel || 'Mi cuenta > Documentacion',

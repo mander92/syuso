@@ -7,11 +7,22 @@ import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import { saveEmployeeSignatureDocumentFile } from '../../utils/employeeDocumentationFileUtil.js';
 import { emitDocumentationChanged } from '../../utils/documentationNotificationUtil.js';
 
+const documentTypeLabels = {
+    epi: 'EPIS',
+    information: 'Informacion',
+    dataProtection: 'Proteccion de datos',
+    contract: 'Contrato',
+    medical: 'Reconocimiento medico',
+    riskAssessment: 'Evaluacion de riesgos',
+    tax: 'Modelo 145',
+    other: 'Otro',
+};
+
 const createEmployeeSignatureDocumentController = async (req, res, next) => {
     try {
         const schema = Joi.object({
             employeeId: Joi.string().guid({ version: 'uuidv4' }).required(),
-            title: Joi.string().max(150).required(),
+            title: Joi.string().max(150).allow('', null),
             dueDate: Joi.date().allow('', null),
             periodMonth: Joi.string()
                 .pattern(/^\d{4}-\d{2}$/)
@@ -35,6 +46,10 @@ const createEmployeeSignatureDocumentController = async (req, res, next) => {
             stripUnknown: true,
         });
         if (error) generateErrorUtil(error.message, 400);
+        value.title =
+            String(value.title || '').trim() ||
+            documentTypeLabels[value.documentType] ||
+            'Documento';
 
         const employee = await selectEmployeeDocumentationService(value.employeeId);
         if (!employee || employee.role !== 'employee') {
@@ -83,6 +98,7 @@ const createEmployeeSignatureDocumentController = async (req, res, next) => {
                       changedBy: req.userLogged.id,
                       subjectId: data.id,
                       subjectType: 'employeeSignatureDocument',
+                      employeeId: value.employeeId,
                       userIds: [value.employeeId],
                       title: 'Documento validado',
                       message: `${fullName}: ${data.title}`,
@@ -92,6 +108,7 @@ const createEmployeeSignatureDocumentController = async (req, res, next) => {
                       changedBy: req.userLogged.id,
                       subjectId: data.id,
                       subjectType: 'employeeSignatureDocument',
+                      employeeId: value.employeeId,
                       userIds: [value.employeeId],
                       title: 'Documento pendiente de firma',
                       message: `${fullName}: ${data.title}`,

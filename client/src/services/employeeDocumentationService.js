@@ -109,6 +109,17 @@ export const reopenEmployeeSignatureDocument = async (authToken, documentId) => 
     return assertOk(await readJsonBody(res));
 };
 
+export const deleteEmployeeSignatureDocument = async (authToken, documentId) => {
+    const res = await fetch(
+        `${VITE_API_URL}/employee-signature-documents/${documentId}`,
+        {
+            method: 'DELETE',
+            headers: { Authorization: authToken },
+        }
+    );
+    return assertOk(await readJsonBody(res));
+};
+
 export const openEmployeeSignatureDocumentFile = async ({
     authToken,
     documentId,

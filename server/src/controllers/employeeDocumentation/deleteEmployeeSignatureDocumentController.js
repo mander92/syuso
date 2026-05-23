@@ -1,10 +1,10 @@
+import deleteEmployeeSignatureDocumentService from '../../services/employeeDocumentation/deleteEmployeeSignatureDocumentService.js';
 import ensureEmployeeDocumentationAccessService from '../../services/employeeDocumentation/ensureEmployeeDocumentationAccessService.js';
-import reopenEmployeeSignatureDocumentService from '../../services/employeeDocumentation/reopenEmployeeSignatureDocumentService.js';
 import selectEmployeeSignatureDocumentService from '../../services/employeeDocumentation/selectEmployeeSignatureDocumentService.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import { emitDocumentationChanged } from '../../utils/documentationNotificationUtil.js';
 
-const reopenEmployeeSignatureDocumentController = async (req, res, next) => {
+const deleteEmployeeSignatureDocumentController = async (req, res, next) => {
     try {
         const { documentId } = req.params;
         const document = await selectEmployeeSignatureDocumentService(documentId);
@@ -16,8 +16,7 @@ const reopenEmployeeSignatureDocumentController = async (req, res, next) => {
             employeeId: document.employeeId,
         });
 
-        await reopenEmployeeSignatureDocumentService(documentId);
-        const data = await selectEmployeeSignatureDocumentService(documentId);
+        await deleteEmployeeSignatureDocumentService(documentId);
 
         emitDocumentationChanged({
             changedBy: req.userLogged.id,
@@ -25,15 +24,15 @@ const reopenEmployeeSignatureDocumentController = async (req, res, next) => {
             subjectType: 'employeeSignatureDocument',
             employeeId: document.employeeId,
             userIds: [document.employeeId],
-            title: 'Documento reabierto',
-            message: `${data.title}: puedes subir una nueva version firmada`,
-            routeLabel: 'Alertas > Documentacion > Pendiente de firma',
+            title: 'Documento borrado',
+            message: `${document.title}: documento eliminado`,
+            routeLabel: 'Alertas > Documentacion',
         });
 
-        res.send({ status: 'ok', data });
+        res.send({ status: 'ok' });
     } catch (error) {
         next(error);
     }
 };
 
-export default reopenEmployeeSignatureDocumentController;
+export default deleteEmployeeSignatureDocumentController;

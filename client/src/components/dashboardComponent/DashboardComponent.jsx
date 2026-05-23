@@ -121,7 +121,10 @@ const AlertsPanel = ({
                                 type='button'
                                 onClick={() => {
                                     onMarkRead(notification.id);
-                                    onOpenSection(notification.section);
+                                    onOpenSection(
+                                        notification.section,
+                                        notification
+                                    );
                                 }}
                             >
                                 Ver cambio
@@ -171,6 +174,8 @@ const DashboardComponent = () => {
     } =
         useChatNotifications();
     const [activeSection, setActiveSection] = useState('profile');
+    const [documentationFocusEmployeeId, setDocumentationFocusEmployeeId] =
+        useState('');
     const [isOperativeOpen, setIsOperativeOpen] = useState(true);
     const [isAdministrationOpen, setIsAdministrationOpen] = useState(true);
     const hasSetDefault = useRef(false);
@@ -432,11 +437,19 @@ const DashboardComponent = () => {
                 return (
                     <AlertsPanel
                         notifications={alertNotifications}
-                        onOpenSection={(section) => {
+                        onOpenSection={(section, notification) => {
                             if (
                                 section &&
                                 sections.some((item) => item.id === section)
                             ) {
+                                if (
+                                    section === 'documentations' &&
+                                    notification?.employeeId
+                                ) {
+                                    setDocumentationFocusEmployeeId(
+                                        notification.employeeId
+                                    );
+                                }
                                 setActiveSection(section);
                             }
                         }}
@@ -485,7 +498,11 @@ const DashboardComponent = () => {
             case 'employeeRequests':
                 return <EmployeeRequestsComponent />;
             case 'documentations':
-                return <EmployeeDocumentationComponent />;
+                return (
+                    <EmployeeDocumentationComponent
+                        focusEmployeeId={documentationFocusEmployeeId}
+                    />
+                );
             case 'warehouse':
                 return <AdminWarehouseSection />;
 

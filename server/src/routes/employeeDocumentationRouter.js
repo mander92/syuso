@@ -13,6 +13,7 @@ import createEmployeeSignatureDocumentController from '../controllers/employeeDo
 import signEmployeeSignatureDocumentController from '../controllers/employeeDocumentation/signEmployeeSignatureDocumentController.js';
 import validateEmployeeSignatureDocumentController from '../controllers/employeeDocumentation/validateEmployeeSignatureDocumentController.js';
 import reopenEmployeeSignatureDocumentController from '../controllers/employeeDocumentation/reopenEmployeeSignatureDocumentController.js';
+import deleteEmployeeSignatureDocumentController from '../controllers/employeeDocumentation/deleteEmployeeSignatureDocumentController.js';
 import getEmployeeSignatureDocumentFileController from '../controllers/employeeDocumentation/getEmployeeSignatureDocumentFileController.js';
 import saveEmployeeDocumentationDraftController from '../controllers/employeeDocumentation/saveEmployeeDocumentationDraftController.js';
 import createUserFromDocumentationDraftController from '../controllers/employeeDocumentation/createUserFromDocumentationDraftController.js';
@@ -68,6 +69,12 @@ router.put(
     authUser,
     isAdmin,
     reopenEmployeeSignatureDocumentController
+);
+router.delete(
+    '/employee-signature-documents/:documentId',
+    authUser,
+    isAdmin,
+    deleteEmployeeSignatureDocumentController
 );
 router.get(
     '/employee-signature-documents/:documentId/files/:fileType',

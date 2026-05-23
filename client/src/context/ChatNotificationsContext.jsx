@@ -725,6 +725,9 @@ export const ChatNotificationsProvider = ({ children }) => {
                     'Hay una actualizacion en documentacion.',
                 routeLabel:
                     event.routeLabel || buildAlertRoute('documentations'),
+                employeeId: event.employeeId || null,
+                subjectId: event.subjectId || null,
+                subjectType: event.subjectType || 'documentation',
             });
             toast(event.message || 'Documentacion actualizada', {
                 id: event.notificationId,

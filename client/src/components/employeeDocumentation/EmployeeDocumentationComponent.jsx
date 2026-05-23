@@ -16,6 +16,7 @@ import {
     createClientFromDocumentationDraft,
     deleteClientDocumentationDraft,
     deleteEmployeeDocumentationDraft,
+    deleteEmployeeSignatureDocument,
     createUserFromDocumentationDraft,
     openEmployeeDocumentationFile,
     openEmployeeDocumentationDraftFile,
@@ -153,7 +154,7 @@ const normalizeClientDocumentation = (data) => ({
     status: data?.status || 'pending',
 });
 
-const EmployeeDocumentationComponent = () => {
+const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
     const isAdminLike = user?.role === 'admin' || user?.role === 'sudo';
@@ -192,8 +193,8 @@ const EmployeeDocumentationComponent = () => {
         documentType: 'other',
     });
     const [signatureDocumentFile, setSignatureDocumentFile] = useState(null);
-    const [signatureDocumentSignedFile, setSignatureDocumentSignedFile] =
-        useState(null);
+    const [signatureDocumentAction, setSignatureDocumentAction] =
+        useState('send');
     const [signatureTypeFilter, setSignatureTypeFilter] = useState('all');
     const [signedDocumentFiles, setSignedDocumentFiles] = useState({});
 
@@ -392,6 +393,15 @@ const EmployeeDocumentationComponent = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [authToken, isAdminLike]);
 
+    useEffect(() => {
+        if (!isAdminLike || !focusEmployeeId || !authToken) return;
+        setAdminMode('employees');
+        openEmployeeDocumentationModal(focusEmployeeId).catch((error) =>
+            alert(error.message)
+        );
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [focusEmployeeId, isAdminLike, authToken]);
+
     const selectEmployee = async (userId) => {
         setSelectedUserId(userId);
         setFiles({});
@@ -439,20 +449,28 @@ const EmployeeDocumentationComponent = () => {
             await createEmployeeSignatureDocument({
                 authToken,
                 employeeId: selectedUserId,
-                title: signatureDocumentForm.title,
+                title:
+                    signatureDocumentForm.title.trim() ||
+                    signatureDocumentTypeLabels[
+                        signatureDocumentForm.documentType
+                    ] ||
+                    'Documento',
                 documentType: signatureDocumentForm.documentType,
                 document: signatureDocumentFile,
-                signedDocument: signatureDocumentSignedFile,
+                signedDocument:
+                    signatureDocumentAction === 'validated'
+                        ? signatureDocumentFile
+                        : null,
             });
             setSignatureDocumentForm({
                 title: '',
                 documentType: 'other',
             });
             setSignatureDocumentFile(null);
-            setSignatureDocumentSignedFile(null);
+            setSignatureDocumentAction('send');
             await reloadSignatureDocuments();
             alert(
-                signatureDocumentSignedFile
+                signatureDocumentAction === 'validated'
                     ? 'Documento guardado como validado.'
                     : 'Documento enviado para firma.'
             );
@@ -500,6 +518,16 @@ const EmployeeDocumentationComponent = () => {
             alert('Subida reabierta para el trabajador.');
         } catch (error) {
             alert(error.message || 'No se pudo reabrir el documento');
+        }
+    };
+
+    const handleDeleteSignatureDocument = async (documentId) => {
+        try {
+            await deleteEmployeeSignatureDocument(authToken, documentId);
+            await reloadSignatureDocuments();
+            alert('Documento borrado.');
+        } catch (error) {
+            alert(error.message || 'No se pudo borrar el documento');
         }
     };
 
@@ -1954,83 +1982,6 @@ const EmployeeDocumentationComponent = () => {
                             ))}
                         </div>
 
-                        {isAdminLike ? (
-                            <div className='employee-signature-documents__create'>
-                                <div className='employee-documentation-field'>
-                                    <label>Titulo</label>
-                                    <input
-                                        value={signatureDocumentForm.title}
-                                        onChange={(event) =>
-                                            setSignatureDocumentForm((prev) => ({
-                                                ...prev,
-                                                title: event.target.value,
-                                            }))
-                                        }
-                                        placeholder='Entrega EPIS, contrato...'
-                                    />
-                                </div>
-                                <div className='employee-documentation-field'>
-                                    <label>Tipo</label>
-                                    <select
-                                        value={signatureDocumentForm.documentType}
-                                        onChange={(event) =>
-                                            setSignatureDocumentForm((prev) => ({
-                                                ...prev,
-                                                documentType: event.target.value,
-                                            }))
-                                        }
-                                    >
-                                        {signatureDocumentTypes.map(
-                                            ([value, label]) => (
-                                                <option key={value} value={value}>
-                                                    {label}
-                                                </option>
-                                            )
-                                        )}
-                                    </select>
-                                </div>
-                                <div className='employee-documentation-field'>
-                                    <label>Documento</label>
-                                    <input
-                                        type='file'
-                                        accept='.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                                        onChange={(event) =>
-                                            setSignatureDocumentFile(
-                                                event.target.files?.[0] || null
-                                            )
-                                        }
-                                    />
-                                </div>
-                                <div className='employee-documentation-field'>
-                                    <label>Documento ya firmado</label>
-                                    <input
-                                        type='file'
-                                        accept='.pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png,image/webp'
-                                        onChange={(event) =>
-                                            setSignatureDocumentSignedFile(
-                                                event.target.files?.[0] || null
-                                            )
-                                        }
-                                    />
-                                </div>
-                                <button
-                                    type='button'
-                                    className='employee-documentation-btn'
-                                    disabled={
-                                        saving ||
-                                        !selectedUserId ||
-                                        !signatureDocumentForm.title ||
-                                        !signatureDocumentFile
-                                    }
-                                    onClick={handleCreateSignatureDocument}
-                                >
-                                    {signatureDocumentSignedFile
-                                        ? 'Guardar validado'
-                                        : 'Enviar para firma'}
-                                </button>
-                            </div>
-                        ) : null}
-
                         <div className='employee-signature-documents__list'>
                             {visibleSignatureDocuments.map((document) => (
                                 <article
@@ -2157,6 +2108,19 @@ const EmployeeDocumentationComponent = () => {
                                                 Permitir nueva subida
                                             </button>
                                         ) : null}
+                                        {isAdminLike ? (
+                                            <button
+                                                type='button'
+                                                className='employee-documentation-btn employee-documentation-btn--danger'
+                                                onClick={() =>
+                                                    handleDeleteSignatureDocument(
+                                                        document.id
+                                                    )
+                                                }
+                                            >
+                                                Borrar documento
+                                            </button>
+                                        ) : null}
                                     </div>
                                 </article>
                             ))}
@@ -2166,6 +2130,88 @@ const EmployeeDocumentationComponent = () => {
                                 </p>
                             ) : null}
                         </div>
+
+                        {isAdminLike ? (
+                            <div className='employee-signature-documents__create'>
+                                <div className='employee-documentation-field'>
+                                    <label>Tipo</label>
+                                    <select
+                                        value={signatureDocumentForm.documentType}
+                                        onChange={(event) =>
+                                            setSignatureDocumentForm((prev) => ({
+                                                ...prev,
+                                                documentType: event.target.value,
+                                            }))
+                                        }
+                                    >
+                                        {signatureDocumentTypes.map(
+                                            ([value, label]) => (
+                                                <option key={value} value={value}>
+                                                    {label}
+                                                </option>
+                                            )
+                                        )}
+                                    </select>
+                                </div>
+                                <div className='employee-documentation-field'>
+                                    <label>Accion</label>
+                                    <select
+                                        value={signatureDocumentAction}
+                                        onChange={(event) =>
+                                            setSignatureDocumentAction(
+                                                event.target.value
+                                            )
+                                        }
+                                    >
+                                        <option value='send'>
+                                            Enviar para firma
+                                        </option>
+                                        <option value='validated'>
+                                            Subir ya validado
+                                        </option>
+                                    </select>
+                                </div>
+                                <div className='employee-documentation-field'>
+                                    <label>Titulo opcional</label>
+                                    <input
+                                        value={signatureDocumentForm.title}
+                                        onChange={(event) =>
+                                            setSignatureDocumentForm((prev) => ({
+                                                ...prev,
+                                                title: event.target.value,
+                                            }))
+                                        }
+                                        placeholder='Si lo dejas vacio usa el tipo'
+                                    />
+                                </div>
+                                <div className='employee-documentation-field'>
+                                    <label>Archivo</label>
+                                    <input
+                                        type='file'
+                                        accept='.pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png,image/webp'
+                                        onChange={(event) =>
+                                            setSignatureDocumentFile(
+                                                event.target.files?.[0] || null
+                                            )
+                                        }
+                                    />
+                                </div>
+                                <button
+                                    type='button'
+                                    className='employee-documentation-btn'
+                                    disabled={
+                                        saving ||
+                                        !selectedUserId ||
+                                        !signatureDocumentFile
+                                    }
+                                    onClick={handleCreateSignatureDocument}
+                                >
+                                    {signatureDocumentAction === 'validated'
+                                        ? 'Guardar validado'
+                                        : 'Enviar para firma'}
+                                </button>
+                            </div>
+                        ) : null}
                     </div>
 
                     <div className='employee-documentation-actions'>

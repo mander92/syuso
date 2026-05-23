@@ -40,6 +40,7 @@ const signEmployeeSignatureDocumentController = async (req, res, next) => {
             changedBy: req.userLogged.id,
             subjectId: documentId,
             subjectType: 'employeeSignatureDocument',
+            employeeId: document.employeeId,
             title: 'Documento subido para validar',
             message: `${data.title}: subido por ${data.firstName || ''} ${data.lastName || ''}`.trim(),
             routeLabel: 'Alertas > Documentacion > Pendiente de validar',

@@ -379,14 +379,24 @@
 
 .employee-signature-documents__create {
     align-items: end;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
     display: grid;
-    gap: 0.7rem;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+    grid-template-columns:
+        minmax(130px, 0.75fr)
+        minmax(160px, 0.9fr)
+        minmax(210px, 1.15fr)
+        minmax(220px, 1.25fr)
+        auto;
     min-width: 0;
+    padding: 0.8rem;
 }
 
 .employee-signature-documents__create .employee-documentation-btn {
     justify-self: end;
+    white-space: nowrap;
 }
 
 .employee-signature-documents__filters {
