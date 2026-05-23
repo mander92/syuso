@@ -323,22 +323,19 @@
     padding: 0.45rem 0.75rem;
 }
 
-.employee-signature-filter--all {
-    background: #e2e8f0;
-    color: #0f172a;
+.employee-signature-filter--signed {
+    background: #dcfce7;
+    color: #166534;
 }
 
-.employee-signature-filter--epi,
-.employee-signature-filter--information,
-.employee-signature-filter--workday,
-.employee-signature-filter--dataProtection,
-.employee-signature-filter--contract,
-.employee-signature-filter--medical,
-.employee-signature-filter--riskAssessment,
-.employee-signature-filter--tax,
-.employee-signature-filter--other {
-    background: #f1f5f9;
-    color: #334155;
+.employee-signature-filter--pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.employee-signature-filter--missing {
+    background: #fee2e2;
+    color: #991b1b;
 }
 
 .employee-signature-filter.active {

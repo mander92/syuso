@@ -155,7 +155,7 @@ const EmployeeDocumentationComponent = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [search, setSearch] = useState('');
-    const [activeFilter, setActiveFilter] = useState('all');
+    const [activeFilter, setActiveFilter] = useState('active');
     const [adminMode, setAdminMode] = useState('employees');
     const [clientItems, setClientItems] = useState([]);
     const [selectedClientId, setSelectedClientId] = useState('');
@@ -283,6 +283,32 @@ const EmployeeDocumentationComponent = () => {
         signatureTypeFilter,
         user?.id,
     ]);
+
+    const signatureDocumentsForSelectedEmployee = useMemo(() => {
+        const targetEmployeeId = isAdminLike ? selectedUserId : user?.id;
+        return signatureDocuments.filter(
+            (document) => !targetEmployeeId || document.employeeId === targetEmployeeId
+        );
+    }, [isAdminLike, selectedUserId, signatureDocuments, user?.id]);
+
+    const getSignatureTypeDeliveryStatus = (type) => {
+        if (type === 'all') {
+            if (!signatureDocumentsForSelectedEmployee.length) return 'missing';
+            return signatureDocumentsForSelectedEmployee.some(
+                (document) => document.status !== 'signed'
+            )
+                ? 'pending'
+                : 'signed';
+        }
+
+        const documentsForType = signatureDocumentsForSelectedEmployee.filter(
+            (document) => document.documentType === type
+        );
+        if (!documentsForType.length) return 'missing';
+        return documentsForType.some((document) => document.status !== 'signed')
+            ? 'pending'
+            : 'signed';
+    };
 
     const load = async () => {
         if (!authToken) return;
@@ -1592,6 +1618,16 @@ const EmployeeDocumentationComponent = () => {
                                     setSearch(event.target.value)
                                 }
                             />
+                            <select
+                                value={activeFilter}
+                                onChange={(event) =>
+                                    setActiveFilter(event.target.value)
+                                }
+                            >
+                                <option value='active'>Activos</option>
+                                <option value='inactive'>Inactivos</option>
+                                <option value='all'>Todos</option>
+                            </select>
                         </div>
                         <p className='employee-documentation-list-count'>
                             {filteredItems.length} trabajadores
@@ -1798,7 +1834,7 @@ const EmployeeDocumentationComponent = () => {
                                 <button
                                     key={value}
                                     type='button'
-                                    className={`employee-signature-filter employee-signature-filter--${value} ${
+                                    className={`employee-signature-filter employee-signature-filter--${getSignatureTypeDeliveryStatus(value)} ${
                                         signatureTypeFilter === value ? 'active' : ''
                                     }`}
                                     onClick={() => setSignatureTypeFilter(value)}
