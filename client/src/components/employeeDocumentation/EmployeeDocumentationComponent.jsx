@@ -150,6 +150,7 @@ const EmployeeDocumentationComponent = () => {
     const isAdminLike = user?.role === 'admin' || user?.role === 'sudo';
     const [items, setItems] = useState([]);
     const [selectedUserId, setSelectedUserId] = useState('');
+    const [documentationModalOpen, setDocumentationModalOpen] = useState(false);
     const [form, setForm] = useState(emptyForm);
     const [files, setFiles] = useState({});
     const [loading, setLoading] = useState(true);
@@ -356,6 +357,11 @@ const EmployeeDocumentationComponent = () => {
         setFiles({});
         const data = await fetchEmployeeDocumentation(authToken, userId);
         setForm(normalizeDocumentation(data));
+    };
+
+    const openEmployeeDocumentationModal = async (userId) => {
+        await selectEmployee(userId);
+        setDocumentationModalOpen(true);
     };
 
     const selectDraft = (draft) => {
@@ -1606,9 +1612,15 @@ const EmployeeDocumentationComponent = () => {
                 </div>
             ) : (
 
-            <div className='employee-documentation-layout'>
+            <div
+                className={`employee-documentation-layout ${
+                    isAdminLike
+                        ? 'employee-documentation-layout--admin-browser'
+                        : ''
+                }`}
+            >
                 {isAdminLike ? (
-                    <aside className='employee-documentation-list'>
+                    <aside className='employee-documentation-list employee-documentation-list--worker-browser'>
                         <div className='employee-documentation-list-filters'>
                             <input
                                 type='search'
@@ -1632,45 +1644,47 @@ const EmployeeDocumentationComponent = () => {
                         <p className='employee-documentation-list-count'>
                             {filteredItems.length} trabajadores
                         </p>
-                        {filteredItems.map((item) => (
-                            <button
-                                key={item.userId}
-                                type='button'
-                                className={
-                                    item.userId === selectedUserId
-                                        ? 'active'
-                                        : ''
-                                }
-                                onClick={() =>
-                                    selectEmployee(item.userId).catch((error) =>
-                                        alert(error.message)
-                                    )
-                                }
-                            >
-                                <span>
-                                    {item.firstName} {item.lastName}
-                                </span>
-                                <span className='employee-documentation-list-badges'>
-                                    <span className={getStatusClassName(item.status)}>
-                                        {statusLabels[item.status || 'pending']}
+                        <div className='employee-documentation-worker-grid'>
+                            {filteredItems.map((item) => (
+                                <button
+                                    key={item.userId}
+                                    type='button'
+                                    className={`employee-documentation-worker-card ${
+                                        item.userId === selectedUserId
+                                            ? 'active'
+                                            : ''
+                                    }`}
+                                    onClick={() =>
+                                        openEmployeeDocumentationModal(
+                                            item.userId
+                                        ).catch((error) => alert(error.message))
+                                    }
+                                >
+                                    <span>
+                                        {item.firstName} {item.lastName}
                                     </span>
-                                    <span
-                                        className={getDeliveryStatusClassName(
-                                            getProfileDocumentationStatus(item)
-                                        )}
-                                    >
-                                        {
-                                            deliveryStatusLabels[
+                                    <span className='employee-documentation-list-badges'>
+                                        <span className={getStatusClassName(item.status)}>
+                                            {statusLabels[item.status || 'pending']}
+                                        </span>
+                                        <span
+                                            className={getDeliveryStatusClassName(
                                                 getProfileDocumentationStatus(item)
-                                            ]
-                                        }
+                                            )}
+                                        >
+                                            {
+                                                deliveryStatusLabels[
+                                                    getProfileDocumentationStatus(item)
+                                                ]
+                                            }
+                                        </span>
+                                        <span className='employee-documentation-status'>
+                                            {item.active ? 'Activo' : 'Inactivo'}
+                                        </span>
                                     </span>
-                                    <span className='employee-documentation-status'>
-                                        {item.active ? 'Activo' : 'Inactivo'}
-                                    </span>
-                                </span>
-                            </button>
-                        ))}
+                                </button>
+                            ))}
+                        </div>
                         {!filteredItems.length ? (
                             <p className='employee-documentation-empty'>
                                 No hay trabajadores con ese filtro.
@@ -1679,10 +1693,46 @@ const EmployeeDocumentationComponent = () => {
                     </aside>
                 ) : null}
 
+                {!isAdminLike || documentationModalOpen ? (
+                    <div
+                        className={
+                            isAdminLike
+                                ? 'employee-documentation-modal'
+                                : 'employee-documentation-inline-form'
+                        }
+                        role='presentation'
+                        onClick={() => {
+                            if (isAdminLike) setDocumentationModalOpen(false);
+                        }}
+                    >
                 <form
-                    className='employee-documentation-form'
+                    className={`employee-documentation-form ${
+                        isAdminLike ? 'employee-documentation-form--modal' : ''
+                    }`}
                     onSubmit={handleSubmit}
+                    onClick={(event) => event.stopPropagation()}
                 >
+                    {isAdminLike ? (
+                        <header className='employee-documentation-modal-header'>
+                            <div>
+                                <h3>
+                                    Ficha documental de {form.firstName}{' '}
+                                    {form.lastName}
+                                </h3>
+                                <p>
+                                    Gestiona la ficha, imagenes DNI/TIP y
+                                    documentos para firma.
+                                </p>
+                            </div>
+                            <button
+                                type='button'
+                                className='employee-documentation-btn employee-documentation-btn--ghost'
+                                onClick={() => setDocumentationModalOpen(false)}
+                            >
+                                Cerrar
+                            </button>
+                        </header>
+                    ) : null}
                     <div className='employee-documentation-grid'>
                         <div className='employee-documentation-field'>
                             <label>Nombre</label>
@@ -2029,6 +2079,8 @@ const EmployeeDocumentationComponent = () => {
                         </button>
                     </div>
                 </form>
+                    </div>
+                ) : null}
             </div>
             )}
             {signingDocument ? (
