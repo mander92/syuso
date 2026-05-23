@@ -66,20 +66,42 @@ export const createEmployeeSignatureDocument = async ({
     return assertOk(await readJsonBody(res));
 };
 
-export const signEmployeeSignatureDocument = async ({
+export const uploadEmployeeSignatureDocument = async ({
     authToken,
     documentId,
-    signature,
+    document,
 }) => {
+    const formData = new FormData();
+    if (document) formData.append('document', document);
+
     const res = await fetch(
         `${VITE_API_URL}/employee-signature-documents/${documentId}/sign`,
         {
             method: 'PUT',
-            headers: {
-                Authorization: authToken,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ signature }),
+            headers: { Authorization: authToken },
+            body: formData,
+        }
+    );
+    return assertOk(await readJsonBody(res));
+};
+
+export const validateEmployeeSignatureDocument = async (authToken, documentId) => {
+    const res = await fetch(
+        `${VITE_API_URL}/employee-signature-documents/${documentId}/validate`,
+        {
+            method: 'PUT',
+            headers: { Authorization: authToken },
+        }
+    );
+    return assertOk(await readJsonBody(res));
+};
+
+export const reopenEmployeeSignatureDocument = async (authToken, documentId) => {
+    const res = await fetch(
+        `${VITE_API_URL}/employee-signature-documents/${documentId}/reopen`,
+        {
+            method: 'PUT',
+            headers: { Authorization: authToken },
         }
     );
     return assertOk(await readJsonBody(res));

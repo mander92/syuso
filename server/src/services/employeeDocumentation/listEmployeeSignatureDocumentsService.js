@@ -32,10 +32,13 @@ const listEmployeeSignatureDocumentsService = async ({
             d.title,
             d.documentType,
             d.originalFileName,
+            d.signaturePath,
+            d.signedFileName,
             d.dueDate,
             d.periodMonth,
             d.status,
             d.signedAt,
+            d.validatedAt,
             d.createdAt,
             d.modifiedAt
         FROM employeeSignatureDocuments d

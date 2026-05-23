@@ -10,6 +10,8 @@ import getEmployeeDocumentationFileController from '../controllers/employeeDocum
 import listEmployeeSignatureDocumentsController from '../controllers/employeeDocumentation/listEmployeeSignatureDocumentsController.js';
 import createEmployeeSignatureDocumentController from '../controllers/employeeDocumentation/createEmployeeSignatureDocumentController.js';
 import signEmployeeSignatureDocumentController from '../controllers/employeeDocumentation/signEmployeeSignatureDocumentController.js';
+import validateEmployeeSignatureDocumentController from '../controllers/employeeDocumentation/validateEmployeeSignatureDocumentController.js';
+import reopenEmployeeSignatureDocumentController from '../controllers/employeeDocumentation/reopenEmployeeSignatureDocumentController.js';
 import getEmployeeSignatureDocumentFileController from '../controllers/employeeDocumentation/getEmployeeSignatureDocumentFileController.js';
 import saveEmployeeDocumentationDraftController from '../controllers/employeeDocumentation/saveEmployeeDocumentationDraftController.js';
 import createUserFromDocumentationDraftController from '../controllers/employeeDocumentation/createUserFromDocumentationDraftController.js';
@@ -53,6 +55,18 @@ router.put(
     '/employee-signature-documents/:documentId/sign',
     authUser,
     signEmployeeSignatureDocumentController
+);
+router.put(
+    '/employee-signature-documents/:documentId/validate',
+    authUser,
+    isAdmin,
+    validateEmployeeSignatureDocumentController
+);
+router.put(
+    '/employee-signature-documents/:documentId/reopen',
+    authUser,
+    isAdmin,
+    reopenEmployeeSignatureDocumentController
 );
 router.get(
     '/employee-signature-documents/:documentId/files/:fileType',

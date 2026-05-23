@@ -1,9 +1,7 @@
-import Joi from 'joi';
-
 import selectEmployeeSignatureDocumentService from '../../services/employeeDocumentation/selectEmployeeSignatureDocumentService.js';
 import signEmployeeSignatureDocumentService from '../../services/employeeDocumentation/signEmployeeSignatureDocumentService.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
-import { saveEmployeeSignatureImage } from '../../utils/employeeDocumentationFileUtil.js';
+import { saveEmployeeSignatureDocumentFile } from '../../utils/employeeDocumentationFileUtil.js';
 import { emitDocumentationChanged } from '../../utils/documentationNotificationUtil.js';
 
 const signEmployeeSignatureDocumentController = async (req, res, next) => {
@@ -16,30 +14,35 @@ const signEmployeeSignatureDocumentController = async (req, res, next) => {
             generateErrorUtil('Acceso denegado', 403);
         }
 
-        const schema = Joi.object({
-            signature: Joi.string().required(),
-        });
-        const { error, value } = schema.validate(req.body || {}, {
-            abortEarly: true,
-            stripUnknown: true,
-        });
-        if (error) generateErrorUtil(error.message, 400);
+        if (document.status === 'validated') {
+            generateErrorUtil(
+                'Documento validado. Solicita permiso a administracion para subir otro.',
+                403
+            );
+        }
 
-        const signaturePath = await saveEmployeeSignatureImage(
-            value.signature,
+        const file = req.files?.document;
+        if (!file) generateErrorUtil('Documento firmado requerido', 400);
+
+        const signaturePath = await saveEmployeeSignatureDocumentFile(
+            file,
             document.employeeId
         );
 
-        await signEmployeeSignatureDocumentService(documentId, signaturePath);
+        await signEmployeeSignatureDocumentService(
+            documentId,
+            signaturePath,
+            file.name || null
+        );
         const data = await selectEmployeeSignatureDocumentService(documentId);
 
         emitDocumentationChanged({
             changedBy: req.userLogged.id,
             subjectId: documentId,
             subjectType: 'employeeSignatureDocument',
-            title: 'Documento firmado',
-            message: `${data.title}: firmado por ${data.firstName || ''} ${data.lastName || ''}`.trim(),
-            routeLabel: 'Alertas > Documentacion > Firmados',
+            title: 'Documento subido para validar',
+            message: `${data.title}: subido por ${data.firstName || ''} ${data.lastName || ''}`.trim(),
+            routeLabel: 'Alertas > Documentacion > Pendiente de validar',
         });
 
         res.send({ status: 'ok', data });

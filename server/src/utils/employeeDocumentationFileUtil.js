@@ -20,6 +20,9 @@ const allowedSignatureDocumentMimeTypes = new Map([
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         'docx',
     ],
+    ['image/jpeg', 'jpg'],
+    ['image/png', 'png'],
+    ['image/webp', 'webp'],
 ]);
 
 const ensureDir = async (dir) => {
@@ -74,7 +77,7 @@ export const saveEmployeeSignatureDocumentFile = async (file, employeeId) => {
 
     const extension = allowedSignatureDocumentMimeTypes.get(file.mimetype);
     if (!extension) {
-        generateErrorUtil('El documento debe ser PDF, DOC o DOCX', 400);
+        generateErrorUtil('El documento debe ser PDF, DOC, DOCX o imagen', 400);
     }
 
     const userDir = path.join(DOCUMENTS_ROOT, 'employeeSignatureDocuments', employeeId);

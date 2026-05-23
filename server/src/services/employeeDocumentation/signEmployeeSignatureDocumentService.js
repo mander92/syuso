@@ -1,6 +1,10 @@
 import getPool from '../../db/getPool.js';
 
-const signEmployeeSignatureDocumentService = async (documentId, signaturePath) => {
+const signEmployeeSignatureDocumentService = async (
+    documentId,
+    signaturePath,
+    signedFileName = null
+) => {
     const pool = await getPool();
 
     await pool.query(
@@ -8,12 +12,15 @@ const signEmployeeSignatureDocumentService = async (documentId, signaturePath) =
             UPDATE employeeSignatureDocuments
             SET
                 signaturePath = ?,
-                status = 'signed',
-                signedAt = CURRENT_TIMESTAMP
+                signedFileName = ?,
+                status = 'submitted',
+                signedAt = CURRENT_TIMESTAMP,
+                validatedAt = NULL,
+                validatedBy = NULL
             WHERE id = ?
               AND deletedAt IS NULL
         `,
-        [signaturePath, documentId]
+        [signaturePath, signedFileName, documentId]
     );
 };
 
