@@ -14,9 +14,12 @@ const signEmployeeSignatureDocumentController = async (req, res, next) => {
             generateErrorUtil('Acceso denegado', 403);
         }
 
-        if (document.status === 'validated') {
+        if (
+            document.signaturePath ||
+            ['submitted', 'validated', 'signed'].includes(document.status)
+        ) {
             generateErrorUtil(
-                'Documento validado. Solicita permiso a administracion para subir otro.',
+                'Documento ya subido. Solicita permiso a administracion para subir otro.',
                 403
             );
         }

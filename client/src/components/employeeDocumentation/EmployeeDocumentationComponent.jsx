@@ -1965,16 +1965,18 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                                 >
                                     {selectedItem?.[field] ? 'Entregado' : 'No entregado'}
                                 </span>
-                                <input
-                                    type='file'
-                                    accept='image/png,image/jpeg,image/webp'
-                                    onChange={(event) =>
-                                        setFiles((prev) => ({
-                                            ...prev,
-                                            [field]: event.target.files?.[0],
-                                        }))
-                                    }
-                                />
+                                {!selectedItem?.[field] ? (
+                                    <input
+                                        type='file'
+                                        accept='image/png,image/jpeg,image/webp'
+                                        onChange={(event) =>
+                                            setFiles((prev) => ({
+                                                ...prev,
+                                                [field]: event.target.files?.[0],
+                                            }))
+                                        }
+                                    />
+                                ) : null}
                                 <div className='employee-documentation-file-actions'>
                                     {selectedItem?.[field] ? (
                                         <>
@@ -2092,8 +2094,8 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                                             </button>
                                         ) : null}
                                         {!isAdminLike &&
-                                        document.status !== 'validated' &&
-                                        document.status !== 'signed' ? (
+                                        document.status === 'pending' &&
+                                        !document.signaturePath ? (
                                             <>
                                                 <input
                                                     type='file'

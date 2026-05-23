@@ -57,6 +57,12 @@ const updateEmployeeDocumentationController = async (req, res, next) => {
         for (const field of allowedDocumentationFileFields) {
             const file = req.files?.[field];
             if (file) {
+                if (existing[field]) {
+                    generateErrorUtil(
+                        'Ya existe un archivo para este documento. Administracion debe permitir una nueva subida antes de reemplazarlo.',
+                        403
+                    );
+                }
                 filesPayload[field] = await saveEmployeeDocumentationFile(
                     file,
                     targetUserId,
