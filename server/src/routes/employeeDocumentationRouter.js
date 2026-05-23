@@ -7,6 +7,10 @@ import listEmployeeDocumentationDraftsController from '../controllers/employeeDo
 import getEmployeeDocumentationController from '../controllers/employeeDocumentation/getEmployeeDocumentationController.js';
 import updateEmployeeDocumentationController from '../controllers/employeeDocumentation/updateEmployeeDocumentationController.js';
 import getEmployeeDocumentationFileController from '../controllers/employeeDocumentation/getEmployeeDocumentationFileController.js';
+import listEmployeeSignatureDocumentsController from '../controllers/employeeDocumentation/listEmployeeSignatureDocumentsController.js';
+import createEmployeeSignatureDocumentController from '../controllers/employeeDocumentation/createEmployeeSignatureDocumentController.js';
+import signEmployeeSignatureDocumentController from '../controllers/employeeDocumentation/signEmployeeSignatureDocumentController.js';
+import getEmployeeSignatureDocumentFileController from '../controllers/employeeDocumentation/getEmployeeSignatureDocumentFileController.js';
 import saveEmployeeDocumentationDraftController from '../controllers/employeeDocumentation/saveEmployeeDocumentationDraftController.js';
 import createUserFromDocumentationDraftController from '../controllers/employeeDocumentation/createUserFromDocumentationDraftController.js';
 import getEmployeeDocumentationDraftFileController from '../controllers/employeeDocumentation/getEmployeeDocumentationDraftFileController.js';
@@ -33,6 +37,27 @@ router.get(
     authUser,
     isAdmin,
     listEmployeeDocumentationsController
+);
+router.get(
+    '/employee-signature-documents',
+    authUser,
+    listEmployeeSignatureDocumentsController
+);
+router.post(
+    '/employee-signature-documents',
+    authUser,
+    isAdmin,
+    createEmployeeSignatureDocumentController
+);
+router.put(
+    '/employee-signature-documents/:documentId/sign',
+    authUser,
+    signEmployeeSignatureDocumentController
+);
+router.get(
+    '/employee-signature-documents/:documentId/files/:fileType',
+    authUser,
+    getEmployeeSignatureDocumentFileController
 );
 router.get(
     '/client-documentations',

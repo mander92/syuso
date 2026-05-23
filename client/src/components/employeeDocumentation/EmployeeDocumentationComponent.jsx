@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AuthContext } from '../../context/AuthContext.jsx';
 import useUser from '../../hooks/useUser.js';
 import {
@@ -7,7 +7,9 @@ import {
     fetchClientDocumentationDrafts,
     fetchEmployeeDocumentationDrafts,
     fetchEmployeeDocumentations,
+    fetchEmployeeSignatureDocuments,
     fetchMyEmployeeDocumentation,
+    createEmployeeSignatureDocument,
     createDocumentationDraftLink,
     createClientDocumentationDraftLink,
     createClientFromDocumentationDraft,
@@ -16,12 +18,14 @@ import {
     createUserFromDocumentationDraft,
     openEmployeeDocumentationFile,
     openEmployeeDocumentationDraftFile,
+    openEmployeeSignatureDocumentFile,
     openClientDocumentationFile,
     openClientDocumentationDraftFile,
     saveClientDocumentation,
     saveClientDocumentationDraft,
     saveEmployeeDocumentation,
     saveEmployeeDocumentationDraft,
+    signEmployeeSignatureDocument,
 } from '../../services/employeeDocumentationService.js';
 import './EmployeeDocumentationComponent.css';
 
@@ -36,6 +40,20 @@ const clientFileFields = [
     ['acceptedBudgetPath', 'Presupuesto aceptado'],
     ['serviceContractPath', 'Contrato de prestacion del servicio'],
 ];
+
+const signatureDocumentTypes = [
+    ['epi', 'EPIS'],
+    ['information', 'Informacion'],
+    ['dataProtection', 'Proteccion de datos'],
+    ['contract', 'Contrato'],
+    ['medical', 'Reconocimiento medico'],
+    ['riskAssessment', 'Evaluacion de riesgos'],
+    ['tax', 'Modelo 145'],
+    ['workday', 'Registro jornada'],
+    ['other', 'Otro'],
+];
+
+const signatureDocumentTypeLabels = Object.fromEntries(signatureDocumentTypes);
 
 const statusLabels = {
     pending: 'Pendiente',
@@ -132,6 +150,15 @@ const EmployeeDocumentationComponent = () => {
         status: 'draft',
     });
     const [draftFiles, setDraftFiles] = useState({});
+    const [signatureDocuments, setSignatureDocuments] = useState([]);
+    const [signatureDocumentForm, setSignatureDocumentForm] = useState({
+        title: '',
+        documentType: 'other',
+    });
+    const [signatureDocumentFile, setSignatureDocumentFile] = useState(null);
+    const [signingDocument, setSigningDocument] = useState(null);
+    const [hasSignature, setHasSignature] = useState(false);
+    const signatureCanvasRef = useRef(null);
 
     const selectedItem = useMemo(
         () =>
@@ -206,6 +233,13 @@ const EmployeeDocumentationComponent = () => {
         });
     }, [clientDrafts, search]);
 
+    const visibleSignatureDocuments = useMemo(() => {
+        const targetEmployeeId = isAdminLike ? selectedUserId : user?.id;
+        return signatureDocuments.filter(
+            (document) => !targetEmployeeId || document.employeeId === targetEmployeeId
+        );
+    }, [isAdminLike, selectedUserId, signatureDocuments, user?.id]);
+
     const load = async () => {
         if (!authToken) return;
         setLoading(true);
@@ -216,10 +250,14 @@ const EmployeeDocumentationComponent = () => {
                 const clientData = await fetchClientDocumentations(authToken);
                 const clientDraftData =
                     await fetchClientDocumentationDrafts(authToken);
+                const signatureData = await fetchEmployeeSignatureDocuments({
+                    authToken,
+                });
                 setItems(data || []);
                 setDrafts(draftData || []);
                 setClientItems(clientData || []);
                 setClientDrafts(clientDraftData || []);
+                setSignatureDocuments(signatureData || []);
                 const firstId = data?.[0]?.userId || '';
                 setSelectedUserId((prev) => prev || firstId);
                 if (firstId && !selectedUserId) {
@@ -227,7 +265,11 @@ const EmployeeDocumentationComponent = () => {
                 }
             } else {
                 const data = await fetchMyEmployeeDocumentation(authToken);
+                const signatureData = await fetchEmployeeSignatureDocuments({
+                    authToken,
+                });
                 setForm(normalizeDocumentation(data));
+                setSignatureDocuments(signatureData || []);
             }
         } finally {
             setLoading(false);
@@ -263,6 +305,128 @@ const EmployeeDocumentationComponent = () => {
 
     const handleDraftChange = (field, value) => {
         setDraftForm((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const reloadSignatureDocuments = async () => {
+        const data = await fetchEmployeeSignatureDocuments({ authToken });
+        setSignatureDocuments(data || []);
+    };
+
+    const handleCreateSignatureDocument = async (event) => {
+        event.preventDefault();
+        if (!selectedUserId) {
+            alert('Selecciona un trabajador');
+            return;
+        }
+        setSaving(true);
+        try {
+            await createEmployeeSignatureDocument({
+                authToken,
+                employeeId: selectedUserId,
+                title: signatureDocumentForm.title,
+                documentType: signatureDocumentForm.documentType,
+                document: signatureDocumentFile,
+            });
+            setSignatureDocumentForm({ title: '', documentType: 'other' });
+            setSignatureDocumentFile(null);
+            await reloadSignatureDocuments();
+            alert('Documento enviado para firma.');
+        } catch (error) {
+            alert(error.message || 'No se pudo enviar el documento');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const getSignaturePoint = (event) => {
+        const canvas = signatureCanvasRef.current;
+        if (!canvas) return null;
+        const source = event.touches?.[0] || event;
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: source.clientX - rect.left,
+            y: source.clientY - rect.top,
+        };
+    };
+
+    const drawSignature = (event) => {
+        if (!signingDocument?.drawing) return;
+        event.preventDefault();
+        const canvas = signatureCanvasRef.current;
+        const point = getSignaturePoint(event);
+        if (!canvas || !point) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineTo(point.x, point.y);
+        ctx.stroke();
+        setHasSignature(true);
+    };
+
+    const startSignature = (event) => {
+        event.preventDefault();
+        const canvas = signatureCanvasRef.current;
+        const point = getSignaturePoint(event);
+        if (!canvas || !point) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.beginPath();
+        ctx.moveTo(point.x, point.y);
+        setSigningDocument((prev) => ({ ...prev, drawing: true }));
+    };
+
+    const endSignature = () => {
+        setSigningDocument((prev) =>
+            prev ? { ...prev, drawing: false } : prev
+        );
+    };
+
+    const clearSignature = () => {
+        const canvas = signatureCanvasRef.current;
+        const ctx = canvas?.getContext('2d');
+        if (!canvas || !ctx) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        setHasSignature(false);
+    };
+
+    const openSignModal = (document) => {
+        setSigningDocument({ ...document, drawing: false });
+        setHasSignature(false);
+        setTimeout(clearSignature, 0);
+    };
+
+    const handleSignDocument = async () => {
+        const canvas = signatureCanvasRef.current;
+        if (!canvas || !signingDocument || !hasSignature) {
+            alert('La firma es obligatoria');
+            return;
+        }
+        try {
+            await signEmployeeSignatureDocument({
+                authToken,
+                documentId: signingDocument.id,
+                signature: canvas.toDataURL('image/png'),
+            });
+            setSigningDocument(null);
+            await reloadSignatureDocuments();
+            alert('Documento firmado.');
+        } catch (error) {
+            alert(error.message || 'No se pudo firmar el documento');
+        }
+    };
+
+    const handleOpenSignatureDocumentFile = async (documentId, fileType) => {
+        try {
+            await openEmployeeSignatureDocumentFile({
+                authToken,
+                documentId,
+                fileType,
+            });
+        } catch (error) {
+            alert(error.message || 'No se pudo abrir el archivo');
+        }
     };
 
     const selectClient = (client) => {
@@ -1560,6 +1724,152 @@ const EmployeeDocumentationComponent = () => {
                         ))}
                     </div>
 
+                    <div className='employee-signature-documents'>
+                        <div className='employee-signature-documents__header'>
+                            <div>
+                                <h3>Documentos para firma</h3>
+                                <p>
+                                    Documentos asignados al trabajador para revisar y firmar.
+                                </p>
+                            </div>
+                        </div>
+
+                        {isAdminLike ? (
+                            <div className='employee-signature-documents__create'>
+                                <div className='employee-documentation-field'>
+                                    <label>Titulo</label>
+                                    <input
+                                        value={signatureDocumentForm.title}
+                                        onChange={(event) =>
+                                            setSignatureDocumentForm((prev) => ({
+                                                ...prev,
+                                                title: event.target.value,
+                                            }))
+                                        }
+                                        placeholder='Entrega EPIS, contrato...'
+                                    />
+                                </div>
+                                <div className='employee-documentation-field'>
+                                    <label>Tipo</label>
+                                    <select
+                                        value={signatureDocumentForm.documentType}
+                                        onChange={(event) =>
+                                            setSignatureDocumentForm((prev) => ({
+                                                ...prev,
+                                                documentType: event.target.value,
+                                            }))
+                                        }
+                                    >
+                                        {signatureDocumentTypes.map(
+                                            ([value, label]) => (
+                                                <option key={value} value={value}>
+                                                    {label}
+                                                </option>
+                                            )
+                                        )}
+                                    </select>
+                                </div>
+                                <div className='employee-documentation-field'>
+                                    <label>Documento</label>
+                                    <input
+                                        type='file'
+                                        accept='.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                                        onChange={(event) =>
+                                            setSignatureDocumentFile(
+                                                event.target.files?.[0] || null
+                                            )
+                                        }
+                                    />
+                                </div>
+                                <button
+                                    type='button'
+                                    className='employee-documentation-btn'
+                                    disabled={
+                                        saving ||
+                                        !selectedUserId ||
+                                        !signatureDocumentForm.title ||
+                                        !signatureDocumentFile
+                                    }
+                                    onClick={handleCreateSignatureDocument}
+                                >
+                                    Enviar para firma
+                                </button>
+                            </div>
+                        ) : null}
+
+                        <div className='employee-signature-documents__list'>
+                            {visibleSignatureDocuments.map((document) => (
+                                <article
+                                    key={document.id}
+                                    className='employee-signature-document-card'
+                                >
+                                    <div>
+                                        <strong>{document.title}</strong>
+                                        <span>
+                                            {signatureDocumentTypeLabels[
+                                                document.documentType
+                                            ] || 'Otro'}
+                                        </span>
+                                        {isAdminLike ? (
+                                            <small>
+                                                {document.firstName}{' '}
+                                                {document.lastName}
+                                            </small>
+                                        ) : null}
+                                    </div>
+                                    <span
+                                        className={`employee-documentation-status employee-documentation-status--${document.status}`}
+                                    >
+                                        {document.status === 'signed'
+                                            ? 'Firmado'
+                                            : 'Pendiente'}
+                                    </span>
+                                    <div className='employee-documentation-file-actions'>
+                                        <button
+                                            type='button'
+                                            className='employee-documentation-btn employee-documentation-btn--ghost'
+                                            onClick={() =>
+                                                handleOpenSignatureDocumentFile(
+                                                    document.id,
+                                                    'original'
+                                                )
+                                            }
+                                        >
+                                            Ver documento
+                                        </button>
+                                        {document.status === 'signed' ? (
+                                            <button
+                                                type='button'
+                                                className='employee-documentation-btn employee-documentation-btn--ghost'
+                                                onClick={() =>
+                                                    handleOpenSignatureDocumentFile(
+                                                        document.id,
+                                                        'signature'
+                                                    )
+                                                }
+                                            >
+                                                Ver firma
+                                            </button>
+                                        ) : (
+                                            <button
+                                                type='button'
+                                                className='employee-documentation-btn'
+                                                onClick={() => openSignModal(document)}
+                                            >
+                                                Firmar
+                                            </button>
+                                        )}
+                                    </div>
+                                </article>
+                            ))}
+                            {!visibleSignatureDocuments.length ? (
+                                <p className='employee-documentation-empty'>
+                                    No hay documentos pendientes de firma.
+                                </p>
+                            ) : null}
+                        </div>
+                    </div>
+
                     <div className='employee-documentation-actions'>
                         <button
                             type='submit'
@@ -1572,6 +1882,63 @@ const EmployeeDocumentationComponent = () => {
                 </form>
             </div>
             )}
+            {signingDocument ? (
+                <div
+                    className='employee-signature-modal'
+                    role='presentation'
+                    onClick={() => setSigningDocument(null)}
+                >
+                    <div
+                        className='employee-signature-modal__panel'
+                        role='dialog'
+                        aria-modal='true'
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <header>
+                            <div>
+                                <h3>Firmar documento</h3>
+                                <p>{signingDocument.title}</p>
+                            </div>
+                            <button
+                                type='button'
+                                className='employee-documentation-btn employee-documentation-btn--ghost'
+                                onClick={() => setSigningDocument(null)}
+                            >
+                                Cerrar
+                            </button>
+                        </header>
+                        <canvas
+                            ref={signatureCanvasRef}
+                            width='680'
+                            height='220'
+                            className='employee-signature-canvas'
+                            onMouseDown={startSignature}
+                            onMouseMove={drawSignature}
+                            onMouseUp={endSignature}
+                            onMouseLeave={endSignature}
+                            onTouchStart={startSignature}
+                            onTouchMove={drawSignature}
+                            onTouchEnd={endSignature}
+                        />
+                        <div className='employee-documentation-actions'>
+                            <button
+                                type='button'
+                                className='employee-documentation-btn employee-documentation-btn--ghost'
+                                onClick={clearSignature}
+                            >
+                                Limpiar firma
+                            </button>
+                            <button
+                                type='button'
+                                className='employee-documentation-btn'
+                                onClick={handleSignDocument}
+                            >
+                                Guardar firma
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
         </section>
     );
 };

@@ -28,6 +28,80 @@ export const fetchEmployeeDocumentations = async (authToken) => {
     return assertOk(await readJsonBody(res));
 };
 
+export const fetchEmployeeSignatureDocuments = async ({
+    authToken,
+    employeeId = '',
+} = {}) => {
+    const params = new URLSearchParams();
+    if (employeeId) params.append('employeeId', employeeId);
+    const suffix = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetch(`${VITE_API_URL}/employee-signature-documents${suffix}`, {
+        headers: { Authorization: authToken },
+    });
+    return assertOk(await readJsonBody(res));
+};
+
+export const createEmployeeSignatureDocument = async ({
+    authToken,
+    employeeId,
+    title,
+    documentType,
+    document,
+}) => {
+    const formData = new FormData();
+    formData.append('employeeId', employeeId);
+    formData.append('title', title);
+    formData.append('documentType', documentType || 'other');
+    if (document) formData.append('document', document);
+
+    const res = await fetch(`${VITE_API_URL}/employee-signature-documents`, {
+        method: 'POST',
+        headers: { Authorization: authToken },
+        body: formData,
+    });
+    return assertOk(await readJsonBody(res));
+};
+
+export const signEmployeeSignatureDocument = async ({
+    authToken,
+    documentId,
+    signature,
+}) => {
+    const res = await fetch(
+        `${VITE_API_URL}/employee-signature-documents/${documentId}/sign`,
+        {
+            method: 'PUT',
+            headers: {
+                Authorization: authToken,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ signature }),
+        }
+    );
+    return assertOk(await readJsonBody(res));
+};
+
+export const openEmployeeSignatureDocumentFile = async ({
+    authToken,
+    documentId,
+    fileType = 'original',
+}) => {
+    const res = await fetch(
+        `${VITE_API_URL}/employee-signature-documents/${documentId}/files/${fileType}`,
+        { headers: { Authorization: authToken } }
+    );
+
+    if (!res.ok) {
+        const body = await readJsonBody(res);
+        throw new Error(body.message || 'No se pudo abrir el archivo');
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank', 'noopener,noreferrer');
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+};
+
 export const fetchClientDocumentations = async (authToken) => {
     const res = await fetch(`${VITE_API_URL}/client-documentations`, {
         headers: { Authorization: authToken },

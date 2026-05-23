@@ -7,6 +7,7 @@ const selectEmployeeDocumentationService = async (userId) => {
         `
             SELECT
                 u.id AS userId,
+                u.role,
                 u.firstName,
                 u.lastName,
                 u.email,
@@ -28,6 +29,7 @@ const selectEmployeeDocumentationService = async (userId) => {
             FROM users u
             LEFT JOIN employeeDocumentations d ON d.userId = u.id
             WHERE u.id = ?
+              AND u.deletedAt IS NULL
         `,
         [userId]
     );
@@ -36,4 +38,3 @@ const selectEmployeeDocumentationService = async (userId) => {
 };
 
 export default selectEmployeeDocumentationService;
-

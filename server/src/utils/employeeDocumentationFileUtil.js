@@ -13,6 +13,15 @@ export const allowedDocumentationFileFields = new Set([
     'tipBackPath',
 ]);
 
+const allowedSignatureDocumentMimeTypes = new Map([
+    ['application/pdf', 'pdf'],
+    ['application/msword', 'doc'],
+    [
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'docx',
+    ],
+]);
+
 const ensureDir = async (dir) => {
     await fs.mkdir(dir, { recursive: true });
 };
@@ -60,3 +69,56 @@ export const getEmployeeDocumentationFilePath = (relativePath) => {
     return path.join(DOCUMENTS_ROOT, relativePath);
 };
 
+export const saveEmployeeSignatureDocumentFile = async (file, employeeId) => {
+    if (!file) return null;
+
+    const extension = allowedSignatureDocumentMimeTypes.get(file.mimetype);
+    if (!extension) {
+        generateErrorUtil('El documento debe ser PDF, DOC o DOCX', 400);
+    }
+
+    const userDir = path.join(DOCUMENTS_ROOT, 'employeeSignatureDocuments', employeeId);
+    await ensureDir(userDir);
+
+    const fileName = `document-${uuidv4()}.${extension}`;
+    const finalPath = path.join(userDir, fileName);
+
+    if (file.tempFilePath) {
+        await fs.copyFile(file.tempFilePath, finalPath);
+    } else if (file.data) {
+        await fs.writeFile(finalPath, file.data);
+    } else {
+        generateErrorUtil('No se ha recibido el documento', 400);
+    }
+
+    return path
+        .join('employeeSignatureDocuments', employeeId, fileName)
+        .replace(/\\/g, '/');
+};
+
+export const saveEmployeeSignatureImage = async (signatureDataUrl, employeeId) => {
+    const signatureBase64 = String(signatureDataUrl || '').replace(
+        /^data:image\/png;base64,/,
+        ''
+    );
+
+    if (!signatureBase64 || signatureBase64.length < 50) {
+        generateErrorUtil('La firma es obligatoria', 400);
+    }
+
+    const userDir = path.join(
+        DOCUMENTS_ROOT,
+        'employeeSignatureDocuments',
+        employeeId,
+        'signatures'
+    );
+    await ensureDir(userDir);
+
+    const fileName = `signature-${uuidv4()}.png`;
+    const finalPath = path.join(userDir, fileName);
+    await fs.writeFile(finalPath, Buffer.from(signatureBase64, 'base64'));
+
+    return path
+        .join('employeeSignatureDocuments', employeeId, 'signatures', fileName)
+        .replace(/\\/g, '/');
+};

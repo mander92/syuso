@@ -136,6 +136,16 @@
     color: #166534;
 }
 
+.employee-documentation-status--signed {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.employee-documentation-status--pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
 .employee-documentation-list button.active .employee-documentation-status {
     background: #ffffff;
 }
@@ -232,10 +242,111 @@
     flex-wrap: wrap;
 }
 
+.employee-signature-documents {
+    border-top: 1px solid #e5e7eb;
+    display: grid;
+    gap: 0.85rem;
+    padding-top: 1rem;
+}
+
+.employee-signature-documents__header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.employee-signature-documents__header h3,
+.employee-signature-modal__panel h3 {
+    color: #0f172a;
+    margin: 0;
+}
+
+.employee-signature-documents__header p,
+.employee-signature-modal__panel p {
+    color: #64748b;
+    margin: 0.2rem 0 0;
+}
+
+.employee-signature-documents__create {
+    align-items: end;
+    display: grid;
+    gap: 0.7rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+}
+
+.employee-signature-documents__list {
+    display: grid;
+    gap: 0.65rem;
+}
+
+.employee-signature-document-card {
+    align-items: center;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    padding: 0.8rem;
+}
+
+.employee-signature-document-card div:first-child {
+    display: grid;
+    gap: 0.15rem;
+}
+
+.employee-signature-document-card strong {
+    color: #0f172a;
+}
+
+.employee-signature-document-card span,
+.employee-signature-document-card small {
+    color: #64748b;
+}
+
+.employee-signature-modal {
+    align-items: center;
+    background: rgba(15, 23, 42, 0.55);
+    display: flex;
+    inset: 0;
+    justify-content: center;
+    padding: 1rem;
+    position: fixed;
+    z-index: 1000;
+}
+
+.employee-signature-modal__panel {
+    background: #ffffff;
+    border-radius: 0.9rem;
+    display: grid;
+    gap: 1rem;
+    max-width: 760px;
+    padding: 1rem;
+    width: min(100%, 760px);
+}
+
+.employee-signature-modal__panel header {
+    align-items: flex-start;
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.employee-signature-canvas {
+    background: #ffffff;
+    border: 1px solid #dbe3ef;
+    border-radius: 0.75rem;
+    height: 220px;
+    touch-action: none;
+    width: 100%;
+}
+
 @media (max-width: 900px) {
     .employee-documentation-layout,
     .employee-documentation-grid,
-    .employee-documentation-files {
+    .employee-documentation-files,
+    .employee-signature-documents__create,
+    .employee-signature-document-card {
         grid-template-columns: 1fr;
     }
 }
