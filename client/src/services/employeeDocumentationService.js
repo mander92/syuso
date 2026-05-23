@@ -49,6 +49,7 @@ export const createEmployeeSignatureDocument = async ({
     dueDate = '',
     periodMonth = '',
     document,
+    signedDocument = null,
 }) => {
     const formData = new FormData();
     formData.append('employeeId', employeeId);
@@ -57,6 +58,7 @@ export const createEmployeeSignatureDocument = async ({
     formData.append('dueDate', dueDate || '');
     formData.append('periodMonth', periodMonth || '');
     if (document) formData.append('document', document);
+    if (signedDocument) formData.append('signedDocument', signedDocument);
 
     const res = await fetch(`${VITE_API_URL}/employee-signature-documents`, {
         method: 'POST',
@@ -362,6 +364,22 @@ export const openEmployeeDocumentationFile = async ({
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank', 'noopener,noreferrer');
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
+};
+
+export const clearEmployeeDocumentationFile = async ({
+    authToken,
+    userId,
+    field,
+}) => {
+    const res = await fetch(
+        `${VITE_API_URL}/employee-documentations/${userId}/files/${field}`,
+        {
+            method: 'DELETE',
+            headers: { Authorization: authToken },
+        }
+    );
+
+    return assertOk(await readJsonBody(res));
 };
 
 export const fetchEmployeeDocumentationDrafts = async (authToken) => {

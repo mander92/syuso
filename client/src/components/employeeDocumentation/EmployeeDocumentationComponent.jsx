@@ -10,6 +10,7 @@ import {
     fetchEmployeeSignatureDocuments,
     fetchMyEmployeeDocumentation,
     createEmployeeSignatureDocument,
+    clearEmployeeDocumentationFile,
     createDocumentationDraftLink,
     createClientDocumentationDraftLink,
     createClientFromDocumentationDraft,
@@ -191,6 +192,8 @@ const EmployeeDocumentationComponent = () => {
         documentType: 'other',
     });
     const [signatureDocumentFile, setSignatureDocumentFile] = useState(null);
+    const [signatureDocumentSignedFile, setSignatureDocumentSignedFile] =
+        useState(null);
     const [signatureTypeFilter, setSignatureTypeFilter] = useState('all');
     const [signedDocumentFiles, setSignedDocumentFiles] = useState({});
 
@@ -439,14 +442,20 @@ const EmployeeDocumentationComponent = () => {
                 title: signatureDocumentForm.title,
                 documentType: signatureDocumentForm.documentType,
                 document: signatureDocumentFile,
+                signedDocument: signatureDocumentSignedFile,
             });
             setSignatureDocumentForm({
                 title: '',
                 documentType: 'other',
             });
             setSignatureDocumentFile(null);
+            setSignatureDocumentSignedFile(null);
             await reloadSignatureDocuments();
-            alert('Documento enviado para firma.');
+            alert(
+                signatureDocumentSignedFile
+                    ? 'Documento guardado como validado.'
+                    : 'Documento enviado para firma.'
+            );
         } catch (error) {
             alert(error.message || 'No se pudo enviar el documento');
         } finally {
@@ -749,6 +758,29 @@ const EmployeeDocumentationComponent = () => {
             });
         } catch (error) {
             alert(error.message || 'No se pudo abrir el archivo');
+        }
+    };
+
+    const handleClearDocumentationFile = async (field) => {
+        if (!selectedUserId) return;
+        try {
+            const data = await clearEmployeeDocumentationFile({
+                authToken,
+                userId: selectedUserId,
+                field,
+            });
+            setForm(normalizeDocumentation(data));
+            setFiles((prev) => ({ ...prev, [field]: null }));
+            setItems((prev) =>
+                prev.map((item) =>
+                    item.userId === selectedUserId
+                        ? { ...item, [field]: null, status: data.status }
+                        : item
+                )
+            );
+            alert('Nueva subida permitida.');
+        } catch (error) {
+            alert(error.message || 'No se pudo permitir nueva subida');
         }
     };
 
@@ -1661,20 +1693,6 @@ const EmployeeDocumentationComponent = () => {
                                         {item.firstName} {item.lastName}
                                     </span>
                                     <span className='employee-documentation-list-badges'>
-                                        <span className={getStatusClassName(item.status)}>
-                                            {statusLabels[item.status || 'pending']}
-                                        </span>
-                                        <span
-                                            className={getDeliveryStatusClassName(
-                                                getProfileDocumentationStatus(item)
-                                            )}
-                                        >
-                                            {
-                                                deliveryStatusLabels[
-                                                    getProfileDocumentationStatus(item)
-                                                ]
-                                            }
-                                        </span>
                                         <span className='employee-documentation-status'>
                                             {item.active ? 'Activo' : 'Inactivo'}
                                         </span>
@@ -1881,13 +1899,28 @@ const EmployeeDocumentationComponent = () => {
                                 />
                                 <div className='employee-documentation-file-actions'>
                                     {selectedItem?.[field] ? (
-                                        <button
-                                            type='button'
-                                            className='employee-documentation-btn employee-documentation-btn--ghost'
-                                            onClick={() => handleOpenFile(field)}
-                                        >
-                                            Ver archivo
-                                        </button>
+                                        <>
+                                            <button
+                                                type='button'
+                                                className='employee-documentation-btn employee-documentation-btn--ghost'
+                                                onClick={() => handleOpenFile(field)}
+                                            >
+                                                Ver archivo
+                                            </button>
+                                            {isAdminLike ? (
+                                                <button
+                                                    type='button'
+                                                    className='employee-documentation-btn employee-documentation-btn--ghost'
+                                                    onClick={() =>
+                                                        handleClearDocumentationFile(
+                                                            field
+                                                        )
+                                                    }
+                                                >
+                                                    Permitir nueva subida
+                                                </button>
+                                            ) : null}
+                                        </>
                                     ) : (
                                         <span>Sin archivo</span>
                                     )}
@@ -1968,6 +2001,18 @@ const EmployeeDocumentationComponent = () => {
                                         }
                                     />
                                 </div>
+                                <div className='employee-documentation-field'>
+                                    <label>Documento ya firmado</label>
+                                    <input
+                                        type='file'
+                                        accept='.pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png,image/webp'
+                                        onChange={(event) =>
+                                            setSignatureDocumentSignedFile(
+                                                event.target.files?.[0] || null
+                                            )
+                                        }
+                                    />
+                                </div>
                                 <button
                                     type='button'
                                     className='employee-documentation-btn'
@@ -1979,7 +2024,9 @@ const EmployeeDocumentationComponent = () => {
                                     }
                                     onClick={handleCreateSignatureDocument}
                                 >
-                                    Enviar para firma
+                                    {signatureDocumentSignedFile
+                                        ? 'Guardar validado'
+                                        : 'Enviar para firma'}
                                 </button>
                             </div>
                         ) : null}

@@ -7,6 +7,7 @@ import listEmployeeDocumentationDraftsController from '../controllers/employeeDo
 import getEmployeeDocumentationController from '../controllers/employeeDocumentation/getEmployeeDocumentationController.js';
 import updateEmployeeDocumentationController from '../controllers/employeeDocumentation/updateEmployeeDocumentationController.js';
 import getEmployeeDocumentationFileController from '../controllers/employeeDocumentation/getEmployeeDocumentationFileController.js';
+import clearEmployeeDocumentationFileController from '../controllers/employeeDocumentation/clearEmployeeDocumentationFileController.js';
 import listEmployeeSignatureDocumentsController from '../controllers/employeeDocumentation/listEmployeeSignatureDocumentsController.js';
 import createEmployeeSignatureDocumentController from '../controllers/employeeDocumentation/createEmployeeSignatureDocumentController.js';
 import signEmployeeSignatureDocumentController from '../controllers/employeeDocumentation/signEmployeeSignatureDocumentController.js';
@@ -213,6 +214,12 @@ router.get(
     '/employee-documentations/:userId/files/:field',
     authUser,
     getEmployeeDocumentationFileController
+);
+router.delete(
+    '/employee-documentations/:userId/files/:field',
+    authUser,
+    isAdmin,
+    clearEmployeeDocumentationFileController
 );
 
 export default router;

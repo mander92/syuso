@@ -55,10 +55,21 @@ const createEmployeeSignatureDocumentController = async (req, res, next) => {
             value.employeeId
         );
 
+        const signedFile = req.files?.signedDocument;
+        const signaturePath = signedFile
+            ? await saveEmployeeSignatureDocumentFile(signedFile, value.employeeId)
+            : null;
+
         const data = await createEmployeeSignatureDocumentService({
             ...value,
             originalFilePath,
             originalFileName: file.name,
+            signaturePath,
+            signedFileName: signedFile?.name || null,
+            status: signaturePath ? 'validated' : 'pending',
+            signedAt: signaturePath ? new Date() : null,
+            validatedAt: signaturePath ? new Date() : null,
+            validatedBy: signaturePath ? req.userLogged.id : null,
             createdBy: req.userLogged.id,
         });
 
@@ -66,15 +77,27 @@ const createEmployeeSignatureDocumentController = async (req, res, next) => {
             `${data.firstName || ''} ${data.lastName || ''}`.trim() ||
             data.email ||
             'Trabajador';
-        emitDocumentationChanged({
-            changedBy: req.userLogged.id,
-            subjectId: data.id,
-            subjectType: 'employeeSignatureDocument',
-            userIds: [value.employeeId],
-            title: 'Documento pendiente de firma',
-            message: `${fullName}: ${data.title}`,
-            routeLabel: 'Alertas > Documentacion > Pendiente de firma',
-        });
+        emitDocumentationChanged(
+            signaturePath
+                ? {
+                      changedBy: req.userLogged.id,
+                      subjectId: data.id,
+                      subjectType: 'employeeSignatureDocument',
+                      userIds: [value.employeeId],
+                      title: 'Documento validado',
+                      message: `${fullName}: ${data.title}`,
+                      routeLabel: 'Alertas > Documentacion > Validado',
+                  }
+                : {
+                      changedBy: req.userLogged.id,
+                      subjectId: data.id,
+                      subjectType: 'employeeSignatureDocument',
+                      userIds: [value.employeeId],
+                      title: 'Documento pendiente de firma',
+                      message: `${fullName}: ${data.title}`,
+                      routeLabel: 'Alertas > Documentacion > Pendiente de firma',
+                  }
+        );
 
         res.send({ status: 'ok', data });
     } catch (error) {
