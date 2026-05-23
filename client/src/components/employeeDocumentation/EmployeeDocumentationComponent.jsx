@@ -57,9 +57,28 @@ const signatureDocumentTypeLabels = Object.fromEntries(signatureDocumentTypes);
 
 const signatureDocumentFilters = [
     ['all', 'Todos'],
-    ['profile', 'Ficha'],
     ...signatureDocumentTypes,
 ];
+
+const hasProfileDocumentation = (item) =>
+    fileFields.every(([field]) => Boolean(item?.[field]));
+
+const getProfileDocumentationStatus = (item) => {
+    if (hasProfileDocumentation(item)) return 'complete';
+    if (fileFields.some(([field]) => Boolean(item?.[field]))) return 'partial';
+    return 'missing';
+};
+
+const deliveryStatusLabels = {
+    complete: 'Completa',
+    signed: 'Firmada',
+    partial: 'Pendiente',
+    pending: 'Pendiente',
+    missing: 'Sin documentacion',
+};
+
+const getDeliveryStatusClassName = (status) =>
+    `employee-documentation-status employee-documentation-delivery-status employee-documentation-delivery-status--${status}`;
 
 const statusLabels = {
     pending: 'Pendiente',
@@ -1599,6 +1618,17 @@ const EmployeeDocumentationComponent = () => {
                                     <span className={getStatusClassName(item.status)}>
                                         {statusLabels[item.status || 'pending']}
                                     </span>
+                                    <span
+                                        className={getDeliveryStatusClassName(
+                                            getProfileDocumentationStatus(item)
+                                        )}
+                                    >
+                                        {
+                                            deliveryStatusLabels[
+                                                getProfileDocumentationStatus(item)
+                                            ]
+                                        }
+                                    </span>
                                     <span className='employee-documentation-status'>
                                         {item.active ? 'Activo' : 'Inactivo'}
                                     </span>
@@ -1719,6 +1749,13 @@ const EmployeeDocumentationComponent = () => {
                                 className='employee-documentation-file'
                             >
                                 <span>{label}</span>
+                                <span
+                                    className={getDeliveryStatusClassName(
+                                        selectedItem?.[field] ? 'complete' : 'missing'
+                                    )}
+                                >
+                                    {selectedItem?.[field] ? 'Entregado' : 'No entregado'}
+                                </span>
                                 <input
                                     type='file'
                                     accept='image/png,image/jpeg,image/webp'
@@ -1890,7 +1927,11 @@ const EmployeeDocumentationComponent = () => {
                                         ) : null}
                                     </div>
                                     <span
-                                        className={`employee-documentation-status employee-documentation-status--${document.status}`}
+                                        className={getDeliveryStatusClassName(
+                                            document.status === 'signed'
+                                                ? 'signed'
+                                                : 'pending'
+                                        )}
                                     >
                                         {document.status === 'signed'
                                             ? 'Firmado'
