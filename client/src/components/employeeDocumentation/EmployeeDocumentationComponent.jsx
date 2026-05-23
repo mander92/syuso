@@ -1,5 +1,6 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { AuthContext } from '../../context/AuthContext.jsx';
+import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 import useUser from '../../hooks/useUser.js';
 import {
     fetchEmployeeDocumentation,
@@ -157,6 +158,7 @@ const normalizeClientDocumentation = (data) => ({
 const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
+    const { alertNotifications, markNotificationRead } = useChatNotifications();
     const isAdminLike = user?.role === 'admin' || user?.role === 'sudo';
     const [items, setItems] = useState([]);
     const [selectedUserId, setSelectedUserId] = useState('');
@@ -319,6 +321,37 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
         );
     }, [isAdminLike, selectedUserId, signatureDocuments, user?.id]);
 
+    const documentationUnreadByEmployee = useMemo(
+        () =>
+            alertNotifications.reduce((acc, notification) => {
+                if (
+                    notification.read ||
+                    notification.section !== 'documentations' ||
+                    !notification.employeeId
+                ) {
+                    return acc;
+                }
+
+                const employeeId = String(notification.employeeId);
+                acc[employeeId] = (acc[employeeId] || 0) + 1;
+                return acc;
+            }, {}),
+        [alertNotifications]
+    );
+
+    const markEmployeeDocumentationNotificationsRead = (employeeId) => {
+        if (!employeeId) return;
+        alertNotifications.forEach((notification) => {
+            if (
+                !notification.read &&
+                notification.section === 'documentations' &&
+                String(notification.employeeId) === String(employeeId)
+            ) {
+                markNotificationRead(notification.id);
+            }
+        });
+    };
+
     const getSignatureTypeDeliveryStatusForEmployee = (type, employeeId) => {
         const documentsForEmployee = signatureDocuments.filter(
             (document) => !employeeId || document.employeeId === employeeId
@@ -411,6 +444,7 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
 
     const openEmployeeDocumentationModal = async (userId) => {
         await selectEmployee(userId);
+        markEmployeeDocumentationNotificationsRead(userId);
         setDocumentationModalOpen(true);
     };
 
@@ -1702,61 +1736,77 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                             {filteredItems.length} trabajadores
                         </p>
                         <div className='employee-documentation-worker-grid'>
-                            {filteredItems.map((item) => (
-                                <button
-                                    key={item.userId}
-                                    type='button'
-                                    className={`employee-documentation-worker-card ${
-                                        item.userId === selectedUserId
-                                            ? 'active'
-                                            : ''
-                                    }`}
-                                    onClick={() =>
-                                        openEmployeeDocumentationModal(
-                                            item.userId
-                                        ).catch((error) => alert(error.message))
-                                    }
-                                >
-                                    <span>
-                                        {item.firstName} {item.lastName}
-                                    </span>
-                                    <span className='employee-documentation-list-badges'>
-                                        <span className='employee-documentation-status'>
-                                            {item.active ? 'Activo' : 'Inactivo'}
-                                        </span>
-                                        <span className='employee-documentation-status'>
-                                            {item.city || 'Sin delegacion'}
-                                        </span>
-                                    </span>
-                                    <span className='employee-documentation-card-checks'>
-                                        {fileFields.map(([field, label]) => (
-                                            <span
-                                                key={field}
-                                                className={getDeliveryStatusClassName(
-                                                    item[field] ? 'complete' : 'missing'
-                                                )}
-                                            >
-                                                {label}
+                            {filteredItems.map((item) => {
+                                const unreadCount =
+                                    documentationUnreadByEmployee[
+                                        String(item.userId)
+                                    ] || 0;
+
+                                return (
+                                    <button
+                                        key={item.userId}
+                                        type='button'
+                                        className={`employee-documentation-worker-card ${
+                                            item.userId === selectedUserId
+                                                ? 'active'
+                                                : ''
+                                        }`}
+                                        onClick={() =>
+                                            openEmployeeDocumentationModal(
+                                                item.userId
+                                            ).catch((error) => alert(error.message))
+                                        }
+                                    >
+                                        {unreadCount > 0 ? (
+                                            <span className='employee-documentation-worker-badge'>
+                                                {unreadCount}
                                             </span>
-                                        ))}
-                                        {signatureDocumentTypes.map(
-                                            ([value, label]) => (
+                                        ) : null}
+                                        <span>
+                                            {item.firstName} {item.lastName}
+                                        </span>
+                                        <span className='employee-documentation-list-badges'>
+                                            <span className='employee-documentation-status'>
+                                                {item.active
+                                                    ? 'Activo'
+                                                    : 'Inactivo'}
+                                            </span>
+                                            <span className='employee-documentation-status'>
+                                                {item.city || 'Sin delegacion'}
+                                            </span>
+                                        </span>
+                                        <span className='employee-documentation-card-checks'>
+                                            {fileFields.map(([field, label]) => (
                                                 <span
-                                                    key={value}
+                                                    key={field}
                                                     className={getDeliveryStatusClassName(
-                                                        getSignatureTypeDeliveryStatusForEmployee(
-                                                            value,
-                                                            item.userId
-                                                        )
+                                                        item[field]
+                                                            ? 'complete'
+                                                            : 'missing'
                                                     )}
                                                 >
                                                     {label}
                                                 </span>
-                                            )
-                                        )}
-                                    </span>
-                                </button>
-                            ))}
+                                            ))}
+                                            {signatureDocumentTypes.map(
+                                                ([value, label]) => (
+                                                    <span
+                                                        key={value}
+                                                        className={getDeliveryStatusClassName(
+                                                            getSignatureTypeDeliveryStatusForEmployee(
+                                                                value,
+                                                                item.userId
+                                                            )
+                                                        )}
+                                                    >
+                                                        {label}
+                                                    </span>
+                                                )
+                                            )}
+                                        </span>
+                                    </button>
+                                );
+                            })}
                         </div>
                         {!filteredItems.length ? (
                             <p className='employee-documentation-empty'>

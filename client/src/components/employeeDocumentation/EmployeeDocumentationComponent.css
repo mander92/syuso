@@ -146,6 +146,27 @@
     display: grid !important;
     grid-template-columns: minmax(0, 1fr) auto;
     min-height: 5.25rem;
+    position: relative;
+}
+
+.employee-documentation-worker-badge {
+    align-items: center;
+    background: #ef4444;
+    border: 2px solid #ffffff;
+    border-radius: 999px;
+    box-shadow: 0 8px 16px rgba(15, 23, 42, 0.18);
+    color: #ffffff;
+    display: inline-flex;
+    font-size: 0.72rem;
+    font-weight: 900;
+    height: 1.45rem;
+    justify-content: center;
+    min-width: 1.45rem;
+    padding: 0 0.35rem;
+    position: absolute;
+    right: -0.35rem;
+    top: -0.45rem;
+    z-index: 2;
 }
 
 .employee-documentation-card-checks {
