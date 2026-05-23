@@ -11,6 +11,10 @@ const createEmployeeSignatureDocumentController = async (req, res, next) => {
         const schema = Joi.object({
             employeeId: Joi.string().guid({ version: 'uuidv4' }).required(),
             title: Joi.string().max(150).required(),
+            dueDate: Joi.date().allow('', null),
+            periodMonth: Joi.string()
+                .pattern(/^\d{4}-\d{2}$/)
+                .allow('', null),
             documentType: Joi.string()
                 .valid(
                     'epi',
@@ -63,6 +67,7 @@ const createEmployeeSignatureDocumentController = async (req, res, next) => {
             userIds: [value.employeeId],
             title: 'Documento pendiente de firma',
             message: `${fullName}: ${data.title}`,
+            routeLabel: 'Alertas > Documentacion > Pendiente de firma',
         });
 
         res.send({ status: 'ok', data });

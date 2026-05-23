@@ -46,12 +46,16 @@ export const createEmployeeSignatureDocument = async ({
     employeeId,
     title,
     documentType,
+    dueDate = '',
+    periodMonth = '',
     document,
 }) => {
     const formData = new FormData();
     formData.append('employeeId', employeeId);
     formData.append('title', title);
     formData.append('documentType', documentType || 'other');
+    formData.append('dueDate', dueDate || '');
+    formData.append('periodMonth', periodMonth || '');
     if (document) formData.append('document', document);
 
     const res = await fetch(`${VITE_API_URL}/employee-signature-documents`, {

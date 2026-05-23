@@ -12,9 +12,7 @@ const signEmployeeSignatureDocumentController = async (req, res, next) => {
         const document = await selectEmployeeSignatureDocumentService(documentId);
         if (!document) generateErrorUtil('Documento no encontrado', 404);
 
-        const isAdmin =
-            req.userLogged.role === 'admin' || req.userLogged.role === 'sudo';
-        if (!isAdmin && document.employeeId !== req.userLogged.id) {
+        if (document.employeeId !== req.userLogged.id) {
             generateErrorUtil('Acceso denegado', 403);
         }
 
@@ -41,6 +39,7 @@ const signEmployeeSignatureDocumentController = async (req, res, next) => {
             subjectType: 'employeeSignatureDocument',
             title: 'Documento firmado',
             message: `${data.title}: firmado por ${data.firstName || ''} ${data.lastName || ''}`.trim(),
+            routeLabel: 'Alertas > Documentacion > Firmados',
         });
 
         res.send({ status: 'ok', data });

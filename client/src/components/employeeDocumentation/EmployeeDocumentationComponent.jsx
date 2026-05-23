@@ -55,6 +55,12 @@ const signatureDocumentTypes = [
 
 const signatureDocumentTypeLabels = Object.fromEntries(signatureDocumentTypes);
 
+const signatureDocumentFilters = [
+    ['all', 'Todos'],
+    ['profile', 'Ficha'],
+    ...signatureDocumentTypes,
+];
+
 const statusLabels = {
     pending: 'Pendiente',
     submitted: 'Enviada',
@@ -130,7 +136,7 @@ const EmployeeDocumentationComponent = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [search, setSearch] = useState('');
-    const [activeFilter, setActiveFilter] = useState('active');
+    const [activeFilter, setActiveFilter] = useState('all');
     const [adminMode, setAdminMode] = useState('employees');
     const [clientItems, setClientItems] = useState([]);
     const [selectedClientId, setSelectedClientId] = useState('');
@@ -154,8 +160,11 @@ const EmployeeDocumentationComponent = () => {
     const [signatureDocumentForm, setSignatureDocumentForm] = useState({
         title: '',
         documentType: 'other',
+        dueDate: '',
+        periodMonth: '',
     });
     const [signatureDocumentFile, setSignatureDocumentFile] = useState(null);
+    const [signatureTypeFilter, setSignatureTypeFilter] = useState('all');
     const [signingDocument, setSigningDocument] = useState(null);
     const [hasSignature, setHasSignature] = useState(false);
     const signatureCanvasRef = useRef(null);
@@ -235,10 +244,26 @@ const EmployeeDocumentationComponent = () => {
 
     const visibleSignatureDocuments = useMemo(() => {
         const targetEmployeeId = isAdminLike ? selectedUserId : user?.id;
-        return signatureDocuments.filter(
-            (document) => !targetEmployeeId || document.employeeId === targetEmployeeId
-        );
-    }, [isAdminLike, selectedUserId, signatureDocuments, user?.id]);
+        return signatureDocuments.filter((document) => {
+            if (targetEmployeeId && document.employeeId !== targetEmployeeId) {
+                return false;
+            }
+            if (
+                signatureTypeFilter !== 'all' &&
+                signatureTypeFilter !== 'profile' &&
+                document.documentType !== signatureTypeFilter
+            ) {
+                return false;
+            }
+            return true;
+        });
+    }, [
+        isAdminLike,
+        selectedUserId,
+        signatureDocuments,
+        signatureTypeFilter,
+        user?.id,
+    ]);
 
     const load = async () => {
         if (!authToken) return;
@@ -325,9 +350,16 @@ const EmployeeDocumentationComponent = () => {
                 employeeId: selectedUserId,
                 title: signatureDocumentForm.title,
                 documentType: signatureDocumentForm.documentType,
+                dueDate: signatureDocumentForm.dueDate,
+                periodMonth: signatureDocumentForm.periodMonth,
                 document: signatureDocumentFile,
             });
-            setSignatureDocumentForm({ title: '', documentType: 'other' });
+            setSignatureDocumentForm({
+                title: '',
+                documentType: 'other',
+                dueDate: '',
+                periodMonth: '',
+            });
             setSignatureDocumentFile(null);
             await reloadSignatureDocuments();
             alert('Documento enviado para firma.');
@@ -1541,16 +1573,6 @@ const EmployeeDocumentationComponent = () => {
                                     setSearch(event.target.value)
                                 }
                             />
-                            <select
-                                value={activeFilter}
-                                onChange={(event) =>
-                                    setActiveFilter(event.target.value)
-                                }
-                            >
-                                <option value='active'>Activos</option>
-                                <option value='inactive'>Inactivos</option>
-                                <option value='all'>Todos</option>
-                            </select>
                         </div>
                         <p className='employee-documentation-list-count'>
                             {filteredItems.length} trabajadores
@@ -1734,6 +1756,21 @@ const EmployeeDocumentationComponent = () => {
                             </div>
                         </div>
 
+                        <div className='employee-signature-documents__filters'>
+                            {signatureDocumentFilters.map(([value, label]) => (
+                                <button
+                                    key={value}
+                                    type='button'
+                                    className={`employee-signature-filter employee-signature-filter--${value} ${
+                                        signatureTypeFilter === value ? 'active' : ''
+                                    }`}
+                                    onClick={() => setSignatureTypeFilter(value)}
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+
                         {isAdminLike ? (
                             <div className='employee-signature-documents__create'>
                                 <div className='employee-documentation-field'>
@@ -1768,6 +1805,32 @@ const EmployeeDocumentationComponent = () => {
                                             )
                                         )}
                                     </select>
+                                </div>
+                                <div className='employee-documentation-field'>
+                                    <label>Fecha limite</label>
+                                    <input
+                                        type='date'
+                                        value={signatureDocumentForm.dueDate}
+                                        onChange={(event) =>
+                                            setSignatureDocumentForm((prev) => ({
+                                                ...prev,
+                                                dueDate: event.target.value,
+                                            }))
+                                        }
+                                    />
+                                </div>
+                                <div className='employee-documentation-field'>
+                                    <label>Mes</label>
+                                    <input
+                                        type='month'
+                                        value={signatureDocumentForm.periodMonth}
+                                        onChange={(event) =>
+                                            setSignatureDocumentForm((prev) => ({
+                                                ...prev,
+                                                periodMonth: event.target.value,
+                                            }))
+                                        }
+                                    />
                                 </div>
                                 <div className='employee-documentation-field'>
                                     <label>Documento</label>
@@ -1810,6 +1873,15 @@ const EmployeeDocumentationComponent = () => {
                                                 document.documentType
                                             ] || 'Otro'}
                                         </span>
+                                        {document.periodMonth ? (
+                                            <small>Mes: {document.periodMonth}</small>
+                                        ) : null}
+                                        {document.dueDate ? (
+                                            <small>
+                                                Fecha limite:{' '}
+                                                {String(document.dueDate).slice(0, 10)}
+                                            </small>
+                                        ) : null}
                                         {isAdminLike ? (
                                             <small>
                                                 {document.firstName}{' '}
@@ -1850,7 +1922,7 @@ const EmployeeDocumentationComponent = () => {
                                             >
                                                 Ver firma
                                             </button>
-                                        ) : (
+                                        ) : !isAdminLike ? (
                                             <button
                                                 type='button'
                                                 className='employee-documentation-btn'
@@ -1858,7 +1930,7 @@ const EmployeeDocumentationComponent = () => {
                                             >
                                                 Firmar
                                             </button>
-                                        )}
+                                        ) : null}
                                     </div>
                                 </article>
                             ))}

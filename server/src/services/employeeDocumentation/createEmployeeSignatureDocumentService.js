@@ -8,6 +8,8 @@ const createEmployeeSignatureDocumentService = async ({
     documentType,
     originalFilePath,
     originalFileName,
+    dueDate,
+    periodMonth,
     createdBy,
 }) => {
     const pool = await getPool();
@@ -16,8 +18,8 @@ const createEmployeeSignatureDocumentService = async ({
     await pool.query(
         `
             INSERT INTO employeeSignatureDocuments
-                (id, employeeId, title, documentType, originalFilePath, originalFileName, createdBy)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+                (id, employeeId, title, documentType, originalFilePath, originalFileName, dueDate, periodMonth, createdBy)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [
             id,
@@ -26,6 +28,8 @@ const createEmployeeSignatureDocumentService = async ({
             documentType || 'other',
             originalFilePath,
             originalFileName || null,
+            dueDate || null,
+            periodMonth || null,
             createdBy,
         ]
     );
