@@ -39,6 +39,8 @@ const editUserController = async (req, res, next) => {
                     'employee'
                 ),
                 active: Joi.number().valid(0, 1),
+                terminationDate: Joi.date().allow('', null),
+                terminationReason: Joi.string().max(100).allow('', null),
                 deletedAt: Joi.any().valid(null),
                 delegationIds: Joi.array().items(Joi.string().length(36)),
                 dashboardPermissions: Joi.array()

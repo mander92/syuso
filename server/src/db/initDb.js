@@ -57,6 +57,8 @@ const initDb = async () => {
                 job VARCHAR(20),
                 avatar CHAR(40),
                 active BOOLEAN DEFAULT false,
+                terminationDate DATE NULL,
+                terminationReason VARCHAR(100) NULL,
                 registrationCode CHAR(30),
                 recoverPasswordCode CHAR(10),
                 createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 

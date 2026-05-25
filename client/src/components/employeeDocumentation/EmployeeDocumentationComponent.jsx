@@ -152,6 +152,11 @@ const getEmptyDraftEmploymentForm = () => ({
     workCenter: '',
 });
 
+const getEmptyTerminationForm = () => ({
+    terminationDate: getTodayDateInput(),
+    terminationReason: 'voluntary',
+});
+
 const DRAFT_LINK_EMAILS_STORAGE_KEY = 'syuso_documentation_draft_link_emails';
 
 const normalizeDocumentation = (data) => ({
@@ -222,6 +227,11 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
     const [workerNextActive, setWorkerNextActive] = useState(null);
     const [draftEmploymentForm, setDraftEmploymentForm] = useState(
         getEmptyDraftEmploymentForm
+    );
+    const [workerTerminationModalOpen, setWorkerTerminationModalOpen] =
+        useState(false);
+    const [workerTerminationForm, setWorkerTerminationForm] = useState(
+        getEmptyTerminationForm
     );
     const [signatureDocuments, setSignatureDocuments] = useState([]);
     const [signatureDocumentForm, setSignatureDocumentForm] = useState({
@@ -508,18 +518,31 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
         setForm((prev) => ({ ...prev, [field]: value }));
     };
 
-    const handleToggleWorkerActive = async () => {
+    const handleOpenWorkerHireModal = async () => {
         if (!selectedUserId) return;
-        const isActive =
-            form.active === 1 || form.active === true || form.active === '1';
-        const nextActive = isActive ? 0 : 1;
         setDraftEmploymentAction('workerStatus');
-        setWorkerNextActive(nextActive);
+        setWorkerNextActive(1);
         setDraftEmploymentForm({
             ...getEmptyDraftEmploymentForm(),
             workCenter: form.city || '',
         });
         setDraftEmploymentModalOpen(true);
+    };
+
+    const handleOpenWorkerTerminationModal = async () => {
+        if (!selectedUserId) return;
+        setWorkerTerminationForm({
+            ...getEmptyTerminationForm(),
+            terminationDate: form.terminationDate
+                ? toDateInput(form.terminationDate)
+                : getTodayDateInput(),
+            terminationReason: form.terminationReason || 'voluntary',
+        });
+        setWorkerTerminationModalOpen(true);
+    };
+
+    const handleWorkerTerminationChange = (field, value) => {
+        setWorkerTerminationForm((prev) => ({ ...prev, [field]: value }));
     };
 
     const handleDraftChange = (field, value) => {
@@ -1113,12 +1136,24 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                 setSaving(true);
                 await fetchAdminUpdateUserServices(authToken, selectedUserId, {
                     active: workerNextActive,
+                    terminationDate: null,
+                    terminationReason: null,
                 });
-                setForm((prev) => ({ ...prev, active: workerNextActive }));
+                setForm((prev) => ({
+                    ...prev,
+                    active: workerNextActive,
+                    terminationDate: null,
+                    terminationReason: null,
+                }));
                 setItems((prev) =>
                     prev.map((item) =>
                         item.userId === selectedUserId
-                            ? { ...item, active: workerNextActive }
+                            ? {
+                                  ...item,
+                                  active: workerNextActive,
+                                  terminationDate: null,
+                                  terminationReason: null,
+                              }
                             : item
                     )
                 );
@@ -1194,6 +1229,46 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
             alert(`Alta enviada a ${data.sentTo?.length || 0} correo(s).`);
         } catch (error) {
             alert(error.message || 'No se pudo enviar el alta');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleWorkerTerminationSubmit = async (event) => {
+        event.preventDefault();
+        if (!selectedUserId) return;
+
+        try {
+            setSaving(true);
+            await fetchAdminUpdateUserServices(authToken, selectedUserId, {
+                active: 0,
+                terminationDate: workerTerminationForm.terminationDate,
+                terminationReason: workerTerminationForm.terminationReason,
+            });
+            setForm((prev) => ({
+                ...prev,
+                active: 0,
+                terminationDate: workerTerminationForm.terminationDate,
+                terminationReason: workerTerminationForm.terminationReason,
+            }));
+            setItems((prev) =>
+                prev.map((item) =>
+                    item.userId === selectedUserId
+                        ? {
+                              ...item,
+                              active: 0,
+                              terminationDate:
+                                  workerTerminationForm.terminationDate,
+                              terminationReason:
+                                  workerTerminationForm.terminationReason,
+                          }
+                        : item
+                )
+            );
+            setWorkerTerminationModalOpen(false);
+            alert('Trabajador dado de baja.');
+        } catch (error) {
+            alert(error.message || 'No se pudo dar de baja al trabajador');
         } finally {
             setSaving(false);
         }
@@ -2497,24 +2572,24 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
 
                     <div className='employee-documentation-actions'>
                         {isAdminLike ? (
-                            <button
-                                type='button'
-                                className={`employee-documentation-btn ${
-                                    form.active === 1 ||
-                                    form.active === true ||
-                                    form.active === '1'
-                                        ? 'employee-documentation-btn--danger'
-                                        : ''
-                                }`}
-                                disabled={saving || !selectedUserId}
-                                onClick={handleToggleWorkerActive}
-                            >
-                                {form.active === 1 ||
-                                form.active === true ||
-                                form.active === '1'
-                                    ? 'Dar baja'
-                                    : 'Dar alta'}
-                            </button>
+                            <>
+                                <button
+                                    type='button'
+                                    className='employee-documentation-btn employee-documentation-btn--ghost'
+                                    disabled={saving || !selectedUserId}
+                                    onClick={handleOpenWorkerHireModal}
+                                >
+                                    Dar alta
+                                </button>
+                                <button
+                                    type='button'
+                                    className='employee-documentation-btn employee-documentation-btn--danger'
+                                    disabled={saving || !selectedUserId}
+                                    onClick={handleOpenWorkerTerminationModal}
+                                >
+                                    Dar baja
+                                </button>
+                            </>
                         ) : null}
                         <button
                             type='submit'
@@ -2529,6 +2604,103 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                 ) : null}
             </div>
             )}
+            {workerTerminationModalOpen ? (
+                <div
+                    className='employee-signature-modal'
+                    role='presentation'
+                    onClick={() => setWorkerTerminationModalOpen(false)}
+                >
+                    <form
+                        className='employee-signature-modal__panel'
+                        onSubmit={handleWorkerTerminationSubmit}
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <header>
+                            <div>
+                                <h3>Dar baja trabajador</h3>
+                                <p>
+                                    Indica la fecha y el motivo de baja antes de
+                                    desactivar al trabajador.
+                                </p>
+                            </div>
+                            <button
+                                type='button'
+                                className='employee-documentation-btn employee-documentation-btn--ghost'
+                                onClick={() =>
+                                    setWorkerTerminationModalOpen(false)
+                                }
+                            >
+                                Cerrar
+                            </button>
+                        </header>
+
+                        <div className='employee-documentation-grid'>
+                            <div className='employee-documentation-field'>
+                                <label>Fecha de baja</label>
+                                <input
+                                    type='date'
+                                    value={
+                                        workerTerminationForm.terminationDate
+                                    }
+                                    onChange={(event) =>
+                                        handleWorkerTerminationChange(
+                                            'terminationDate',
+                                            event.target.value
+                                        )
+                                    }
+                                    required
+                                />
+                            </div>
+                            <div className='employee-documentation-field'>
+                                <label>Motivo de baja</label>
+                                <select
+                                    value={
+                                        workerTerminationForm.terminationReason
+                                    }
+                                    onChange={(event) =>
+                                        handleWorkerTerminationChange(
+                                            'terminationReason',
+                                            event.target.value
+                                        )
+                                    }
+                                    required
+                                >
+                                    <option value='voluntary'>
+                                        Baja voluntaria
+                                    </option>
+                                    <option value='end_call'>
+                                        Fin de llamamiento
+                                    </option>
+                                    <option value='contract_end'>
+                                        Fin de contrato
+                                    </option>
+                                    <option value='dismissal'>Despido</option>
+                                    <option value='other'>Otro</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className='employee-documentation-actions'>
+                            <button
+                                type='button'
+                                className='employee-documentation-btn employee-documentation-btn--ghost'
+                                onClick={() =>
+                                    setWorkerTerminationModalOpen(false)
+                                }
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type='submit'
+                                className='employee-documentation-btn employee-documentation-btn--danger'
+                                disabled={saving}
+                            >
+                                {saving ? 'Guardando...' : 'Confirmar baja'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            ) : null}
             {draftEmploymentModalOpen ? (
                 <div
                     className='employee-signature-modal'

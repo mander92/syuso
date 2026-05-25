@@ -25,6 +25,8 @@ const listEmployeeDocumentationsService = async ({ viewerId, viewerRole } = {}) 
                 u.tip,
                 u.city,
                 u.active,
+                u.terminationDate,
+                u.terminationReason,
                 d.id,
                 d.birthDate,
                 d.bankAccount,
