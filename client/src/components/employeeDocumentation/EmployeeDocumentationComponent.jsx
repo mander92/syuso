@@ -2098,28 +2098,6 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                                 }
                             />
                         </div>
-                        {isAdminLike ? (
-                            <div className='employee-documentation-field'>
-                                <label>Estado trabajador</label>
-                                <button
-                                    type='button'
-                                    className={`employee-documentation-btn ${
-                                        form.active === 1 ||
-                                        form.active === true ||
-                                        form.active === '1'
-                                            ? 'employee-documentation-btn--danger'
-                                            : ''
-                                    }`}
-                                    onClick={handleToggleWorkerActive}
-                                >
-                                    {form.active === 1 ||
-                                    form.active === true ||
-                                    form.active === '1'
-                                        ? 'Dar baja'
-                                        : 'Dar alta'}
-                                </button>
-                            </div>
-                        ) : null}
                         <div className='employee-documentation-field'>
                             <label>Fecha de nacimiento</label>
                             <input
@@ -2518,6 +2496,26 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                     </div>
 
                     <div className='employee-documentation-actions'>
+                        {isAdminLike ? (
+                            <button
+                                type='button'
+                                className={`employee-documentation-btn ${
+                                    form.active === 1 ||
+                                    form.active === true ||
+                                    form.active === '1'
+                                        ? 'employee-documentation-btn--danger'
+                                        : ''
+                                }`}
+                                disabled={saving || !selectedUserId}
+                                onClick={handleToggleWorkerActive}
+                            >
+                                {form.active === 1 ||
+                                form.active === true ||
+                                form.active === '1'
+                                    ? 'Dar baja'
+                                    : 'Dar alta'}
+                            </button>
+                        ) : null}
                         <button
                             type='submit'
                             className='employee-documentation-btn'
