@@ -20,6 +20,7 @@ import createUserFromDocumentationDraftController from '../controllers/employeeD
 import getEmployeeDocumentationDraftFileController from '../controllers/employeeDocumentation/getEmployeeDocumentationDraftFileController.js';
 import createDocumentationDraftTokenController from '../controllers/employeeDocumentation/createDocumentationDraftTokenController.js';
 import sendDocumentationDraftLinkController from '../controllers/employeeDocumentation/sendDocumentationDraftLinkController.js';
+import sendEmployeeLifecycleEmailController from '../controllers/employeeDocumentation/sendEmployeeLifecycleEmailController.js';
 import deleteEmployeeDocumentationDraftController from '../controllers/employeeDocumentation/deleteEmployeeDocumentationDraftController.js';
 import getPublicDocumentationDraftController from '../controllers/employeeDocumentation/getPublicDocumentationDraftController.js';
 import savePublicDocumentationDraftController from '../controllers/employeeDocumentation/savePublicDocumentationDraftController.js';
@@ -223,6 +224,12 @@ router.put(
     '/employee-documentations/:userId',
     authUser,
     updateEmployeeDocumentationController
+);
+router.post(
+    '/employee-documentations/:userId/lifecycle-email',
+    authUser,
+    isAdmin,
+    sendEmployeeLifecycleEmailController
 );
 router.get(
     '/employee-documentations/:userId/files/:field',

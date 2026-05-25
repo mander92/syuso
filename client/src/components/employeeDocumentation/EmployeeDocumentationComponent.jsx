@@ -30,6 +30,7 @@ import {
     saveEmployeeDocumentation,
     saveEmployeeDocumentationDraft,
     sendDocumentationDraftLink,
+    sendEmployeeLifecycleEmail,
     uploadEmployeeSignatureDocument,
     validateEmployeeSignatureDocument,
 } from '../../services/employeeDocumentationService.js';
@@ -1132,12 +1133,25 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
         event?.preventDefault();
         if (draftEmploymentAction === 'workerStatus') {
             if (!selectedUserId || workerNextActive === null) return;
+            if (!draftLinkEmails.trim()) {
+                alert('Indica al menos un correo para enviar el alta');
+                return;
+            }
             try {
                 setSaving(true);
                 await fetchAdminUpdateUserServices(authToken, selectedUserId, {
                     active: workerNextActive,
                     terminationDate: null,
                     terminationReason: null,
+                });
+                await sendEmployeeLifecycleEmail({
+                    authToken,
+                    userId: selectedUserId,
+                    payload: {
+                        action: 'hire',
+                        emails: draftLinkEmails,
+                        ...draftEmploymentForm,
+                    },
                 });
                 setForm((prev) => ({
                     ...prev,
@@ -1161,7 +1175,7 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                 setWorkerNextActive(null);
                 alert(
                     workerNextActive
-                        ? 'Trabajador dado de alta.'
+                        ? 'Trabajador dado de alta y correo enviado.'
                         : 'Trabajador dado de baja.'
                 );
             } catch (error) {
@@ -1237,6 +1251,10 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
     const handleWorkerTerminationSubmit = async (event) => {
         event.preventDefault();
         if (!selectedUserId) return;
+        if (!draftLinkEmails.trim()) {
+            alert('Indica al menos un correo para enviar la baja');
+            return;
+        }
 
         try {
             setSaving(true);
@@ -1244,6 +1262,15 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                 active: 0,
                 terminationDate: workerTerminationForm.terminationDate,
                 terminationReason: workerTerminationForm.terminationReason,
+            });
+            await sendEmployeeLifecycleEmail({
+                authToken,
+                userId: selectedUserId,
+                payload: {
+                    action: 'termination',
+                    emails: draftLinkEmails,
+                    ...workerTerminationForm,
+                },
             });
             setForm((prev) => ({
                 ...prev,
@@ -1266,7 +1293,7 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                 )
             );
             setWorkerTerminationModalOpen(false);
-            alert('Trabajador dado de baja.');
+            alert('Trabajador dado de baja y correo enviado.');
         } catch (error) {
             alert(error.message || 'No se pudo dar de baja al trabajador');
         } finally {

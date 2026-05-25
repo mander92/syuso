@@ -393,6 +393,26 @@ export const clearEmployeeDocumentationFile = async ({
     return assertOk(await readJsonBody(res));
 };
 
+export const sendEmployeeLifecycleEmail = async ({
+    authToken,
+    userId,
+    payload,
+}) => {
+    const res = await fetch(
+        `${VITE_API_URL}/employee-documentations/${userId}/lifecycle-email`,
+        {
+            method: 'POST',
+            headers: {
+                Authorization: authToken,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        }
+    );
+
+    return assertOk(await readJsonBody(res));
+};
+
 export const fetchEmployeeDocumentationDrafts = async (authToken) => {
     const res = await fetch(`${VITE_API_URL}/employee-documentation-drafts`, {
         headers: { Authorization: authToken },
