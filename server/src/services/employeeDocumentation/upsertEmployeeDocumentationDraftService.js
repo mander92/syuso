@@ -7,6 +7,7 @@ const fields = [
     'lastName',
     'email',
     'dni',
+    'tip',
     'birthDate',
     'bankAccount',
     'dniFrontPath',
@@ -53,10 +54,10 @@ const upsertEmployeeDocumentationDraftService = async (draftId, data) => {
     await pool.query(
         `
             INSERT INTO employeeDocumentationDrafts
-                (id, firstName, lastName, email, dni, birthDate, bankAccount,
+                (id, firstName, lastName, email, dni, tip, birthDate, bankAccount,
                  dniFrontPath, dniBackPath, tipFrontPath, tipBackPath, address,
                  phone, socialSecurityNumber, status, reviewNotes, linkedUserId)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [
             id,
@@ -64,6 +65,7 @@ const upsertEmployeeDocumentationDraftService = async (draftId, data) => {
             payload.lastName || null,
             payload.email || null,
             payload.dni || null,
+            payload.tip || null,
             payload.birthDate || null,
             payload.bankAccount || null,
             payload.dniFrontPath || null,
@@ -83,4 +85,3 @@ const upsertEmployeeDocumentationDraftService = async (draftId, data) => {
 };
 
 export default upsertEmployeeDocumentationDraftService;
-

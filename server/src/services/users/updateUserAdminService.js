@@ -11,6 +11,7 @@ const updateUserAdminService = async (userId, data) => {
         'lastName',
         'phone',
         'dni',
+        'tip',
         'city',
         'job',
         'role',

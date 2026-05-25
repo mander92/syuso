@@ -23,6 +23,7 @@ const selectUsersService = async (
             u.city,
             u.job,
             u.dni,
+            u.tip,
             u.active,
             u.deletedAt,
             GROUP_CONCAT(d.name ORDER BY d.name SEPARATOR ', ') AS delegations

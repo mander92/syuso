@@ -12,10 +12,22 @@ const parseEmails = (raw) =>
         .map((email) => email.trim().toLowerCase())
         .filter(Boolean);
 
+const escapeHtml = (value) =>
+    String(value || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+
 const sendDocumentationDraftLinkController = async (req, res, next) => {
     try {
         const schema = Joi.object({
             emails: Joi.string().max(1000).required(),
+            employmentPercentage: Joi.string().max(50).allow('', null),
+            contractType: Joi.string().max(120).allow('', null),
+            startDate: Joi.date().allow('', null),
+            workCenter: Joi.string().max(150).allow('', null),
         });
 
         const { error, value } = schema.validate(req.body || {}, {
@@ -55,10 +67,34 @@ const sendDocumentationDraftLinkController = async (req, res, next) => {
         const employeeName =
             `${draft.firstName || ''} ${draft.lastName || ''}`.trim() ||
             'trabajador/a';
+        const employmentDetails = [
+            ['Porcentaje de alta', value.employmentPercentage],
+            ['Tipo de contrato', value.contractType],
+            [
+                'Fecha de alta',
+                value.startDate
+                    ? new Date(value.startDate).toLocaleDateString('es-ES')
+                    : '',
+            ],
+            ['Centro de trabajo', value.workCenter],
+        ].filter(([, detail]) => detail);
         const subject = 'Ficha de alta SYUSO';
         const body = `
             <p>Hola,</p>
             <p>Te enviamos el enlace privado para completar la ficha de alta de <strong>${employeeName}</strong> en SYUSO.</p>
+            ${
+                employmentDetails.length
+                    ? `<p><strong>Datos previstos del alta:</strong></p>
+                       <ul>
+                           ${employmentDetails
+                               .map(
+                                   ([label, detail]) =>
+                                       `<li><strong>${escapeHtml(label)}:</strong> ${escapeHtml(detail)}</li>`
+                               )
+                               .join('')}
+                       </ul>`
+                    : ''
+            }
             <p><a href="${url}" style="display:inline-block;padding:10px 16px;background:#0f172a;color:#ffffff;text-decoration:none;border-radius:8px;">Completar ficha de alta</a></p>
             <p>El enlace caduca en 7 dias.</p>
         `;

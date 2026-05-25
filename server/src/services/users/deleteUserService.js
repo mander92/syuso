@@ -10,6 +10,7 @@ const deleteUserService = async (userId) => {
             active = 0,
             email = CONCAT('deleted+', id, '@deleted.local'),
             dni = NULL,
+            tip = NULL,
             deletedAt = CURRENT_TIMESTAMP
         WHERE id = ?
         `,

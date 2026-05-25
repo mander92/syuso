@@ -15,6 +15,7 @@ const insertAdminService = async (
     firstName,
     lastName,
     dni,
+    tip,
     phone,
     job,
     city,
@@ -52,6 +53,7 @@ const insertAdminService = async (
                     firstName = ?,
                     lastName = ?,
                     dni = ?,
+                    tip = ?,
                     phone = ?,
                     recoverPasswordCode = ?,
                     role = ?,
@@ -68,6 +70,7 @@ const insertAdminService = async (
                 firstName,
                 lastName,
                 dni,
+                tip,
                 phone,
                 recoverPasswordCode,
                 role,
@@ -81,8 +84,8 @@ const insertAdminService = async (
         await pool.query(
             `
                 INSERT INTO users
-                    (id, email, password, firstName, lastName, dni, phone, recoverPasswordCode, role, dashboardPermissions, job, city, active)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    (id, email, password, firstName, lastName, dni, tip, phone, recoverPasswordCode, role, dashboardPermissions, job, city, active)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             `,
             [
                 userId,
@@ -91,6 +94,7 @@ const insertAdminService = async (
                 firstName,
                 lastName,
                 dni,
+                tip,
                 phone,
                 recoverPasswordCode,
                 role,

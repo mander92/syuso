@@ -115,6 +115,7 @@ const emptyForm = {
     phone: '',
     socialSecurityNumber: '',
     dni: '',
+    tip: '',
     active: 1,
     status: 'pending',
     reviewNotes: '',
@@ -137,6 +138,21 @@ const toDateInput = (value) => {
     const match = String(value).match(/^(\d{4}-\d{2}-\d{2})/);
     return match ? match[1] : '';
 };
+
+const getTodayDateInput = () => {
+    const now = new Date();
+    const timezoneOffset = now.getTimezoneOffset() * 60000;
+    return new Date(now.getTime() - timezoneOffset).toISOString().slice(0, 10);
+};
+
+const getEmptyDraftEmploymentForm = () => ({
+    employmentPercentage: '',
+    contractType: '',
+    startDate: getTodayDateInput(),
+    workCenter: '',
+});
+
+const DRAFT_LINK_EMAILS_STORAGE_KEY = 'syuso_documentation_draft_link_emails';
 
 const normalizeDocumentation = (data) => ({
     ...emptyForm,
@@ -192,7 +208,21 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
         status: 'draft',
     });
     const [draftFiles, setDraftFiles] = useState({});
-    const [draftLinkEmails, setDraftLinkEmails] = useState('');
+    const [draftLinkEmails, setDraftLinkEmails] = useState(() => {
+        try {
+            return localStorage.getItem(DRAFT_LINK_EMAILS_STORAGE_KEY) || '';
+        } catch {
+            return '';
+        }
+    });
+    const [draftEmploymentModalOpen, setDraftEmploymentModalOpen] =
+        useState(false);
+    const [draftEmploymentAction, setDraftEmploymentAction] =
+        useState('sendDraft');
+    const [workerNextActive, setWorkerNextActive] = useState(null);
+    const [draftEmploymentForm, setDraftEmploymentForm] = useState(
+        getEmptyDraftEmploymentForm
+    );
     const [signatureDocuments, setSignatureDocuments] = useState([]);
     const [signatureDocumentForm, setSignatureDocumentForm] = useState({
         title: '',
@@ -439,6 +469,17 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [focusEmployeeId, isAdminLike, authToken]);
 
+    useEffect(() => {
+        try {
+            localStorage.setItem(
+                DRAFT_LINK_EMAILS_STORAGE_KEY,
+                draftLinkEmails
+            );
+        } catch {
+            // ignore storage errors
+        }
+    }, [draftLinkEmails]);
+
     const selectEmployee = async (userId) => {
         setSelectedUserId(userId);
         setFiles({});
@@ -455,7 +496,6 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
     const selectDraft = (draft) => {
         setSelectedDraftId(draft?.id || '');
         setDraftFiles({});
-        setDraftLinkEmails(draft?.email || '');
         setDraftForm({
             ...emptyForm,
             ...draft,
@@ -473,36 +513,21 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
         const isActive =
             form.active === 1 || form.active === true || form.active === '1';
         const nextActive = isActive ? 0 : 1;
-        const actionLabel = nextActive ? 'dar de alta' : 'dar de baja';
-
-        if (
-            !window.confirm(
-                `Se va a ${actionLabel} a ${form.firstName || 'este trabajador'}. Continuar?`
-            )
-        ) {
-            return;
-        }
-
-        try {
-            await fetchAdminUpdateUserServices(authToken, selectedUserId, {
-                active: nextActive,
-            });
-            setForm((prev) => ({ ...prev, active: nextActive }));
-            setItems((prev) =>
-                prev.map((item) =>
-                    item.userId === selectedUserId
-                        ? { ...item, active: nextActive }
-                        : item
-                )
-            );
-            alert(nextActive ? 'Trabajador dado de alta.' : 'Trabajador dado de baja.');
-        } catch (error) {
-            alert(error.message || 'No se pudo cambiar el estado del trabajador');
-        }
+        setDraftEmploymentAction('workerStatus');
+        setWorkerNextActive(nextActive);
+        setDraftEmploymentForm({
+            ...getEmptyDraftEmploymentForm(),
+            workCenter: form.city || '',
+        });
+        setDraftEmploymentModalOpen(true);
     };
 
     const handleDraftChange = (field, value) => {
         setDraftForm((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const handleDraftEmploymentChange = (field, value) => {
+        setDraftEmploymentForm((prev) => ({ ...prev, [field]: value }));
     };
 
     const reloadSignatureDocuments = async () => {
@@ -829,6 +854,12 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                 status: form.status,
                 reviewNotes: form.reviewNotes,
             };
+            if (isAdminLike && selectedUserId) {
+                await fetchAdminUpdateUserServices(authToken, selectedUserId, {
+                    dni: form.dni || null,
+                    tip: form.tip || null,
+                });
+            }
             const data = await saveEmployeeDocumentation({
                 authToken,
                 userId: isAdminLike ? selectedUserId : null,
@@ -908,6 +939,7 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                     lastName: draftForm.lastName,
                     email: draftForm.email,
                     dni: draftForm.dni,
+                    tip: draftForm.tip,
                     birthDate: draftForm.birthDate,
                     bankAccount: draftForm.bankAccount,
                     address: draftForm.address,
@@ -988,7 +1020,6 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
             } else {
                 setSelectedDraftId('');
                 setDraftFiles({});
-                setDraftLinkEmails('');
                 setDraftForm({
                     ...emptyForm,
                     status: 'draft',
@@ -1013,6 +1044,7 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                         lastName: draftForm.lastName,
                         email: draftForm.email,
                         dni: draftForm.dni,
+                        tip: draftForm.tip,
                         birthDate: draftForm.birthDate,
                         bankAccount: draftForm.bankAccount,
                         address: draftForm.address,
@@ -1058,7 +1090,56 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
         }
     };
 
-    const handleSendDraftLinkByEmail = async () => {
+    const handleOpenDraftEmploymentModal = () => {
+        if (!draftLinkEmails.trim()) {
+            alert('Indica al menos un correo');
+            return;
+        }
+        setDraftEmploymentAction('sendDraft');
+        setWorkerNextActive(null);
+        setDraftEmploymentForm((prev) => ({
+            ...getEmptyDraftEmploymentForm(),
+            ...prev,
+            startDate: prev.startDate || getTodayDateInput(),
+        }));
+        setDraftEmploymentModalOpen(true);
+    };
+
+    const handleSendDraftLinkByEmail = async (event) => {
+        event?.preventDefault();
+        if (draftEmploymentAction === 'workerStatus') {
+            if (!selectedUserId || workerNextActive === null) return;
+            try {
+                setSaving(true);
+                await fetchAdminUpdateUserServices(authToken, selectedUserId, {
+                    active: workerNextActive,
+                });
+                setForm((prev) => ({ ...prev, active: workerNextActive }));
+                setItems((prev) =>
+                    prev.map((item) =>
+                        item.userId === selectedUserId
+                            ? { ...item, active: workerNextActive }
+                            : item
+                    )
+                );
+                setDraftEmploymentModalOpen(false);
+                setWorkerNextActive(null);
+                alert(
+                    workerNextActive
+                        ? 'Trabajador dado de alta.'
+                        : 'Trabajador dado de baja.'
+                );
+            } catch (error) {
+                alert(
+                    error.message ||
+                        'No se pudo cambiar el estado del trabajador'
+                );
+            } finally {
+                setSaving(false);
+            }
+            return;
+        }
+
         if (!draftLinkEmails.trim()) {
             alert('Indica al menos un correo');
             return;
@@ -1077,6 +1158,7 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                         lastName: draftForm.lastName,
                         email: draftForm.email,
                         dni: draftForm.dni,
+                        tip: draftForm.tip,
                         birthDate: draftForm.birthDate,
                         bankAccount: draftForm.bankAccount,
                         address: draftForm.address,
@@ -1106,7 +1188,9 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                 authToken,
                 draftId,
                 emails: draftLinkEmails,
+                employmentData: draftEmploymentForm,
             });
+            setDraftEmploymentModalOpen(false);
             alert(`Alta enviada a ${data.sentTo?.length || 0} correo(s).`);
         } catch (error) {
             alert(error.message || 'No se pudo enviar el alta');
@@ -1194,6 +1278,22 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                     >
                         Altas clientes
                     </button>
+                </div>
+            ) : null}
+
+            {isAdminLike ? (
+                <div className='employee-documentation-global-send'>
+                    <div className='employee-documentation-field employee-documentation-field--wide'>
+                        <label>Correos para enviar altas</label>
+                        <input
+                            type='text'
+                            value={draftLinkEmails}
+                            onChange={(event) =>
+                                setDraftLinkEmails(event.target.value)
+                            }
+                            placeholder='correo1@empresa.com, correo2@empresa.com'
+                        />
+                    </div>
                 </div>
             ) : null}
 
@@ -1606,7 +1706,6 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                                 onClick={() => {
                                     setSelectedDraftId('');
                                     setDraftFiles({});
-                                    setDraftLinkEmails('');
                                     setDraftForm({
                                         ...emptyForm,
                                         status: 'draft',
@@ -1647,6 +1746,7 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                                 ['lastName', 'Apellidos'],
                                 ['email', 'Email'],
                                 ['dni', 'DNI'],
+                                ['tip', 'TIP'],
                                 ['birthDate', 'Fecha de nacimiento'],
                                 ['bankAccount', 'Numero de cuenta bancaria'],
                                 ['socialSecurityNumber', 'Numero Seguridad Social'],
@@ -1750,18 +1850,6 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                             ))}
                         </div>
 
-                        <div className='employee-documentation-field employee-documentation-field--wide'>
-                            <label>Correos para enviar alta</label>
-                            <input
-                                type='text'
-                                value={draftLinkEmails}
-                                onChange={(event) =>
-                                    setDraftLinkEmails(event.target.value)
-                                }
-                                placeholder='correo1@empresa.com, correo2@empresa.com'
-                            />
-                        </div>
-
                         <div className='employee-documentation-actions'>
                             <button
                                 type='button'
@@ -1779,7 +1867,7 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                                     draftForm.linkedUserId ||
                                     !draftLinkEmails.trim()
                                 }
-                                onClick={handleSendDraftLinkByEmail}
+                                onClick={handleOpenDraftEmploymentModal}
                             >
                                 Enviar alta
                             </button>
@@ -1989,6 +2077,26 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                         <div className='employee-documentation-field'>
                             <label>Email</label>
                             <input value={form.email || ''} disabled />
+                        </div>
+                        <div className='employee-documentation-field'>
+                            <label>DNI</label>
+                            <input
+                                value={form.dni || ''}
+                                disabled={!isAdminLike}
+                                onChange={(event) =>
+                                    handleChange('dni', event.target.value)
+                                }
+                            />
+                        </div>
+                        <div className='employee-documentation-field'>
+                            <label>TIP</label>
+                            <input
+                                value={form.tip || ''}
+                                disabled={!isAdminLike}
+                                onChange={(event) =>
+                                    handleChange('tip', event.target.value)
+                                }
+                            />
                         </div>
                         {isAdminLike ? (
                             <div className='employee-documentation-field'>
@@ -2423,6 +2531,127 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                 ) : null}
             </div>
             )}
+            {draftEmploymentModalOpen ? (
+                <div
+                    className='employee-signature-modal'
+                    role='presentation'
+                    onClick={() => setDraftEmploymentModalOpen(false)}
+                >
+                    <form
+                        className='employee-signature-modal__panel'
+                        onSubmit={handleSendDraftLinkByEmail}
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <header>
+                            <div>
+                                <h3>
+                                    {draftEmploymentAction === 'workerStatus'
+                                        ? workerNextActive
+                                            ? 'Dar alta trabajador'
+                                            : 'Dar baja trabajador'
+                                        : 'Datos del alta'}
+                                </h3>
+                                <p>
+                                    {draftEmploymentAction === 'workerStatus'
+                                        ? 'Completa los datos laborales antes de cambiar el estado del trabajador.'
+                                        : 'Completa los datos laborales antes de enviar la ficha por correo.'}
+                                </p>
+                            </div>
+                            <button
+                                type='button'
+                                className='employee-documentation-btn employee-documentation-btn--ghost'
+                                onClick={() => setDraftEmploymentModalOpen(false)}
+                            >
+                                Cerrar
+                            </button>
+                        </header>
+
+                        <div className='employee-documentation-grid'>
+                            <div className='employee-documentation-field'>
+                                <label>Porcentaje de alta</label>
+                                <input
+                                    value={draftEmploymentForm.employmentPercentage}
+                                    onChange={(event) =>
+                                        handleDraftEmploymentChange(
+                                            'employmentPercentage',
+                                            event.target.value
+                                        )
+                                    }
+                                    placeholder='100%, 50%, 20 h...'
+                                    required
+                                />
+                            </div>
+                            <div className='employee-documentation-field'>
+                                <label>Tipo de contrato</label>
+                                <input
+                                    value={draftEmploymentForm.contractType}
+                                    onChange={(event) =>
+                                        handleDraftEmploymentChange(
+                                            'contractType',
+                                            event.target.value
+                                        )
+                                    }
+                                    placeholder='Indefinido, temporal...'
+                                    required
+                                />
+                            </div>
+                            <div className='employee-documentation-field'>
+                                <label>Fecha de alta</label>
+                                <input
+                                    type='date'
+                                    value={draftEmploymentForm.startDate}
+                                    onChange={(event) =>
+                                        handleDraftEmploymentChange(
+                                            'startDate',
+                                            event.target.value
+                                        )
+                                    }
+                                    required
+                                />
+                            </div>
+                            <div className='employee-documentation-field'>
+                                <label>Centro de trabajo</label>
+                                <input
+                                    value={draftEmploymentForm.workCenter}
+                                    onChange={(event) =>
+                                        handleDraftEmploymentChange(
+                                            'workCenter',
+                                            event.target.value
+                                        )
+                                    }
+                                    placeholder='Servicio o centro'
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div className='employee-documentation-actions'>
+                            <button
+                                type='button'
+                                className='employee-documentation-btn employee-documentation-btn--ghost'
+                                onClick={() => setDraftEmploymentModalOpen(false)}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type='submit'
+                                className='employee-documentation-btn'
+                                disabled={saving}
+                            >
+                                {saving
+                                    ? draftEmploymentAction === 'workerStatus'
+                                        ? 'Guardando...'
+                                        : 'Enviando...'
+                                    : draftEmploymentAction === 'workerStatus'
+                                      ? workerNextActive
+                                          ? 'Dar alta'
+                                          : 'Dar baja'
+                                      : 'Enviar alta'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            ) : null}
         </section>
     );
 };

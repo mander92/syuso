@@ -485,6 +485,7 @@ export const sendDocumentationDraftLink = async ({
     authToken,
     draftId,
     emails,
+    employmentData = {},
 }) => {
     const res = await fetch(
         `${VITE_API_URL}/employee-documentation-drafts/${draftId}/send-link`,
@@ -494,7 +495,7 @@ export const sendDocumentationDraftLink = async ({
                 Authorization: authToken,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ emails }),
+            body: JSON.stringify({ emails, ...employmentData }),
         }
     );
     return assertOk(await readJsonBody(res));

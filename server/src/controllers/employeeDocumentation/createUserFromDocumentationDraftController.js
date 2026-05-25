@@ -33,6 +33,7 @@ const createUserFromDocumentationDraftController = async (req, res, next) => {
             draft.firstName,
             draft.lastName,
             draft.dni,
+            draft.tip,
             draft.phone,
             'Vigilante',
             null,

@@ -15,6 +15,7 @@ const schema = Joi.object({
     lastName: Joi.string().max(50).allow('', null),
     email: Joi.string().email().allow('', null),
     dni: Joi.string().max(20).allow('', null),
+    tip: Joi.string().max(30).allow('', null),
     birthDate: Joi.date().allow('', null),
     bankAccount: Joi.string().max(40).allow('', null),
     address: Joi.string().max(255).allow('', null),

@@ -78,6 +78,7 @@ const registerUserAdminController = async (req, res, next) => {
             firstName,
             lastName,
             dni,
+            null,
             phone,
             job,
             city,

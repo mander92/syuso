@@ -12,6 +12,8 @@ const selectEmployeeDocumentationService = async (userId) => {
                 u.lastName,
                 u.email,
                 u.phone AS userPhone,
+                u.dni,
+                u.tip,
                 d.id,
                 d.birthDate,
                 d.bankAccount,

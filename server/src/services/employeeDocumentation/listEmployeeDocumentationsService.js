@@ -21,6 +21,8 @@ const listEmployeeDocumentationsService = async ({ viewerId, viewerRole } = {}) 
                 u.lastName,
                 u.email,
                 u.phone AS userPhone,
+                u.dni,
+                u.tip,
                 u.city,
                 u.active,
                 d.id,

@@ -29,6 +29,7 @@ const editUserController = async (req, res, next) => {
                 lastName: Joi.string().max(40),
                 phone: Joi.string().max(15),
                 dni: Joi.string().max(20),
+                tip: Joi.string().max(30).allow('', null),
                 city: Joi.string().max(50),
                 job: Joi.string().max(50),
                 role: Joi.string().valid(
