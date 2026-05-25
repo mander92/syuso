@@ -33,6 +33,7 @@ import {
     uploadEmployeeSignatureDocument,
     validateEmployeeSignatureDocument,
 } from '../../services/employeeDocumentationService.js';
+import { fetchAdminUpdateUserServices } from '../../services/userService.js';
 import './EmployeeDocumentationComponent.css';
 
 const fileFields = [
@@ -114,6 +115,7 @@ const emptyForm = {
     phone: '',
     socialSecurityNumber: '',
     dni: '',
+    active: 1,
     status: 'pending',
     reviewNotes: '',
 };
@@ -464,6 +466,39 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
 
     const handleChange = (field, value) => {
         setForm((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const handleToggleWorkerActive = async () => {
+        if (!selectedUserId) return;
+        const isActive =
+            form.active === 1 || form.active === true || form.active === '1';
+        const nextActive = isActive ? 0 : 1;
+        const actionLabel = nextActive ? 'dar de alta' : 'dar de baja';
+
+        if (
+            !window.confirm(
+                `Se va a ${actionLabel} a ${form.firstName || 'este trabajador'}. Continuar?`
+            )
+        ) {
+            return;
+        }
+
+        try {
+            await fetchAdminUpdateUserServices(authToken, selectedUserId, {
+                active: nextActive,
+            });
+            setForm((prev) => ({ ...prev, active: nextActive }));
+            setItems((prev) =>
+                prev.map((item) =>
+                    item.userId === selectedUserId
+                        ? { ...item, active: nextActive }
+                        : item
+                )
+            );
+            alert(nextActive ? 'Trabajador dado de alta.' : 'Trabajador dado de baja.');
+        } catch (error) {
+            alert(error.message || 'No se pudo cambiar el estado del trabajador');
+        }
     };
 
     const handleDraftChange = (field, value) => {
@@ -1326,18 +1361,6 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                             ))}
                         </div>
 
-                        <div className='employee-documentation-field employee-documentation-field--wide'>
-                            <label>Correos para enviar alta</label>
-                            <input
-                                type='text'
-                                value={draftLinkEmails}
-                                onChange={(event) =>
-                                    setDraftLinkEmails(event.target.value)
-                                }
-                                placeholder='correo1@empresa.com, correo2@empresa.com'
-                            />
-                        </div>
-
                         <div className='employee-documentation-actions'>
                             <button
                                 type='button'
@@ -1346,18 +1369,6 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                                 onClick={handleCreateClientDraftLink}
                             >
                                 Copiar enlace WhatsApp
-                            </button>
-                            <button
-                                type='button'
-                                className='employee-documentation-btn'
-                                disabled={
-                                    saving ||
-                                    draftForm.linkedUserId ||
-                                    !draftLinkEmails.trim()
-                                }
-                                onClick={handleSendDraftLinkByEmail}
-                            >
-                                Enviar alta
                             </button>
                             <button
                                 type='button'
@@ -1739,6 +1750,18 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                             ))}
                         </div>
 
+                        <div className='employee-documentation-field employee-documentation-field--wide'>
+                            <label>Correos para enviar alta</label>
+                            <input
+                                type='text'
+                                value={draftLinkEmails}
+                                onChange={(event) =>
+                                    setDraftLinkEmails(event.target.value)
+                                }
+                                placeholder='correo1@empresa.com, correo2@empresa.com'
+                            />
+                        </div>
+
                         <div className='employee-documentation-actions'>
                             <button
                                 type='button'
@@ -1747,6 +1770,18 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                                 onClick={handleCreateDraftLink}
                             >
                                 Copiar enlace WhatsApp
+                            </button>
+                            <button
+                                type='button'
+                                className='employee-documentation-btn'
+                                disabled={
+                                    saving ||
+                                    draftForm.linkedUserId ||
+                                    !draftLinkEmails.trim()
+                                }
+                                onClick={handleSendDraftLinkByEmail}
+                            >
+                                Enviar alta
                             </button>
                             <button
                                 type='button'
@@ -1955,6 +1990,28 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                             <label>Email</label>
                             <input value={form.email || ''} disabled />
                         </div>
+                        {isAdminLike ? (
+                            <div className='employee-documentation-field'>
+                                <label>Estado trabajador</label>
+                                <button
+                                    type='button'
+                                    className={`employee-documentation-btn ${
+                                        form.active === 1 ||
+                                        form.active === true ||
+                                        form.active === '1'
+                                            ? 'employee-documentation-btn--danger'
+                                            : ''
+                                    }`}
+                                    onClick={handleToggleWorkerActive}
+                                >
+                                    {form.active === 1 ||
+                                    form.active === true ||
+                                    form.active === '1'
+                                        ? 'Dar baja'
+                                        : 'Dar alta'}
+                                </button>
+                            </div>
+                        ) : null}
                         <div className='employee-documentation-field'>
                             <label>Fecha de nacimiento</label>
                             <input
