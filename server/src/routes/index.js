@@ -15,6 +15,7 @@ import employeeRequestRouter from './employeeRequestRouter.js';
 import holidayRouter from './holidayRouter.js';
 import employeeDocumentationRouter from './employeeDocumentationRouter.js';
 import warehouseRouter from './warehouseRouter.js';
+import payrollRouter from './payrollRouter.js';
 
 const router = express.Router();
 
@@ -33,5 +34,6 @@ router.use(employeeRequestRouter);
 router.use(holidayRouter);
 router.use(employeeDocumentationRouter);
 router.use(warehouseRouter);
+router.use(payrollRouter);
 
 export default router;

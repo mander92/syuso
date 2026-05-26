@@ -19,6 +19,7 @@ import ChatHub from '../chatHub/ChatHub.jsx';
 import EmployeeScheduleComponent from '../employeeSchedule/EmployeeScheduleComponent.jsx';
 import EmployeeDocumentationComponent from '../employeeDocumentation/EmployeeDocumentationComponent.jsx';
 import AdminWarehouseSection from '../adminWarehouseSection/AdminWarehouseSection.jsx';
+import PayrollsComponent from '../payrolls/PayrollsComponent.jsx';
 import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 
 const formatAlertDate = (value) => {
@@ -56,7 +57,7 @@ const operativeSectionIds = [
     'workReports',
 ];
 
-const administrationSectionIds = ['documentations', 'warehouse'];
+const administrationSectionIds = ['documentations', 'warehouse', 'payrolls'];
 
 const AlertsPanel = ({
     notifications,
@@ -207,6 +208,7 @@ const DashboardComponent = () => {
                 { id: 'workReports', label: 'Partes de trabajo' },
                 { id: 'documentations', label: 'Documentacion' },
                 { id: 'warehouse', label: 'Almacen' },
+                { id: 'payrolls', label: 'Nominas' },
                 { id: 'users', label: 'Usuarios' },
                 { id: 'profile', label: 'Mi perfil' },
             ];
@@ -229,6 +231,7 @@ const DashboardComponent = () => {
                 { id: 'shiftSwaps', label: 'Cambios de turno' },
                 { id: 'employeeRequests', label: 'Peticiones' },
                 { id: 'documentations', label: 'Mi documentacion' },
+                { id: 'payrolls', label: 'Mis nominas' },
                 { id: 'chats', label: 'Chats' },
                 { id: 'alerts', label: 'Alertas' },
                 { id: 'profile', label: 'Mi perfil' },
@@ -239,7 +242,8 @@ const DashboardComponent = () => {
                 { id: 'schedule', label: 'Mi cuadrante' },
                 { id: 'shiftSwaps', label: 'Cambios de turno' },
                 { id: 'employeeRequests', label: 'Peticiones' },
-                { id: 'documentations', label: 'Mi documentacion' },
+               { id: 'documentations', label: 'Mi documentacion' },
+                { id: 'payrolls', label: 'Mis nominas' },
                 { id: 'chats', label: 'Chats' },
                 { id: 'alerts', label: 'Alertas' },
                 { id: 'profile', label: 'Mi perfil' },
@@ -505,6 +509,8 @@ const DashboardComponent = () => {
                 );
             case 'warehouse':
                 return <AdminWarehouseSection />;
+            case 'payrolls':
+                return <PayrollsComponent />;
 
             default:
                 return null;
