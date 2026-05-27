@@ -289,7 +289,7 @@ const ScheduleComponent = () => {
             try {
                 setScheduleLoading(true);
                 const params = new URLSearchParams();
-                if (scheduleServiceStatus) {
+                if (scheduleServiceStatus && scheduleViewMode !== 'personal') {
                     params.append('status', scheduleServiceStatus);
                 }
                 if (scheduleDelegationFilter) {
@@ -333,6 +333,7 @@ const ScheduleComponent = () => {
         authToken,
         isAdminLike,
         scheduleServiceStatus,
+        scheduleViewMode,
         scheduleDelegationFilter,
         scheduleStartDate,
         scheduleEndDate,
@@ -464,6 +465,7 @@ const ScheduleComponent = () => {
         scheduleServiceFilter,
         scheduleStartDate,
         scheduleEndDate,
+        scheduleViewMode,
     ]);
 
     useEffect(() => {
