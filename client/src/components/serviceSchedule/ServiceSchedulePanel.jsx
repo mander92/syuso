@@ -233,7 +233,14 @@ const ServiceSchedulePanel = ({
             );
             if (fallback) {
                 map.set(shift.employeeId, fallback);
+                return;
             }
+            map.set(shift.employeeId, {
+                id: shift.employeeId,
+                firstName: shift.firstName || 'Empleado',
+                lastName: shift.lastName || 'inactivo',
+                inactiveFromShift: true,
+            });
         });
         return [...map.values()];
     }, [assignedEmployees, shifts, employees]);

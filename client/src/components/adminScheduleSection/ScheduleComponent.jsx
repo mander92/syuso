@@ -1574,10 +1574,28 @@ const ScheduleComponent = () => {
                 .filter(Boolean)
         );
 
-        return employees.filter(
-            (employee) =>
-                assignedIds.has(employee.id) || shiftEmployeeIds.has(employee.id)
-        );
+        const employeeMap = new Map();
+        employees
+            .filter(
+                (employee) =>
+                    assignedIds.has(employee.id) ||
+                    shiftEmployeeIds.has(employee.id)
+            )
+            .forEach((employee) => {
+                employeeMap.set(employee.id, employee);
+            });
+
+        (scheduleShiftMap[serviceScheduleViewModal.id] || []).forEach((shift) => {
+            if (!shift?.employeeId || employeeMap.has(shift.employeeId)) return;
+            employeeMap.set(shift.employeeId, {
+                id: shift.employeeId,
+                firstName: shift.firstName || 'Empleado',
+                lastName: shift.lastName || 'inactivo',
+                inactiveFromShift: true,
+            });
+        });
+
+        return [...employeeMap.values()];
     }, [employees, scheduleShiftMap, serviceScheduleViewModal]);
 
     const personalScheduleRows = useMemo(() => {
@@ -1592,7 +1610,22 @@ const ScheduleComponent = () => {
             employeeMap.get(shift.employeeId).push(shift);
         });
 
-        return filteredEmployees
+        const employeesForRows = [...filteredEmployees];
+        employeeMap.forEach((shifts, employeeId) => {
+            if (employeesForRows.some((employee) => employee.id === employeeId)) {
+                return;
+            }
+            const firstShift = shifts[0] || {};
+            employeesForRows.push({
+                id: employeeId,
+                firstName: firstShift.firstName || 'Empleado',
+                lastName: firstShift.lastName || 'inactivo',
+                delegations: 'Sin delegacion',
+                inactiveFromShift: true,
+            });
+        });
+
+        return employeesForRows
             .map((employee) => {
                 const shifts = employeeMap.get(employee.id) || [];
                 const totalHours = shifts.reduce(
