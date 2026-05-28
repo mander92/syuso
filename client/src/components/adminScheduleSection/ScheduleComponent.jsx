@@ -412,16 +412,6 @@ const ScheduleComponent = () => {
                         const templateApplied =
                             Array.isArray(templates) && templates.length > 0;
 
-                        if (
-                            scheduleServiceStatus === '' &&
-                            !scheduleServiceFilter &&
-                            !filteredShifts.length &&
-                            !templateApplied
-                        ) {
-                            delete shiftMap[service.id];
-                            return;
-                        }
-
                         const employeeSet = new Set();
                         let totalHours = 0;
                         filteredShifts.forEach((shift) => {
@@ -430,6 +420,11 @@ const ScheduleComponent = () => {
                             }
                             totalHours += Number(shift.hours) || 0;
                         });
+
+                        if (!scheduleServiceFilter && totalHours <= 0) {
+                            delete shiftMap[service.id];
+                            return;
+                        }
 
                         cards.push({
                             id: service.id,
@@ -1617,7 +1612,7 @@ const ScheduleComponent = () => {
                     totalHolidayHours,
                 };
             })
-            .filter((row) => scheduleEmployeeFilter || row.shifts.length);
+            .filter((row) => scheduleEmployeeFilter || row.totalHours > 0);
     }, [scheduleShiftMap, filteredEmployees, scheduleEmployeeFilter]);
 
     const personalRowsByDelegation = useMemo(() => {
