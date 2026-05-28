@@ -131,11 +131,14 @@ const normalizeText = (value) =>
 const ServiceSchedulePanel = ({
     serviceId,
     authToken,
+    initialMonth = '',
     scheduleImage: initialScheduleImage = '',
     scheduleView: initialScheduleView = 'grid',
     onServiceUpdate,
 }) => {
-    const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
+    const [month, setMonth] = useState(
+        () => initialMonth || new Date().toISOString().slice(0, 7)
+    );
     const [scheduleImage, setScheduleImage] = useState(initialScheduleImage || '');
     const [scheduleView, setScheduleView] = useState(
         initialScheduleView === 'image' ? 'image' : 'grid'
@@ -207,6 +210,10 @@ const ServiceSchedulePanel = ({
     useEffect(() => {
         setScheduleImage(initialScheduleImage || '');
     }, [initialScheduleImage]);
+
+    useEffect(() => {
+        if (initialMonth) setMonth(initialMonth);
+    }, [initialMonth]);
 
     useEffect(() => {
         setScheduleView(initialScheduleView === 'image' ? 'image' : 'grid');
@@ -899,6 +906,9 @@ const ServiceSchedulePanel = ({
             setScheduleImportPreview(data);
             toast.success(`Cuadrante importado: ${data.shiftCount} turnos`);
             await loadShifts();
+            if (onServiceUpdate) {
+                await onServiceUpdate();
+            }
         } catch (error) {
             toast.error(error.message || 'No se pudo importar el Excel');
         } finally {

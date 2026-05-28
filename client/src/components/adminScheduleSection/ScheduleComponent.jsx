@@ -162,6 +162,7 @@ const ScheduleComponent = () => {
         useState(false);
     const [scheduleCards, setScheduleCards] = useState([]);
     const [scheduleShiftMap, setScheduleShiftMap] = useState({});
+    const [scheduleRefreshVersion, setScheduleRefreshVersion] = useState(0);
     const [expandedScheduleDelegations, setExpandedScheduleDelegations] =
         useState({});
     const [expandedPersonalDelegations, setExpandedPersonalDelegations] =
@@ -476,6 +477,7 @@ const ScheduleComponent = () => {
         scheduleStartDate,
         scheduleEndDate,
         scheduleViewMode,
+        scheduleRefreshVersion,
     ]);
 
     useEffect(() => {
@@ -3289,11 +3291,15 @@ const ScheduleComponent = () => {
                             <ServiceSchedulePanel
                                 serviceId={serviceScheduleModal.id}
                                 authToken={authToken}
+                                initialMonth={scheduleMonth}
                                 scheduleImage={
                                     serviceScheduleModal.scheduleImage || ''
                                 }
                                 scheduleView={
                                     serviceScheduleModal.scheduleView || 'grid'
+                                }
+                                onServiceUpdate={() =>
+                                    setScheduleRefreshVersion((value) => value + 1)
                                 }
                             />
                         </div>
