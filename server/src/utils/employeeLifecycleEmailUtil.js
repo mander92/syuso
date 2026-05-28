@@ -51,6 +51,15 @@ const formatDate = (value) => {
     return date.toLocaleDateString('es-ES');
 };
 
+const renderDetailsList = (items) =>
+    items
+        .filter(([, value]) => value !== undefined && value !== null && value !== '')
+        .map(
+            ([label, value]) =>
+                `<li><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</li>`
+        )
+        .join('');
+
 const addAttachmentIfExists = (attachments, relativePath, filename) => {
     if (!relativePath) return;
     const filePath = getEmployeeDocumentationFilePath(relativePath);
@@ -126,6 +135,18 @@ export const sendEmployeeLifecycleEmail = async ({
                   ['Fecha de alta', formatDate(employmentData.startDate)],
                   ['Centro de trabajo', employmentData.workCenter],
               ];
+    const employeeDetails = [
+        ['Nombre', employee?.firstName],
+        ['Apellidos', employee?.lastName],
+        ['Email', employee?.email],
+        ['DNI', employee?.dni],
+        ['TIP', employee?.tip],
+        ['Fecha de nacimiento', formatDate(employee?.birthDate)],
+        ['Telefono', employee?.phone || employee?.userPhone],
+        ['Direccion', employee?.address],
+        ['Numero de cuenta bancaria', employee?.bankAccount],
+        ['Numero Seguridad Social', employee?.socialSecurityNumber],
+    ];
 
     const subject =
         action === 'termination'
@@ -136,14 +157,13 @@ export const sendEmployeeLifecycleEmail = async ({
         <p>Se comunica la ${
             action === 'termination' ? 'baja' : 'alta'
         } de <strong>${escapeHtml(employeeName)}</strong>.</p>
+        <p><strong>Datos del trabajador:</strong></p>
         <ul>
-            ${details
-                .filter(([, value]) => value)
-                .map(
-                    ([label, value]) =>
-                        `<li><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</li>`
-                )
-                .join('')}
+            ${renderDetailsList(employeeDetails)}
+        </ul>
+        <p><strong>Datos de la ${action === 'termination' ? 'baja' : 'alta'}:</strong></p>
+        <ul>
+            ${renderDetailsList(details)}
         </ul>
         <p>Se adjunta la documentacion disponible en la ficha del trabajador.</p>
     `;
