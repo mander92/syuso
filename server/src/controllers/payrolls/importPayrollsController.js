@@ -1,10 +1,7 @@
 import Joi from 'joi';
 
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
-import {
-    detectEmployeeMatch,
-    detectPayrollMonth,
-} from '../../utils/payrollDetectionUtil.js';
+import { detectEmployeeMatch } from '../../utils/payrollDetectionUtil.js';
 import {
     extractPayrollText,
     preparePayrollFiles,
@@ -20,7 +17,7 @@ const schema = Joi.object({
     uploadMode: Joi.string().valid('multiple', 'onePerPage').default('multiple'),
     defaultMonth: Joi.string()
         .pattern(/^20\d{2}-(0[1-9]|1[0-2])$/)
-        .allow('', null),
+        .required(),
     publishMatched: Joi.boolean().truthy('true').falsy('false').default(false),
 });
 
@@ -61,10 +58,7 @@ const importPayrollsController = async (req, res, next) => {
                 fileName: file.originalFileName,
                 employees,
             });
-            const payrollMonth =
-                detectPayrollMonth(text, file.originalFileName) ||
-                value.defaultMonth ||
-                '';
+            const payrollMonth = value.defaultMonth;
             const status = match.employee
                 ? value.publishMatched
                     ? payrollMonth

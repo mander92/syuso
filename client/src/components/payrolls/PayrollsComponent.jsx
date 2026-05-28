@@ -36,6 +36,51 @@ const formatMonthLabel = (value) => {
     }).format(new Date(Number(year), Number(month) - 1, 1));
 };
 
+const buildPayrollMonthRows = (items, sortByEmployee = false) => {
+    const groups = new Map();
+    items.forEach((payroll) => {
+        const key = payroll.payrollMonth || 'sin-mes';
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(payroll);
+    });
+
+    return [...groups.entries()]
+        .sort(([a], [b]) => {
+            if (a === 'sin-mes') return 1;
+            if (b === 'sin-mes') return -1;
+            return String(b).localeCompare(String(a));
+        })
+        .flatMap(([month, monthItems]) => {
+            const sortedItems = monthItems.slice().sort((a, b) => {
+                if (sortByEmployee) {
+                    return getEmployeeName(a).localeCompare(
+                        getEmployeeName(b),
+                        'es',
+                        { sensitivity: 'base' }
+                    );
+                }
+                return String(b.createdAt || '').localeCompare(
+                    String(a.createdAt || '')
+                );
+            });
+
+            return [
+                {
+                    id: `month-${month}`,
+                    isMonthHeader: true,
+                    month,
+                    label:
+                        month === 'sin-mes' ? 'Sin mes' : formatMonthLabel(month),
+                    count: sortedItems.length,
+                },
+                ...sortedItems.map((item) => ({
+                    ...item,
+                    monthKey: month,
+                })),
+            ];
+        });
+};
+
 const PayrollsComponent = () => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
@@ -56,6 +101,11 @@ const PayrollsComponent = () => {
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [expandedMonths, setExpandedMonths] = useState({});
+    const [expandedMatchGroups, setExpandedMatchGroups] = useState({
+        matched: true,
+        unmatched: true,
+    });
+    const [selectedPayrollIds, setSelectedPayrollIds] = useState([]);
 
     const employeeOptions = useMemo(
         () =>
@@ -141,51 +191,131 @@ const PayrollsComponent = () => {
         }
     };
 
-    const groupedPayrolls = useMemo(() => {
-        const groups = new Map();
-        payrolls.forEach((payroll) => {
-            const key = payroll.payrollMonth || 'sin-mes';
-            if (!groups.has(key)) groups.set(key, []);
-            groups.get(key).push(payroll);
-        });
+    const togglePayrollSelection = (payrollId) => {
+        setSelectedPayrollIds((prev) =>
+            prev.includes(payrollId)
+                ? prev.filter((id) => id !== payrollId)
+                : [...prev, payrollId]
+        );
+    };
 
-        return [...groups.entries()]
-            .sort(([a], [b]) => {
-                if (a === 'sin-mes') return 1;
-                if (b === 'sin-mes') return -1;
-                return String(b).localeCompare(String(a));
-            })
-            .flatMap(([month, items]) => {
-                const sortedItems = items.slice().sort((a, b) => {
-                    if (isAdminLike) {
-                        return getEmployeeName(a).localeCompare(
-                            getEmployeeName(b),
-                            'es',
-                            { sensitivity: 'base' }
-                        );
-                    }
-                    return String(b.createdAt || '').localeCompare(
-                        String(a.createdAt || '')
-                    );
-                });
-                return [
-                    {
-                        id: `month-${month}`,
-                        isMonthHeader: true,
-                        month,
-                        label:
-                            month === 'sin-mes'
-                                ? 'Sin mes'
-                                : formatMonthLabel(month),
-                        count: sortedItems.length,
-                    },
-                    ...sortedItems.map((item) => ({
-                        ...item,
-                        monthKey: month,
-                    })),
-                ];
-            });
-    }, [isAdminLike, payrolls]);
+    const selectedPayrolls = useMemo(
+        () =>
+            payrolls.filter((payroll) =>
+                selectedPayrollIds.includes(payroll.id)
+            ),
+        [payrolls, selectedPayrollIds]
+    );
+
+    const publishablePayrolls = useMemo(
+        () =>
+            payrolls.filter(
+                (payroll) =>
+                    payroll.employeeId &&
+                    payroll.payrollMonth &&
+                    payroll.status !== 'published'
+            ),
+        [payrolls]
+    );
+
+    useEffect(() => {
+        setSelectedPayrollIds((prev) =>
+            prev.filter((id) => payrolls.some((payroll) => payroll.id === id))
+        );
+    }, [payrolls]);
+
+    const publishPayrollBatch = async (items, successMessage) => {
+        if (!items.length) {
+            toast.error('No hay nominas para publicar');
+            return;
+        }
+
+        const invalid = items.filter(
+            (payroll) => !payroll.employeeId || !payroll.payrollMonth
+        );
+        if (invalid.length) {
+            toast.error('Solo se pueden publicar nominas emparejadas y con mes');
+            return;
+        }
+
+        if (!window.confirm(`Se publicaran ${items.length} nominas. Continuar?`)) {
+            return;
+        }
+
+        setSaving(true);
+        try {
+            await Promise.all(
+                items.map((payroll) =>
+                    updatePayroll(authToken, payroll.id, {
+                        status: 'published',
+                    })
+                )
+            );
+            setSelectedPayrollIds([]);
+            await loadPayrolls();
+            toast.success(successMessage);
+        } catch (error) {
+            toast.error(error.message || 'No se pudieron publicar las nominas');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDeleteSelected = async () => {
+        if (!selectedPayrolls.length) {
+            toast.error('Selecciona alguna nomina');
+            return;
+        }
+
+        if (
+            !window.confirm(
+                `Se borraran ${selectedPayrolls.length} nominas seleccionadas. Continuar?`
+            )
+        ) {
+            return;
+        }
+
+        setSaving(true);
+        try {
+            await Promise.all(
+                selectedPayrolls.map((payroll) =>
+                    deletePayroll(authToken, payroll.id)
+                )
+            );
+            setSelectedPayrollIds([]);
+            await loadPayrolls();
+            toast.success('Nominas seleccionadas borradas');
+        } catch (error) {
+            toast.error(error.message || 'No se pudieron borrar las nominas');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const groupedPayrolls = useMemo(
+        () => buildPayrollMonthRows(payrolls, isAdminLike),
+        [isAdminLike, payrolls]
+    );
+
+    const payrollMatchGroups = useMemo(() => {
+        const matched = payrolls.filter((payroll) => payroll.employeeId);
+        const unmatched = payrolls.filter((payroll) => !payroll.employeeId);
+
+        return [
+            {
+                key: 'matched',
+                label: 'Emparejadas',
+                count: matched.length,
+                rows: buildPayrollMonthRows(matched, true),
+            },
+            {
+                key: 'unmatched',
+                label: 'No emparejadas',
+                count: unmatched.length,
+                rows: buildPayrollMonthRows(unmatched, true),
+            },
+        ];
+    }, [payrolls]);
 
     useEffect(() => {
         if (!groupedPayrolls.length) {
@@ -200,9 +330,17 @@ const PayrollsComponent = () => {
                 .forEach((group) => {
                     next[group.month] = prev[group.month] ?? true;
             });
+            payrollMatchGroups.forEach((matchGroup) => {
+                matchGroup.rows
+                    .filter((item) => item.isMonthHeader)
+                    .forEach((group) => {
+                        next[`${matchGroup.key}-${group.month}`] =
+                            prev[`${matchGroup.key}-${group.month}`] ?? true;
+                    });
+            });
             return next;
         });
-    }, [groupedPayrolls]);
+    }, [groupedPayrolls, payrollMatchGroups]);
 
     const toggleMonth = (month) => {
         setExpandedMonths((prev) => ({
@@ -211,12 +349,32 @@ const PayrollsComponent = () => {
         }));
     };
 
+    const toggleMatchGroup = (groupKey) => {
+        setExpandedMatchGroups((prev) => ({
+            ...prev,
+            [groupKey]: !prev[groupKey],
+        }));
+    };
+
     const renderPayrollItem = (payroll) => (
         <article key={payroll.id} className='payrolls-item'>
+            {isAdminLike ? (
+                <label className='payrolls-select'>
+                    <input
+                        type='checkbox'
+                        checked={selectedPayrollIds.includes(payroll.id)}
+                        onChange={() => togglePayrollSelection(payroll.id)}
+                    />
+                    Seleccionar
+                </label>
+            ) : null}
             <div className='payrolls-item-main'>
                 <div>
                     <h4>{getEmployeeName(payroll)}</h4>
-                    <p>{payroll.originalFileName}</p>
+                    <p>
+                        {payroll.payrollMonth || 'Sin mes'} ·{' '}
+                        {payroll.originalFileName}
+                    </p>
                     {payroll.detectedDni ? (
                         <p>DNI detectado: {payroll.detectedDni}</p>
                     ) : null}
@@ -345,7 +503,7 @@ const PayrollsComponent = () => {
                                 </select>
                             </div>
                             <div className='payrolls-field'>
-                                <label>Mes por defecto</label>
+                                <label>Mes de las nominas</label>
                                 <input
                                     type='month'
                                     value={importForm.defaultMonth}
@@ -479,10 +637,115 @@ const PayrollsComponent = () => {
             ) : null}
 
             <div className='payrolls-card'>
-                <h3>{isAdminLike ? 'Nominas importadas' : 'Nominas disponibles'}</h3>
+                <div className='payrolls-card-heading'>
+                    <div>
+                        <h3>
+                            {isAdminLike
+                                ? 'Nominas importadas'
+                                : 'Nominas disponibles'}
+                        </h3>
+                        {isAdminLike ? (
+                            <p className='payrolls-muted'>
+                                {selectedPayrolls.length} seleccionadas
+                            </p>
+                        ) : null}
+                    </div>
+                    {isAdminLike ? (
+                        <div className='payrolls-quick-actions'>
+                            <button
+                                type='button'
+                                className='payrolls-btn'
+                                onClick={() =>
+                                    publishPayrollBatch(
+                                        publishablePayrolls,
+                                        'Nominas emparejadas publicadas'
+                                    )
+                                }
+                                disabled={saving || !publishablePayrolls.length}
+                            >
+                                Publicar emparejadas
+                            </button>
+                            <button
+                                type='button'
+                                className='payrolls-btn payrolls-btn--ghost'
+                                onClick={() =>
+                                    publishPayrollBatch(
+                                        selectedPayrolls,
+                                        'Nominas seleccionadas publicadas'
+                                    )
+                                }
+                                disabled={saving || !selectedPayrolls.length}
+                            >
+                                Publicar seleccionadas
+                            </button>
+                            <button
+                                type='button'
+                                className='payrolls-btn payrolls-btn--danger'
+                                onClick={handleDeleteSelected}
+                                disabled={saving || !selectedPayrolls.length}
+                            >
+                                Borrar seleccionadas
+                            </button>
+                        </div>
+                    ) : null}
+                </div>
                 {loading ? <p className='payrolls-muted'>Cargando...</p> : null}
                 <div className='payrolls-list'>
-                    {groupedPayrolls.map((payroll) =>
+                    {isAdminLike
+                        ? payrollMatchGroups.map((group) => (
+                              <div
+                                  key={group.key}
+                                  className='payrolls-match-group'
+                              >
+                                  <button
+                                      type='button'
+                                      className='payrolls-match-toggle'
+                                      onClick={() => toggleMatchGroup(group.key)}
+                                  >
+                                      <span>{group.label}</span>
+                                      <small>{group.count} nominas</small>
+                                      <strong>
+                                          {expandedMatchGroups[group.key]
+                                              ? '-'
+                                              : '+'}
+                                      </strong>
+                                  </button>
+                                  {expandedMatchGroups[group.key]
+                                      ? group.rows.map((payroll) =>
+                                            payroll.isMonthHeader ? (
+                                                <button
+                                                    key={`${group.key}-${payroll.id}`}
+                                                    type='button'
+                                                    className='payrolls-month-toggle'
+                                                    onClick={() =>
+                                                        toggleMonth(
+                                                            `${group.key}-${payroll.month}`
+                                                        )
+                                                    }
+                                                >
+                                                    <span>{payroll.label}</span>
+                                                    <small>
+                                                        {payroll.count} nominas
+                                                    </small>
+                                                    <strong>
+                                                        {expandedMonths[
+                                                            `${group.key}-${payroll.month}`
+                                                        ]
+                                                            ? '-'
+                                                            : '+'}
+                                                    </strong>
+                                                </button>
+                                            ) : expandedMonths[
+                                                  `${group.key}-${payroll.monthKey}`
+                                              ] ? (
+                                                renderPayrollItem(payroll)
+                                            ) : null
+                                        )
+                                      : null}
+                              </div>
+                          ))
+                        : null}
+                    {!isAdminLike && groupedPayrolls.map((payroll) =>
                         payroll.isMonthHeader ? (
                             <button
                                 key={payroll.id}

@@ -103,6 +103,26 @@
     min-width: 0;
 }
 
+.payrolls-card-heading {
+    align-items: flex-start;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-bottom: 0.9rem;
+}
+
+.payrolls-card-heading p {
+    margin: 0.25rem 0 0;
+}
+
+.payrolls-quick-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    justify-content: flex-end;
+}
+
 .payrolls-btn {
     background: #0f172a;
     border: 0;
@@ -132,6 +152,46 @@
 .payrolls-list {
     display: grid;
     gap: 0.65rem;
+}
+
+.payrolls-match-group {
+    display: grid;
+    gap: 0.65rem;
+}
+
+.payrolls-match-toggle {
+    align-items: center;
+    background: #f1f5f9;
+    border: 1px solid #dbe3ef;
+    border-radius: 0.75rem;
+    color: #0f172a;
+    cursor: pointer;
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: 1fr auto auto;
+    padding: 0.85rem 1rem;
+    text-align: left;
+    width: 100%;
+}
+
+.payrolls-match-toggle span {
+    font-weight: 900;
+}
+
+.payrolls-match-toggle small {
+    color: #64748b;
+    font-weight: 800;
+}
+
+.payrolls-match-toggle strong {
+    align-items: center;
+    background: #0f172a;
+    border-radius: 999px;
+    color: #ffffff;
+    display: inline-flex;
+    height: 1.5rem;
+    justify-content: center;
+    width: 1.5rem;
 }
 
 .payrolls-month-toggle {
@@ -177,6 +237,16 @@
     display: grid;
     gap: 0.75rem;
     padding: 0.85rem;
+}
+
+.payrolls-select {
+    align-items: center;
+    color: #0f172a;
+    display: inline-flex;
+    font-size: 0.85rem;
+    font-weight: 800;
+    gap: 0.45rem;
+    justify-self: start;
 }
 
 .payrolls-item-main {
@@ -239,5 +309,13 @@
     .payrolls-import-grid,
     .payrolls-edit-grid {
         grid-template-columns: 1fr;
+    }
+
+    .payrolls-card-heading {
+        display: grid;
+    }
+
+    .payrolls-quick-actions {
+        justify-content: flex-start;
     }
 }

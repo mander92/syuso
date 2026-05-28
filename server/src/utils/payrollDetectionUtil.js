@@ -48,22 +48,45 @@ export const detectPayrollDni = (text) => {
 };
 
 export const detectPayrollMonth = (text, fallbackFileName = '') => {
-    const source = normalizePayrollText(`${text} ${fallbackFileName}`);
-    const numeric = source.match(/\b(20\d{2})\s*(0[1-9]|1[0-2])\b/);
-    if (numeric) return `${numeric[1]}-${numeric[2]}`;
+    const rawSource = String(`${text || ''} ${fallbackFileName || ''}`)
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+    const source = normalizePayrollText(rawSource);
 
-    const numericReverse = source.match(/\b(0[1-9]|1[0-2])\s*(20\d{2})\b/);
-    if (numericReverse) return `${numericReverse[2]}-${numericReverse[1]}`;
+    const dateRange = rawSource.match(
+        /\b\d{1,2}[\/.-](0[1-9]|1[0-2])[\/.-](20\d{2})\s+\d{1,2}[\/.-](0[1-9]|1[0-2])[\/.-]\2\b/
+    );
+    if (dateRange) return `${dateRange[2]}-${dateRange[3]}`;
+
+    const dayMonthYear = source.match(
+        /\b\d{1,2}\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\s+(20\d{2})\b/
+    );
+    if (dayMonthYear) {
+        return `${dayMonthYear[2]}-${spanishMonths.get(dayMonthYear[1])}`;
+    }
 
     for (const [monthName, monthNumber] of spanishMonths.entries()) {
         const match = source.match(new RegExp(`\\b${monthName}\\b\\s*(20\\d{2})`));
         if (match) return `${match[1]}-${monthNumber}`;
     }
 
+    for (const [monthName, monthNumber] of spanishMonths.entries()) {
+        if (!normalizePayrollText(fallbackFileName).includes(monthName)) continue;
+        const year = source.match(/\b(20\d{2})\b/);
+        if (year) return `${year[1]}-${monthNumber}`;
+    }
+
     const reverse = source.match(
         /\b(20\d{2})\b.*\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\b/
     );
     if (reverse) return `${reverse[1]}-${spanishMonths.get(reverse[2])}`;
+
+    const numeric = rawSource.match(/\b(20\d{2})[-/.](0[1-9]|1[0-2])\b/);
+    if (numeric) return `${numeric[1]}-${numeric[2]}`;
+
+    const numericReverse = rawSource.match(/\b(0[1-9]|1[0-2])[-/.](20\d{2})\b/);
+    if (numericReverse) return `${numericReverse[2]}-${numericReverse[1]}`;
 
     return '';
 };
