@@ -134,6 +134,42 @@
     gap: 0.65rem;
 }
 
+.payrolls-month-toggle {
+    align-items: center;
+    background: #0f172a;
+    border: 0;
+    border-radius: 0.65rem;
+    color: #ffffff;
+    cursor: pointer;
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: 1fr auto auto;
+    padding: 0.8rem 1rem;
+    text-align: left;
+    width: 100%;
+}
+
+.payrolls-month-toggle span {
+    font-weight: 900;
+    text-transform: capitalize;
+}
+
+.payrolls-month-toggle small {
+    color: #cbd5e1;
+    font-weight: 800;
+}
+
+.payrolls-month-toggle strong {
+    align-items: center;
+    background: #ffffff;
+    border-radius: 999px;
+    color: #0f172a;
+    display: inline-flex;
+    height: 1.5rem;
+    justify-content: center;
+    width: 1.5rem;
+}
+
 .payrolls-item {
     background: #f8fafc;
     border: 1px solid #e2e8f0;

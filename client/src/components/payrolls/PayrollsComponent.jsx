@@ -26,6 +26,16 @@ const getEmployeeName = (item) =>
 
 const getCurrentMonth = () => new Date().toISOString().slice(0, 7);
 
+const formatMonthLabel = (value) => {
+    if (!value) return 'Sin mes';
+    const [year, month] = String(value).split('-');
+    if (!year || !month) return value;
+    return new Intl.DateTimeFormat('es-ES', {
+        month: 'long',
+        year: 'numeric',
+    }).format(new Date(Number(year), Number(month) - 1, 1));
+};
+
 const PayrollsComponent = () => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
@@ -45,6 +55,7 @@ const PayrollsComponent = () => {
     const [files, setFiles] = useState(null);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [expandedMonths, setExpandedMonths] = useState({});
 
     const employeeOptions = useMemo(
         () =>
@@ -131,11 +142,171 @@ const PayrollsComponent = () => {
     };
 
     const groupedPayrolls = useMemo(() => {
-        if (isAdminLike) return payrolls;
-        return payrolls.slice().sort((a, b) =>
-            String(b.payrollMonth || '').localeCompare(String(a.payrollMonth || ''))
-        );
+        const groups = new Map();
+        payrolls.forEach((payroll) => {
+            const key = payroll.payrollMonth || 'sin-mes';
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(payroll);
+        });
+
+        return [...groups.entries()]
+            .sort(([a], [b]) => {
+                if (a === 'sin-mes') return 1;
+                if (b === 'sin-mes') return -1;
+                return String(b).localeCompare(String(a));
+            })
+            .flatMap(([month, items]) => {
+                const sortedItems = items.slice().sort((a, b) => {
+                    if (isAdminLike) {
+                        return getEmployeeName(a).localeCompare(
+                            getEmployeeName(b),
+                            'es',
+                            { sensitivity: 'base' }
+                        );
+                    }
+                    return String(b.createdAt || '').localeCompare(
+                        String(a.createdAt || '')
+                    );
+                });
+                return [
+                    {
+                        id: `month-${month}`,
+                        isMonthHeader: true,
+                        month,
+                        label:
+                            month === 'sin-mes'
+                                ? 'Sin mes'
+                                : formatMonthLabel(month),
+                        count: sortedItems.length,
+                    },
+                    ...sortedItems.map((item) => ({
+                        ...item,
+                        monthKey: month,
+                    })),
+                ];
+            });
     }, [isAdminLike, payrolls]);
+
+    useEffect(() => {
+        if (!groupedPayrolls.length) {
+            setExpandedMonths({});
+            return;
+        }
+
+        setExpandedMonths((prev) => {
+            const next = {};
+            groupedPayrolls
+                .filter((item) => item.isMonthHeader)
+                .forEach((group) => {
+                    next[group.month] = prev[group.month] ?? true;
+            });
+            return next;
+        });
+    }, [groupedPayrolls]);
+
+    const toggleMonth = (month) => {
+        setExpandedMonths((prev) => ({
+            ...prev,
+            [month]: !prev[month],
+        }));
+    };
+
+    const renderPayrollItem = (payroll) => (
+        <article key={payroll.id} className='payrolls-item'>
+            <div className='payrolls-item-main'>
+                <div>
+                    <h4>{getEmployeeName(payroll)}</h4>
+                    <p>{payroll.originalFileName}</p>
+                    {payroll.detectedDni ? (
+                        <p>DNI detectado: {payroll.detectedDni}</p>
+                    ) : null}
+                </div>
+                <span
+                    className={`payrolls-status payrolls-status--${payroll.status}`}
+                >
+                    {statusLabels[payroll.status] || payroll.status}
+                </span>
+            </div>
+
+            {isAdminLike ? (
+                <div className='payrolls-edit-grid'>
+                    <div className='payrolls-field'>
+                        <label>Empleado</label>
+                        <select
+                            value={payroll.employeeId || ''}
+                            onChange={(event) =>
+                                handlePayrollChange(payroll.id, {
+                                    employeeId: event.target.value,
+                                })
+                            }
+                            disabled={saving}
+                        >
+                            <option value=''>Sin emparejar</option>
+                            {employeeOptions.map((employee) => (
+                                <option key={employee.id} value={employee.id}>
+                                    {getEmployeeName(employee)}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className='payrolls-field'>
+                        <label>Mes</label>
+                        <input
+                            type='month'
+                            value={payroll.payrollMonth || ''}
+                            onChange={(event) =>
+                                handlePayrollChange(payroll.id, {
+                                    payrollMonth: event.target.value,
+                                })
+                            }
+                            disabled={saving}
+                        />
+                    </div>
+                    <div className='payrolls-field'>
+                        <label>Estado</label>
+                        <select
+                            value={payroll.status}
+                            onChange={(event) =>
+                                handlePayrollChange(payroll.id, {
+                                    status: event.target.value,
+                                })
+                            }
+                            disabled={saving}
+                        >
+                            <option value='unmatched'>Sin emparejar</option>
+                            <option value='matched'>Emparejada</option>
+                            <option value='published'>Publicada</option>
+                            <option value='rejected'>Rechazada</option>
+                        </select>
+                    </div>
+                </div>
+            ) : null}
+
+            <div className='payrolls-actions'>
+                <button
+                    type='button'
+                    className='payrolls-btn payrolls-btn--ghost'
+                    onClick={() =>
+                        openPayrollFile(authToken, payroll.id).catch((error) =>
+                            toast.error(error.message)
+                        )
+                    }
+                >
+                    Ver PDF
+                </button>
+                {isAdminLike ? (
+                    <button
+                        type='button'
+                        className='payrolls-btn payrolls-btn--danger'
+                        onClick={() => handleDelete(payroll.id)}
+                        disabled={saving}
+                    >
+                        Borrar
+                    </button>
+                ) : null}
+            </div>
+        </article>
+    );
 
     return (
         <section className='payrolls'>
@@ -311,7 +482,21 @@ const PayrollsComponent = () => {
                 <h3>{isAdminLike ? 'Nominas importadas' : 'Nominas disponibles'}</h3>
                 {loading ? <p className='payrolls-muted'>Cargando...</p> : null}
                 <div className='payrolls-list'>
-                    {groupedPayrolls.map((payroll) => (
+                    {groupedPayrolls.map((payroll) =>
+                        payroll.isMonthHeader ? (
+                            <button
+                                key={payroll.id}
+                                type='button'
+                                className='payrolls-month-toggle'
+                                onClick={() => toggleMonth(payroll.month)}
+                            >
+                                <span>{payroll.label}</span>
+                                <small>{payroll.count} nominas</small>
+                                <strong>
+                                    {expandedMonths[payroll.month] ? '-' : '+'}
+                                </strong>
+                            </button>
+                        ) : expandedMonths[payroll.monthKey] ? (
                         <article key={payroll.id} className='payrolls-item'>
                             <div className='payrolls-item-main'>
                                 <div>
@@ -425,7 +610,8 @@ const PayrollsComponent = () => {
                                 ) : null}
                             </div>
                         </article>
-                    ))}
+                        ) : null
+                    )}
                 </div>
                 {!loading && !groupedPayrolls.length ? (
                     <p className='payrolls-empty'>

@@ -412,6 +412,16 @@ const ScheduleComponent = () => {
                         const templateApplied =
                             Array.isArray(templates) && templates.length > 0;
 
+                        if (
+                            scheduleServiceStatus === '' &&
+                            !scheduleServiceFilter &&
+                            !filteredShifts.length &&
+                            !templateApplied
+                        ) {
+                            delete shiftMap[service.id];
+                            return;
+                        }
+
                         const employeeSet = new Set();
                         let totalHours = 0;
                         filteredShifts.forEach((shift) => {
@@ -463,6 +473,7 @@ const ScheduleComponent = () => {
         scheduleMonth,
         scheduleEmployeeFilter,
         scheduleServiceFilter,
+        scheduleServiceStatus,
         scheduleStartDate,
         scheduleEndDate,
         scheduleViewMode,
@@ -1580,31 +1591,34 @@ const ScheduleComponent = () => {
             employeeMap.get(shift.employeeId).push(shift);
         });
 
-        return filteredEmployees.map((employee) => {
-            const shifts = employeeMap.get(employee.id) || [];
-            const totalHours = shifts.reduce(
-                (acc, shift) => acc + (Number(shift.hours) || 0),
-                0
-            );
-            const totalNightHours = shifts.reduce(
-                (acc, shift) => acc + (Number(shift.nightHours) || 0),
-                0
-            );
-            const totalHolidayHours = shifts.reduce(
-                (acc, shift) => acc + (Number(shift.holidayHours) || 0),
-                0
-            );
-            return {
-                id: employee.id,
-                name: `${employee.firstName} ${employee.lastName}`,
-                delegation: employee.delegations || employee.city || 'Sin delegacion',
-                shifts,
-                totalHours,
-                totalNightHours,
-                totalHolidayHours,
-            };
-        });
-    }, [scheduleShiftMap, filteredEmployees]);
+        return filteredEmployees
+            .map((employee) => {
+                const shifts = employeeMap.get(employee.id) || [];
+                const totalHours = shifts.reduce(
+                    (acc, shift) => acc + (Number(shift.hours) || 0),
+                    0
+                );
+                const totalNightHours = shifts.reduce(
+                    (acc, shift) => acc + (Number(shift.nightHours) || 0),
+                    0
+                );
+                const totalHolidayHours = shifts.reduce(
+                    (acc, shift) => acc + (Number(shift.holidayHours) || 0),
+                    0
+                );
+                return {
+                    id: employee.id,
+                    name: `${employee.firstName} ${employee.lastName}`,
+                    delegation:
+                        employee.delegations || employee.city || 'Sin delegacion',
+                    shifts,
+                    totalHours,
+                    totalNightHours,
+                    totalHolidayHours,
+                };
+            })
+            .filter((row) => scheduleEmployeeFilter || row.shifts.length);
+    }, [scheduleShiftMap, filteredEmployees, scheduleEmployeeFilter]);
 
     const personalRowsByDelegation = useMemo(() => {
         const groups = new Map();
