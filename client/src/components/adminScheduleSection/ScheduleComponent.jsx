@@ -312,11 +312,15 @@ const ScheduleComponent = () => {
                     ...service,
                     id: service?.id || service?.serviceId || '',
                 }));
+                const allowedScheduleStatuses = ['confirmed', 'completed'];
                 setScheduleServices(
                     normalized.filter(
                         (service) =>
                             typeof service?.id === 'string' &&
-                            service.id.length === 36
+                            service.id.length === 36 &&
+                            (scheduleServiceStatus ||
+                                scheduleViewMode === 'personal' ||
+                                allowedScheduleStatuses.includes(service.status))
                     )
                 );
             } catch (error) {
