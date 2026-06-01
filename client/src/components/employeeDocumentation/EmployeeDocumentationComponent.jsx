@@ -159,6 +159,8 @@ const getEmptyTerminationForm = () => ({
 });
 
 const DRAFT_LINK_EMAILS_STORAGE_KEY = 'syuso_documentation_draft_link_emails';
+const DRAFT_LINK_CC_EMAILS_STORAGE_KEY =
+    'syuso_documentation_draft_link_cc_emails';
 
 const normalizeDocumentation = (data) => ({
     ...emptyForm,
@@ -217,6 +219,13 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
     const [draftLinkEmails, setDraftLinkEmails] = useState(() => {
         try {
             return localStorage.getItem(DRAFT_LINK_EMAILS_STORAGE_KEY) || '';
+        } catch {
+            return '';
+        }
+    });
+    const [draftLinkCcEmails, setDraftLinkCcEmails] = useState(() => {
+        try {
+            return localStorage.getItem(DRAFT_LINK_CC_EMAILS_STORAGE_KEY) || '';
         } catch {
             return '';
         }
@@ -490,6 +499,17 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
             // ignore storage errors
         }
     }, [draftLinkEmails]);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem(
+                DRAFT_LINK_CC_EMAILS_STORAGE_KEY,
+                draftLinkCcEmails
+            );
+        } catch {
+            // ignore storage errors
+        }
+    }, [draftLinkCcEmails]);
 
     const selectEmployee = async (userId) => {
         setSelectedUserId(userId);
@@ -1150,6 +1170,7 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                     payload: {
                         action: 'hire',
                         emails: draftLinkEmails,
+                        ccEmails: draftLinkCcEmails,
                         ...draftEmploymentForm,
                     },
                 });
@@ -1237,6 +1258,7 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                 authToken,
                 draftId,
                 emails: draftLinkEmails,
+                ccEmails: draftLinkCcEmails,
                 employmentData: draftEmploymentForm,
             });
             setDraftEmploymentModalOpen(false);
@@ -1269,6 +1291,7 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                 payload: {
                     action: 'termination',
                     emails: draftLinkEmails,
+                    ccEmails: draftLinkCcEmails,
                     ...workerTerminationForm,
                 },
             });
@@ -1386,7 +1409,7 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
             {isAdminLike ? (
                 <div className='employee-documentation-global-send'>
                     <div className='employee-documentation-field employee-documentation-field--wide'>
-                        <label>Correos para enviar altas</label>
+                        <label>Correos destinatarios</label>
                         <input
                             type='text'
                             value={draftLinkEmails}
@@ -1394,6 +1417,17 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                                 setDraftLinkEmails(event.target.value)
                             }
                             placeholder='correo1@empresa.com, correo2@empresa.com'
+                        />
+                    </div>
+                    <div className='employee-documentation-field employee-documentation-field--wide'>
+                        <label>Correos en copia</label>
+                        <input
+                            type='text'
+                            value={draftLinkCcEmails}
+                            onChange={(event) =>
+                                setDraftLinkCcEmails(event.target.value)
+                            }
+                            placeholder='copia1@empresa.com, copia2@empresa.com'
                         />
                     </div>
                 </div>

@@ -3,7 +3,22 @@ import fs from 'fs';
 import path from 'path';
 import { BREVO_API_KEY, SMTP_EMAIL } from '../../env.js';
 
-const sendMail = async (name, email, emailSubject, emailBody, attachments = []) => {
+const normalizeEmails = (emails) =>
+    Array.isArray(emails)
+        ? emails.filter(Boolean)
+        : String(emails || '')
+              .split(/[\s,;]+/)
+              .map((email) => email.trim())
+              .filter(Boolean);
+
+const sendMail = async (
+    name,
+    email,
+    emailSubject,
+    emailBody,
+    attachments = [],
+    options = {}
+) => {
     try {
         if (!BREVO_API_KEY) {
             console.error('BREVO_API_KEY no configurada');
@@ -29,6 +44,10 @@ const sendMail = async (name, email, emailSubject, emailBody, attachments = []) 
 
         sendSmtpEmail.subject = emailSubject;
         sendSmtpEmail.to = [{ email, name }];
+        const ccEmails = normalizeEmails(options.cc);
+        if (ccEmails.length) {
+            sendSmtpEmail.cc = ccEmails.map((ccEmail) => ({ email: ccEmail }));
+        }
         sendSmtpEmail.htmlContent = emailBody;
         sendSmtpEmail.sender = {
             name: 'Syuso',

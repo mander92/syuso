@@ -17,6 +17,7 @@ const parseEmails = (raw) =>
 const schema = Joi.object({
     action: Joi.string().valid('hire', 'termination').required(),
     emails: Joi.string().max(1000).required(),
+    ccEmails: Joi.string().max(1000).allow('', null),
     employmentPercentage: Joi.string().max(50).allow('', null),
     contractType: Joi.string().max(120).allow('', null),
     startDate: Joi.date().allow('', null),
@@ -39,7 +40,8 @@ const sendEmployeeLifecycleEmailController = async (req, res, next) => {
         }
 
         const emailSchema = Joi.string().email();
-        const invalidEmail = recipients.find(
+        const ccRecipients = [...new Set(parseEmails(value.ccEmails))];
+        const invalidEmail = [...recipients, ...ccRecipients].find(
             (email) => emailSchema.validate(email).error
         );
         if (invalidEmail) {
@@ -62,6 +64,7 @@ const sendEmployeeLifecycleEmailController = async (req, res, next) => {
 
         const { failed } = await sendEmployeeLifecycleEmail({
             emails: recipients.join(','),
+            ccEmails: ccRecipients.join(','),
             employee: documentation,
             action: value.action === 'termination' ? 'termination' : 'hire',
             employmentData: value,
@@ -80,6 +83,7 @@ const sendEmployeeLifecycleEmailController = async (req, res, next) => {
             status: 'ok',
             data: {
                 sentTo: recipients,
+                cc: ccRecipients,
                 attachments: attachments.length,
             },
         });

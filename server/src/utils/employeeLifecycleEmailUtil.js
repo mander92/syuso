@@ -107,6 +107,7 @@ export const buildEmployeeLifecycleAttachments = ({
 
 export const sendEmployeeLifecycleEmail = async ({
     emails,
+    ccEmails = '',
     employee,
     action,
     employmentData = {},
@@ -114,6 +115,9 @@ export const sendEmployeeLifecycleEmail = async ({
     attachments = [],
 }) => {
     const recipients = [...new Set(parseEmails(emails))];
+    const ccRecipients = [...new Set(parseEmails(ccEmails))].filter(
+        (email) => !recipients.includes(email)
+    );
     const employeeName =
         `${employee?.firstName || ''} ${employee?.lastName || ''}`.trim() ||
         employee?.email ||
@@ -170,9 +174,11 @@ export const sendEmployeeLifecycleEmail = async ({
 
     const failed = [];
     for (const email of recipients) {
-        const sent = await sendMail(employeeName, email, subject, body, attachments);
+        const sent = await sendMail(employeeName, email, subject, body, attachments, {
+            cc: ccRecipients,
+        });
         if (!sent) failed.push(email);
     }
 
-    return { recipients, failed };
+    return { recipients, ccRecipients, failed };
 };

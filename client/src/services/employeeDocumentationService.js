@@ -505,6 +505,7 @@ export const sendDocumentationDraftLink = async ({
     authToken,
     draftId,
     emails,
+    ccEmails = '',
     employmentData = {},
 }) => {
     const res = await fetch(
@@ -515,7 +516,7 @@ export const sendDocumentationDraftLink = async ({
                 Authorization: authToken,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ emails, ...employmentData }),
+            body: JSON.stringify({ emails, ccEmails, ...employmentData }),
         }
     );
     return assertOk(await readJsonBody(res));

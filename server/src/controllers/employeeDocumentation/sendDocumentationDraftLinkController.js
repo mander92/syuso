@@ -17,6 +17,7 @@ const sendDocumentationDraftLinkController = async (req, res, next) => {
     try {
         const schema = Joi.object({
             emails: Joi.string().max(1000).required(),
+            ccEmails: Joi.string().max(1000).allow('', null),
             employmentPercentage: Joi.string().max(50).allow('', null),
             contractType: Joi.string().max(120).allow('', null),
             startDate: Joi.date().allow('', null),
@@ -35,7 +36,8 @@ const sendDocumentationDraftLinkController = async (req, res, next) => {
         }
 
         const emailSchema = Joi.string().email();
-        const invalidEmail = recipients.find(
+        const ccRecipients = [...new Set(parseEmails(value.ccEmails))];
+        const invalidEmail = [...recipients, ...ccRecipients].find(
             (email) => emailSchema.validate(email).error
         );
         if (invalidEmail) {
@@ -56,6 +58,7 @@ const sendDocumentationDraftLinkController = async (req, res, next) => {
 
         const { failed } = await sendEmployeeLifecycleEmail({
             emails: recipients.join(','),
+            ccEmails: ccRecipients.join(','),
             employee: draft,
             action: 'hire',
             employmentData: value,
@@ -73,6 +76,7 @@ const sendDocumentationDraftLinkController = async (req, res, next) => {
             status: 'ok',
             data: {
                 sentTo: recipients,
+                cc: ccRecipients,
                 attachments: attachments.length,
             },
         });
