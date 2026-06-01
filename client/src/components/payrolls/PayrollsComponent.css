@@ -159,6 +159,11 @@
     gap: 0.65rem;
 }
 
+.payrolls-match-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
 .payrolls-match-toggle {
     align-items: center;
     background: #f1f5f9;

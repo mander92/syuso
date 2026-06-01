@@ -199,6 +199,24 @@ const PayrollsComponent = () => {
         );
     };
 
+    const togglePayrollGroupSelection = (payrollRows) => {
+        const payrollIds = payrollRows
+            .filter((payroll) => !payroll.isMonthHeader)
+            .map((payroll) => payroll.id);
+
+        if (!payrollIds.length) return;
+
+        setSelectedPayrollIds((prev) => {
+            const allSelected = payrollIds.every((id) => prev.includes(id));
+
+            if (allSelected) {
+                return prev.filter((id) => !payrollIds.includes(id));
+            }
+
+            return [...new Set([...prev, ...payrollIds])];
+        });
+    };
+
     const selectedPayrolls = useMemo(
         () =>
             payrolls.filter((payroll) =>
@@ -710,6 +728,33 @@ const PayrollsComponent = () => {
                                               : '+'}
                                       </strong>
                                   </button>
+                                  {expandedMatchGroups[group.key] ? (
+                                      <div className='payrolls-match-actions'>
+                                          <button
+                                              type='button'
+                                              className='payrolls-btn payrolls-btn--ghost'
+                                              onClick={() =>
+                                                  togglePayrollGroupSelection(
+                                                      group.rows
+                                                  )
+                                              }
+                                              disabled={!group.count}
+                                          >
+                                              {group.rows
+                                                  .filter(
+                                                      (payroll) =>
+                                                          !payroll.isMonthHeader
+                                                  )
+                                                  .every((payroll) =>
+                                                      selectedPayrollIds.includes(
+                                                          payroll.id
+                                                      )
+                                                  )
+                                                  ? 'Deseleccionar todas'
+                                                  : 'Seleccionar todas'}
+                                          </button>
+                                      </div>
+                                  ) : null}
                                   {expandedMatchGroups[group.key]
                                       ? group.rows.map((payroll) =>
                                             payroll.isMonthHeader ? (
