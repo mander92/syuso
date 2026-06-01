@@ -32,6 +32,7 @@ const saveWorkReportDraftController = async (req, res, next) => {
             employeeId: req.userLogged.id,
             payload,
             signatureDataUrl: req.body.signature,
+            clientSignatureDataUrl: req.body.clientSignature,
             incidents: req.body.incidents,
             incidentFiles: req.files || {},
         });

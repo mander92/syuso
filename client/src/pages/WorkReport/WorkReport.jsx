@@ -320,8 +320,12 @@ const WorkReport = () => {
                 }
 
                 if (draft.signaturePath) {
+                    const signatureUrl = `${VITE_API_URL}/uploads/${draft.signaturePath}`;
+                    signatureDataRef.current = signatureUrl;
+                    setSignatureData(signatureUrl);
+                    setHasSignature(true);
                     const img = new Image();
-                    img.src = `${VITE_API_URL}/uploads/${draft.signaturePath}`;
+                    img.src = signatureUrl;
                     img.onload = () => {
                         const ctx = ctxRef.current;
                         const canvas = canvasRef.current;
@@ -332,6 +336,26 @@ const WorkReport = () => {
                         const dataUrl = canvas.toDataURL('image/png');
                         signatureDataRef.current = dataUrl;
                         setSignatureData(dataUrl);
+                    };
+                }
+
+                if (draft.data?.clientSignaturePath) {
+                    const clientSignatureUrl = `${VITE_API_URL}/uploads/${draft.data.clientSignaturePath}`;
+                    clientSignatureDataRef.current = clientSignatureUrl;
+                    setClientSignatureData(clientSignatureUrl);
+                    setHasClientSignature(true);
+                    const img = new Image();
+                    img.src = clientSignatureUrl;
+                    img.onload = () => {
+                        const ctx = clientCtxRef.current;
+                        const canvas = clientCanvasRef.current;
+                        if (!ctx || !canvas) return;
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        setHasClientSignature(true);
+                        const dataUrl = canvas.toDataURL('image/png');
+                        clientSignatureDataRef.current = dataUrl;
+                        setClientSignatureData(dataUrl);
                     };
                 }
             } catch (error) {
@@ -566,6 +590,36 @@ const WorkReport = () => {
         return ctx;
     }, []);
 
+    useEffect(() => {
+        if (!signatureDataRef.current && !signatureData) return;
+        const ctx = ensureContext();
+        const canvas = canvasRef.current;
+        const source = signatureDataRef.current || signatureData;
+        if (!ctx || !canvas || !source) return;
+        const img = new Image();
+        img.src = source;
+        img.onload = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            setHasSignature(true);
+        };
+    }, [ensureContext, signatureData]);
+
+    useEffect(() => {
+        if (!clientSignatureDataRef.current && !clientSignatureData) return;
+        const ctx = ensureClientContext();
+        const canvas = clientCanvasRef.current;
+        const source = clientSignatureDataRef.current || clientSignatureData;
+        if (!ctx || !canvas || !source) return;
+        const img = new Image();
+        img.src = source;
+        img.onload = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            setHasClientSignature(true);
+        };
+    }, [clientSignatureData, ensureClientContext]);
+
     const drawClientLine = useCallback((event) => {
         if (!isClientDrawingRef.current) return;
         const ctx = ensureClientContext();
@@ -705,8 +759,18 @@ const WorkReport = () => {
                 formData.securityCompany || ''
             );
             formDataPayload.append('description', formData.description || '');
-            if (signatureData) {
-                formDataPayload.append('signature', signatureData);
+            const signaturePayload = signatureDataRef.current || signatureData || '';
+            const clientSignaturePayload =
+                clientSignatureDataRef.current || clientSignatureData || '';
+
+            if (hasSignature && signaturePayload.startsWith('data:image/')) {
+                formDataPayload.append('signature', signaturePayload);
+            }
+            if (
+                hasClientSignature &&
+                clientSignaturePayload.startsWith('data:image/')
+            ) {
+                formDataPayload.append('clientSignature', clientSignaturePayload);
             }
             if (cleanIncidents.length) {
                 formDataPayload.append(

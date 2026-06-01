@@ -31,6 +31,7 @@ const listEmployeeSignatureDocumentsService = async ({
             u.email,
             d.title,
             d.documentType,
+            d.originalFilePath,
             d.originalFileName,
             d.signaturePath,
             d.signedFileName,

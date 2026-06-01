@@ -20,6 +20,7 @@ const saveWorkReportDraftService = async ({
     employeeId,
     payload,
     signatureDataUrl,
+    clientSignatureDataUrl,
     incidents,
     incidentFiles,
 }) => {
@@ -61,8 +62,24 @@ const saveWorkReportDraftService = async ({
     await ensureDir(signatureDir);
     await ensureDir(photoDir);
 
-    let signaturePath = payload.signaturePath || null;
-    if (signatureDataUrl) {
+    const [existing] = await pool.query(
+        `
+        SELECT id, signaturePath, data FROM workReportDrafts WHERE shiftRecordId = ?
+        `,
+        [shiftRecordId]
+    );
+
+    const parseMaybeJson = (value, fallback) => {
+        if (!value) return fallback;
+        if (typeof value === 'string') return JSON.parse(value);
+        return value;
+    };
+
+    const existingData = existing.length
+        ? parseMaybeJson(existing[0].data, {})
+        : {};
+
+    const saveSignatureImage = async (signatureDataUrl) => {
         const signatureId = uuid();
         const signatureFile = `${signatureId}.png`;
         const signatureDiskPath = path.join(signatureDir, signatureFile);
@@ -74,7 +91,18 @@ const saveWorkReportDraftService = async ({
             signatureDiskPath,
             Buffer.from(signatureBase64, 'base64')
         );
-        signaturePath = `workReports/drafts/signatures/${signatureFile}`;
+        return `workReports/drafts/signatures/${signatureFile}`;
+    };
+
+    let signaturePath = payload.signaturePath || existing[0]?.signaturePath || null;
+    if (signatureDataUrl) {
+        signaturePath = await saveSignatureImage(signatureDataUrl);
+    }
+
+    let clientSignaturePath =
+        payload.clientSignaturePath || existingData.clientSignaturePath || null;
+    if (clientSignatureDataUrl) {
+        clientSignaturePath = await saveSignatureImage(clientSignatureDataUrl);
     }
 
     const normalizedIncidents = Array.isArray(incidents)
@@ -121,15 +149,9 @@ const saveWorkReportDraftService = async ({
 
     const data = {
         ...payload,
+        clientSignaturePath,
         incidents: normalizedIncidents,
     };
-
-    const [existing] = await pool.query(
-        `
-        SELECT id FROM workReportDrafts WHERE shiftRecordId = ?
-        `,
-        [shiftRecordId]
-    );
 
     if (existing.length) {
         await pool.query(

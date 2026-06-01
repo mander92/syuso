@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS employeeRequests (
     requestType ENUM('vacation', 'days_off', 'weekend_rest', 'availability', 'other') NOT NULL,
     startDate DATE NOT NULL,
     endDate DATE NOT NULL,
-    notes VARCHAR(500),
+    notes TEXT,
     status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
     decidedBy CHAR(36),
     decidedAt TIMESTAMP,

@@ -1,24 +1,17 @@
 import Joi from 'joi';
 
-import { CLIENT_URL } from '../../../env.js';
-import createDocumentationDraftTokenService from '../../services/employeeDocumentation/createDocumentationDraftTokenService.js';
 import selectEmployeeDocumentationDraftService from '../../services/employeeDocumentation/selectEmployeeDocumentationDraftService.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
-import sendMail from '../../utils/sendBrevoMail.js';
+import {
+    buildEmployeeLifecycleAttachments,
+    sendEmployeeLifecycleEmail,
+} from '../../utils/employeeLifecycleEmailUtil.js';
 
 const parseEmails = (raw) =>
     String(raw || '')
         .split(/[\s,;]+/)
         .map((email) => email.trim().toLowerCase())
         .filter(Boolean);
-
-const escapeHtml = (value) =>
-    String(value || '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;');
 
 const sendDocumentationDraftLinkController = async (req, res, next) => {
     try {
@@ -56,54 +49,18 @@ const sendDocumentationDraftLinkController = async (req, res, next) => {
             generateErrorUtil('La ficha ya esta convertida en trabajador', 409);
         }
 
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + 7);
+        const attachments = buildEmployeeLifecycleAttachments({
+            documentation: draft,
+            signatureDocuments: [],
+        });
 
-        const token = await createDocumentationDraftTokenService(
-            draftId,
-            expiresAt
-        );
-        const url = `${CLIENT_URL}/documentacion-alta/${token}`;
-        const employeeName =
-            `${draft.firstName || ''} ${draft.lastName || ''}`.trim() ||
-            'trabajador/a';
-        const employmentDetails = [
-            ['Porcentaje de alta', value.employmentPercentage],
-            ['Tipo de contrato', value.contractType],
-            [
-                'Fecha de alta',
-                value.startDate
-                    ? new Date(value.startDate).toLocaleDateString('es-ES')
-                    : '',
-            ],
-            ['Centro de trabajo', value.workCenter],
-        ].filter(([, detail]) => detail);
-        const subject = 'Ficha de alta SYUSO';
-        const body = `
-            <p>Hola,</p>
-            <p>Te enviamos el enlace privado para completar la ficha de alta de <strong>${employeeName}</strong> en SYUSO.</p>
-            ${
-                employmentDetails.length
-                    ? `<p><strong>Datos previstos del alta:</strong></p>
-                       <ul>
-                           ${employmentDetails
-                               .map(
-                                   ([label, detail]) =>
-                                       `<li><strong>${escapeHtml(label)}:</strong> ${escapeHtml(detail)}</li>`
-                               )
-                               .join('')}
-                       </ul>`
-                    : ''
-            }
-            <p><a href="${url}" style="display:inline-block;padding:10px 16px;background:#0f172a;color:#ffffff;text-decoration:none;border-radius:8px;">Completar ficha de alta</a></p>
-            <p>El enlace caduca en 7 dias.</p>
-        `;
-
-        const failed = [];
-        for (const email of recipients) {
-            const sent = await sendMail(employeeName, email, subject, body);
-            if (!sent) failed.push(email);
-        }
+        const { failed } = await sendEmployeeLifecycleEmail({
+            emails: recipients.join(','),
+            employee: draft,
+            action: 'hire',
+            employmentData: value,
+            attachments,
+        });
 
         if (failed.length) {
             generateErrorUtil(
@@ -116,9 +73,7 @@ const sendDocumentationDraftLinkController = async (req, res, next) => {
             status: 'ok',
             data: {
                 sentTo: recipients,
-                token,
-                expiresAt,
-                url,
+                attachments: attachments.length,
             },
         });
     } catch (error) {
