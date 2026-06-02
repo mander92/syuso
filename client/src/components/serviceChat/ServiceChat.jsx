@@ -403,7 +403,9 @@ const ServiceChat = ({
         <section className={`service-chat ${compact ? 'service-chat--compact' : ''}`}>
             <header className='service-chat-header'>
                 <div>
-                    <h3>{title || 'Chat del servicio'}</h3>
+                    <h3 className='notranslate' translate='no'>
+                        {title || 'Chat del servicio'}
+                    </h3>
                     <p>
                         {connected ? 'Conectado' : 'Desconectado'}
                         {chatPaused ? ' · Chat en pausa' : ''}

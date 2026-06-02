@@ -1217,6 +1217,22 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
 
         try {
             setSaving(true);
+            if (draftForm.linkedUserId) {
+                await sendEmployeeLifecycleEmail({
+                    authToken,
+                    userId: draftForm.linkedUserId,
+                    payload: {
+                        action: 'hire',
+                        emails: draftLinkEmails,
+                        ccEmails: draftLinkCcEmails,
+                        ...draftEmploymentForm,
+                    },
+                });
+                setDraftEmploymentModalOpen(false);
+                alert('Alta enviada al trabajador creado.');
+                return;
+            }
+
             let draftId = selectedDraftId;
 
             if (!draftId) {
@@ -2000,7 +2016,6 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                                 className='employee-documentation-btn'
                                 disabled={
                                     saving ||
-                                    draftForm.linkedUserId ||
                                     !draftLinkEmails.trim()
                                 }
                                 onClick={handleOpenDraftEmploymentModal}

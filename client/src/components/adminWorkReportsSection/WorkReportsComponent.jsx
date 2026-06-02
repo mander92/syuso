@@ -1201,7 +1201,9 @@ const WorkReportsComponent = () => {
                             </label>
 
                             <label className='shift-filter'>
-                                <span>TIP</span>
+                                <span className='notranslate' translate='no'>
+                                    T.I.P.
+                                </span>
                                 <input
                                     type='text'
                                     value={manualReport.guardEmployeeNumber}

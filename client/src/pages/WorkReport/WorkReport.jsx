@@ -258,12 +258,16 @@ const WorkReport = () => {
 
                 setFormData((prev) => ({
                     ...prev,
-                    incidentStart: openShiftStart
-                        ? toLocalInputDateTime(openShiftStart)
-                        : prev.incidentStart,
-                    incidentEnd: openShiftEnd
-                        ? toLocalInputDateTime(openShiftEnd)
-                        : prev.incidentEnd,
+                    incidentStart:
+                        prev.incidentStart ||
+                        (openShiftStart
+                            ? toLocalInputDateTime(openShiftStart)
+                            : ''),
+                    incidentEnd:
+                        prev.incidentEnd ||
+                        (openShiftEnd
+                            ? toLocalInputDateTime(openShiftEnd)
+                            : ''),
                 }));
             } catch (error) {
                 toast.error(error.message || 'No se pudo cargar la informacion');
@@ -1076,7 +1080,9 @@ const WorkReport = () => {
                             />
                         </label>
                         <label>
-                            TIP
+                            <span className='notranslate' translate='no'>
+                                T.I.P.
+                            </span>
                             <input
                                 name='guardEmployeeNumber'
                                 value={formData.guardEmployeeNumber}

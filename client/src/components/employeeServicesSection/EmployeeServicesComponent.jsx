@@ -341,9 +341,16 @@ const EmployeeServicesComponent = () => {
 
     const uniqueTypes = useMemo(
         () =>
-            [...new Set(services.map((item) => item.name))]
+            [...new Set(services
+                .filter((item) => item.status !== 'completed')
+                .map((item) => item.name))]
                 .filter(Boolean)
                 .sort(compareText),
+        [services]
+    );
+
+    const visibleServices = useMemo(
+        () => services.filter((service) => service.status !== 'completed'),
         [services]
     );
 
@@ -635,7 +642,7 @@ const EmployeeServicesComponent = () => {
                 </p>
             ) : (
                 <ul className='employee-services-list'>
-                    {services.map((service) => {
+                    {visibleServices.map((service) => {
                         const serviceId = service.serviceId || service.id;
                         if (!serviceId) return null;
                         const isOpen = Boolean(openShifts[serviceId]);
@@ -651,7 +658,10 @@ const EmployeeServicesComponent = () => {
                                 <div className='employee-card-row'>
                                     <div>
                                         <div className='employee-card-title'>
-                                            <h3>
+                                            <h3
+                                                className='notranslate'
+                                                translate='no'
+                                            >
                                                 {service.name || service.type}
                                             </h3>
                                             <button
@@ -802,7 +812,12 @@ const EmployeeServicesComponent = () => {
                         <div className='service-schedule-grid-modal__header'>
                             <div>
                                 <h3>
-                                    Cuadrante: {scheduleModal.serviceName}
+                                    <span
+                                        className='notranslate'
+                                        translate='no'
+                                    >
+                                        Cuadrante: {scheduleModal.serviceName}
+                                    </span>
                                 </h3>
                                 <p>{scheduleMonth}</p>
                             </div>

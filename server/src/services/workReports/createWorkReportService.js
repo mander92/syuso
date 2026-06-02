@@ -308,7 +308,7 @@ const createInspectionPdf = async (
         sectionTitle('Evaluacion del personal (puntuacion de 1 a 5)');
         twoCols([
             { label: 'Vigilante de seguridad', value: inspection.guardName || reportData.guardFullName },
-            { label: 'TIP', value: inspection.tip || reportData.guardEmployeeNumber },
+            { label: 'T.I.P.', value: inspection.tip || reportData.guardEmployeeNumber },
             { label: 'Hora inicio', value: inspection.startTime },
             { label: 'Hora fin', value: inspection.endTime },
         ]);
@@ -498,7 +498,7 @@ const createPdfWithIncidents = async (
         line(`Hora fin: ${formatDateTime(reportData.incidentEnd)}`);
         line(`Lugar: ${sanitizeText(reportData.location)}`);
         line(`Vigilante: ${sanitizeText(reportData.guardFullName)}`);
-        line(`TIP: ${sanitizeText(reportData.guardEmployeeNumber)}`);
+        line(`T.I.P.: ${sanitizeText(reportData.guardEmployeeNumber)}`);
         line(`Empresa: ${sanitizeText(reportData.securityCompany)}`);
 
         doc.moveDown(0.6);

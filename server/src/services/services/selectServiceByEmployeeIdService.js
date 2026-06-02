@@ -25,6 +25,7 @@ const selectServiceByEmployeeIdService = async (status, type, employeeId) => {
         ON u.id = s.clientId
         WHERE s.deletedAt IS NULL
           AND pa.employeeId IS NOT NULL
+          AND s.status <> 'completed'
          
         `;
 
