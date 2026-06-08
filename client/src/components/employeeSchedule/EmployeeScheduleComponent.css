@@ -40,8 +40,38 @@
     border-radius: 12px;
     display: grid;
     gap: 12px;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
     padding: 12px;
+}
+
+.employee-schedule-grid > .service-schedule-grid {
+    font-size: 0.68rem;
+    min-width: max-content;
+}
+
+.employee-schedule-grid > .service-schedule-grid .service-schedule-grid-head,
+.employee-schedule-grid > .service-schedule-grid .service-schedule-grid-row {
+    grid-template-columns: minmax(140px, 200px) repeat(var(--days), minmax(44px, 1fr)) minmax(78px, 92px);
+    min-width: max-content;
+}
+
+.employee-schedule-grid > .service-schedule-grid .service-schedule-grid-footer {
+    grid-template-columns: minmax(140px, 200px) repeat(var(--days), minmax(44px, 1fr)) minmax(78px, 92px);
+    min-width: max-content;
+}
+
+.employee-schedule-grid > .service-schedule-grid .service-schedule-grid-cell {
+    min-height: 44px;
+    padding: 3px;
+}
+
+.employee-schedule-grid > .service-schedule-grid .service-schedule-grid-shift {
+    font-size: 0.6rem;
+    gap: 1px;
+    line-height: 1.15;
+    min-width: 36px;
+    padding: 2px 4px;
 }
 
 .employee-schedule-actions {
@@ -145,7 +175,7 @@
 
 .employee-schedule-modal__body .service-schedule-grid-head,
 .employee-schedule-modal__body .service-schedule-grid-row {
-    grid-template-columns: minmax(120px, 160px) repeat(var(--days), minmax(46px, 1fr));
+    grid-template-columns: minmax(120px, 160px) repeat(var(--days), minmax(46px, 1fr)) minmax(76px, 90px);
     min-width: max-content;
 }
 
