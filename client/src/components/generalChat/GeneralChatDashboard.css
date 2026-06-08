@@ -380,15 +380,18 @@
 .general-chat-modal-filters {
     display: grid;
     gap: 10px;
-    grid-template-columns: 1fr 170px 170px;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    min-width: 0;
 }
 
 .general-chat-modal-filters input,
 .general-chat-modal-filters select {
     border-radius: 10px;
     border: 1px solid #e2e8f0;
+    min-width: 0;
     padding: 10px 12px;
     font-size: 0.95rem;
+    width: 100%;
 }
 
 .general-chat-modal-list {

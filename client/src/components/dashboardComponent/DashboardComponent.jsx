@@ -58,6 +58,7 @@ const operativeSectionIds = [
 ];
 
 const administrationSectionIds = ['documentations', 'warehouse', 'payrolls'];
+const communicationSectionIds = ['chats', 'alerts'];
 
 const AlertsPanel = ({
     notifications,
@@ -180,6 +181,8 @@ const DashboardComponent = () => {
     const [chatFocusGeneralChatId, setChatFocusGeneralChatId] = useState('');
     const [isOperativeOpen, setIsOperativeOpen] = useState(true);
     const [isAdministrationOpen, setIsAdministrationOpen] = useState(true);
+    const [isCommunicationOpen, setIsCommunicationOpen] = useState(true);
+    const [isManagementOpen, setIsManagementOpen] = useState(true);
     const hasSetDefault = useRef(false);
     const userRole = String(user?.role || '').trim().toLowerCase();
     const isAdminLike = userRole === 'admin' || userRole === 'sudo';
@@ -345,7 +348,8 @@ const DashboardComponent = () => {
                 ? sections.filter(
                       (section) =>
                           !operativeSectionIds.includes(section.id) &&
-                          !administrationSectionIds.includes(section.id)
+                          !administrationSectionIds.includes(section.id) &&
+                          !communicationSectionIds.includes(section.id)
                   )
                 : sections,
         [isAdminLike, sections]
@@ -359,6 +363,21 @@ const DashboardComponent = () => {
                   )
                 : [],
         [isAdminLike, sections]
+    );
+
+    const communicationSections = useMemo(
+        () =>
+            isAdminLike
+                ? sections.filter((section) =>
+                      communicationSectionIds.includes(section.id)
+                  )
+                : [],
+        [isAdminLike, sections]
+    );
+
+    const managementSections = useMemo(
+        () => (isAdminLike ? topLevelSections : []),
+        [isAdminLike, topLevelSections]
     );
 
     const operativeUnreadTotal =
@@ -382,6 +401,13 @@ const DashboardComponent = () => {
         administrationSections.some((section) => section.id === 'documentations')
             ? documentationUnread
             : 0;
+    const communicationBadgeTotal =
+        (communicationSections.some((section) => section.id === 'chats')
+            ? unreadTotal
+            : 0) +
+        (communicationSections.some((section) => section.id === 'alerts')
+            ? alertUnreadTotal
+            : 0);
 
     useEffect(() => {
         if (operativeSectionIds.includes(activeSection)) {
@@ -390,7 +416,18 @@ const DashboardComponent = () => {
         if (administrationSectionIds.includes(activeSection)) {
             setIsAdministrationOpen(true);
         }
-    }, [activeSection]);
+        if (communicationSectionIds.includes(activeSection)) {
+            setIsCommunicationOpen(true);
+        }
+        if (
+            isAdminLike &&
+            !operativeSectionIds.includes(activeSection) &&
+            !administrationSectionIds.includes(activeSection) &&
+            !communicationSectionIds.includes(activeSection)
+        ) {
+            setIsManagementOpen(true);
+        }
+    }, [activeSection, isAdminLike]);
 
     const renderNavItem = (section) => (
         <button
@@ -653,7 +690,79 @@ const DashboardComponent = () => {
                                 ) : null}
                             </div>
                         ) : null}
-                        {topLevelSections.map(renderNavItem)}
+                        {isAdminLike && communicationSections.length > 0 ? (
+                            <div className='dashboard-navgroup'>
+                                <button
+                                    type='button'
+                                    className={
+                                        'dashboard-navitem dashboard-navgroup-toggle' +
+                                        (communicationSectionIds.includes(
+                                            activeSection
+                                        )
+                                            ? ' dashboard-navitem--active'
+                                            : '')
+                                    }
+                                    onClick={() =>
+                                        setIsCommunicationOpen((prev) => !prev)
+                                    }
+                                    aria-expanded={isCommunicationOpen}
+                                >
+                                    <span className='dashboard-navitem-label'>
+                                        Comunicacion
+                                    </span>
+                                    <span className='dashboard-navgroup-meta'>
+                                        {communicationBadgeTotal > 0 ? (
+                                            <span className='dashboard-nav-badge'>
+                                                {communicationBadgeTotal}
+                                            </span>
+                                        ) : null}
+                                        <span className='dashboard-nav-chevron'>
+                                            {isCommunicationOpen ? '-' : '+'}
+                                        </span>
+                                    </span>
+                                </button>
+                                {isCommunicationOpen ? (
+                                    <div className='dashboard-navsub'>
+                                        {communicationSections.map(renderNavItem)}
+                                    </div>
+                                ) : null}
+                            </div>
+                        ) : null}
+                        {isAdminLike && managementSections.length > 0 ? (
+                            <div className='dashboard-navgroup'>
+                                <button
+                                    type='button'
+                                    className={
+                                        'dashboard-navitem dashboard-navgroup-toggle' +
+                                        (managementSections.some(
+                                            (section) =>
+                                                section.id === activeSection
+                                        )
+                                            ? ' dashboard-navitem--active'
+                                            : '')
+                                    }
+                                    onClick={() =>
+                                        setIsManagementOpen((prev) => !prev)
+                                    }
+                                    aria-expanded={isManagementOpen}
+                                >
+                                    <span className='dashboard-navitem-label'>
+                                        Gestion
+                                    </span>
+                                    <span className='dashboard-navgroup-meta'>
+                                        <span className='dashboard-nav-chevron'>
+                                            {isManagementOpen ? '-' : '+'}
+                                        </span>
+                                    </span>
+                                </button>
+                                {isManagementOpen ? (
+                                    <div className='dashboard-navsub'>
+                                        {managementSections.map(renderNavItem)}
+                                    </div>
+                                ) : null}
+                            </div>
+                        ) : null}
+                        {!isAdminLike ? topLevelSections.map(renderNavItem) : null}
                     </nav>
                 </aside>
 
