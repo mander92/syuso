@@ -46,32 +46,32 @@
 }
 
 .employee-schedule-grid > .service-schedule-grid {
-    font-size: 0.68rem;
+    font-size: 0.62rem;
     min-width: max-content;
 }
 
 .employee-schedule-grid > .service-schedule-grid .service-schedule-grid-head,
 .employee-schedule-grid > .service-schedule-grid .service-schedule-grid-row {
-    grid-template-columns: minmax(140px, 200px) repeat(var(--days), minmax(44px, 1fr)) minmax(78px, 92px);
+    grid-template-columns: minmax(120px, 160px) repeat(var(--days), minmax(34px, 1fr)) minmax(68px, 82px);
     min-width: max-content;
 }
 
 .employee-schedule-grid > .service-schedule-grid .service-schedule-grid-footer {
-    grid-template-columns: minmax(140px, 200px) repeat(var(--days), minmax(44px, 1fr)) minmax(78px, 92px);
+    grid-template-columns: minmax(120px, 160px) repeat(var(--days), minmax(34px, 1fr)) minmax(68px, 82px);
     min-width: max-content;
 }
 
 .employee-schedule-grid > .service-schedule-grid .service-schedule-grid-cell {
-    min-height: 44px;
-    padding: 3px;
+    min-height: 34px;
+    padding: 2px;
 }
 
 .employee-schedule-grid > .service-schedule-grid .service-schedule-grid-shift {
-    font-size: 0.6rem;
+    font-size: 0.52rem;
     gap: 1px;
     line-height: 1.15;
-    min-width: 36px;
-    padding: 2px 4px;
+    min-width: 28px;
+    padding: 2px;
 }
 
 .employee-schedule-actions {
