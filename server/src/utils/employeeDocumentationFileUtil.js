@@ -37,14 +37,20 @@ export const saveEmployeeDocumentationFile = async (file, userId, field) => {
     if (!file) return null;
 
     const extensionByMime = {
+        'application/pdf': 'pdf',
         'image/png': 'png',
         'image/jpeg': 'jpg',
         'image/webp': 'webp',
+        'image/heic': 'heic',
+        'image/heif': 'heif',
     };
     const extension = extensionByMime[file.mimetype];
 
     if (!extension) {
-        generateErrorUtil('El archivo debe ser una imagen PNG, JPG o WEBP', 400);
+        generateErrorUtil(
+            'El archivo debe ser PDF, HEIC o una imagen PNG, JPG o WEBP',
+            400
+        );
     }
 
     const userDir = path.join(DOCUMENTS_ROOT, 'employeeDocumentation', userId);

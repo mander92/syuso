@@ -490,6 +490,22 @@ export const openEmployeeDocumentationDraftFile = async ({
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
 };
 
+export const clearEmployeeDocumentationDraftFile = async ({
+    authToken,
+    draftId,
+    field,
+}) => {
+    const res = await fetch(
+        `${VITE_API_URL}/employee-documentation-drafts/${draftId}/files/${field}`,
+        {
+            method: 'DELETE',
+            headers: { Authorization: authToken },
+        }
+    );
+
+    return assertOk(await readJsonBody(res));
+};
+
 export const createDocumentationDraftLink = async (authToken, draftId) => {
     const res = await fetch(
         `${VITE_API_URL}/employee-documentation-drafts/${draftId}/token`,

@@ -12,6 +12,7 @@ import {
     fetchMyEmployeeDocumentation,
     createEmployeeSignatureDocument,
     clearEmployeeDocumentationFile,
+    clearEmployeeDocumentationDraftFile,
     createDocumentationDraftLink,
     createClientDocumentationDraftLink,
     createClientFromDocumentationDraft,
@@ -938,6 +939,13 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
 
     const handleClearDocumentationFile = async (field) => {
         if (!selectedUserId) return;
+        if (
+            !window.confirm(
+                '¿Estas seguro de que quieres vaciar este archivo?'
+            )
+        ) {
+            return;
+        }
         try {
             const data = await clearEmployeeDocumentationFile({
                 authToken,
@@ -949,6 +957,35 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
             setItems((prev) =>
                 prev.map((item) =>
                     item.userId === selectedUserId
+                        ? { ...item, [field]: null, status: data.status }
+                        : item
+                )
+            );
+        } catch (error) {
+            alert(error.message || 'No se pudo vaciar el archivo');
+        }
+    };
+
+    const handleClearDraftFile = async (field) => {
+        if (!selectedDraftId) return;
+        if (
+            !window.confirm(
+                '¿Estas seguro de que quieres vaciar este archivo?'
+            )
+        ) {
+            return;
+        }
+        try {
+            const data = await clearEmployeeDocumentationDraftFile({
+                authToken,
+                draftId: selectedDraftId,
+                field,
+            });
+            setDraftForm(data || emptyForm);
+            setDraftFiles((prev) => ({ ...prev, [field]: null }));
+            setDrafts((prev) =>
+                prev.map((item) =>
+                    item.id === selectedDraftId
                         ? { ...item, [field]: null, status: data.status }
                         : item
                 )
@@ -1974,7 +2011,7 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                                     <span>{label}</span>
                                     <input
                                         type='file'
-                                        accept='image/png,image/jpeg,image/webp'
+                                        accept='application/pdf,image/png,image/jpeg,image/webp,image/heic,image/heif,.pdf,.heic,.heif'
                                         onChange={(event) =>
                                             setDraftFiles((prev) => ({
                                                 ...prev,
@@ -1984,15 +2021,26 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                                     />
                                     <div className='employee-documentation-file-actions'>
                                         {draftForm?.[field] && selectedDraftId ? (
-                                            <button
-                                                type='button'
-                                                className='employee-documentation-btn employee-documentation-btn--ghost'
-                                                onClick={() =>
-                                                    handleOpenDraftFile(field)
-                                                }
-                                            >
-                                                Ver archivo
-                                            </button>
+                                            <>
+                                                <button
+                                                    type='button'
+                                                    className='employee-documentation-btn employee-documentation-btn--ghost'
+                                                    onClick={() =>
+                                                        handleOpenDraftFile(field)
+                                                    }
+                                                >
+                                                    Ver archivo
+                                                </button>
+                                                <button
+                                                    type='button'
+                                                    className='employee-documentation-btn employee-documentation-btn--ghost'
+                                                    onClick={() =>
+                                                        handleClearDraftFile(field)
+                                                    }
+                                                >
+                                                    Vaciar archivo
+                                                </button>
+                                            </>
                                         ) : (
                                             <span>Sin archivo</span>
                                         )}
@@ -2347,7 +2395,7 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                                 {!selectedItem?.[field] ? (
                                     <input
                                         type='file'
-                                        accept='image/png,image/jpeg,image/webp'
+                                        accept='application/pdf,image/png,image/jpeg,image/webp,image/heic,image/heif,.pdf,.heic,.heif'
                                         onChange={(event) =>
                                             setFiles((prev) => ({
                                                 ...prev,

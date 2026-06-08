@@ -152,7 +152,7 @@ const EmployeeDocumentationPublic = () => {
                             <span>{label}</span>
                             <input
                                 type='file'
-                                accept='image/png,image/jpeg,image/webp'
+                                accept='application/pdf,image/png,image/jpeg,image/webp,image/heic,image/heif,.pdf,.heic,.heif'
                                 onChange={(event) =>
                                     setFiles((prev) => ({
                                         ...prev,
