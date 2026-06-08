@@ -213,12 +213,17 @@ const DashboardComponent = () => {
                 { id: 'users', label: 'Usuarios' },
                 { id: 'profile', label: 'Mi perfil' },
             ];
-            if (userRole === 'sudo') {
+            if (
+                userRole === 'sudo' ||
+                allowedDashboardSections?.has('cleanup')
+            ) {
                 roleSections.splice(
                     roleSections.length - 1,
                     0,
                     { id: 'cleanup', label: 'Limpieza' }
                 );
+            }
+            if (userRole === 'sudo' || allowedDashboardSections?.has('cv')) {
                 roleSections.splice(
                     roleSections.length - 1,
                     0,

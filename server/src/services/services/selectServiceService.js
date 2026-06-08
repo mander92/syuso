@@ -41,10 +41,11 @@ const selectServiceService = async (
     }
 
     if (delegationNames.length) {
-        sqlQuery += ` AND s.province IN (${delegationNames
+        const delegationPlaceholders = delegationNames
             .map(() => '?')
-            .join(', ')})`;
-        sqlValues.push(...delegationNames);
+            .join(', ');
+        sqlQuery += ` AND (s.province IN (${delegationPlaceholders}) OR a.city IN (${delegationPlaceholders}))`;
+        sqlValues.push(...delegationNames, ...delegationNames);
     }
 
     if (startDateFrom) {

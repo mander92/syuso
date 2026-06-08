@@ -365,92 +365,107 @@ const ScheduleComponent = () => {
 
                 await Promise.all(
                     filteredServices.map(async (service) => {
-                        if (!service?.id || service.id.length !== 36) {
-                            return;
-                        }
-                        const shifts = await fetchServiceScheduleShifts(
-                            authToken,
-                            service.id,
-                            scheduleMonth
-                        );
-
-                        const filteredShifts = (shifts || []).filter(
-                            (shift) => {
-                                if (
-                                    scheduleEmployeeFilter &&
-                                    shift.employeeId !== scheduleEmployeeFilter
-                                ) {
-                                    return false;
-                                }
-                                if (scheduleStartDate || scheduleEndDate) {
-                                    const shiftDate =
-                                        typeof shift.scheduleDate === 'string'
-                                            ? shift.scheduleDate
-                                            : new Date(shift.scheduleDate)
-                                                  .toISOString()
-                                                  .slice(0, 10);
-                                    if (
-                                        scheduleStartDate &&
-                                        shiftDate < scheduleStartDate
-                                    ) {
-                                        return false;
-                                    }
-                                    if (
-                                        scheduleEndDate &&
-                                        shiftDate > scheduleEndDate
-                                    ) {
-                                        return false;
-                                    }
-                                }
-                                return true;
+                        try {
+                            if (!service?.id || service.id.length !== 36) {
+                                return;
                             }
-                        );
-
-                        shiftMap[service.id] = filteredShifts;
-
-                        const templates =
-                            await fetchServiceScheduleTemplates(
+                            const shifts = await fetchServiceScheduleShifts(
                                 authToken,
                                 service.id,
                                 scheduleMonth
                             );
-                        const templateApplied =
-                            Array.isArray(templates) && templates.length > 0;
 
-                        const employeeSet = new Set();
-                        let totalHours = 0;
-                        filteredShifts.forEach((shift) => {
-                            if (shift.employeeId) {
-                                employeeSet.add(shift.employeeId);
+                            const filteredShifts = (shifts || []).filter(
+                                (shift) => {
+                                    if (
+                                        scheduleEmployeeFilter &&
+                                        shift.employeeId !==
+                                            scheduleEmployeeFilter
+                                    ) {
+                                        return false;
+                                    }
+                                    if (scheduleStartDate || scheduleEndDate) {
+                                        const shiftDate =
+                                            typeof shift.scheduleDate ===
+                                            'string'
+                                                ? shift.scheduleDate
+                                                : new Date(shift.scheduleDate)
+                                                      .toISOString()
+                                                      .slice(0, 10);
+                                        if (
+                                            scheduleStartDate &&
+                                            shiftDate < scheduleStartDate
+                                        ) {
+                                            return false;
+                                        }
+                                        if (
+                                            scheduleEndDate &&
+                                            shiftDate > scheduleEndDate
+                                        ) {
+                                            return false;
+                                        }
+                                    }
+                                    return true;
+                                }
+                            );
+
+                            shiftMap[service.id] = filteredShifts;
+
+                            const templates =
+                                await fetchServiceScheduleTemplates(
+                                    authToken,
+                                    service.id,
+                                    scheduleMonth
+                                );
+                            const templateApplied =
+                                Array.isArray(templates) &&
+                                templates.length > 0;
+
+                            const employeeSet = new Set();
+                            let totalHours = 0;
+                            filteredShifts.forEach((shift) => {
+                                if (shift.employeeId) {
+                                    employeeSet.add(shift.employeeId);
+                                }
+                                totalHours += Number(shift.hours) || 0;
+                            });
+
+                            if (!scheduleServiceFilter && totalHours <= 0) {
+                                delete shiftMap[service.id];
+                                return;
                             }
-                            totalHours += Number(shift.hours) || 0;
-                        });
 
-                        if (!scheduleServiceFilter && totalHours <= 0) {
-                            delete shiftMap[service.id];
-                            return;
+                            cards.push({
+                                id: service.id,
+                                name: service.name,
+                                type: service.type,
+                                address: service.address,
+                                delegation:
+                                    service.province || 'Sin delegacion',
+                                scheduleImage: service.scheduleImage || '',
+                                scheduleView: service.scheduleView || 'grid',
+                                assignedEmployeeIds:
+                                    service.assignedEmployeeIds || '',
+                                autonomousCommunity:
+                                    service.autonomousCommunity || '',
+                                province: service.province || '',
+                                city: service.city || '',
+                                month: scheduleMonth,
+                                shiftCount: filteredShifts.length,
+                                employeeCount: employeeSet.size,
+                                totalHours,
+                                templateApplied,
+                            });
+                        } catch (error) {
+                            if (
+                                error?.message
+                                    ?.toLowerCase()
+                                    .includes('acceso denegado')
+                            ) {
+                                return;
+                            }
+                            throw error;
                         }
-
-                        cards.push({
-                            id: service.id,
-                            name: service.name,
-                            type: service.type,
-                            address: service.address,
-                            delegation: service.province || 'Sin delegacion',
-                            scheduleImage: service.scheduleImage || '',
-                            scheduleView: service.scheduleView || 'grid',
-                            assignedEmployeeIds:
-                                service.assignedEmployeeIds || '',
-                            autonomousCommunity:
-                                service.autonomousCommunity || '',
-                            province: service.province || '',
-                            city: service.city || '',
-                            month: scheduleMonth,
-                            shiftCount: filteredShifts.length,
-                            employeeCount: employeeSet.size,
-                            totalHours,
-                            templateApplied,
-                        });
                     })
                 );
 

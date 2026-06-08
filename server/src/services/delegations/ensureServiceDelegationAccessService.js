@@ -20,8 +20,9 @@ const ensureServiceDelegationAccessService = async (
 
     const [rows] = await pool.query(
         `
-        SELECT province
+        SELECT s.province, a.city
         FROM services s
+        LEFT JOIN addresses a ON a.id = s.addressId
         WHERE s.id = ?
         `,
         [serviceId]
@@ -34,9 +35,15 @@ const ensureServiceDelegationAccessService = async (
     const normalizedDelegations = delegations.map((name) =>
         name.trim().toLowerCase()
     );
-    const serviceProvince = (rows[0].province || '').trim().toLowerCase();
+    const serviceDelegations = [rows[0].province, rows[0].city]
+        .map((name) => (name || '').trim().toLowerCase())
+        .filter(Boolean);
 
-    if (!serviceProvince || !normalizedDelegations.includes(serviceProvince)) {
+    const hasAccess = serviceDelegations.some((name) =>
+        normalizedDelegations.includes(name)
+    );
+
+    if (!hasAccess) {
         generateErrorUtil('Acceso denegado', 403);
     }
 
