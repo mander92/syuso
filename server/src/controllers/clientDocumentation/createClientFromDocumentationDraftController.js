@@ -1,7 +1,7 @@
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
+import getPool from '../../db/getPool.js';
 import createInternalClientService from '../../services/clientDocumentation/createInternalClientService.js';
 import selectClientDocumentationDraftService from '../../services/clientDocumentation/selectClientDocumentationDraftService.js';
-import upsertClientDocumentationDraftService from '../../services/clientDocumentation/upsertClientDocumentationDraftService.js';
 import upsertClientDocumentationService from '../../services/clientDocumentation/upsertClientDocumentationService.js';
 import { emitDocumentationChanged } from '../../utils/documentationNotificationUtil.js';
 
@@ -44,20 +44,27 @@ const createClientFromDocumentationDraftController = async (req, res, next) => {
             reviewNotes: draft.reviewNotes,
         });
 
-        await upsertClientDocumentationDraftService(draftId, {
-            linkedClientId: clientId,
-            status: 'converted',
-        });
-
-        const data = await selectClientDocumentationDraftService(draftId);
         emitDocumentationChanged({
             changedBy: req.userLogged.id,
             subjectId: draftId,
             subjectType: 'clientDraft',
             title: 'Alta de cliente convertida',
-            message: `${data.displayName || data.email || 'Cliente'}: ficha convertida en cliente interno`,
+            message: `${draft.displayName || draft.email || 'Cliente'}: ficha convertida en cliente interno`,
         });
-        res.send({ status: 'ok', data });
+
+        const pool = await getPool();
+        await pool.query(
+            'DELETE FROM clientDocumentationDraftTokens WHERE draftId = ?',
+            [draftId]
+        );
+        await pool.query('DELETE FROM clientDocumentationDrafts WHERE id = ?', [
+            draftId,
+        ]);
+
+        res.send({
+            status: 'ok',
+            data: { deleted: true, linkedClientId: clientId },
+        });
     } catch (error) {
         next(error);
     }

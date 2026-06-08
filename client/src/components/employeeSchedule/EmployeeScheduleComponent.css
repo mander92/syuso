@@ -145,7 +145,13 @@
 
 .employee-schedule-modal__body .service-schedule-grid-head,
 .employee-schedule-modal__body .service-schedule-grid-row {
-    grid-template-columns: minmax(110px, 150px) repeat(var(--days), minmax(0, 1fr));
+    grid-template-columns: minmax(120px, 160px) repeat(var(--days), minmax(46px, 1fr));
+    min-width: max-content;
+}
+
+.employee-schedule-modal__body .service-schedule-grid-footer {
+    grid-template-columns: minmax(120px, 160px) repeat(var(--days), minmax(46px, 1fr)) minmax(76px, 90px);
+    min-width: max-content;
 }
 
 .employee-schedule-modal__body .service-schedule-grid-corner,
@@ -166,6 +172,8 @@
     padding: 2px 4px;
     font-size: 0.58rem;
     gap: 1px;
+    min-width: 36px;
+    line-height: 1.15;
 }
 
 @media (min-width: 769px) {

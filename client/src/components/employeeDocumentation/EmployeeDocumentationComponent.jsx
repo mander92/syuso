@@ -834,15 +834,12 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
             return;
         }
         try {
-            const data = await createClientFromDocumentationDraft(
+            await createClientFromDocumentationDraft(
                 authToken,
                 selectedClientDraftId
             );
-            setClientDraftForm({
-                ...emptyClientForm,
-                ...data,
-                status: data.status || 'converted',
-            });
+            setClientDraftForm(emptyClientForm);
+            setSelectedClientDraftId('');
             const [draftList, clientList] = await Promise.all([
                 fetchClientDocumentationDrafts(authToken),
                 fetchClientDocumentations(authToken),
@@ -1058,16 +1055,12 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
             return;
         }
         try {
-            const data = await createUserFromDocumentationDraft(
+            await createUserFromDocumentationDraft(
                 authToken,
                 selectedDraftId
             );
-            setDraftForm({
-                ...emptyForm,
-                ...data,
-                birthDate: toDateInput(data.birthDate),
-                status: data.status || 'converted',
-            });
+            setDraftForm(emptyForm);
+            setSelectedDraftId('');
             const [draftList, employeeList] = await Promise.all([
                 fetchEmployeeDocumentationDrafts(authToken),
                 fetchEmployeeDocumentations(authToken),

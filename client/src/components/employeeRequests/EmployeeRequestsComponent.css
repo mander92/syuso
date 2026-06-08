@@ -127,7 +127,7 @@
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
     display: grid;
     gap: 0.8rem;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     padding: 1rem;
 }
 
@@ -147,8 +147,9 @@
 
 .employee-requests-filter-clear {
     align-self: end;
-    justify-self: start;
+    justify-self: end;
     min-height: 38px;
+    min-width: 140px;
     border: 1px solid #d1d5db;
     border-radius: 999px;
     background: #ffffff;
@@ -167,6 +168,12 @@
     border-color: #94a3b8;
     box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
     transform: translateY(-1px);
+}
+
+@media (min-width: 900px) {
+    .employee-requests-filter-clear {
+        grid-column: -2 / -1;
+    }
 }
 
 .employee-requests-list {

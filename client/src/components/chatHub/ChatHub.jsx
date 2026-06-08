@@ -46,7 +46,7 @@ const ChatHub = ({ focusGeneralChatId = '' }) => {
                     }
                     onClick={() => setActiveTab('services')}
                 >
-                    Servicios
+                    Grupales de servicio
                     {serviceUnreadTotal > 0 ? (
                         <span className='chat-hub-badge'>
                             {serviceUnreadTotal}
@@ -63,7 +63,7 @@ const ChatHub = ({ focusGeneralChatId = '' }) => {
                     }
                     onClick={() => setActiveTab('general')}
                 >
-                    Generales
+                    Internos
                     {generalUnreadTotal > 0 ? (
                         <span className='chat-hub-badge'>
                             {generalUnreadTotal}

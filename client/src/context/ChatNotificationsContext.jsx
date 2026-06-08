@@ -731,7 +731,6 @@ export const ChatNotificationsProvider = ({ children }) => {
 
         const handleDocumentationChanged = (event) => {
             if (!event?.notificationId) return;
-            if (event.changedBy && event.changedBy === user.id) return;
 
             addAlertNotification({
                 id: event.notificationId,

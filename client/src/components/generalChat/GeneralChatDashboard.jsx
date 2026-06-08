@@ -24,9 +24,14 @@ const normalizeText = (value) =>
         .trim();
 
 const chatTypeLabels = {
-    standard: 'Grupales',
-    announcement: 'Generales',
+    standard: 'Grupales internos',
+    announcement: 'Comunicados',
     direct: 'Individuales',
+};
+
+const getChatDisplayName = (chat) => {
+    if (chat?.type !== 'direct') return chat?.name || 'Chat';
+    return chat.directOtherName || chat.directOtherEmail || chat.name || 'Chat individual';
 };
 
 const GeneralChatDashboard = ({ focusChatId = '' }) => {
@@ -141,7 +146,9 @@ const GeneralChatDashboard = ({ focusChatId = '' }) => {
         return chats
             .filter((chat) => (chat.type || 'standard') === chatTypeTab)
             .filter((chat) =>
-                query ? normalizeText(chat.name).includes(query) : true
+                query
+                    ? normalizeText(getChatDisplayName(chat)).includes(query)
+                    : true
             );
     }, [chats, searchText, chatTypeTab]);
 
@@ -348,8 +355,8 @@ const GeneralChatDashboard = ({ focusChatId = '' }) => {
         <section className='general-chat-dashboard'>
             <div className='general-chat-dashboard-header'>
                 <div>
-                    <h1>Chats generales</h1>
-                    <p>Comparte anuncios o conversa con equipos internos.</p>
+                    <h1>Chats internos</h1>
+                    <p>Comparte comunicados o conversa con equipos internos.</p>
                 </div>
                 <div className='general-chat-dashboard-filter'>
                     <label htmlFor='general-chat-search'>
@@ -393,18 +400,20 @@ const GeneralChatDashboard = ({ focusChatId = '' }) => {
                     className='general-chat-create'
                     onSubmit={handleCreateChat}
                 >
-                    <div className='general-chat-create-field'>
-                        <label htmlFor='general-chat-name'>Nombre</label>
-                        <input
-                            id='general-chat-name'
-                            type='text'
-                            value={newChatName}
-                            onChange={(event) =>
-                                setNewChatName(event.target.value)
-                            }
-                            placeholder='Nombre del chat'
-                        />
-                    </div>
+                    {newChatType !== 'direct' ? (
+                        <div className='general-chat-create-field'>
+                            <label htmlFor='general-chat-name'>Nombre</label>
+                            <input
+                                id='general-chat-name'
+                                type='text'
+                                value={newChatName}
+                                onChange={(event) =>
+                                    setNewChatName(event.target.value)
+                                }
+                                placeholder='Nombre del chat'
+                            />
+                        </div>
+                    ) : null}
                     <div className='general-chat-create-field'>
                         <label htmlFor='general-chat-type'>Tipo</label>
                         <select
@@ -414,8 +423,8 @@ const GeneralChatDashboard = ({ focusChatId = '' }) => {
                                 setNewChatType(event.target.value)
                             }
                         >
-                            <option value='standard'>Chat normal</option>
-                            <option value='announcement'>Anuncios</option>
+                            <option value='standard'>Grupal interno</option>
+                            <option value='announcement'>Comunicado</option>
                             <option value='direct'>Individual</option>
                         </select>
                     </div>
@@ -608,7 +617,7 @@ const GeneralChatDashboard = ({ focusChatId = '' }) => {
                         >
                             <div className='general-chat-dashboard-card-row'>
                                 <div>
-                                    <h3>{chat.name}</h3>
+                                    <h3>{getChatDisplayName(chat)}</h3>
                                     <p>
                                         {chatTypeLabels[chat.type] || 'Grupales'}
                                     </p>
@@ -637,7 +646,7 @@ const GeneralChatDashboard = ({ focusChatId = '' }) => {
                                             ? 'Ocultar miembros'
                                             : 'Ver miembros'}
                                     </button>
-                                    {isAdminLike && chat.type !== 'direct' && (
+                                    {isAdminLike && (
                                         <button
                                             type='button'
                                             className='general-chat-dashboard-danger'
@@ -722,7 +731,7 @@ const GeneralChatDashboard = ({ focusChatId = '' }) => {
                             {openChats[chat.id] && (
                                 <GeneralChat
                                     chatId={chat.id}
-                                    chatName={chat.name}
+                                    chatName={getChatDisplayName(chat)}
                                     chatType={chat.type}
                                     compact
                                     manageRoom={false}

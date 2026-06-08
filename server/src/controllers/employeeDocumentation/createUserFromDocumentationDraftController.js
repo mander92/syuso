@@ -2,8 +2,8 @@ import randomstring from 'randomstring';
 
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import insertAdminService from '../../services/users/insertUserAdminService.js';
+import getPool from '../../db/getPool.js';
 import selectEmployeeDocumentationDraftService from '../../services/employeeDocumentation/selectEmployeeDocumentationDraftService.js';
-import upsertEmployeeDocumentationDraftService from '../../services/employeeDocumentation/upsertEmployeeDocumentationDraftService.js';
 import upsertEmployeeDocumentationService from '../../services/employeeDocumentation/upsertEmployeeDocumentationService.js';
 import { emitDocumentationChanged } from '../../utils/documentationNotificationUtil.js';
 
@@ -55,15 +55,9 @@ const createUserFromDocumentationDraftController = async (req, res, next) => {
             reviewNotes: draft.reviewNotes,
         });
 
-        await upsertEmployeeDocumentationDraftService(draftId, {
-            linkedUserId: userId,
-            status: 'converted',
-        });
-
-        const data = await selectEmployeeDocumentationDraftService(draftId);
         const fullName =
-            `${data.firstName || ''} ${data.lastName || ''}`.trim() ||
-            data.email ||
+            `${draft.firstName || ''} ${draft.lastName || ''}`.trim() ||
+            draft.email ||
             'Trabajador';
         emitDocumentationChanged({
             changedBy: req.userLogged.id,
@@ -73,7 +67,17 @@ const createUserFromDocumentationDraftController = async (req, res, next) => {
             title: 'Alta convertida',
             message: `${fullName}: ficha convertida en trabajador`,
         });
-        res.send({ status: 'ok', data });
+
+        const pool = await getPool();
+        await pool.query(
+            'DELETE FROM employeeDocumentationDraftTokens WHERE draftId = ?',
+            [draftId]
+        );
+        await pool.query('DELETE FROM employeeDocumentationDrafts WHERE id = ?', [
+            draftId,
+        ]);
+
+        res.send({ status: 'ok', data: { deleted: true, linkedUserId: userId } });
     } catch (error) {
         next(error);
     }

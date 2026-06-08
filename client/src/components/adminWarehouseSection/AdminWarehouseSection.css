@@ -266,9 +266,9 @@
 
 .warehouse-list-header {
     align-items: start;
-    display: flex;
+    display: grid;
     gap: 1rem;
-    justify-content: space-between;
+    grid-template-columns: minmax(180px, auto) minmax(0, 1fr);
     margin-bottom: 1rem;
 }
 
@@ -278,11 +278,17 @@
 
 .warehouse-filters {
     display: grid;
-    gap: 0.5rem;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    max-width: 920px;
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    justify-self: stretch;
+    max-width: none;
     min-width: 0;
     width: 100%;
+}
+
+.warehouse-filters input,
+.warehouse-filters select {
+    min-width: 0;
 }
 
 .warehouse-table-wrap {
