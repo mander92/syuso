@@ -544,7 +544,11 @@ const ServiceScheduleGrid = ({
                                             onClick={() => onSelectShift?.(shift)}
                                         >
                                             <span className='service-schedule-grid-shift-time'>
-                                                {formatTime(shift.startTime)} - {formatTime(shift.endTime)}
+                                                <span>{formatTime(shift.startTime)}</span>
+                                                <span className='service-schedule-grid-shift-time-separator'>
+                                                    -
+                                                </span>
+                                                <span>{formatTime(shift.endTime)}</span>
                                             </span>
                                             {shift.shiftTypeName && (
                                                 <span className='service-schedule-grid-shift-type'>

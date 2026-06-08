@@ -376,6 +376,9 @@
 }
 
 .service-schedule-grid-shift-time {
+    align-items: center;
+    display: inline-flex;
+    gap: 2px;
     font-weight: 600;
 }
 
