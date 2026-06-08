@@ -177,6 +177,7 @@ const DashboardComponent = () => {
     const [activeSection, setActiveSection] = useState('profile');
     const [documentationFocusEmployeeId, setDocumentationFocusEmployeeId] =
         useState('');
+    const [chatFocusGeneralChatId, setChatFocusGeneralChatId] = useState('');
     const [isOperativeOpen, setIsOperativeOpen] = useState(true);
     const [isAdministrationOpen, setIsAdministrationOpen] = useState(true);
     const hasSetDefault = useRef(false);
@@ -454,6 +455,9 @@ const DashboardComponent = () => {
                                         notification.employeeId
                                     );
                                 }
+                                if (section === 'chats' && notification?.chatId) {
+                                    setChatFocusGeneralChatId(notification.chatId);
+                                }
                                 setActiveSection(section);
                             }
                         }}
@@ -488,7 +492,9 @@ const DashboardComponent = () => {
                 return <AdminUsersSection />;
 
             case 'chats':
-                return <ChatHub />;
+                return (
+                    <ChatHub focusGeneralChatId={chatFocusGeneralChatId} />
+                );
             case 'schedule':
                 return <EmployeeScheduleComponent />;
             case 'workReports':

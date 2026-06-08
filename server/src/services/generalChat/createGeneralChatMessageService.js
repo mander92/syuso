@@ -40,6 +40,7 @@ const createGeneralChatMessageService = async (
             u.lastName,
             u.role,
             gc.name AS chatName,
+            gc.type AS chatType,
             r.message AS replyToMessage,
             ru.firstName AS replyToFirstName,
             ru.lastName AS replyToLastName

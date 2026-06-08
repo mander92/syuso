@@ -1,13 +1,19 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 import ServiceChatDashboard from '../serviceChat/ServiceChatDashboard.jsx';
 import GeneralChatDashboard from '../generalChat/GeneralChatDashboard.jsx';
 import './ChatHub.css';
 
-const ChatHub = () => {
+const ChatHub = ({ focusGeneralChatId = '' }) => {
     const { unreadByService, unreadByGeneral } = useChatNotifications();
     const [activeTab, setActiveTab] = useState('services');
+
+    useEffect(() => {
+        if (focusGeneralChatId) {
+            setActiveTab('general');
+        }
+    }, [focusGeneralChatId]);
 
     const serviceUnreadTotal = useMemo(
         () =>
@@ -70,7 +76,7 @@ const ChatHub = () => {
                 {activeTab === 'services' ? (
                     <ServiceChatDashboard />
                 ) : (
-                    <GeneralChatDashboard />
+                    <GeneralChatDashboard focusChatId={focusGeneralChatId} />
                 )}
             </div>
         </section>

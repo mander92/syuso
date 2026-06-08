@@ -1,5 +1,6 @@
 // src/components/AdminUsersSection.jsx
 import { Fragment, useContext, useEffect, useMemo, useState } from 'react';
+import toast from 'react-hot-toast';
 import { AuthContext } from '../../context/AuthContext';
 import useUser from '../../hooks/useUser.js';
 import {
@@ -550,15 +551,23 @@ const AdminUsersSection = () => {
                 return;
             }
 
-            await fetchAdminUpdateUserServices(authToken, id, payload);
+            const response = await fetchAdminUpdateUserServices(
+                authToken,
+                id,
+                payload
+            );
 
             setUsers((prev) =>
                 prev.map((u) => (u.id === id ? { ...u, ...editingUser } : u))
             );
+            await loadUsers();
             setEditingUser(null);
+            toast.success(
+                response?.message || 'Usuario actualizado correctamente'
+            );
         } catch (error) {
             console.error(error);
-            alert(error.message || 'Error guardando cambios');
+            toast.error(error.message || 'Error guardando cambios');
         } finally {
             setSavingEdit(false);
         }

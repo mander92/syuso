@@ -2,9 +2,15 @@ import getPool from '../../db/getPool.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import selectAdminDelegationNamesService from '../delegations/selectAdminDelegationNamesService.js';
 
-const addGeneralChatMembersService = async (chatId, memberIds = [], requester) => {
+const addGeneralChatMembersService = async (
+    chatId,
+    memberIds = [],
+    requester,
+    options = {}
+) => {
     const pool = await getPool();
     const { id: requesterId, role } = requester;
+    const { chatType = 'standard' } = options;
 
     if (role !== 'admin' && role !== 'sudo') {
         generateErrorUtil('No autorizado', 403);
@@ -32,15 +38,42 @@ const addGeneralChatMembersService = async (chatId, memberIds = [], requester) =
         generateErrorUtil('Alguno de los usuarios no existe', 404);
     }
 
+    let allowedDelegations = [];
+
     if (role === 'admin') {
-        const allowedDelegations = await selectAdminDelegationNamesService(
+        allowedDelegations = await selectAdminDelegationNamesService(
             requesterId
         );
         if (!allowedDelegations.length) {
             generateErrorUtil('Sin delegaciones asignadas', 403);
         }
+    }
 
+    if (chatType === 'direct') {
         for (const user of users) {
+            if (user.id === requesterId) continue;
+
+            if (!['employee', 'admin', 'sudo'].includes(user.role)) {
+                generateErrorUtil(
+                    'Usuario no valido para chat individual',
+                    403
+                );
+            }
+
+            if (
+                role === 'admin' &&
+                user.role === 'employee' &&
+                !allowedDelegations.includes(user.city)
+            ) {
+                generateErrorUtil('Empleado fuera de tu delegacion', 403);
+            }
+        }
+    }
+
+    if (role === 'admin' && chatType !== 'direct') {
+        for (const user of users) {
+            if (user.id === requesterId) continue;
+
             if (user.role !== 'employee') {
                 generateErrorUtil('Solo puedes agregar empleados', 403);
             }

@@ -4,6 +4,7 @@ import Joi from 'joi';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import updateUserService from '../../services/users/updateUserService.js';
 import updateUserAdminService from '../../services/users/updateUserAdminService.js';
+import { getIO } from '../../sockets/io.js';
 
 const editUserController = async (req, res, next) => {
     try {
@@ -114,6 +115,13 @@ const editUserController = async (req, res, next) => {
             const { firstName, lastName, phone } = value;
             await updateUserService(userId, firstName, lastName, phone);
         }
+
+        getIO()?.to(`user:${userId}`).emit('user:updated', {
+            userId,
+            changedBy: loggedId,
+            dashboardPermissionsChanged:
+                value.dashboardPermissions !== undefined,
+        });
 
         res.send({
             status: 'ok',

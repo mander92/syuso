@@ -3,7 +3,7 @@ import { v4 as uuid } from 'uuid';
 import getPool from '../../db/getPool.js';
 import addGeneralChatMembersService from './addGeneralChatMembersService.js';
 
-const getDirectChat = async (pool, requesterId, employeeId) => {
+const getDirectChat = async (pool, requesterId, participantId) => {
     const [rows] = await pool.query(
         `
         SELECT c.id, c.name, c.type, c.createdBy, c.createdAt
@@ -17,7 +17,7 @@ const getDirectChat = async (pool, requesterId, employeeId) => {
         ORDER BY c.createdAt DESC
         LIMIT 1
         `,
-        [requesterId, employeeId]
+        [requesterId, participantId]
     );
 
     return rows[0] || null;
@@ -26,12 +26,12 @@ const getDirectChat = async (pool, requesterId, employeeId) => {
 const createGeneralChatService = async (name, type, createdBy, memberIds, requester) => {
     const pool = await getPool();
     if (type === 'direct') {
-        const employeeId = Array.from(new Set(memberIds || [])).find(
+        const participantId = Array.from(new Set(memberIds || [])).find(
             (id) => id && id !== createdBy
         );
 
-        if (employeeId) {
-            const existing = await getDirectChat(pool, createdBy, employeeId);
+        if (participantId) {
+            const existing = await getDirectChat(pool, createdBy, participantId);
             if (existing) {
                 return existing;
             }
@@ -48,7 +48,9 @@ const createGeneralChatService = async (name, type, createdBy, memberIds, reques
         [chatId, name, type, createdBy]
     );
 
-    await addGeneralChatMembersService(chatId, memberIds, requester);
+    await addGeneralChatMembersService(chatId, memberIds, requester, {
+        chatType: type,
+    });
 
     return {
         id: chatId,

@@ -164,6 +164,15 @@ export const ChatNotificationsProvider = ({ children }) => {
         return map;
     }, [generalChats]);
 
+    const generalChatTypeMap = useMemo(() => {
+        const map = new Map();
+        generalChats.forEach((chat) => {
+            if (!chat?.id || map.has(chat.id)) return;
+            map.set(chat.id, chat.type || 'standard');
+        });
+        return map;
+    }, [generalChats]);
+
     const isAdminLike = user?.role === 'admin' || user?.role === 'sudo';
 
     const buildAlertRoute = (section) => {
@@ -206,17 +215,24 @@ export const ChatNotificationsProvider = ({ children }) => {
     };
 
     const buildGeneralChatAlertRoute = (chatId, source = {}) => {
+        const type = source.chatType || generalChatTypeMap.get(chatId);
+        const typeLabel =
+            type === 'direct'
+                ? 'Individuales'
+                : type === 'announcement'
+                  ? 'Generales'
+                  : 'Grupales';
         const chatName =
             source.chatName ||
             source.name ||
             generalChatNameMap.get(chatId) ||
             '';
 
-        const route = ['Chats', 'Generales', chatName]
+        const route = ['Chats', typeLabel, chatName]
             .filter(Boolean)
             .join(' > ');
 
-        return route === 'Chats > Generales'
+        return route === `Chats > ${typeLabel}`
             ? buildAlertRoute('chats')
             : route;
     };
@@ -636,6 +652,8 @@ export const ChatNotificationsProvider = ({ children }) => {
                 id: `general-chat-${message.id || `${message.chatId}-${Date.now()}`}`,
                 type: 'chat',
                 section: 'chats',
+                chatId: message.chatId,
+                chatType: message.chatType,
                 title: 'Chat general',
                 message: `${chatName}: nuevo mensaje`,
                 routeLabel: buildGeneralChatAlertRoute(
@@ -772,6 +790,7 @@ export const ChatNotificationsProvider = ({ children }) => {
         serviceNameMap,
         serviceInfoMap,
         generalChatNameMap,
+        generalChatTypeMap,
         addAlertNotification,
     ]);
 

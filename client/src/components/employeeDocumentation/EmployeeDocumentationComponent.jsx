@@ -953,9 +953,8 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                         : item
                 )
             );
-            alert('Nueva subida permitida.');
         } catch (error) {
-            alert(error.message || 'No se pudo permitir nueva subida');
+            alert(error.message || 'No se pudo vaciar el archivo');
         }
     };
 
@@ -2377,7 +2376,7 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                                                         )
                                                     }
                                                 >
-                                                    Permitir nueva subida
+                                                    Vaciar archivo
                                                 </button>
                                             ) : null}
                                         </>

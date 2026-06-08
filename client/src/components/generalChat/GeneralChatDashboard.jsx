@@ -23,7 +23,13 @@ const normalizeText = (value) =>
         .toLowerCase()
         .trim();
 
-const GeneralChatDashboard = () => {
+const chatTypeLabels = {
+    standard: 'Grupales',
+    announcement: 'Generales',
+    direct: 'Individuales',
+};
+
+const GeneralChatDashboard = ({ focusChatId = '' }) => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
     const { unreadByGeneral, resetGeneralUnread, syncGeneralChats } =
@@ -34,13 +40,14 @@ const GeneralChatDashboard = () => {
     const [membersVisible, setMembersVisible] = useState({});
     const [addSelections, setAddSelections] = useState({});
     const [searchText, setSearchText] = useState('');
+    const [chatTypeTab, setChatTypeTab] = useState('standard');
     const [loading, setLoading] = useState(false);
 
     const [userOptions, setUserOptions] = useState([]);
     const [newChatName, setNewChatName] = useState('');
     const [newChatType, setNewChatType] = useState('standard');
     const [newChatMembers, setNewChatMembers] = useState([]);
-    const [directEmployeeId, setDirectEmployeeId] = useState('');
+    const [directUserId, setDirectUserId] = useState('');
     const [directSearch, setDirectSearch] = useState('');
     const [creating, setCreating] = useState(false);
     const [memberModalOpen, setMemberModalOpen] = useState(false);
@@ -87,10 +94,7 @@ const GeneralChatDashboard = () => {
     const loadUsers = async () => {
         if (!authToken || !user || !isAdminLike) return;
         try {
-            const query =
-                user.role === 'admin'
-                    ? 'role=employee&active=1'
-                    : 'active=1';
+            const query = 'active=1';
             const data = await fetchAllUsersServices(query, authToken);
             setUserOptions(Array.isArray(data) ? data : []);
         } catch (error) {
@@ -108,12 +112,38 @@ const GeneralChatDashboard = () => {
         loadUsers();
     }, [authToken, user]);
 
+    useEffect(() => {
+        if (!focusChatId || !chats.length) return;
+
+        const focusedChat = chats.find((chat) => chat.id === focusChatId);
+        if (!focusedChat) return;
+
+        setChatTypeTab(focusedChat.type || 'standard');
+        setOpenChats((prev) => ({
+            ...prev,
+            [focusChatId]: true,
+        }));
+    }, [focusChatId, chats]);
+
+    const chatTypeUnreadCounts = useMemo(() => {
+        return chats.reduce(
+            (acc, chat) => {
+                const type = chat.type || 'standard';
+                acc[type] = (acc[type] || 0) + (unreadByGeneral?.[chat.id] || 0);
+                return acc;
+            },
+            { standard: 0, announcement: 0, direct: 0 }
+        );
+    }, [chats, unreadByGeneral]);
+
     const normalizedChats = useMemo(() => {
         const query = normalizeText(searchText);
-        return chats.filter((chat) =>
-            query ? normalizeText(chat.name).includes(query) : true
-        );
-    }, [chats, searchText]);
+        return chats
+            .filter((chat) => (chat.type || 'standard') === chatTypeTab)
+            .filter((chat) =>
+                query ? normalizeText(chat.name).includes(query) : true
+            );
+    }, [chats, searchText, chatTypeTab]);
 
     const filteredMemberOptions = useMemo(() => {
         const query = normalizeText(memberSearch);
@@ -137,10 +167,13 @@ const GeneralChatDashboard = () => {
             .sort();
     }, [userOptions]);
 
-    const directEmployeeOptions = useMemo(() => {
+    const directUserOptions = useMemo(() => {
         const query = normalizeText(directSearch);
         return userOptions
-            .filter((option) => option.role === 'employee')
+            .filter((option) => option.id !== user?.id)
+            .filter((option) =>
+                ['employee', 'admin', 'sudo'].includes(option.role)
+            )
             .filter((option) => {
                 if (!query) return true;
                 return normalizeText(
@@ -150,7 +183,7 @@ const GeneralChatDashboard = () => {
                 ).includes(query);
             })
             .slice(0, 30);
-    }, [directSearch, userOptions]);
+    }, [directSearch, userOptions, user?.id]);
 
     const toggleMemberSelection = (memberId) => {
         setNewChatMembers((prev) =>
@@ -185,30 +218,31 @@ const GeneralChatDashboard = () => {
     const handleCreateChat = async (event) => {
         event.preventDefault();
         if (newChatType === 'direct') {
-            if (!directEmployeeId) {
-                toast.error('Selecciona un trabajador');
+            if (!directUserId) {
+                toast.error('Selecciona un usuario');
                 return;
             }
-            const selectedEmployee = userOptions.find(
-                (option) => option.id === directEmployeeId
+            const selectedUser = userOptions.find(
+                (option) => option.id === directUserId
             );
-            const employeeName =
-                `${selectedEmployee?.firstName || ''} ${
-                    selectedEmployee?.lastName || ''
+            const userName =
+                `${selectedUser?.firstName || ''} ${
+                    selectedUser?.lastName || ''
                 }`.trim() ||
-                selectedEmployee?.email ||
-                'Trabajador';
+                selectedUser?.email ||
+                'Usuario';
 
             try {
                 setCreating(true);
                 const chat = await createGeneralChat(
                     authToken,
-                    employeeName,
+                    userName,
                     'direct',
-                    [directEmployeeId]
+                    [directUserId]
                 );
-                setDirectEmployeeId('');
+                setDirectUserId('');
                 setDirectSearch('');
+                setChatTypeTab('direct');
                 await loadChats();
                 if (chat?.id) {
                     setOpenChats((prev) => ({ ...prev, [chat.id]: true }));
@@ -331,6 +365,29 @@ const GeneralChatDashboard = () => {
                 </div>
             </div>
 
+            <div className='general-chat-type-tabs'>
+                {['standard', 'announcement', 'direct'].map((type) => (
+                    <button
+                        key={type}
+                        type='button'
+                        className={
+                            'general-chat-type-tab' +
+                            (chatTypeTab === type
+                                ? ' general-chat-type-tab--active'
+                                : '')
+                        }
+                        onClick={() => setChatTypeTab(type)}
+                    >
+                        {chatTypeLabels[type]}
+                        {chatTypeUnreadCounts[type] > 0 ? (
+                            <span className='general-chat-type-badge'>
+                                {chatTypeUnreadCounts[type]}
+                            </span>
+                        ) : null}
+                    </button>
+                ))}
+            </div>
+
             {isAdminLike && (
                 <form
                     className='general-chat-create'
@@ -365,7 +422,7 @@ const GeneralChatDashboard = () => {
                     {newChatType === 'direct' ? (
                         <div className='general-chat-create-field general-chat-create-field--wide'>
                             <label htmlFor='general-chat-direct-search'>
-                                Trabajador
+                                Usuario
                             </label>
                             <input
                                 id='general-chat-direct-search'
@@ -374,21 +431,21 @@ const GeneralChatDashboard = () => {
                                 onChange={(event) =>
                                     setDirectSearch(event.target.value)
                                 }
-                                placeholder='Buscar trabajador...'
+                                placeholder='Buscar empleado, admin o sudo...'
                             />
                             <div className='general-chat-direct-list'>
-                                {directEmployeeOptions.map((employee) => (
+                                {directUserOptions.map((employee) => (
                                     <button
                                         key={employee.id}
                                         type='button'
                                         className={
                                             'general-chat-direct-item' +
-                                            (directEmployeeId === employee.id
+                                            (directUserId === employee.id
                                                 ? ' general-chat-direct-item--active'
                                                 : '')
                                         }
                                         onClick={() =>
-                                            setDirectEmployeeId(employee.id)
+                                            setDirectUserId(employee.id)
                                         }
                                     >
                                         <strong>
@@ -553,11 +610,7 @@ const GeneralChatDashboard = () => {
                                 <div>
                                     <h3>{chat.name}</h3>
                                     <p>
-                                        {chat.type === 'announcement'
-                                            ? 'Anuncios'
-                                            : chat.type === 'direct'
-                                              ? 'Individual'
-                                            : 'Chat normal'}
+                                        {chatTypeLabels[chat.type] || 'Grupales'}
                                     </p>
                                 </div>
                                 <div className='general-chat-dashboard-actions'>
@@ -584,7 +637,7 @@ const GeneralChatDashboard = () => {
                                             ? 'Ocultar miembros'
                                             : 'Ver miembros'}
                                     </button>
-                                    {isAdminLike && (
+                                    {isAdminLike && chat.type !== 'direct' && (
                                         <button
                                             type='button'
                                             className='general-chat-dashboard-danger'
