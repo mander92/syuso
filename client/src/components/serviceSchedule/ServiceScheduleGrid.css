@@ -378,8 +378,14 @@
 .service-schedule-grid-shift-time {
     align-items: center;
     display: inline-flex;
+    flex-direction: column;
     gap: 2px;
     font-weight: 600;
+    line-height: 1.05;
+}
+
+.service-schedule-grid-shift-time-separator {
+    display: none;
 }
 
 .service-schedule-grid-shift-type {
