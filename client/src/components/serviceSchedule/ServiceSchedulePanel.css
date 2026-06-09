@@ -627,6 +627,23 @@
     overflow: auto;
 }
 
+.service-schedule-grid-modal__body .service-schedule-grid-shift {
+    min-width: 24px;
+    padding: 3px 2px;
+}
+
+.service-schedule-grid-modal__body .service-schedule-grid-shift-time {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    line-height: 1.05;
+}
+
+.service-schedule-grid-modal__body .service-schedule-grid-shift-time-separator {
+    display: none;
+}
+
 .service-schedule-holidays {
     display: flex;
     flex-direction: column;
