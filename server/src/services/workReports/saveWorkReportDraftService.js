@@ -171,6 +171,7 @@ const saveWorkReportDraftService = async ({
         return {
             id: existing[0].id,
             signaturePath,
+            clientSignaturePath,
             incidents: normalizedIncidents,
         };
     }
@@ -203,6 +204,7 @@ const saveWorkReportDraftService = async ({
     return {
         id: draftId,
         signaturePath,
+        clientSignaturePath,
         incidents: normalizedIncidents,
     };
 };

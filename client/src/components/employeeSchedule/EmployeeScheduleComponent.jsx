@@ -149,6 +149,8 @@ const EmployeeScheduleComponent = () => {
                         onShiftUpdate={() => {}}
                         readOnly
                         showUnassigned={false}
+                        showTotals={false}
+                        stickyFirstColumn
                     />
                 </div>
             ) : (

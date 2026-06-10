@@ -56,6 +56,11 @@
     min-width: max-content;
 }
 
+.employee-schedule-grid > .service-schedule-grid.service-schedule-grid--hide-totals .service-schedule-grid-head,
+.employee-schedule-grid > .service-schedule-grid.service-schedule-grid--hide-totals .service-schedule-grid-row {
+    grid-template-columns: minmax(120px, 160px) repeat(var(--days), minmax(26px, 1fr));
+}
+
 .employee-schedule-grid > .service-schedule-grid .service-schedule-grid-footer {
     grid-template-columns: minmax(120px, 160px) repeat(var(--days), minmax(26px, 1fr)) minmax(68px, 82px);
     min-width: max-content;

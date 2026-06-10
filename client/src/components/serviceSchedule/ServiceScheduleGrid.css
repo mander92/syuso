@@ -53,6 +53,23 @@
     min-width: 0;
 }
 
+.service-schedule-grid--hide-totals .service-schedule-grid-head,
+.service-schedule-grid--hide-totals .service-schedule-grid-row {
+    grid-template-columns: minmax(160px, 220px) repeat(var(--days), minmax(0, 1fr));
+}
+
+.service-schedule-grid--sticky-first .service-schedule-grid-corner,
+.service-schedule-grid--sticky-first .service-schedule-grid-employee,
+.service-schedule-grid--sticky-first .service-schedule-grid-footer-label {
+    left: 0;
+    position: sticky;
+    z-index: 8;
+}
+
+.service-schedule-grid--sticky-first .service-schedule-grid-corner {
+    z-index: 10;
+}
+
 .service-schedule-grid-corner,
 .service-schedule-grid-employee,
 .service-schedule-grid-weekday,

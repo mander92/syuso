@@ -33,6 +33,20 @@ const toLocalInputDateTime = (value) => {
 
 const nowDateTime = () => toLocalInputDateTime(new Date());
 
+const splitLocalDateTime = (value) => {
+    if (!value) return { date: '', time: '' };
+    const [date = '', timeValue = ''] = value.split('T');
+    return {
+        date,
+        time: timeValue.slice(0, 5),
+    };
+};
+
+const combineLocalDateTime = (date, time) => {
+    if (!date || !time) return '';
+    return `${date}T${time}`;
+};
+
 const toApiDateTime = (value) => {
     if (!value) return '';
     const parts = value.split('T');
@@ -300,7 +314,7 @@ const WorkReport = () => {
             guardFullName:
                 prev.guardFullName ||
                 `${user.firstName || ''} ${user.lastName || ''}`.trim(),
-            guardEmployeeNumber: prev.guardEmployeeNumber || '',
+            guardEmployeeNumber: prev.guardEmployeeNumber || user.tip || '',
         }));
     }, [user]);
 
@@ -431,9 +445,6 @@ const WorkReport = () => {
                         Number(serviceInfo.hours) * 60 * 60 * 1000
                 )
               : null;
-        const addressLine = serviceInfo.address
-            ? `${serviceInfo.address}${serviceInfo.city ? `, ${serviceInfo.city}` : ''}`
-            : '';
         const folio = shiftRecordId.slice(0, 8).toUpperCase();
 
         setFormData((prev) => ({
@@ -443,7 +454,7 @@ const WorkReport = () => {
                 ? prev.incidentEnd || toLocalInputDateTime(endDate)
                 : prev.incidentEnd,
             totalHours: prev.totalHours || computedTotalHours,
-            location: addressLine || prev.location,
+            location: prev.location || serviceTitle,
         }));
     }, [serviceInfo, shiftRecordId, serviceTitle, computedTotalHours]);
 
@@ -486,6 +497,32 @@ const WorkReport = () => {
             return;
         }
         setFormData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleDateTimePartChange = (field, part, value) => {
+        setFormData((prev) => {
+            const current = splitLocalDateTime(prev[field]);
+            const nextParts = { ...current, [part]: value };
+            let combined = combineLocalDateTime(
+                nextParts.date,
+                nextParts.time
+            );
+            const minValue =
+                field === 'incidentStart' ? minIncidentStart : minIncidentEnd;
+
+            if (combined && minValue && combined < minValue) {
+                combined = minValue;
+            }
+
+            const next = { ...prev, [field]: combined };
+            return {
+                ...next,
+                totalHours: calculateTotalHours(
+                    next.incidentStart,
+                    next.incidentEnd
+                ),
+            };
+        });
     };
 
     const getPoint = useCallback((event) => {
@@ -761,7 +798,10 @@ const WorkReport = () => {
                 toApiDateTime(formData.incidentEnd || '')
             );
             formDataPayload.append('totalHours', computedTotalHours || '');
-            formDataPayload.append('location', formData.location || '');
+            formDataPayload.append(
+                'location',
+                formData.location || serviceTitle || ''
+            );
             formDataPayload.append(
                 'guardFullName',
                 formData.guardFullName || ''
@@ -832,6 +872,12 @@ const WorkReport = () => {
                 if (data?.signaturePath) {
                     setDraftSavedAt(new Date());
                 }
+                if (data?.clientSignaturePath) {
+                    const clientSignatureUrl = `${VITE_API_URL}/uploads/${data.clientSignaturePath}`;
+                    clientSignatureDataRef.current = clientSignatureUrl;
+                    setClientSignatureData(clientSignatureUrl);
+                    setHasClientSignature(true);
+                }
                 setDraftSavedAt(new Date());
                 toast.success('Borrador guardado');
             } catch (error) {
@@ -848,6 +894,11 @@ const WorkReport = () => {
             formData,
             incidents,
             signatureData,
+            clientSignatureData,
+            hasSignature,
+            hasClientSignature,
+            computedTotalHours,
+            serviceTitle,
         ]
     );
 
@@ -924,7 +975,10 @@ const WorkReport = () => {
                 'totalHours',
                 computedTotalHours || ''
             );
-            formDataPayload.append('location', formData.location.trim());
+            formDataPayload.append(
+                'location',
+                (formData.location || serviceTitle || '').trim()
+            );
             formDataPayload.append(
                 'guardFullName',
                 formData.guardFullName.trim()
@@ -998,6 +1052,11 @@ const WorkReport = () => {
         );
     }
 
+    const incidentStartParts = splitLocalDateTime(formData.incidentStart);
+    const incidentEndParts = splitLocalDateTime(formData.incidentEnd);
+    const minIncidentStartParts = splitLocalDateTime(minIncidentStart);
+    const minIncidentEndParts = splitLocalDateTime(minIncidentEnd);
+
     return (
         <div className='work-report-page'>
             <div className='work-report-header'>
@@ -1038,24 +1097,78 @@ const WorkReport = () => {
                             <input name='folio' value={formData.folio} readOnly />
                         </label>
                         <label>
+                            Fecha inicio
+                            <input
+                                type='date'
+                                value={incidentStartParts.date}
+                                onChange={(event) =>
+                                    handleDateTimePartChange(
+                                        'incidentStart',
+                                        'date',
+                                        event.target.value
+                                    )
+                                }
+                                min={minIncidentStartParts.date || undefined}
+                                required
+                            />
+                        </label>
+                        <label>
                             Hora inicio
                             <input
-                                type='datetime-local'
-                                name='incidentStart'
-                                value={formData.incidentStart}
-                                onChange={handleChange}
-                                min={minIncidentStart || undefined}
+                                type='time'
+                                value={incidentStartParts.time}
+                                onChange={(event) =>
+                                    handleDateTimePartChange(
+                                        'incidentStart',
+                                        'time',
+                                        event.target.value
+                                    )
+                                }
+                                min={
+                                    incidentStartParts.date ===
+                                    minIncidentStartParts.date
+                                        ? minIncidentStartParts.time ||
+                                          undefined
+                                        : undefined
+                                }
+                                required
+                            />
+                        </label>
+                        <label>
+                            Fecha fin
+                            <input
+                                type='date'
+                                value={incidentEndParts.date}
+                                onChange={(event) =>
+                                    handleDateTimePartChange(
+                                        'incidentEnd',
+                                        'date',
+                                        event.target.value
+                                    )
+                                }
+                                min={minIncidentEndParts.date || undefined}
                                 required
                             />
                         </label>
                         <label>
                             Hora fin
                             <input
-                                type='datetime-local'
-                                name='incidentEnd'
-                                value={formData.incidentEnd}
-                                onChange={handleChange}
-                                min={minIncidentEnd || undefined}
+                                type='time'
+                                value={incidentEndParts.time}
+                                onChange={(event) =>
+                                    handleDateTimePartChange(
+                                        'incidentEnd',
+                                        'time',
+                                        event.target.value
+                                    )
+                                }
+                                min={
+                                    incidentEndParts.date ===
+                                    minIncidentEndParts.date
+                                        ? minIncidentEndParts.time ||
+                                          undefined
+                                        : undefined
+                                }
                                 required
                             />
                         </label>

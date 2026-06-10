@@ -114,6 +114,8 @@ const ServiceScheduleGrid = ({
     showUnassigned = true,
     showAllEmployees = false,
     showAgreementHours = false,
+    showTotals = true,
+    stickyFirstColumn = false,
 }) => {
     const [draggedShiftId, setDraggedShiftId] = useState(null);
     const [collapsedRows, setCollapsedRows] = useState(() => new Set());
@@ -277,7 +279,13 @@ const ServiceScheduleGrid = ({
     const gridStyle = { '--days': days.length };
 
     return (
-        <div className='service-schedule-grid'>
+        <div
+            className={`service-schedule-grid ${
+                showTotals ? '' : 'service-schedule-grid--hide-totals'
+            } ${
+                stickyFirstColumn ? 'service-schedule-grid--sticky-first' : ''
+            }`}
+        >
             <div className='service-schedule-grid-head' style={gridStyle}>
                 <div className='service-schedule-grid-corner'>Empleado</div>
                 {days.map((day) => {
@@ -303,7 +311,9 @@ const ServiceScheduleGrid = ({
                         </div>
                     );
                 })}
-                <div className='service-schedule-grid-total-head'>Horas</div>
+                {showTotals && (
+                    <div className='service-schedule-grid-total-head'>Horas</div>
+                )}
             </div>
             <div className='service-schedule-grid-head service-schedule-grid-head--numbers' style={gridStyle}>
                 <div className='service-schedule-grid-corner'> </div>
@@ -325,7 +335,9 @@ const ServiceScheduleGrid = ({
                         </div>
                     );
                 })}
-                <div className='service-schedule-grid-total-head'>Total</div>
+                {showTotals && (
+                    <div className='service-schedule-grid-total-head'>Total</div>
+                )}
             </div>
             {rows.map((row) => {
                 const rowKey = row.id || 'unassigned';
@@ -348,7 +360,7 @@ const ServiceScheduleGrid = ({
                         <div className='service-schedule-grid-employee'>
                             <span>{row.label}</span>
                             <strong className='service-schedule-grid-mobile-total'>
-                                {formatHours(rowTotalHours)} h
+                                {showTotals ? `${formatHours(rowTotalHours)} h` : ''}
                             </strong>
                             <button
                                 type='button'
@@ -584,31 +596,35 @@ const ServiceScheduleGrid = ({
                                 </div>
                             );
                             })}
-                        <div className='service-schedule-grid-row-total'>
-                            <strong>{formatHours(rowTotalHours)} h</strong>
-                            {shouldShowAgreementHours && (
-                                <span className='service-schedule-grid-agreement-total'>
-                                    N {formatHours(rowAgreementTotals.nightHours)} / F{' '}
-                                    {formatHours(rowAgreementTotals.holidayHours)}
-                                </span>
-                            )}
-                        </div>
+                        {showTotals && (
+                            <div className='service-schedule-grid-row-total'>
+                                <strong>{formatHours(rowTotalHours)} h</strong>
+                                {shouldShowAgreementHours && (
+                                    <span className='service-schedule-grid-agreement-total'>
+                                        N {formatHours(rowAgreementTotals.nightHours)} / F{' '}
+                                        {formatHours(rowAgreementTotals.holidayHours)}
+                                    </span>
+                                )}
+                            </div>
+                        )}
                     </div>
                 );
             })}
-            <div className='service-schedule-grid-footer' style={gridStyle}>
-                <div className='service-schedule-grid-footer-label'>Total horas</div>
-                <div className='service-schedule-grid-footer-spacer' />
-                <div className='service-schedule-grid-footer-total'>
-                    <strong>{formatHours(visibleTotalHours)} h</strong>
-                    {shouldShowAgreementHours && (
-                        <span className='service-schedule-grid-agreement-total'>
-                            N {formatHours(visibleAgreementTotals.nightHours)} / F{' '}
-                            {formatHours(visibleAgreementTotals.holidayHours)}
-                        </span>
-                    )}
+            {showTotals && (
+                <div className='service-schedule-grid-footer' style={gridStyle}>
+                    <div className='service-schedule-grid-footer-label'>Total horas</div>
+                    <div className='service-schedule-grid-footer-spacer' />
+                    <div className='service-schedule-grid-footer-total'>
+                        <strong>{formatHours(visibleTotalHours)} h</strong>
+                        {shouldShowAgreementHours && (
+                            <span className='service-schedule-grid-agreement-total'>
+                                N {formatHours(visibleAgreementTotals.nightHours)} / F{' '}
+                                {formatHours(visibleAgreementTotals.holidayHours)}
+                            </span>
+                        )}
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };
