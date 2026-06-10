@@ -60,6 +60,19 @@ const operativeSectionIds = [
 const administrationSectionIds = ['documentations', 'warehouse', 'payrolls'];
 const communicationSectionIds = ['chats', 'alerts'];
 
+const getDashboardRoleLabel = ({
+    userRole,
+    isAdminLike,
+    isEmployeeLike,
+    isClient,
+}) => {
+    if (userRole === 'sudo') return 'Superusuario';
+    if (userRole === 'admin') return 'Administrador';
+    if (isClient) return 'Cliente';
+    if (isEmployeeLike || !isAdminLike) return 'Empleado';
+    return 'Empleado';
+};
+
 const AlertsPanel = ({
     notifications,
     onOpenSection,
@@ -601,14 +614,12 @@ const DashboardComponent = () => {
                                 {user.firstName} {user.lastName}
                             </p>
                             <p className='dashboard-userrole'>
-                                {userRole === 'sudo'
-                                    ? 'Superusuario'
-                                    : userRole === 'admin'
-                                      ? 'Administrador'
-                                      : isEmployeeLike ||
-                                          (!isAdminLike && !isClient)
-                                        ? 'Empleado'
-                                        : 'Cliente'}
+                                {getDashboardRoleLabel({
+                                    userRole,
+                                    isAdminLike,
+                                    isEmployeeLike,
+                                    isClient,
+                                })}
                             </p>
                         </div>
                     </div>

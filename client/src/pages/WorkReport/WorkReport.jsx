@@ -159,6 +159,22 @@ const WorkReport = () => {
     const signatureDataRef = useRef('');
     const clientSignatureDataRef = useRef('');
 
+    const getCanvasCssSize = (canvas) => {
+        const ratio = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        return {
+            width: rect.width || canvas.offsetWidth || canvas.width / ratio || 600,
+            height:
+                rect.height || canvas.offsetHeight || canvas.height / ratio || 220,
+        };
+    };
+
+    const redrawCanvasImage = (canvas, ctx, img) => {
+        const { width, height } = getCanvasCssSize(canvas);
+        ctx.clearRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+    };
+
     const openLocationSettings = () => {
         if (typeof window === 'undefined') return;
 
@@ -203,8 +219,7 @@ const WorkReport = () => {
                 const img = new Image();
                 img.src = signatureDataRef.current;
                 img.onload = () => {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    redrawCanvasImage(canvas, ctx, img);
                     setHasSignature(true);
                 };
             } else {
@@ -217,8 +232,7 @@ const WorkReport = () => {
                 const img = new Image();
                 img.src = clientSignatureDataRef.current;
                 img.onload = () => {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    redrawCanvasImage(canvas, ctx, img);
                     setHasClientSignature(true);
                 };
             } else {
@@ -334,8 +348,7 @@ const WorkReport = () => {
                         const ctx = ctxRef.current;
                         const canvas = canvasRef.current;
                         if (!ctx || !canvas) return;
-                        ctx.clearRect(0, 0, canvas.width, canvas.height);
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        redrawCanvasImage(canvas, ctx, img);
                         setHasSignature(true);
                         const dataUrl = canvas.toDataURL('image/png');
                         signatureDataRef.current = dataUrl;
@@ -354,8 +367,7 @@ const WorkReport = () => {
                         const ctx = clientCtxRef.current;
                         const canvas = clientCanvasRef.current;
                         if (!ctx || !canvas) return;
-                        ctx.clearRect(0, 0, canvas.width, canvas.height);
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        redrawCanvasImage(canvas, ctx, img);
                         setHasClientSignature(true);
                         const dataUrl = canvas.toDataURL('image/png');
                         clientSignatureDataRef.current = dataUrl;
@@ -554,7 +566,8 @@ const WorkReport = () => {
         const canvas = canvasRef.current;
         const ctx = ctxRef.current;
         if (!canvas || !ctx) return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const { width, height } = getCanvasCssSize(canvas);
+        ctx.clearRect(0, 0, width, height);
         setHasSignature(false);
         setSignatureData('');
         signatureDataRef.current = '';
@@ -603,8 +616,7 @@ const WorkReport = () => {
         const img = new Image();
         img.src = source;
         img.onload = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            redrawCanvasImage(canvas, ctx, img);
             setHasSignature(true);
         };
     }, [ensureContext, signatureData]);
@@ -618,8 +630,7 @@ const WorkReport = () => {
         const img = new Image();
         img.src = source;
         img.onload = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            redrawCanvasImage(canvas, ctx, img);
             setHasClientSignature(true);
         };
     }, [clientSignatureData, ensureClientContext]);
@@ -668,7 +679,8 @@ const WorkReport = () => {
         const canvas = clientCanvasRef.current;
         const ctx = clientCtxRef.current;
         if (!canvas || !ctx) return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const { width, height } = getCanvasCssSize(canvas);
+        ctx.clearRect(0, 0, width, height);
         setHasClientSignature(false);
         setClientSignatureData('');
         clientSignatureDataRef.current = '';
