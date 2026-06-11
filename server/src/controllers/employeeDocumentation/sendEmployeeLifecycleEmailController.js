@@ -62,7 +62,7 @@ const sendEmployeeLifecycleEmailController = async (req, res, next) => {
             signatureDocuments,
         });
 
-        const { failed } = await sendEmployeeLifecycleEmail({
+        const { failed, failedDetails } = await sendEmployeeLifecycleEmail({
             emails: recipients.join(','),
             ccEmails: ccRecipients.join(','),
             employee: documentation,
@@ -73,8 +73,13 @@ const sendEmployeeLifecycleEmailController = async (req, res, next) => {
         });
 
         if (failed.length) {
+            const detailMessage = failedDetails?.length
+                ? failedDetails
+                      .map((item) => `${item.email} (${item.reason})`)
+                      .join(', ')
+                : failed.join(', ');
             generateErrorUtil(
-                `No se pudo enviar a: ${failed.join(', ')}`,
+                `No se pudo enviar a: ${detailMessage}`,
                 500
             );
         }

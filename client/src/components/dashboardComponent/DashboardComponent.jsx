@@ -20,6 +20,7 @@ import EmployeeScheduleComponent from '../employeeSchedule/EmployeeScheduleCompo
 import EmployeeDocumentationComponent from '../employeeDocumentation/EmployeeDocumentationComponent.jsx';
 import AdminWarehouseSection from '../adminWarehouseSection/AdminWarehouseSection.jsx';
 import PayrollsComponent from '../payrolls/PayrollsComponent.jsx';
+import BillingComponent from '../billing/BillingComponent.jsx';
 import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 
 const formatAlertDate = (value) => {
@@ -57,7 +58,12 @@ const operativeSectionIds = [
     'workReports',
 ];
 
-const administrationSectionIds = ['documentations', 'warehouse', 'payrolls'];
+const administrationSectionIds = [
+    'documentations',
+    'warehouse',
+    'payrolls',
+    'billing',
+];
 const communicationSectionIds = ['chats', 'alerts'];
 
 const getDashboardRoleLabel = ({
@@ -226,6 +232,7 @@ const DashboardComponent = () => {
                 { id: 'documentations', label: 'Documentacion' },
                 { id: 'warehouse', label: 'Almacen' },
                 { id: 'payrolls', label: 'Nominas' },
+                { id: 'billing', label: 'Facturacion' },
                 { id: 'users', label: 'Usuarios' },
                 { id: 'profile', label: 'Mi perfil' },
             ];
@@ -572,6 +579,8 @@ const DashboardComponent = () => {
                 return <AdminWarehouseSection />;
             case 'payrolls':
                 return <PayrollsComponent />;
+            case 'billing':
+                return <BillingComponent />;
 
             default:
                 return null;

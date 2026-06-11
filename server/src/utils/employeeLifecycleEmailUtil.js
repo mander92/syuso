@@ -60,6 +60,14 @@ const renderDetailsList = (items) =>
         )
         .join('');
 
+const getMailErrorMessage = (error) => {
+    const body = error?.response?.body;
+    if (body?.message) return body.message;
+    if (body?.code) return body.code;
+    if (error?.message) return error.message;
+    return 'error desconocido';
+};
+
 const addAttachmentIfExists = (attachments, relativePath, filename) => {
     if (!relativePath) return;
     const filePath = getEmployeeDocumentationFilePath(relativePath);
@@ -173,12 +181,21 @@ export const sendEmployeeLifecycleEmail = async ({
     `;
 
     const failed = [];
+    const failedDetails = [];
     for (const email of recipients) {
-        const sent = await sendMail(employeeName, email, subject, body, attachments, {
-            cc: ccRecipients,
-        });
-        if (!sent) failed.push(email);
+        try {
+            await sendMail(employeeName, email, subject, body, attachments, {
+                cc: ccRecipients,
+                throwOnError: true,
+            });
+        } catch (error) {
+            failed.push(email);
+            failedDetails.push({
+                email,
+                reason: getMailErrorMessage(error),
+            });
+        }
     }
 
-    return { recipients, ccRecipients, failed };
+    return { recipients, ccRecipients, failed, failedDetails };
 };

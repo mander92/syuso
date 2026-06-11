@@ -43,6 +43,7 @@ const dashboardPermissionGroups = [
             { id: 'documentations', label: 'Documentacion' },
             { id: 'warehouse', label: 'Almacen' },
             { id: 'payrolls', label: 'Nominas' },
+            { id: 'billing', label: 'Facturacion' },
         ],
     },
     {
@@ -87,6 +88,7 @@ const defaultDashboardPermissionsByRole = {
         'documentations',
         'warehouse',
         'payrolls',
+        'billing',
         'users',
     ],
     employee: [
