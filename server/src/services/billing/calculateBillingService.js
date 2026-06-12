@@ -22,6 +22,7 @@ const calculateBillingService = async ({
             s.id,
             s.name,
             s.hourlyRate,
+            s.billingConcept,
             s.clientId,
             CONCAT_WS(' ', u.firstName, u.lastName) AS clientName,
             u.email AS clientEmail
@@ -59,7 +60,7 @@ const calculateBillingService = async ({
 
     return {
         service,
-        concept: concept || service.name,
+        concept: concept || service.billingConcept || service.name,
         periodStart,
         periodEnd,
         totalHours,

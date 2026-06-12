@@ -16,6 +16,10 @@ const requestInvoiceController = async (req, res, next) => {
             ccEmails: Joi.string().allow('', null),
             notes: Joi.string().max(1000).allow('', null),
             concept: Joi.string().max(255).allow('', null),
+            concepts: Joi.object().pattern(
+                Joi.string().guid({ version: 'uuidv4' }),
+                Joi.string().max(255).allow('', null)
+            ),
             vatPercent: Joi.number().min(0).max(100).allow('', null),
         }).custom((value, helpers) => {
             if (value.serviceId || value.serviceIds?.length) return value;

@@ -53,6 +53,37 @@ export const requestInvoice = async (authToken, payload) => {
     return body;
 };
 
+export const ignorePendingBilling = async (authToken, payload) => {
+    const res = await fetch(`${VITE_API_URL}/billing/ignore-pending`, {
+        method: 'POST',
+        headers: {
+            Authorization: authToken,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+    });
+    const body = await readJsonBody(res);
+    if (body.status === 'error') throw new Error(body.message);
+    return body;
+};
+
+export const generateBillingInvoice = async (authToken, billingRecordId, payload) => {
+    const res = await fetch(
+        `${VITE_API_URL}/billing/${billingRecordId}/generate-invoice`,
+        {
+            method: 'POST',
+            headers: {
+                Authorization: authToken,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        }
+    );
+    const body = await readJsonBody(res);
+    if (body.status === 'error') throw new Error(body.message);
+    return body;
+};
+
 export const sendInvoiceToClient = async ({
     authToken,
     billingRecordId,

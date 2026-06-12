@@ -6,6 +6,8 @@ import {
     calculateBilling,
     deleteBillingRecord,
     fetchBilling,
+    generateBillingInvoice,
+    ignorePendingBilling,
     requestInvoice,
     sendInvoiceToClient,
 } from '../../services/billingService.js';
@@ -71,6 +73,7 @@ const BillingComponent = () => {
         periodStart: currentRange.start,
         periodEnd: currentRange.end,
         concept: '',
+        concepts: {},
         vatPercent: '21',
         emails: '',
         ccEmails: '',
@@ -106,7 +109,7 @@ const BillingComponent = () => {
         return services.filter((service) => {
             const serviceText = `${service.name || ''} ${service.clientName || ''} ${
                 service.clientEmail || ''
-            }`.toLowerCase();
+            } ${service.billingConcept || ''}`.toLowerCase();
             const months = String(service.scheduleMonths || '')
                 .split(',')
                 .filter(Boolean);
@@ -157,7 +160,10 @@ const BillingComponent = () => {
     const loadBilling = async () => {
         setLoading(true);
         try {
-            const data = await fetchBilling(authToken, filters);
+            const data = await fetchBilling(authToken, {
+                ...filters,
+                pendingMonth: serviceFilters.month,
+            });
             setServices(data.services || []);
             setRecords(data.records || []);
             setPendingServices(data.pendingServices || []);
@@ -172,7 +178,14 @@ const BillingComponent = () => {
         if (!authToken) return;
         loadBilling();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [authToken, filters.serviceId, filters.status, filters.fromDate, filters.toDate]);
+    }, [
+        authToken,
+        filters.serviceId,
+        filters.status,
+        filters.fromDate,
+        filters.toDate,
+        serviceFilters.month,
+    ]);
 
     const toggleService = (service) => {
         setRequestForm((prev) => {
@@ -184,6 +197,14 @@ const BillingComponent = () => {
             return {
                 ...prev,
                 serviceIds,
+                concepts: {
+                    ...prev.concepts,
+                    [service.id]:
+                        prev.concepts[service.id] ||
+                        service.billingConcept ||
+                        service.name ||
+                        '',
+                },
                 emails: prev.emails || service.clientEmail || '',
             };
         });
@@ -196,6 +217,17 @@ const BillingComponent = () => {
         setRequestForm((prev) => ({
             ...prev,
             serviceIds: [...new Set([...prev.serviceIds, ...visibleIds])],
+            concepts: filteredServices.reduce(
+                (acc, service) => ({
+                    ...acc,
+                    [service.id]:
+                        acc[service.id] ||
+                        service.billingConcept ||
+                        service.name ||
+                        '',
+                }),
+                prev.concepts
+            ),
             emails: prev.emails || firstEmail || '',
         }));
         setCalculations([]);
@@ -227,6 +259,14 @@ const BillingComponent = () => {
             serviceIds: prev.serviceIds.includes(service.id)
                 ? prev.serviceIds
                 : [...prev.serviceIds, service.id],
+            concepts: {
+                ...prev.concepts,
+                [service.id]:
+                    prev.concepts[service.id] ||
+                    service.billingConcept ||
+                    service.name ||
+                    '',
+            },
             emails: prev.emails || service.clientEmail || '',
         }));
         setCalculations([]);
@@ -249,7 +289,9 @@ const BillingComponent = () => {
                         serviceId,
                         periodStart: requestForm.periodStart,
                         periodEnd: requestForm.periodEnd,
-                        concept: requestForm.concept,
+                        concept:
+                            requestForm.concepts[serviceId] ||
+                            requestForm.concept,
                         vatPercent: requestForm.vatPercent,
                     })
                 )
@@ -306,6 +348,45 @@ const BillingComponent = () => {
         }
     };
 
+    const handleGenerateInvoice = async (record) => {
+        const form = sendForms[record.id] || {};
+        setSaving(true);
+        try {
+            const body = await generateBillingInvoice(authToken, record.id, {
+                invoiceSeries: form.invoiceSeries || record.invoiceSeries || '1',
+            });
+            toast.success(body.message || 'Factura generada');
+            await loadBilling();
+        } catch (error) {
+            toast.error(error.message || 'No se pudo generar la factura');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleIgnorePending = async (service) => {
+        const confirmed = window.confirm(
+            `Quitar ${service.name} de pendientes de facturar para este periodo?`
+        );
+        if (!confirmed) return;
+
+        setSaving(true);
+        try {
+            const body = await ignorePendingBilling(authToken, {
+                serviceId: service.id,
+                periodStart: requestForm.periodStart,
+                periodEnd: requestForm.periodEnd,
+                reason: 'Marcado manualmente como no pendiente',
+            });
+            toast.success(body.message || 'Pendiente quitado');
+            await loadBilling();
+        } catch (error) {
+            toast.error(error.message || 'No se pudo quitar de pendientes');
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const handleDeleteRecord = async (record) => {
         const confirmed = window.confirm(
             `¿Seguro que quieres borrar el registro de factura de ${record.serviceName}?`
@@ -336,16 +417,24 @@ const BillingComponent = () => {
 
             {pendingServices.length ? (
                 <div className='billing-alert'>
-                    <strong>{pendingServices.length} servicios completados pendientes de facturar</strong>
+                    <strong>
+                        {pendingServices.length} servicios pendientes de facturar en{' '}
+                        {formatMonth(serviceFilters.month)}
+                    </strong>
                     <div>
                         {pendingServices.slice(0, 8).map((service) => (
-                            <button
-                                type='button'
-                                key={service.id}
-                                onClick={() => addPendingService(service)}
-                            >
-                                {service.name}
-                            </button>
+                            <span key={service.id} className='billing-pending-chip'>
+                                <button type='button' onClick={() => addPendingService(service)}>
+                                    {service.name}
+                                </button>
+                                <button
+                                    type='button'
+                                    onClick={() => handleIgnorePending(service)}
+                                    disabled={saving}
+                                >
+                                    Quitar
+                                </button>
+                            </span>
                         ))}
                     </div>
                 </div>
@@ -448,6 +537,36 @@ const BillingComponent = () => {
                                 {filteredServices.length} visibles
                             </p>
                         </div>
+                        {selectedServices.length ? (
+                            <div className='billing-field-wide'>
+                                <span className='billing-label'>Concepto por servicio</span>
+                                <div className='billing-concept-list'>
+                                    {selectedServices.map((service) => (
+                                        <label key={service.id}>
+                                            {service.name}
+                                            <input
+                                                type='text'
+                                                value={
+                                                    requestForm.concepts[service.id] ||
+                                                    service.billingConcept ||
+                                                    service.name ||
+                                                    ''
+                                                }
+                                                onChange={(event) =>
+                                                    setRequestForm((prev) => ({
+                                                        ...prev,
+                                                        concepts: {
+                                                            ...prev.concepts,
+                                                            [service.id]: event.target.value,
+                                                        },
+                                                    }))
+                                                }
+                                            />
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : null}
                         <label>
                             Desde
                             <input
@@ -503,7 +622,7 @@ const BillingComponent = () => {
                                         concept: event.target.value,
                                     }))
                                 }
-                                placeholder='Por defecto, nombre del servicio'
+                                placeholder='General si no editas cada servicio'
                             />
                         </label>
                         <label>
@@ -662,6 +781,9 @@ const BillingComponent = () => {
                                             <div className='billing-item-main'>
                                                 <div>
                                                     <h4>{record.serviceName}</h4>
+                                                    {record.invoiceNumber ? (
+                                                        <p>Factura: {record.invoiceNumber}</p>
+                                                    ) : null}
                                                     <p>{record.concept || record.serviceName}</p>
                                                     <p>
                                                         {formatDate(record.periodStart)} -{' '}
@@ -693,6 +815,36 @@ const BillingComponent = () => {
                                                 </div>
                                             ) : null}
                                             <div className='billing-send-grid'>
+                                                <label>
+                                                    Serie factura
+                                                    <input
+                                                        type='text'
+                                                        value={
+                                                            form.invoiceSeries ??
+                                                            record.invoiceSeries ??
+                                                            '1'
+                                                        }
+                                                        onChange={(event) =>
+                                                            setSendForms((prev) => ({
+                                                                ...prev,
+                                                                [record.id]: {
+                                                                    ...prev[record.id],
+                                                                    invoiceSeries:
+                                                                        event.target.value,
+                                                                },
+                                                            }))
+                                                        }
+                                                    />
+                                                </label>
+                                                <button
+                                                    type='button'
+                                                    onClick={() => handleGenerateInvoice(record)}
+                                                    disabled={saving}
+                                                >
+                                                    {record.invoiceNumber
+                                                        ? `Regenerar ${record.invoiceNumber}`
+                                                        : 'Generar PDF'}
+                                                </button>
                                                 <label>
                                                     Email cliente
                                                     <input

@@ -20,6 +20,7 @@ const requestInvoiceService = async ({
     ccEmails,
     notes,
     concept,
+    concepts = {},
     vatPercent,
     requestedBy,
 }) => {
@@ -43,13 +44,23 @@ const requestInvoiceService = async ({
     const failed = [];
 
     for (const currentServiceId of selectedServiceIds) {
+        const serviceConcept = concepts[currentServiceId] || concept || '';
         const billing = await calculateBillingService({
             serviceId: currentServiceId,
             periodStart,
             periodEnd,
-            concept,
+            concept: serviceConcept,
             vatPercent,
         });
+
+        await pool.query(
+            `
+            UPDATE services
+            SET billingConcept = ?
+            WHERE id = ?
+            `,
+            [billing.concept, currentServiceId]
+        );
 
         const recordId = uuid();
         await pool.query(

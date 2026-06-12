@@ -32,6 +32,23 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
+SET @has_services_billing_concept = (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'services'
+      AND COLUMN_NAME = 'billingConcept'
+);
+
+SET @sql = IF(
+    @has_services_billing_concept = 0,
+    'ALTER TABLE services ADD COLUMN billingConcept VARCHAR(255) NULL AFTER billingEndDay',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
 CREATE TABLE IF NOT EXISTS billingRecords (
     id CHAR(36) PRIMARY KEY NOT NULL,
     serviceId CHAR(36) NOT NULL,
@@ -52,6 +69,10 @@ CREATE TABLE IF NOT EXISTS billingRecords (
     requestedBy CHAR(36),
     invoiceFilePath VARCHAR(255),
     invoiceFileName VARCHAR(255),
+    invoiceSeries VARCHAR(20),
+    invoiceSequence INT UNSIGNED,
+    invoiceNumber VARCHAR(50),
+    invoiceGeneratedAt TIMESTAMP NULL,
     clientEmails TEXT,
     clientCcEmails TEXT,
     sentAt TIMESTAMP NULL,
@@ -66,6 +87,20 @@ CREATE TABLE IF NOT EXISTS billingRecords (
     FOREIGN KEY (clientId) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (requestedBy) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (sentBy) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS billingIgnoredPeriods (
+    id CHAR(36) PRIMARY KEY NOT NULL,
+    serviceId CHAR(36) NOT NULL,
+    periodStart DATE NOT NULL,
+    periodEnd DATE NOT NULL,
+    reason VARCHAR(255),
+    ignoredAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ignoredBy CHAR(36),
+    deletedAt TIMESTAMP NULL,
+    INDEX idx_billing_ignored_service_period (serviceId, periodStart, periodEnd),
+    FOREIGN KEY (serviceId) REFERENCES services(id) ON DELETE CASCADE,
+    FOREIGN KEY (ignoredBy) REFERENCES users(id) ON DELETE SET NULL
 );
 
 SET @has_billing_concept = (
@@ -130,6 +165,74 @@ SET @has_billing_vat_amount = (
 SET @sql = IF(
     @has_billing_vat_amount = 0,
     'ALTER TABLE billingRecords ADD COLUMN vatAmount DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER vatPercent',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @has_billing_invoice_series = (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'billingRecords'
+      AND COLUMN_NAME = 'invoiceSeries'
+);
+
+SET @sql = IF(
+    @has_billing_invoice_series = 0,
+    'ALTER TABLE billingRecords ADD COLUMN invoiceSeries VARCHAR(20) NULL AFTER invoiceFileName',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @has_billing_invoice_sequence = (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'billingRecords'
+      AND COLUMN_NAME = 'invoiceSequence'
+);
+
+SET @sql = IF(
+    @has_billing_invoice_sequence = 0,
+    'ALTER TABLE billingRecords ADD COLUMN invoiceSequence INT UNSIGNED NULL AFTER invoiceSeries',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @has_billing_invoice_number = (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'billingRecords'
+      AND COLUMN_NAME = 'invoiceNumber'
+);
+
+SET @sql = IF(
+    @has_billing_invoice_number = 0,
+    'ALTER TABLE billingRecords ADD COLUMN invoiceNumber VARCHAR(50) NULL AFTER invoiceSequence',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @has_billing_invoice_generated_at = (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'billingRecords'
+      AND COLUMN_NAME = 'invoiceGeneratedAt'
+);
+
+SET @sql = IF(
+    @has_billing_invoice_generated_at = 0,
+    'ALTER TABLE billingRecords ADD COLUMN invoiceGeneratedAt TIMESTAMP NULL AFTER invoiceNumber',
     'SELECT 1'
 );
 PREPARE stmt FROM @sql;

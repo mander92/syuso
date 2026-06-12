@@ -5,6 +5,7 @@ const listBillingRecordsService = async ({
     status,
     fromDate,
     toDate,
+    pendingMonth,
 } = {}) => {
     const pool = await getPool();
     const filters = ['br.deletedAt IS NULL'];
@@ -29,6 +30,21 @@ const listBillingRecordsService = async ({
         filters.push('br.periodStart <= ?');
         values.push(toDate);
     }
+
+    const getMonthRange = (month) => {
+        const [year, monthNumber] = String(month || '')
+            .split('-')
+            .map(Number);
+        if (!year || !monthNumber) return {};
+        const start = new Date(Date.UTC(year, monthNumber - 1, 1));
+        const end = new Date(Date.UTC(year, monthNumber, 0));
+        return {
+            start: start.toISOString().slice(0, 10),
+            end: end.toISOString().slice(0, 10),
+        };
+    };
+
+    const pendingRange = getMonthRange(pendingMonth);
 
     const [records] = await pool.query(
         `
@@ -64,6 +80,7 @@ const listBillingRecordsService = async ({
             s.status,
             s.province,
             s.hourlyRate,
+            s.billingConcept,
             s.billingStartDay,
             s.billingEndDay,
             s.clientId,
@@ -87,6 +104,7 @@ const listBillingRecordsService = async ({
             s.status,
             s.province,
             s.hourlyRate,
+            s.billingConcept,
             s.billingStartDay,
             s.billingEndDay,
             s.clientId,
@@ -104,6 +122,7 @@ const listBillingRecordsService = async ({
             s.status,
             s.province,
             s.hourlyRate,
+            s.billingConcept,
             CONCAT_WS(' ', u.firstName, u.lastName) AS clientName,
             u.email AS clientEmail,
             COALESCE(SUM(CASE
@@ -115,18 +134,50 @@ const listBillingRecordsService = async ({
         INNER JOIN serviceScheduleShifts ss
             ON ss.serviceId = s.id
            AND ss.deletedAt IS NULL
+           ${
+               pendingRange.start && pendingRange.end
+                   ? 'AND ss.scheduleDate BETWEEN ? AND ?'
+                   : ''
+           }
         WHERE s.deletedAt IS NULL
-          AND s.status = 'completed'
+          AND s.status IN ('confirmed', 'completed')
           AND NOT EXISTS (
               SELECT 1
               FROM billingRecords br
               WHERE br.serviceId = s.id
                 AND br.deletedAt IS NULL
                 AND br.status <> 'cancelled'
+                ${
+                    pendingRange.start && pendingRange.end
+                        ? 'AND br.periodStart <= ? AND br.periodEnd >= ?'
+                        : ''
+                }
           )
-        GROUP BY s.id, s.name, s.status, s.province, s.hourlyRate, clientName, u.email
+          AND NOT EXISTS (
+              SELECT 1
+              FROM billingIgnoredPeriods bip
+              WHERE bip.serviceId = s.id
+                AND bip.deletedAt IS NULL
+                ${
+                    pendingRange.start && pendingRange.end
+                        ? 'AND bip.periodStart <= ? AND bip.periodEnd >= ?'
+                        : ''
+                }
+          )
+        GROUP BY s.id, s.name, s.status, s.province, s.hourlyRate, s.billingConcept, clientName, u.email
         ORDER BY s.name ASC
         `
+        ,
+        pendingRange.start && pendingRange.end
+            ? [
+                  pendingRange.start,
+                  pendingRange.end,
+                  pendingRange.end,
+                  pendingRange.start,
+                  pendingRange.end,
+                  pendingRange.start,
+              ]
+            : []
     );
 
     return { records, services, pendingServices };

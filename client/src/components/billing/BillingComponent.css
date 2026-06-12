@@ -60,6 +60,21 @@
     padding: 6px 10px;
 }
 
+.billing-pending-chip {
+    align-items: center;
+    background: #fff;
+    border: 1px solid #fed7aa;
+    border-radius: 999px;
+    display: inline-flex;
+    gap: 4px;
+    padding: 3px;
+}
+
+.billing-pending-chip button:last-child {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
 .billing-grid,
 .billing-send-grid {
     display: grid;
@@ -146,6 +161,12 @@
 .billing-summary-list {
     display: grid;
     gap: 6px;
+}
+
+.billing-concept-list {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
 .billing-service-picker {
