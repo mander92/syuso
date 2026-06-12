@@ -207,6 +207,28 @@
     color: #991b1b !important;
 }
 
+.billing-file-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0;
+}
+
+.billing-file-actions a {
+    background: #e8eef6;
+    border-radius: 999px;
+    color: #071b4d;
+    font-size: 0.82rem;
+    font-weight: 800;
+    padding: 7px 12px;
+    text-decoration: none;
+}
+
+.billing-file-actions a:first-child {
+    background: #071b4d;
+    color: #fff;
+}
+
 .billing-service-option {
     align-items: center;
     background: #f8fafc;

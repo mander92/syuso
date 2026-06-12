@@ -12,6 +12,7 @@ import {
     sendInvoiceToClient,
 } from '../../services/billingService.js';
 import useUser from '../../hooks/useUser.js';
+import { buildImageUrl } from '../../utils/imageUrl.js';
 import './BillingComponent.css';
 
 const getCurrentMonth = () => new Date().toISOString().slice(0, 7);
@@ -46,6 +47,11 @@ const formatMonth = (value) => {
 
 const formatMoney = (value) =>
     `${(Number(value) || 0).toFixed(2).replace('.', ',')} EUR`;
+
+const buildInvoiceFileUrl = (filePath) => {
+    if (!filePath) return '';
+    return encodeURI(buildImageUrl(filePath));
+};
 
 const statusLabels = {
     pending_request: 'Pendiente de pedir',
@@ -783,6 +789,30 @@ const BillingComponent = () => {
                                                     <h4>{record.serviceName}</h4>
                                                     {record.invoiceNumber ? (
                                                         <p>Factura: {record.invoiceNumber}</p>
+                                                    ) : null}
+                                                    {record.invoiceFilePath ? (
+                                                        <div className='billing-file-actions'>
+                                                            <a
+                                                                href={buildInvoiceFileUrl(
+                                                                    record.invoiceFilePath
+                                                                )}
+                                                                target='_blank'
+                                                                rel='noreferrer'
+                                                            >
+                                                                Ver factura
+                                                            </a>
+                                                            <a
+                                                                href={buildInvoiceFileUrl(
+                                                                    record.invoiceFilePath
+                                                                )}
+                                                                download={
+                                                                    record.invoiceFileName ||
+                                                                    `factura-${record.invoiceNumber || record.id}.pdf`
+                                                                }
+                                                            >
+                                                                Descargar factura
+                                                            </a>
+                                                        </div>
                                                     ) : null}
                                                     <p>{record.concept || record.serviceName}</p>
                                                     <p>
