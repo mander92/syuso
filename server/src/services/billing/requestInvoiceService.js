@@ -22,6 +22,7 @@ const requestInvoiceService = async ({
     notes,
     concept,
     concepts = {},
+    manualItems = [],
     vatPercent,
     requestedBy,
 }) => {
@@ -35,9 +36,10 @@ const requestInvoiceService = async ({
         Array.isArray(serviceIds) && serviceIds.length
             ? serviceIds
             : [serviceId].filter(Boolean);
+    const selectedManualItems = Array.isArray(manualItems) ? manualItems : [];
 
-    if (!selectedServiceIds.length) {
-        generateErrorUtil('Debes seleccionar al menos un servicio', 400);
+    if (!selectedServiceIds.length && !selectedManualItems.length) {
+        generateErrorUtil('Debes seleccionar al menos un servicio o agregar una factura manual', 400);
     }
 
     const pool = await getPool();
@@ -111,6 +113,99 @@ const requestInvoiceService = async ({
         records.push({
             id: recordId,
             ...billing,
+        });
+    }
+
+    for (const item of selectedManualItems) {
+        const itemVatPercent = Number.isFinite(Number(item.vatPercent))
+            ? Number(item.vatPercent)
+            : Number(vatPercent) || 21;
+        const totalHours = Number(item.totalHours) || 0;
+        const hourlyRate = Number(item.hourlyRate) || 0;
+        const subtotal = Number((totalHours * hourlyRate).toFixed(2));
+        const vatAmount = Number(((subtotal * itemVatPercent) / 100).toFixed(2));
+        const amount = Number((subtotal + vatAmount).toFixed(2));
+        const recordId = uuid();
+        const manualService = {
+            id: null,
+            name: item.concept,
+            province: item.delegation || 'Manual',
+            clientId: null,
+            clientName: item.clientName,
+            clientEmail: item.contactEmail || '',
+            clientDisplayName: item.clientName,
+            clientTaxId: item.taxId || '',
+            clientDocumentationEmail: item.contactEmail || '',
+            clientAddress: item.address || '',
+            clientCity: '',
+            clientPostCode: '',
+            clientProvince: item.delegation || '',
+        };
+
+        await pool.query(
+            `
+            INSERT INTO billingRecords (
+                id,
+                serviceId,
+                clientId,
+                manualClientName,
+                manualTaxId,
+                manualAddress,
+                manualContactEmail,
+                manualDelegation,
+                concept,
+                periodStart,
+                periodEnd,
+                totalHours,
+                hourlyRate,
+                subtotal,
+                vatPercent,
+                vatAmount,
+                amount,
+                requestEmails,
+                requestCcEmails,
+                requestNotes,
+                requestedAt,
+                requestedBy,
+                status
+            )
+            VALUES (?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, 'requested')
+            `,
+            [
+                recordId,
+                item.clientName,
+                item.taxId || null,
+                item.address || null,
+                item.contactEmail || null,
+                item.delegation || null,
+                item.concept,
+                periodStart,
+                periodEnd,
+                totalHours,
+                hourlyRate,
+                subtotal,
+                itemVatPercent,
+                vatAmount,
+                amount,
+                serializeEmails(recipients),
+                serializeEmails(ccRecipients),
+                notes || null,
+                requestedBy,
+            ]
+        );
+
+        records.push({
+            id: recordId,
+            service: manualService,
+            concept: item.concept,
+            periodStart,
+            periodEnd,
+            totalHours,
+            hourlyRate,
+            subtotal,
+            vatPercent: itemVatPercent,
+            vatAmount,
+            amount,
         });
     }
 

@@ -20,11 +20,26 @@ const requestInvoiceController = async (req, res, next) => {
                 Joi.string().guid({ version: 'uuidv4' }),
                 Joi.string().max(255).allow('', null)
             ),
+            manualItems: Joi.array().items(
+                Joi.object({
+                    clientName: Joi.string().max(255).required(),
+                    taxId: Joi.string().max(50).allow('', null),
+                    address: Joi.string().max(255).allow('', null),
+                    hourlyRate: Joi.number().min(0).required(),
+                    totalHours: Joi.number().min(0).required(),
+                    concept: Joi.string().max(255).required(),
+                    vatPercent: Joi.number().min(0).max(100).allow('', null),
+                    contactEmail: Joi.string().max(255).allow('', null),
+                    delegation: Joi.string().max(100).allow('', null),
+                })
+            ),
             vatPercent: Joi.number().min(0).max(100).allow('', null),
         }).custom((value, helpers) => {
-            if (value.serviceId || value.serviceIds?.length) return value;
+            if (value.serviceId || value.serviceIds?.length || value.manualItems?.length) {
+                return value;
+            }
             return helpers.error('any.custom', {
-                message: 'Debes seleccionar al menos un servicio',
+                message: 'Debes seleccionar al menos un servicio o agregar una factura manual',
             });
         });
 

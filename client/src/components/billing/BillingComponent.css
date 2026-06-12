@@ -111,6 +111,21 @@
     margin-top: 12px;
 }
 
+.billing-card-title {
+    align-items: center;
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+}
+
+.billing-add-manual {
+    font-size: 1.2rem;
+    height: 34px;
+    line-height: 1;
+    padding: 0 !important;
+    width: 34px;
+}
+
 .billing-label {
     color: #0f172a;
     display: block;
@@ -195,6 +210,55 @@
     display: grid;
     gap: 10px;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.billing-manual-list {
+    display: grid;
+    gap: 8px;
+}
+
+.billing-manual-item {
+    align-items: center;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+    padding: 10px;
+}
+
+.billing-manual-item div {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+}
+
+.billing-manual-item span {
+    color: #64748b;
+    font-size: 0.84rem;
+}
+
+.billing-modal-backdrop {
+    align-items: center;
+    background: rgba(15, 23, 42, 0.52);
+    display: flex;
+    inset: 0;
+    justify-content: center;
+    padding: 18px;
+    position: fixed;
+    z-index: 1000;
+}
+
+.billing-manual-modal {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.28);
+    max-height: calc(100vh - 36px);
+    max-width: 760px;
+    overflow: auto;
+    padding: 16px;
+    width: min(760px, 100%);
 }
 
 .billing-service-picker {

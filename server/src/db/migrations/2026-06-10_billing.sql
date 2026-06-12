@@ -51,8 +51,13 @@ DEALLOCATE PREPARE stmt;
 
 CREATE TABLE IF NOT EXISTS billingRecords (
     id CHAR(36) PRIMARY KEY NOT NULL,
-    serviceId CHAR(36) NOT NULL,
+    serviceId CHAR(36),
     clientId CHAR(36),
+    manualClientName VARCHAR(255),
+    manualTaxId VARCHAR(50),
+    manualAddress VARCHAR(255),
+    manualContactEmail VARCHAR(255),
+    manualDelegation VARCHAR(100),
     concept VARCHAR(255),
     periodStart DATE NOT NULL,
     periodEnd DATE NOT NULL,
@@ -83,11 +88,135 @@ CREATE TABLE IF NOT EXISTS billingRecords (
     deletedAt TIMESTAMP NULL,
     INDEX idx_billing_service_period (serviceId, periodStart, periodEnd),
     INDEX idx_billing_status (status),
-    FOREIGN KEY (serviceId) REFERENCES services(id) ON DELETE CASCADE,
+    FOREIGN KEY (serviceId) REFERENCES services(id) ON DELETE SET NULL,
     FOREIGN KEY (clientId) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (requestedBy) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (sentBy) REFERENCES users(id) ON DELETE SET NULL
 );
+
+SET @billing_service_fk = (
+    SELECT CONSTRAINT_NAME
+    FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'billingRecords'
+      AND COLUMN_NAME = 'serviceId'
+      AND REFERENCED_TABLE_NAME = 'services'
+    LIMIT 1
+);
+
+SET @sql = IF(
+    @billing_service_fk IS NOT NULL,
+    CONCAT('ALTER TABLE billingRecords DROP FOREIGN KEY ', @billing_service_fk),
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+ALTER TABLE billingRecords MODIFY COLUMN serviceId CHAR(36) NULL;
+
+SET @billing_service_fk_after = (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'billingRecords'
+      AND COLUMN_NAME = 'serviceId'
+      AND REFERENCED_TABLE_NAME = 'services'
+);
+
+SET @sql = IF(
+    @billing_service_fk_after = 0,
+    'ALTER TABLE billingRecords ADD CONSTRAINT fk_billing_records_service_id FOREIGN KEY (serviceId) REFERENCES services(id) ON DELETE SET NULL',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @has_billing_manual_client_name = (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'billingRecords'
+      AND COLUMN_NAME = 'manualClientName'
+);
+
+SET @sql = IF(
+    @has_billing_manual_client_name = 0,
+    'ALTER TABLE billingRecords ADD COLUMN manualClientName VARCHAR(255) NULL AFTER clientId',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @has_billing_manual_tax_id = (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'billingRecords'
+      AND COLUMN_NAME = 'manualTaxId'
+);
+
+SET @sql = IF(
+    @has_billing_manual_tax_id = 0,
+    'ALTER TABLE billingRecords ADD COLUMN manualTaxId VARCHAR(50) NULL AFTER manualClientName',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @has_billing_manual_address = (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'billingRecords'
+      AND COLUMN_NAME = 'manualAddress'
+);
+
+SET @sql = IF(
+    @has_billing_manual_address = 0,
+    'ALTER TABLE billingRecords ADD COLUMN manualAddress VARCHAR(255) NULL AFTER manualTaxId',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @has_billing_manual_contact_email = (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'billingRecords'
+      AND COLUMN_NAME = 'manualContactEmail'
+);
+
+SET @sql = IF(
+    @has_billing_manual_contact_email = 0,
+    'ALTER TABLE billingRecords ADD COLUMN manualContactEmail VARCHAR(255) NULL AFTER manualAddress',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @has_billing_manual_delegation = (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'billingRecords'
+      AND COLUMN_NAME = 'manualDelegation'
+);
+
+SET @sql = IF(
+    @has_billing_manual_delegation = 0,
+    'ALTER TABLE billingRecords ADD COLUMN manualDelegation VARCHAR(100) NULL AFTER manualContactEmail',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 CREATE TABLE IF NOT EXISTS billingIgnoredPeriods (
     id CHAR(36) PRIMARY KEY NOT NULL,

@@ -46,19 +46,19 @@ const generateBillingInvoiceService = async ({
         `
         SELECT
             br.*,
-            s.name AS serviceName,
-            s.province AS serviceDelegation,
-            CONCAT_WS(' ', client.firstName, client.lastName) AS clientName,
-            client.email AS clientEmail,
-            cd.displayName AS clientDisplayName,
-            cd.taxId AS clientTaxId,
-            cd.email AS clientDocumentationEmail,
+            COALESCE(s.name, br.concept, br.manualClientName) AS serviceName,
+            COALESCE(s.province, br.manualDelegation) AS serviceDelegation,
+            COALESCE(br.manualClientName, CONCAT_WS(' ', client.firstName, client.lastName)) AS clientName,
+            COALESCE(br.manualContactEmail, client.email) AS clientEmail,
+            COALESCE(br.manualClientName, cd.displayName) AS clientDisplayName,
+            COALESCE(br.manualTaxId, cd.taxId) AS clientTaxId,
+            COALESCE(br.manualContactEmail, cd.email) AS clientDocumentationEmail,
             cd.paymentMethod,
-            a.address,
+            COALESCE(br.manualAddress, a.address) AS address,
             a.city,
             a.postCode
         FROM billingRecords br
-        INNER JOIN services s ON s.id = br.serviceId
+        LEFT JOIN services s ON s.id = br.serviceId
         LEFT JOIN users client ON client.id = br.clientId
         LEFT JOIN clientDocumentations cd ON cd.clientId = client.id
         LEFT JOIN addresses a ON a.id = s.addressId

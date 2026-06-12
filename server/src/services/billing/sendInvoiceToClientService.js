@@ -56,11 +56,11 @@ const sendInvoiceToClientService = async ({
         `
         SELECT
             br.*,
-            s.name AS serviceName,
-            CONCAT_WS(' ', client.firstName, client.lastName) AS clientName,
-            client.email AS clientEmail
+            COALESCE(s.name, br.concept, br.manualClientName) AS serviceName,
+            COALESCE(br.manualClientName, CONCAT_WS(' ', client.firstName, client.lastName)) AS clientName,
+            COALESCE(br.manualContactEmail, client.email) AS clientEmail
         FROM billingRecords br
-        INNER JOIN services s ON s.id = br.serviceId
+        LEFT JOIN services s ON s.id = br.serviceId
         LEFT JOIN users client ON client.id = br.clientId
         WHERE br.id = ?
           AND br.deletedAt IS NULL

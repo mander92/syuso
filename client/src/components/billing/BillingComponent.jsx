@@ -76,6 +76,7 @@ const BillingComponent = () => {
     });
     const [requestForm, setRequestForm] = useState({
         serviceIds: [],
+        manualItems: [],
         periodStart: currentRange.start,
         periodEnd: currentRange.end,
         concept: '',
@@ -93,6 +94,18 @@ const BillingComponent = () => {
     });
     const [calculations, setCalculations] = useState([]);
     const [sendForms, setSendForms] = useState({});
+    const [manualModalOpen, setManualModalOpen] = useState(false);
+    const [manualForm, setManualForm] = useState({
+        clientName: '',
+        taxId: '',
+        address: '',
+        hourlyRate: '',
+        totalHours: '',
+        concept: '',
+        vatPercent: '21',
+        contactEmail: '',
+        delegation: '',
+    });
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
 
@@ -143,6 +156,27 @@ const BillingComponent = () => {
                 { totalHours: 0, subtotal: 0, vatAmount: 0, amount: 0 }
             ),
         [calculations]
+    );
+
+    const manualItemsTotal = useMemo(
+        () =>
+            requestForm.manualItems.reduce(
+                (acc, item) => {
+                    const totalHours = Number(item.totalHours) || 0;
+                    const hourlyRate = Number(item.hourlyRate) || 0;
+                    const vatPercent = Number(item.vatPercent) || Number(requestForm.vatPercent) || 0;
+                    const subtotal = Number((totalHours * hourlyRate).toFixed(2));
+                    const vatAmount = Number(((subtotal * vatPercent) / 100).toFixed(2));
+                    return {
+                        totalHours: acc.totalHours + totalHours,
+                        subtotal: acc.subtotal + subtotal,
+                        vatAmount: acc.vatAmount + vatAmount,
+                        amount: acc.amount + subtotal + vatAmount,
+                    };
+                },
+                { totalHours: 0, subtotal: 0, vatAmount: 0, amount: 0 }
+            ),
+        [requestForm.manualItems, requestForm.vatPercent]
     );
 
     const groupedRecords = useMemo(() => {
@@ -285,11 +319,16 @@ const BillingComponent = () => {
 
     const handleCalculate = async () => {
         if (
-            !requestForm.serviceIds.length ||
+            (!requestForm.serviceIds.length && !requestForm.manualItems.length) ||
             !requestForm.periodStart ||
             !requestForm.periodEnd
         ) {
-            toast.error('Selecciona servicios y periodo');
+            toast.error('Selecciona servicios o agrega una factura manual');
+            return;
+        }
+
+        if (!requestForm.serviceIds.length) {
+            setCalculations([]);
             return;
         }
 
@@ -313,10 +352,62 @@ const BillingComponent = () => {
         }
     };
 
+    const resetManualForm = () => {
+        setManualForm({
+            clientName: '',
+            taxId: '',
+            address: '',
+            hourlyRate: '',
+            totalHours: '',
+            concept: '',
+            vatPercent: requestForm.vatPercent || '21',
+            contactEmail: '',
+            delegation: '',
+        });
+    };
+
+    const handleAddManualItem = (event) => {
+        event.preventDefault();
+
+        if (!manualForm.clientName.trim() || !manualForm.concept.trim()) {
+            toast.error('Indica cliente y concepto');
+            return;
+        }
+
+        if ((Number(manualForm.hourlyRate) || 0) <= 0 || (Number(manualForm.totalHours) || 0) <= 0) {
+            toast.error('Indica precio/hora y horas a facturar');
+            return;
+        }
+
+        setRequestForm((prev) => ({
+            ...prev,
+            manualItems: [
+                ...prev.manualItems,
+                {
+                    ...manualForm,
+                    id: `manual-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+                    hourlyRate: Number(manualForm.hourlyRate),
+                    totalHours: Number(manualForm.totalHours),
+                    vatPercent: Number(manualForm.vatPercent || prev.vatPercent || 21),
+                },
+            ],
+            emails: prev.emails || manualForm.contactEmail || '',
+        }));
+        resetManualForm();
+        setManualModalOpen(false);
+    };
+
+    const removeManualItem = (manualId) => {
+        setRequestForm((prev) => ({
+            ...prev,
+            manualItems: prev.manualItems.filter((item) => item.id !== manualId),
+        }));
+    };
+
     const handleRequestInvoice = async (event) => {
         event.preventDefault();
-        if (!requestForm.serviceIds.length) {
-            toast.error('Selecciona al menos un servicio');
+        if (!requestForm.serviceIds.length && !requestForm.manualItems.length) {
+            toast.error('Selecciona al menos un servicio o agrega una factura manual');
             return;
         }
 
@@ -456,7 +547,21 @@ const BillingComponent = () => {
 
             <div className='billing-layout'>
                 <form className='billing-card' onSubmit={handleRequestInvoice}>
-                    <h3>Pedir factura</h3>
+                    <div className='billing-card-title'>
+                        <h3>Pedir factura</h3>
+                        <button
+                            type='button'
+                            className='billing-add-manual'
+                            onClick={() => {
+                                resetManualForm();
+                                setManualModalOpen(true);
+                            }}
+                            title='Agregar factura manual'
+                            aria-label='Agregar factura manual'
+                        >
+                            +
+                        </button>
+                    </div>
                     <div className='billing-grid'>
                         <div className='billing-field-wide'>
                             <span className='billing-label'>Servicios</span>
@@ -581,6 +686,38 @@ const BillingComponent = () => {
                                 </div>
                             </div>
                         ) : null}
+                        {requestForm.manualItems.length ? (
+                            <div className='billing-field-wide'>
+                                <span className='billing-label'>Facturas manuales</span>
+                                <div className='billing-manual-list'>
+                                    {requestForm.manualItems.map((item) => {
+                                        const subtotal =
+                                            (Number(item.totalHours) || 0) *
+                                            (Number(item.hourlyRate) || 0);
+                                        const vatAmount =
+                                            (subtotal * (Number(item.vatPercent) || 0)) / 100;
+                                        return (
+                                            <article key={item.id} className='billing-manual-item'>
+                                                <div>
+                                                    <strong>{item.clientName}</strong>
+                                                    <span>
+                                                        {item.concept} ·{' '}
+                                                        {Number(item.totalHours).toFixed(2)} h ·{' '}
+                                                        {formatMoney(subtotal + vatAmount)}
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    type='button'
+                                                    onClick={() => removeManualItem(item.id)}
+                                                >
+                                                    Quitar
+                                                </button>
+                                            </article>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ) : null}
                         <label>
                             Desde
                             <input
@@ -696,6 +833,16 @@ const BillingComponent = () => {
                                 {formatMoney(calculationTotals.subtotal)} · IVA{' '}
                                 {formatMoney(calculationTotals.vatAmount)} · Total{' '}
                                 {formatMoney(calculationTotals.amount)}
+                            </strong>
+                        </div>
+                    ) : null}
+                    {requestForm.manualItems.length ? (
+                        <div className='billing-summary'>
+                            <strong>
+                                Total manuales: {manualItemsTotal.totalHours.toFixed(2)} h · Base{' '}
+                                {formatMoney(manualItemsTotal.subtotal)} · IVA{' '}
+                                {formatMoney(manualItemsTotal.vatAmount)} · Total{' '}
+                                {formatMoney(manualItemsTotal.amount)}
                             </strong>
                         </div>
                     ) : null}
@@ -976,6 +1123,158 @@ const BillingComponent = () => {
                     )}
                 </div>
             </div>
+            {manualModalOpen ? (
+                <div className='billing-modal-backdrop' role='presentation'>
+                    <form className='billing-manual-modal' onSubmit={handleAddManualItem}>
+                        <div className='billing-card-title'>
+                            <h3>Factura manual</h3>
+                            <button
+                                type='button'
+                                onClick={() => setManualModalOpen(false)}
+                                aria-label='Cerrar'
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                        <div className='billing-grid'>
+                            <label>
+                                Cliente
+                                <input
+                                    type='text'
+                                    value={manualForm.clientName}
+                                    onChange={(event) =>
+                                        setManualForm((prev) => ({
+                                            ...prev,
+                                            clientName: event.target.value,
+                                        }))
+                                    }
+                                    required
+                                />
+                            </label>
+                            <label>
+                                CIF/DNI
+                                <input
+                                    type='text'
+                                    value={manualForm.taxId}
+                                    onChange={(event) =>
+                                        setManualForm((prev) => ({
+                                            ...prev,
+                                            taxId: event.target.value,
+                                        }))
+                                    }
+                                />
+                            </label>
+                            <label className='billing-field-wide'>
+                                Direccion
+                                <input
+                                    type='text'
+                                    value={manualForm.address}
+                                    onChange={(event) =>
+                                        setManualForm((prev) => ({
+                                            ...prev,
+                                            address: event.target.value,
+                                        }))
+                                    }
+                                />
+                            </label>
+                            <label>
+                                Precio/hora
+                                <input
+                                    type='number'
+                                    min='0'
+                                    step='0.01'
+                                    value={manualForm.hourlyRate}
+                                    onChange={(event) =>
+                                        setManualForm((prev) => ({
+                                            ...prev,
+                                            hourlyRate: event.target.value,
+                                        }))
+                                    }
+                                    required
+                                />
+                            </label>
+                            <label>
+                                Horas a facturar
+                                <input
+                                    type='number'
+                                    min='0'
+                                    step='0.01'
+                                    value={manualForm.totalHours}
+                                    onChange={(event) =>
+                                        setManualForm((prev) => ({
+                                            ...prev,
+                                            totalHours: event.target.value,
+                                        }))
+                                    }
+                                    required
+                                />
+                            </label>
+                            <label>
+                                IVA %
+                                <input
+                                    type='number'
+                                    min='0'
+                                    max='100'
+                                    step='0.01'
+                                    value={manualForm.vatPercent}
+                                    onChange={(event) =>
+                                        setManualForm((prev) => ({
+                                            ...prev,
+                                            vatPercent: event.target.value,
+                                        }))
+                                    }
+                                />
+                            </label>
+                            <label>
+                                Delegacion
+                                <input
+                                    type='text'
+                                    value={manualForm.delegation}
+                                    onChange={(event) =>
+                                        setManualForm((prev) => ({
+                                            ...prev,
+                                            delegation: event.target.value,
+                                        }))
+                                    }
+                                />
+                            </label>
+                            <label>
+                                Contacto envio
+                                <input
+                                    type='email'
+                                    value={manualForm.contactEmail}
+                                    onChange={(event) =>
+                                        setManualForm((prev) => ({
+                                            ...prev,
+                                            contactEmail: event.target.value,
+                                        }))
+                                    }
+                                />
+                            </label>
+                            <label className='billing-field-wide'>
+                                Concepto
+                                <input
+                                    type='text'
+                                    value={manualForm.concept}
+                                    onChange={(event) =>
+                                        setManualForm((prev) => ({
+                                            ...prev,
+                                            concept: event.target.value,
+                                        }))
+                                    }
+                                    required
+                                />
+                            </label>
+                        </div>
+                        <div className='billing-actions'>
+                            <button type='button' onClick={() => setManualModalOpen(false)}>
+                                Cancelar
+                            </button>
+                            <button type='submit'>Agregar</button>
+                        </div>
+                    </form>
+                </div>
+            ) : null}
         </section>
     );
 };

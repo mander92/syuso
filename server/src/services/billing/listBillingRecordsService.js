@@ -50,18 +50,18 @@ const listBillingRecordsService = async ({
         `
         SELECT
             br.*,
-            s.name AS serviceName,
+            COALESCE(s.name, br.concept, br.manualClientName) AS serviceName,
             s.status AS serviceStatus,
-            s.province AS serviceDelegation,
+            COALESCE(s.province, br.manualDelegation) AS serviceDelegation,
             s.hourlyRate AS serviceHourlyRate,
             s.billingStartDay,
             s.billingEndDay,
-            CONCAT_WS(' ', client.firstName, client.lastName) AS clientName,
-            client.email AS clientEmail,
+            COALESCE(br.manualClientName, CONCAT_WS(' ', client.firstName, client.lastName)) AS clientName,
+            COALESCE(br.manualContactEmail, client.email) AS clientEmail,
             CONCAT_WS(' ', requester.firstName, requester.lastName) AS requestedByName,
             CONCAT_WS(' ', sender.firstName, sender.lastName) AS sentByName
         FROM billingRecords br
-        INNER JOIN services s ON s.id = br.serviceId
+        LEFT JOIN services s ON s.id = br.serviceId
         LEFT JOIN users client ON client.id = br.clientId
         LEFT JOIN users requester ON requester.id = br.requestedBy
         LEFT JOIN users sender ON sender.id = br.sentBy
