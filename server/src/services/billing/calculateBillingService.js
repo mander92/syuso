@@ -21,13 +21,23 @@ const calculateBillingService = async ({
         SELECT
             s.id,
             s.name,
+            s.province,
             s.hourlyRate,
             s.billingConcept,
             s.clientId,
             CONCAT_WS(' ', u.firstName, u.lastName) AS clientName,
-            u.email AS clientEmail
+            u.email AS clientEmail,
+            cd.displayName AS clientDisplayName,
+            cd.taxId AS clientTaxId,
+            cd.email AS clientDocumentationEmail,
+            a.address AS clientAddress,
+            a.city AS clientCity,
+            a.postCode AS clientPostCode,
+            s.province AS clientProvince
         FROM services s
         LEFT JOIN users u ON u.id = s.clientId
+        LEFT JOIN clientDocumentations cd ON cd.clientId = u.id
+        LEFT JOIN addresses a ON a.id = s.addressId
         WHERE s.id = ?
           AND s.deletedAt IS NULL
         `,

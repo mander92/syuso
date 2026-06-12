@@ -52,6 +52,9 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+    max-height: 180px;
+    overflow: auto;
+    padding-top: 4px;
 }
 
 .billing-alert button {

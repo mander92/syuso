@@ -2,6 +2,7 @@ import { v4 as uuid } from 'uuid';
 
 import getPool from '../../db/getPool.js';
 import sendMail from '../../utils/sendBrevoMail.js';
+import createBillingRequestExcelUtil from '../../utils/billingRequestExcelUtil.js';
 import calculateBillingService from './calculateBillingService.js';
 import {
     formatCurrency,
@@ -107,37 +108,86 @@ const requestInvoiceService = async ({
             ]
         );
 
-        const subject = `Solicitud de factura - ${billing.service.name}`;
-        const body = `
-            <h2>Solicitud de factura</h2>
-            <p>Servicio: <strong>${billing.service.name}</strong></p>
-            <p>Concepto: <strong>${billing.concept}</strong></p>
-            <p>Periodo: <strong>${formatDate(periodStart)} - ${formatDate(periodEnd)}</strong></p>
-            <p>Horas facturables: <strong>${billing.totalHours.toFixed(2)} h</strong></p>
-            <p>Precio/hora: <strong>${formatCurrency(billing.hourlyRate)}</strong></p>
-            <p>Base imponible: <strong>${formatCurrency(billing.subtotal)}</strong></p>
-            <p>IVA: <strong>${billing.vatPercent.toFixed(2)}% (${formatCurrency(billing.vatAmount)})</strong></p>
-            <p>Total estimado: <strong>${formatCurrency(billing.amount)}</strong></p>
-            ${notes ? `<p>Notas: ${notes}</p>` : ''}
-        `;
-
-        for (const email of recipients) {
-            const sent = await sendMail('Facturacion', email, subject, body, [], {
-                cc: ccRecipients,
-            });
-            if (!sent) failed.push(`${billing.service.name}: ${email}`);
-        }
-
         records.push({
             id: recordId,
             ...billing,
         });
     }
 
+    const excelFile = await createBillingRequestExcelUtil({
+        records,
+        periodStart,
+        periodEnd,
+    });
+
+    const subject = `Solicitud de facturas - ${formatDate(periodStart)} a ${formatDate(periodEnd)}`;
+    const totals = records.reduce(
+        (acc, record) => ({
+            totalHours: acc.totalHours + (Number(record.totalHours) || 0),
+            subtotal: acc.subtotal + (Number(record.subtotal) || 0),
+            vatAmount: acc.vatAmount + (Number(record.vatAmount) || 0),
+            amount: acc.amount + (Number(record.amount) || 0),
+        }),
+        { totalHours: 0, subtotal: 0, vatAmount: 0, amount: 0 }
+    );
+
+    const rowsHtml = records
+        .map(
+            (record) => `
+                <tr>
+                    <td>${record.service.name}</td>
+                    <td>${record.concept}</td>
+                    <td>${record.totalHours.toFixed(2)} h</td>
+                    <td>${formatCurrency(record.hourlyRate)}</td>
+                    <td>${formatCurrency(record.amount)}</td>
+                </tr>
+            `
+        )
+        .join('');
+
+    const body = `
+        <h2>Solicitud de facturas</h2>
+        <p>Periodo: <strong>${formatDate(periodStart)} - ${formatDate(periodEnd)}</strong></p>
+        <p>Se adjunta Excel con el detalle de servicios a facturar.</p>
+        <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse">
+            <thead>
+                <tr>
+                    <th>Servicio</th>
+                    <th>Concepto</th>
+                    <th>Horas</th>
+                    <th>Precio/hora</th>
+                    <th>Total estimado</th>
+                </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+        </table>
+        <p>
+            <strong>Total bloque:</strong>
+            ${totals.totalHours.toFixed(2)} h ·
+            Base ${formatCurrency(totals.subtotal)} ·
+            IVA ${formatCurrency(totals.vatAmount)} ·
+            Total ${formatCurrency(totals.amount)}
+        </p>
+        ${notes ? `<p>Notas: ${notes}</p>` : ''}
+    `;
+
+    for (const email of recipients) {
+        const sent = await sendMail(
+            'Facturacion',
+            email,
+            subject,
+            body,
+            [{ filename: excelFile.fileName, path: excelFile.filePath }],
+            { cc: ccRecipients }
+        );
+        if (!sent) failed.push(email);
+    }
+
     return {
         records,
         requestedCount: records.length,
         failed,
+        requestFilePath: excelFile.relativePath,
     };
 };
 

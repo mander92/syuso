@@ -71,8 +71,8 @@ const BillingComponent = () => {
     const [filters, setFilters] = useState({
         serviceId: '',
         status: '',
-        fromDate: '',
-        toDate: '',
+        fromDate: currentRange.start,
+        toDate: currentRange.end,
     });
     const [requestForm, setRequestForm] = useState({
         serviceIds: [],
@@ -251,6 +251,11 @@ const BillingComponent = () => {
     const setRequestMonth = (month) => {
         const range = getMonthRange(month || getCurrentMonth());
         setServiceFilters((prev) => ({ ...prev, month }));
+        setFilters((prev) => ({
+            ...prev,
+            fromDate: range.start,
+            toDate: range.end,
+        }));
         setRequestForm((prev) => ({
             ...prev,
             periodStart: range.start,
@@ -428,7 +433,7 @@ const BillingComponent = () => {
                         {formatMonth(serviceFilters.month)}
                     </strong>
                     <div>
-                        {pendingServices.slice(0, 8).map((service) => (
+                        {pendingServices.map((service) => (
                             <span key={service.id} className='billing-pending-chip'>
                                 <button type='button' onClick={() => addPendingService(service)}>
                                     {service.name}
