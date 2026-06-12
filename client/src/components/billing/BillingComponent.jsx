@@ -437,8 +437,11 @@ const BillingComponent = () => {
                                     type='button'
                                     onClick={() => handleIgnorePending(service)}
                                     disabled={saving}
+                                    className='billing-pending-remove'
+                                    aria-label={`Quitar ${service.name} de pendientes`}
+                                    title='Quitar de pendientes'
                                 >
-                                    Quitar
+                                    ×
                                 </button>
                             </span>
                         ))}
