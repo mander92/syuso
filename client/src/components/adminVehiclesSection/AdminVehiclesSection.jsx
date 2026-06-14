@@ -399,11 +399,15 @@ const AdminVehiclesSection = () => {
                             }
                         >
                             <option value=''>Selecciona</option>
-                            {services.map((service) => (
-                                <option key={service.id} value={service.id}>
+                            {services.map((service) => {
+                                const serviceId = service.serviceId || service.id;
+                                if (!serviceId) return null;
+                                return (
+                                <option key={serviceId} value={serviceId}>
                                     {service.name} - {service.province}
                                 </option>
-                            ))}
+                                );
+                            })}
                         </select>
                     </label>
                     <div className='admin-vehicles-checklist'>
