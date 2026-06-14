@@ -190,6 +190,10 @@
     position: relative;
 }
 
+.employee-btn--vehicle {
+    background: #0f766e !important;
+}
+
 .employee-chat-badge {
     position: absolute;
     top: -6px;
@@ -205,6 +209,142 @@
     justify-content: center;
     padding: 0 6px;
     box-shadow: 0 6px 14px rgba(239, 68, 68, 0.3);
+}
+
+.vehicle-inspection-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.vehicle-inspection-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    background: rgba(15, 23, 42, 0.55);
+}
+
+.vehicle-inspection-modal__panel {
+    position: relative;
+    z-index: 1;
+    width: min(860px, 100%);
+    max-height: 92vh;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
+}
+
+.vehicle-inspection-modal__header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: center;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 0.75rem;
+}
+
+.vehicle-inspection-modal__header h3,
+.vehicle-inspection-modal__header p {
+    margin: 0;
+}
+
+.vehicle-inspection-modal__header p {
+    color: #64748b;
+    margin-top: 0.2rem;
+}
+
+.vehicle-inspection-modal__header button,
+.vehicle-inspection-submit {
+    border: none;
+    border-radius: 999px;
+    padding: 0.6rem 1rem;
+    background: #e8eef6;
+    color: #0f172a;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.vehicle-inspection-submit {
+    align-self: flex-end;
+    background: #071633;
+    color: #fff;
+}
+
+.vehicle-inspection-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+}
+
+.vehicle-inspection-grid label,
+.vehicle-inspection-wide {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    color: #0f172a;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.vehicle-inspection-grid input,
+.vehicle-inspection-grid select,
+.vehicle-inspection-wide textarea {
+    width: 100%;
+    min-width: 0;
+    border: 1px solid #dbe4ef;
+    border-radius: 9px;
+    padding: 0.6rem 0.75rem;
+    font: inherit;
+}
+
+.vehicle-inspection-wide textarea {
+    min-height: 90px;
+    resize: vertical;
+}
+
+.vehicle-inspection-checklist {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.55rem;
+}
+
+.vehicle-inspection-checklist label {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    background: #f8fafc;
+    color: #334155;
+    font-weight: 700;
+}
+
+@media (max-width: 640px) {
+    .vehicle-inspection-modal {
+        align-items: flex-start;
+        padding: 0.5rem;
+    }
+
+    .vehicle-inspection-modal__panel {
+        max-height: 96vh;
+        border-radius: 10px;
+    }
+
+    .vehicle-inspection-modal__header,
+    .vehicle-inspection-submit {
+        align-items: stretch;
+        flex-direction: column;
+    }
 }
 
 .employee-services-loading {

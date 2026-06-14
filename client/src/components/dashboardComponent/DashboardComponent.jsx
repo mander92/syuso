@@ -21,6 +21,7 @@ import EmployeeDocumentationComponent from '../employeeDocumentation/EmployeeDoc
 import AdminWarehouseSection from '../adminWarehouseSection/AdminWarehouseSection.jsx';
 import PayrollsComponent from '../payrolls/PayrollsComponent.jsx';
 import BillingComponent from '../billing/BillingComponent.jsx';
+import AdminVehiclesSection from '../adminVehiclesSection/AdminVehiclesSection.jsx';
 import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 
 const formatAlertDate = (value) => {
@@ -61,6 +62,7 @@ const operativeSectionIds = [
 const administrationSectionIds = [
     'documentations',
     'warehouse',
+    'vehicles',
     'payrolls',
     'billing',
 ];
@@ -231,6 +233,7 @@ const DashboardComponent = () => {
                 { id: 'workReports', label: 'Partes de trabajo' },
                 { id: 'documentations', label: 'Documentacion' },
                 { id: 'warehouse', label: 'Almacen' },
+                { id: 'vehicles', label: 'Vehiculos' },
                 { id: 'payrolls', label: 'Nominas' },
                 { id: 'billing', label: 'Facturacion' },
                 { id: 'users', label: 'Usuarios' },
@@ -577,6 +580,8 @@ const DashboardComponent = () => {
                 );
             case 'warehouse':
                 return <AdminWarehouseSection />;
+            case 'vehicles':
+                return <AdminVehiclesSection />;
             case 'payrolls':
                 return <PayrollsComponent />;
             case 'billing':

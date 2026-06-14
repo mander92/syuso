@@ -21,6 +21,8 @@ const saveWorkReportDraftService = async ({
     payload,
     signatureDataUrl,
     clientSignatureDataUrl,
+    clearSignature = false,
+    clearClientSignature = false,
     incidents,
     incidentFiles,
 }) => {
@@ -94,13 +96,16 @@ const saveWorkReportDraftService = async ({
         return `workReports/drafts/signatures/${signatureFile}`;
     };
 
-    let signaturePath = payload.signaturePath || existing[0]?.signaturePath || null;
+    let signaturePath = clearSignature
+        ? null
+        : payload.signaturePath || existing[0]?.signaturePath || null;
     if (signatureDataUrl) {
         signaturePath = await saveSignatureImage(signatureDataUrl);
     }
 
-    let clientSignaturePath =
-        payload.clientSignaturePath || existingData.clientSignaturePath || null;
+    let clientSignaturePath = clearClientSignature
+        ? null
+        : payload.clientSignaturePath || existingData.clientSignaturePath || null;
     if (clientSignatureDataUrl) {
         clientSignaturePath = await saveSignatureImage(clientSignatureDataUrl);
     }

@@ -72,6 +72,60 @@ const normalizeSignatureImage = async (signatureDataUrl) => {
         .toBuffer();
 };
 
+const normalizeStoredSignaturePath = (value) => {
+    const rawValue = String(value || '').trim();
+    if (!rawValue) return '';
+
+    const uploadsMarker = '/uploads/';
+    const apiUploadsMarker = '/api/uploads/';
+    const normalizedSeparators = rawValue.replace(/\\/g, '/');
+
+    if (normalizedSeparators.includes(apiUploadsMarker)) {
+        return normalizedSeparators.split(apiUploadsMarker).pop();
+    }
+
+    if (normalizedSeparators.includes(uploadsMarker)) {
+        return normalizedSeparators.split(uploadsMarker).pop();
+    }
+
+    return normalizedSeparators.replace(/^\/+/, '');
+};
+
+const normalizeSignatureSource = async (signatureValue, uploadsRoot) => {
+    const rawValue = String(signatureValue || '').trim();
+
+    if (rawValue.startsWith('data:image/')) {
+        return normalizeSignatureImage(rawValue);
+    }
+
+    const storedPath = normalizeStoredSignaturePath(rawValue);
+
+    if (
+        !storedPath ||
+        storedPath.includes('..') ||
+        !storedPath.startsWith('workReports/')
+    ) {
+        generateErrorUtil('Firma invalida', 400);
+    }
+
+    const signatureDiskPath = path.resolve(uploadsRoot, storedPath);
+    const uploadsRootPath = path.resolve(uploadsRoot);
+
+    if (!signatureDiskPath.startsWith(uploadsRootPath)) {
+        generateErrorUtil('Firma invalida', 400);
+    }
+
+    try {
+        const signatureBuffer = await fsPromises.readFile(signatureDiskPath);
+        return sharp(signatureBuffer)
+            .flatten({ background: '#ffffff' })
+            .png()
+            .toBuffer();
+    } catch (error) {
+        generateErrorUtil('Firma guardada no encontrada', 400);
+    }
+};
+
 const buildReportSvg = (payload, signatureDataUrl) => {
     const width = 1240;
     const height = 1754;
@@ -711,9 +765,12 @@ const createWorkReportService = async ({
     const reportImagePath = path.join(reportDir, `${reportId}.png`);
     const reportPdfPath = path.join(pdfDir, `${reportId}.pdf`);
 
-    const signatureImage = await normalizeSignatureImage(reportData.signature);
+    const signatureImage = await normalizeSignatureSource(
+        reportData.signature,
+        uploadsRoot
+    );
     const clientSignatureImage = reportData.clientSignature
-        ? await normalizeSignatureImage(reportData.clientSignature)
+        ? await normalizeSignatureSource(reportData.clientSignature, uploadsRoot)
         : null;
     const guardSignatureImage =
         reportData.reportType === 'inspection' && reportData.guardSignature
@@ -790,7 +847,10 @@ const createWorkReportService = async ({
         incidentEnd: normalizedIncidentEnd,
     };
 
-    const svg = buildReportSvg(svgPayload, reportData.signature);
+    const signatureDataUrlForSvg = `data:image/png;base64,${signatureImage.toString(
+        'base64'
+    )}`;
+    const svg = buildReportSvg(svgPayload, signatureDataUrlForSvg);
     await sharp(Buffer.from(svg)).png().toFile(reportImagePath);
 
     await pool.query(

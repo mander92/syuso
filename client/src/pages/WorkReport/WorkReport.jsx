@@ -172,6 +172,8 @@ const WorkReport = () => {
     const [hasClientSignature, setHasClientSignature] = useState(false);
     const signatureDataRef = useRef('');
     const clientSignatureDataRef = useRef('');
+    const signatureClearedRef = useRef(false);
+    const clientSignatureClearedRef = useRef(false);
 
     const getCanvasCssSize = (canvas) => {
         const ratio = window.devicePixelRatio || 1;
@@ -354,6 +356,7 @@ const WorkReport = () => {
                 if (draft.signaturePath) {
                     const signatureUrl = `${VITE_API_URL}/uploads/${draft.signaturePath}`;
                     signatureDataRef.current = signatureUrl;
+                    signatureClearedRef.current = false;
                     setSignatureData(signatureUrl);
                     setHasSignature(true);
                     const img = new Image();
@@ -366,6 +369,7 @@ const WorkReport = () => {
                         setHasSignature(true);
                         const dataUrl = canvas.toDataURL('image/png');
                         signatureDataRef.current = dataUrl;
+                        signatureClearedRef.current = false;
                         setSignatureData(dataUrl);
                     };
                 }
@@ -373,6 +377,7 @@ const WorkReport = () => {
                 if (draft.data?.clientSignaturePath) {
                     const clientSignatureUrl = `${VITE_API_URL}/uploads/${draft.data.clientSignaturePath}`;
                     clientSignatureDataRef.current = clientSignatureUrl;
+                    clientSignatureClearedRef.current = false;
                     setClientSignatureData(clientSignatureUrl);
                     setHasClientSignature(true);
                     const img = new Image();
@@ -385,6 +390,7 @@ const WorkReport = () => {
                         setHasClientSignature(true);
                         const dataUrl = canvas.toDataURL('image/png');
                         clientSignatureDataRef.current = dataUrl;
+                        clientSignatureClearedRef.current = false;
                         setClientSignatureData(dataUrl);
                     };
                 }
@@ -580,6 +586,7 @@ const WorkReport = () => {
         if (canvas) {
             const dataUrl = canvas.toDataURL('image/png');
             signatureDataRef.current = dataUrl;
+            signatureClearedRef.current = false;
             setSignatureData(dataUrl);
         }
     }, []);
@@ -608,6 +615,7 @@ const WorkReport = () => {
         setHasSignature(false);
         setSignatureData('');
         signatureDataRef.current = '';
+        signatureClearedRef.current = true;
     };
 
     const getClientPoint = useCallback((event) => {
@@ -693,6 +701,7 @@ const WorkReport = () => {
         if (canvas) {
             const dataUrl = canvas.toDataURL('image/png');
             clientSignatureDataRef.current = dataUrl;
+            clientSignatureClearedRef.current = false;
             setClientSignatureData(dataUrl);
         }
     }, []);
@@ -721,6 +730,7 @@ const WorkReport = () => {
         setHasClientSignature(false);
         setClientSignatureData('');
         clientSignatureDataRef.current = '';
+        clientSignatureClearedRef.current = true;
     };
 
     const addIncident = () => {
@@ -828,6 +838,12 @@ const WorkReport = () => {
             ) {
                 formDataPayload.append('clientSignature', clientSignaturePayload);
             }
+            if (signatureClearedRef.current) {
+                formDataPayload.append('clearSignature', 'true');
+            }
+            if (clientSignatureClearedRef.current) {
+                formDataPayload.append('clearClientSignature', 'true');
+            }
             if (cleanIncidents.length) {
                 formDataPayload.append(
                     'incidents',
@@ -872,12 +888,23 @@ const WorkReport = () => {
                 if (data?.signaturePath) {
                     setDraftSavedAt(new Date());
                 }
+                if (!data?.signaturePath && signatureClearedRef.current) {
+                    setSignatureData('');
+                    signatureDataRef.current = '';
+                    setHasSignature(false);
+                }
                 if (data?.clientSignaturePath) {
                     const clientSignatureUrl = `${VITE_API_URL}/uploads/${data.clientSignaturePath}`;
                     clientSignatureDataRef.current = clientSignatureUrl;
                     setClientSignatureData(clientSignatureUrl);
                     setHasClientSignature(true);
+                } else if (clientSignatureClearedRef.current) {
+                    setClientSignatureData('');
+                    clientSignatureDataRef.current = '';
+                    setHasClientSignature(false);
                 }
+                signatureClearedRef.current = false;
+                clientSignatureClearedRef.current = false;
                 setDraftSavedAt(new Date());
                 toast.success('Borrador guardado');
             } catch (error) {

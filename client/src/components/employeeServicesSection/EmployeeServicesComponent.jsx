@@ -15,6 +15,10 @@ import {
 } from '../../services/shiftRecordService.js';
 import { fetchMyShiftSwapRequests } from '../../services/shiftSwapService.js';
 import { createServiceNfcLog } from '../../services/nfcService.js';
+import {
+    createVehicleInspection,
+    fetchServiceVehicles,
+} from '../../services/vehicleService.js';
 import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 import ServiceChat from '../serviceChat/ServiceChat.jsx';
 import ServiceScheduleGrid from '../serviceSchedule/ServiceScheduleGrid.jsx';
@@ -22,6 +26,16 @@ import '../serviceSchedule/ServiceSchedulePanel.css';
 import './EmployeeServicesComponent.css';
 
 const LOCATION_CACHE_KEY = 'syuso_last_location';
+
+const vehicleChecklistItems = [
+    ['lights', 'Luces'],
+    ['tires', 'Neumaticos'],
+    ['bodywork', 'Carroceria'],
+    ['interior', 'Interior'],
+    ['oil', 'Aceite'],
+    ['documents', 'Documentacion'],
+    ['cleanliness', 'Limpieza'],
+];
 
 const getLocation = () =>
     new Promise((resolve, reject) => {
@@ -115,6 +129,19 @@ const EmployeeServicesComponent = () => {
     const [loading, setLoading] = useState(false);
     const { unreadByService } = useChatNotifications();
     const [scheduleModal, setScheduleModal] = useState(null);
+    const [vehicleModal, setVehicleModal] = useState(null);
+    const [vehicleForm, setVehicleForm] = useState({
+        vehicleId: '',
+        odometerKm: '',
+        fuelLevel: '',
+        cleanliness: '',
+        fuelLiters: '',
+        fuelAmount: '',
+        damageNotes: '',
+        checklist: {},
+        photos: [],
+        tickets: [],
+    });
     const [scheduleMonth] = useState(() =>
         new Date().toISOString().slice(0, 7)
     );
@@ -523,6 +550,83 @@ const EmployeeServicesComponent = () => {
         }
     };
 
+    const openVehicleModal = async (service) => {
+        const serviceId = service.serviceId || service.id;
+        if (!serviceId) return;
+        try {
+            const vehicles = await fetchServiceVehicles(authToken, serviceId);
+            if (!vehicles.length) {
+                toast.error('Este servicio no tiene vehiculos asignados');
+                return;
+            }
+            setVehicleModal({
+                serviceId,
+                serviceName: service.name || service.type || 'Servicio',
+                vehicles,
+            });
+            setVehicleForm({
+                vehicleId: vehicles[0]?.id || '',
+                odometerKm: '',
+                fuelLevel: '',
+                cleanliness: '',
+                fuelLiters: '',
+                fuelAmount: '',
+                damageNotes: '',
+                checklist: {},
+                photos: [],
+                tickets: [],
+            });
+        } catch (error) {
+            toast.error(error.message || 'No se pudieron cargar vehiculos');
+        }
+    };
+
+    const closeVehicleModal = () => {
+        setVehicleModal(null);
+        setVehicleForm((prev) => ({
+            ...prev,
+            photos: [],
+            tickets: [],
+        }));
+    };
+
+    const toggleVehicleChecklist = (key) => {
+        setVehicleForm((prev) => ({
+            ...prev,
+            checklist: {
+                ...prev.checklist,
+                [key]: !prev.checklist[key],
+            },
+        }));
+    };
+
+    const submitVehicleInspection = async (event) => {
+        event.preventDefault();
+        if (!vehicleModal?.serviceId || !vehicleForm.vehicleId) return;
+        try {
+            await createVehicleInspection({
+                authToken,
+                serviceId: vehicleModal.serviceId,
+                vehicleId: vehicleForm.vehicleId,
+                payload: {
+                    odometerKm: vehicleForm.odometerKm,
+                    fuelLevel: vehicleForm.fuelLevel,
+                    cleanliness: vehicleForm.cleanliness,
+                    fuelLiters: vehicleForm.fuelLiters,
+                    fuelAmount: vehicleForm.fuelAmount,
+                    damageNotes: vehicleForm.damageNotes,
+                    checklist: JSON.stringify(vehicleForm.checklist),
+                },
+                photos: vehicleForm.photos,
+                tickets: vehicleForm.tickets,
+            });
+            toast.success('Parte de vehiculo enviado');
+            closeVehicleModal();
+        } catch (error) {
+            toast.error(error.message || 'No se pudo enviar el parte');
+        }
+    };
+
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'hidden') {
@@ -754,6 +858,15 @@ const EmployeeServicesComponent = () => {
                                                 </span>
                                             ) : null}
                                         </button>
+                                        <button
+                                            type='button'
+                                            className='employee-btn employee-btn--vehicle'
+                                            onClick={() =>
+                                                openVehicleModal(service)
+                                            }
+                                        >
+                                            Vehiculo
+                                        </button>
                                         {isOpen && hasNfc ? (
                                             <button
                                                 type='button'
@@ -856,6 +969,199 @@ const EmployeeServicesComponent = () => {
                             )}
                         </div>
                     </div>
+                </div>
+            )}
+            {vehicleModal && (
+                <div className='vehicle-inspection-modal'>
+                    <button
+                        type='button'
+                        className='vehicle-inspection-modal__backdrop'
+                        onClick={closeVehicleModal}
+                        aria-label='Cerrar parte de vehiculo'
+                    />
+                    <form
+                        className='vehicle-inspection-modal__panel'
+                        onSubmit={submitVehicleInspection}
+                    >
+                        <header className='vehicle-inspection-modal__header'>
+                            <div>
+                                <h3>Parte de vehiculo</h3>
+                                <p>{vehicleModal.serviceName}</p>
+                            </div>
+                            <button type='button' onClick={closeVehicleModal}>
+                                Cerrar
+                            </button>
+                        </header>
+
+                        <div className='vehicle-inspection-grid'>
+                            <label>
+                                Vehiculo
+                                <select
+                                    value={vehicleForm.vehicleId}
+                                    onChange={(e) =>
+                                        setVehicleForm({
+                                            ...vehicleForm,
+                                            vehicleId: e.target.value,
+                                        })
+                                    }
+                                    required
+                                >
+                                    {vehicleModal.vehicles.map((vehicle) => (
+                                        <option key={vehicle.id} value={vehicle.id}>
+                                            {vehicle.name} - {vehicle.plate}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+                            <label>
+                                Kilometraje
+                                <input
+                                    type='number'
+                                    value={vehicleForm.odometerKm}
+                                    onChange={(e) =>
+                                        setVehicleForm({
+                                            ...vehicleForm,
+                                            odometerKm: e.target.value,
+                                        })
+                                    }
+                                />
+                            </label>
+                            <label>
+                                Nivel combustible
+                                <select
+                                    value={vehicleForm.fuelLevel}
+                                    onChange={(e) =>
+                                        setVehicleForm({
+                                            ...vehicleForm,
+                                            fuelLevel: e.target.value,
+                                        })
+                                    }
+                                >
+                                    <option value=''>Selecciona</option>
+                                    <option value='reserva'>Reserva</option>
+                                    <option value='1/4'>1/4</option>
+                                    <option value='1/2'>1/2</option>
+                                    <option value='3/4'>3/4</option>
+                                    <option value='lleno'>Lleno</option>
+                                </select>
+                            </label>
+                            <label>
+                                Limpieza
+                                <select
+                                    value={vehicleForm.cleanliness}
+                                    onChange={(e) =>
+                                        setVehicleForm({
+                                            ...vehicleForm,
+                                            cleanliness: e.target.value,
+                                        })
+                                    }
+                                >
+                                    <option value=''>Selecciona</option>
+                                    <option value='correcta'>Correcta</option>
+                                    <option value='mejorable'>Mejorable</option>
+                                    <option value='mala'>Mala</option>
+                                </select>
+                            </label>
+                            <label>
+                                Litros repostados
+                                <input
+                                    type='number'
+                                    step='0.01'
+                                    value={vehicleForm.fuelLiters}
+                                    onChange={(e) =>
+                                        setVehicleForm({
+                                            ...vehicleForm,
+                                            fuelLiters: e.target.value,
+                                        })
+                                    }
+                                />
+                            </label>
+                            <label>
+                                Importe repostaje
+                                <input
+                                    type='number'
+                                    step='0.01'
+                                    value={vehicleForm.fuelAmount}
+                                    onChange={(e) =>
+                                        setVehicleForm({
+                                            ...vehicleForm,
+                                            fuelAmount: e.target.value,
+                                        })
+                                    }
+                                />
+                            </label>
+                        </div>
+
+                        <div className='vehicle-inspection-checklist'>
+                            {vehicleChecklistItems.map(([key, label]) => (
+                                <label key={key}>
+                                    <input
+                                        type='checkbox'
+                                        checked={Boolean(
+                                            vehicleForm.checklist[key]
+                                        )}
+                                        onChange={() =>
+                                            toggleVehicleChecklist(key)
+                                        }
+                                    />
+                                    <span>{label}</span>
+                                </label>
+                            ))}
+                        </div>
+
+                        <label className='vehicle-inspection-wide'>
+                            Observaciones / danos
+                            <textarea
+                                value={vehicleForm.damageNotes}
+                                onChange={(e) =>
+                                    setVehicleForm({
+                                        ...vehicleForm,
+                                        damageNotes: e.target.value,
+                                    })
+                                }
+                                placeholder='Estado del vehiculo, limpieza, golpes, incidencias...'
+                            />
+                        </label>
+
+                        <div className='vehicle-inspection-grid'>
+                            <label>
+                                Fotos del vehiculo
+                                <input
+                                    type='file'
+                                    accept='image/*,.heic'
+                                    multiple
+                                    onChange={(e) =>
+                                        setVehicleForm({
+                                            ...vehicleForm,
+                                            photos: Array.from(
+                                                e.target.files || []
+                                            ),
+                                        })
+                                    }
+                                />
+                            </label>
+                            <label>
+                                Tickets gasolina/diesel
+                                <input
+                                    type='file'
+                                    accept='image/*,.pdf,.heic'
+                                    multiple
+                                    onChange={(e) =>
+                                        setVehicleForm({
+                                            ...vehicleForm,
+                                            tickets: Array.from(
+                                                e.target.files || []
+                                            ),
+                                        })
+                                    }
+                                />
+                            </label>
+                        </div>
+
+                        <button type='submit' className='vehicle-inspection-submit'>
+                            Enviar parte de vehiculo
+                        </button>
+                    </form>
                 </div>
             )}
         </section>
