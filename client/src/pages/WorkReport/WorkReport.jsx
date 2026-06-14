@@ -367,10 +367,6 @@ const WorkReport = () => {
                         if (!ctx || !canvas) return;
                         redrawCanvasImage(canvas, ctx, img);
                         setHasSignature(true);
-                        const dataUrl = canvas.toDataURL('image/png');
-                        signatureDataRef.current = dataUrl;
-                        signatureClearedRef.current = false;
-                        setSignatureData(dataUrl);
                     };
                 }
 
@@ -388,10 +384,6 @@ const WorkReport = () => {
                         if (!ctx || !canvas) return;
                         redrawCanvasImage(canvas, ctx, img);
                         setHasClientSignature(true);
-                        const dataUrl = canvas.toDataURL('image/png');
-                        clientSignatureDataRef.current = dataUrl;
-                        clientSignatureClearedRef.current = false;
-                        setClientSignatureData(dataUrl);
                     };
                 }
             } catch (error) {
@@ -415,11 +407,6 @@ const WorkReport = () => {
         if (!serviceInfo?.startDateTime) return '';
         return toLocalInputDateTime(serviceInfo.startDateTime);
     }, [serviceInfo]);
-
-    const minIncidentEnd = useMemo(() => {
-        if (formData.incidentStart) return formData.incidentStart;
-        return minIncidentStart;
-    }, [formData.incidentStart, minIncidentStart]);
 
     const computedTotalHours = useMemo(
         () =>
@@ -485,10 +472,6 @@ const WorkReport = () => {
             setFormData((prev) => ({ ...prev, incidentStart: minIncidentStart }));
             return;
         }
-        if (name === 'incidentEnd' && minIncidentEnd && value < minIncidentEnd) {
-            setFormData((prev) => ({ ...prev, incidentEnd: minIncidentEnd }));
-            return;
-        }
         if (name === 'incidentStart' || name === 'incidentEnd') {
             setFormData((prev) => {
                 const next = { ...prev, [name]: value };
@@ -514,7 +497,7 @@ const WorkReport = () => {
                 nextParts.time
             );
             const minValue =
-                field === 'incidentStart' ? minIncidentStart : minIncidentEnd;
+                field === 'incidentStart' ? minIncidentStart : '';
 
             if (combined && minValue && combined < minValue) {
                 combined = minValue;
@@ -1082,7 +1065,6 @@ const WorkReport = () => {
     const incidentStartParts = splitLocalDateTime(formData.incidentStart);
     const incidentEndParts = splitLocalDateTime(formData.incidentEnd);
     const minIncidentStartParts = splitLocalDateTime(minIncidentStart);
-    const minIncidentEndParts = splitLocalDateTime(minIncidentEnd);
 
     return (
         <div className='work-report-page'>
@@ -1173,7 +1155,6 @@ const WorkReport = () => {
                                         event.target.value
                                     )
                                 }
-                                min={minIncidentEndParts.date || undefined}
                                 required
                             />
                         </label>
@@ -1188,13 +1169,6 @@ const WorkReport = () => {
                                         'time',
                                         event.target.value
                                     )
-                                }
-                                min={
-                                    incidentEndParts.date ===
-                                    minIncidentEndParts.date
-                                        ? minIncidentEndParts.time ||
-                                          undefined
-                                        : undefined
                                 }
                                 required
                             />
