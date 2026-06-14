@@ -36,6 +36,12 @@ const getScheduleDateKey = (row) => {
     return String(row.scheduleDate).slice(0, 10);
 };
 
+const toBoolean = (value) =>
+    value === true ||
+    value === 1 ||
+    value === '1' ||
+    String(value).toLowerCase() === 'true';
+
 const startShiftRecordService = async (
     location, startDateTime, employeeId, serviceId
 ) => {
@@ -64,7 +70,7 @@ const startShiftRecordService = async (
         generateErrorUtil('Servicio no encontrado', 404);
     }
 
-    const allowUnscheduled = !!serviceRows[0].allowUnscheduledClockIn;
+    const allowUnscheduled = toBoolean(serviceRows[0].allowUnscheduledClockIn);
     const clockInEarlyMinutes =
         serviceRows[0].clockInEarlyMinutes != null
             ? Number(serviceRows[0].clockInEarlyMinutes)
@@ -86,7 +92,7 @@ const startShiftRecordService = async (
         clockInEarlyMinutes
     );
 
-    if (!scheduledShift) {
+    if (!scheduledShift && !allowUnscheduled) {
         const [nextRows] = await pool.query(
             `
             SELECT scheduleDate, startTime, endTime
@@ -153,9 +159,7 @@ const startShiftRecordService = async (
             );
         }
 
-        if (!allowUnscheduled) {
-            generateErrorUtil('No hay turno programado', 403);
-        }
+        generateErrorUtil('No hay turno programado', 403);
     }
 
     const rules = await selectEmployeeRulesService(employeeId);

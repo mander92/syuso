@@ -8,6 +8,7 @@ import {
     createVehicleFuelLogController,
     createVehicleInspectionController,
     deleteVehicleController,
+    getVehicleInspectionStatusController,
     listServiceVehiclesController,
     listVehiclesController,
     updateVehicleController,
@@ -22,6 +23,11 @@ router.delete('/vehicles/:vehicleId', authUser, isAdmin, deleteVehicleController
 router.post('/vehicles/:vehicleId/fuel', authUser, isAdmin, createVehicleFuelLogController);
 
 router.get('/services/:serviceId/vehicles', authUser, listServiceVehiclesController);
+router.get(
+    '/services/:serviceId/vehicles/inspection-status',
+    authUser,
+    getVehicleInspectionStatusController
+);
 router.put('/services/:serviceId/vehicles', authUser, isAdmin, assignVehiclesToServiceController);
 router.post(
     '/services/:serviceId/vehicles/:vehicleId/inspections',

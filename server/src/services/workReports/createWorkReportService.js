@@ -12,6 +12,7 @@ import { UPLOADS_DIR } from '../../../env.js';
 import { formatDateTimeMadrid } from '../../utils/dateTimeMadrid.js';
 import { getMadridDateTimeParts } from '../../utils/scheduleTimeUtil.js';
 import selectScheduledShiftForClockInService from '../schedules/selectScheduledShiftForClockInService.js';
+import { ensureVehicleInspectionForShiftService } from '../vehicles/vehicleService.js';
 
 const ensureDir = async (dirPath) => {
     try {
@@ -729,6 +730,12 @@ const createWorkReportService = async ({
     if (shift.clockOut) {
         generateErrorUtil('El turno ya esta cerrado', 409);
     }
+
+    await ensureVehicleInspectionForShiftService({
+        serviceId,
+        shiftRecordId,
+        employeeId,
+    });
 
     const [draftRows] = await pool.query(
         `

@@ -53,6 +53,23 @@ export const fetchServiceVehicles = async (authToken, serviceId) => {
     return readBody(res);
 };
 
+export const fetchVehicleInspectionStatus = async (
+    authToken,
+    serviceId,
+    shiftRecordId
+) => {
+    const params = new URLSearchParams();
+    if (shiftRecordId) params.set('shiftRecordId', shiftRecordId);
+
+    const res = await fetch(
+        `${VITE_API_URL}/services/${serviceId}/vehicles/inspection-status?${params.toString()}`,
+        {
+            headers: { Authorization: authToken },
+        }
+    );
+    return readBody(res);
+};
+
 export const assignServiceVehicles = async (authToken, serviceId, vehicleIds) => {
     const res = await fetch(`${VITE_API_URL}/services/${serviceId}/vehicles`, {
         method: 'PUT',

@@ -18,6 +18,7 @@ import { createServiceNfcLog } from '../../services/nfcService.js';
 import {
     createVehicleInspection,
     fetchServiceVehicles,
+    fetchVehicleInspectionStatus,
 } from '../../services/vehicleService.js';
 import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 import ServiceChat from '../serviceChat/ServiceChat.jsx';
@@ -88,6 +89,12 @@ const getLocation = () =>
         );
     });
 
+const toBoolean = (value) =>
+    value === true ||
+    value === 1 ||
+    value === '1' ||
+    String(value).toLowerCase() === 'true';
+
 const decodeTextRecord = (record) => {
     try {
         if (typeof record.data === 'string') {
@@ -130,6 +137,8 @@ const EmployeeServicesComponent = () => {
     const { unreadByService } = useChatNotifications();
     const [scheduleModal, setScheduleModal] = useState(null);
     const [vehicleModal, setVehicleModal] = useState(null);
+    const [vehiclesByService, setVehiclesByService] = useState({});
+    const [vehicleInspectedByService, setVehicleInspectedByService] = useState({});
     const [vehicleForm, setVehicleForm] = useState({
         vehicleId: '',
         odometerKm: '',
@@ -314,10 +323,9 @@ const EmployeeServicesComponent = () => {
                                 serviceId,
                                 {
                                     label: null,
-                                    canStart:
-                                        Boolean(
-                                            service.allowUnscheduledClockIn
-                                        ),
+                                    canStart: toBoolean(
+                                        service.allowUnscheduledClockIn
+                                    ),
                                 },
                             ];
                         }
@@ -328,7 +336,9 @@ const EmployeeServicesComponent = () => {
                             serviceId,
                             {
                                 label: formatNextShift(visibleShift.dateTime),
-                                canStart: Boolean(currentShift),
+                                canStart:
+                                    Boolean(currentShift) ||
+                                    toBoolean(service.allowUnscheduledClockIn),
                             },
                         ];
                     })
@@ -366,6 +376,36 @@ const EmployeeServicesComponent = () => {
         loadOpenShifts();
     }, [authToken]);
 
+    useEffect(() => {
+        const loadServiceVehicles = async () => {
+            if (!authToken || !services.length) {
+                setVehiclesByService({});
+                return;
+            }
+
+            const results = await Promise.all(
+                services.map(async (service) => {
+                    const serviceId = service.serviceId || service.id;
+                    if (!serviceId) return [serviceId, []];
+
+                    try {
+                        const vehicles = await fetchServiceVehicles(
+                            authToken,
+                            serviceId
+                        );
+                        return [serviceId, Array.isArray(vehicles) ? vehicles : []];
+                    } catch {
+                        return [serviceId, []];
+                    }
+                })
+            );
+
+            setVehiclesByService(Object.fromEntries(results.filter(([id]) => id)));
+        };
+
+        loadServiceVehicles();
+    }, [authToken, services]);
+
     const uniqueTypes = useMemo(
         () =>
             [...new Set(services
@@ -402,12 +442,63 @@ const EmployeeServicesComponent = () => {
         }
     };
 
-    const handleEnd = (serviceId) => {
+    const handleEnd = async (serviceId) => {
         const shiftId = openShifts[serviceId];
         if (!shiftId) {
             toast.error('No hay un turno abierto para este servicio');
             return;
         }
+
+        let assignedVehicles = vehiclesByService[serviceId];
+        if (!Array.isArray(assignedVehicles)) {
+            try {
+                assignedVehicles = await fetchServiceVehicles(
+                    authToken,
+                    serviceId
+                );
+                setVehiclesByService((prev) => ({
+                    ...prev,
+                    [serviceId]: Array.isArray(assignedVehicles)
+                        ? assignedVehicles
+                        : [],
+                }));
+            } catch (error) {
+                toast.error(
+                    error.message ||
+                        'No se pudieron comprobar los vehiculos del servicio'
+                );
+                return;
+            }
+        }
+
+        if (assignedVehicles?.length && !vehicleInspectedByService[serviceId]) {
+            try {
+                const status = await fetchVehicleInspectionStatus(
+                    authToken,
+                    serviceId,
+                    shiftId
+                );
+
+                if (!status.completed) {
+                    toast.error(
+                        'Antes de enviar el parte debes mandar el parte de inspeccion del vehiculo'
+                    );
+                    return;
+                }
+
+                setVehicleInspectedByService((prev) => ({
+                    ...prev,
+                    [serviceId]: true,
+                }));
+            } catch (error) {
+                toast.error(
+                    error.message ||
+                        'No se pudo comprobar el parte de vehiculo'
+                );
+                return;
+            }
+        }
+
         navigate(`/shiftRecords/${shiftId}/report?serviceId=${serviceId}`);
     };
 
@@ -620,6 +711,10 @@ const EmployeeServicesComponent = () => {
                 photos: vehicleForm.photos,
                 tickets: vehicleForm.tickets,
             });
+            setVehicleInspectedByService((prev) => ({
+                ...prev,
+                [vehicleModal.serviceId]: true,
+            }));
             toast.success('Parte de vehiculo enviado');
             closeVehicleModal();
         } catch (error) {
@@ -750,6 +845,9 @@ const EmployeeServicesComponent = () => {
                         const serviceId = service.serviceId || service.id;
                         if (!serviceId) return null;
                         const isOpen = Boolean(openShifts[serviceId]);
+                        const hasAssignedVehicle = Boolean(
+                            vehiclesByService[serviceId]?.length
+                        );
                         const hasNfc = Number(service.nfcCount || 0) > 0;
                         const nextShiftInfo = nextShiftByService[serviceId];
                         const startDisabled =
@@ -858,15 +956,21 @@ const EmployeeServicesComponent = () => {
                                                 </span>
                                             ) : null}
                                         </button>
-                                        <button
-                                            type='button'
-                                            className='employee-btn employee-btn--vehicle'
-                                            onClick={() =>
-                                                openVehicleModal(service)
-                                            }
-                                        >
-                                            Vehiculo
-                                        </button>
+                                        {isOpen && hasAssignedVehicle ? (
+                                            <button
+                                                type='button'
+                                                className='employee-btn employee-btn--vehicle'
+                                                onClick={() =>
+                                                    openVehicleModal(service)
+                                                }
+                                            >
+                                                {vehicleInspectedByService[
+                                                    serviceId
+                                                ]
+                                                    ? 'Vehiculo ok'
+                                                    : 'Vehiculo'}
+                                            </button>
+                                        ) : null}
                                         {isOpen && hasNfc ? (
                                             <button
                                                 type='button'

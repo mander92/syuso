@@ -263,6 +263,135 @@ export const listServiceVehiclesService = async ({ serviceId, userId, role }) =>
     return rows;
 };
 
+export const getVehicleInspectionStatusService = async ({
+    serviceId,
+    shiftRecordId,
+    userId,
+    role,
+}) => {
+    const pool = await getPool();
+    const vehicles = await listServiceVehiclesService({
+        serviceId,
+        userId,
+        role,
+    });
+
+    if (!vehicles.length) {
+        return {
+            required: false,
+            completed: true,
+            vehicles,
+        };
+    }
+
+    if (!shiftRecordId) {
+        return {
+            required: true,
+            completed: false,
+            vehicles,
+        };
+    }
+
+    const [shiftRows] = await pool.query(
+        `
+        SELECT id, serviceId, employeeId, clockIn, realClockIn
+        FROM shiftRecords
+        WHERE id = ?
+        LIMIT 1
+        `,
+        [shiftRecordId]
+    );
+
+    if (!shiftRows.length) generateErrorUtil('Turno no encontrado', 404);
+
+    const shift = shiftRows[0];
+    if (shift.serviceId !== serviceId || shift.employeeId !== userId) {
+        generateErrorUtil('Turno invalido', 403);
+    }
+
+    const since = shift.realClockIn || shift.clockIn || null;
+    const [inspectionRows] = await pool.query(
+        `
+        SELECT id, inspectionDate
+        FROM vehicleInspections
+        WHERE serviceId = ?
+          AND employeeId = ?
+          AND deletedAt IS NULL
+          AND inspectionDate >= COALESCE(?, DATE_SUB(UTC_TIMESTAMP(), INTERVAL 24 HOUR))
+        ORDER BY inspectionDate DESC
+        LIMIT 1
+        `,
+        [serviceId, userId, since]
+    );
+
+    return {
+        required: true,
+        completed: inspectionRows.length > 0,
+        inspectionId: inspectionRows[0]?.id || null,
+        inspectionDate: inspectionRows[0]?.inspectionDate || null,
+        vehicles,
+    };
+};
+
+export const ensureVehicleInspectionForShiftService = async ({
+    serviceId,
+    shiftRecordId,
+    employeeId,
+}) => {
+    const pool = await getPool();
+    const [vehicleRows] = await pool.query(
+        `
+        SELECT COUNT(*) AS total
+        FROM serviceVehicles sv
+        INNER JOIN vehicles v ON v.id = sv.vehicleId
+        WHERE sv.serviceId = ?
+          AND sv.deletedAt IS NULL
+          AND v.deletedAt IS NULL
+          AND v.active = 1
+        `,
+        [serviceId]
+    );
+
+    if (Number(vehicleRows[0]?.total || 0) === 0) return true;
+
+    const [shiftRows] = await pool.query(
+        `
+        SELECT id, clockIn, realClockIn
+        FROM shiftRecords
+        WHERE id = ?
+          AND serviceId = ?
+          AND employeeId = ?
+        LIMIT 1
+        `,
+        [shiftRecordId, serviceId, employeeId]
+    );
+
+    if (!shiftRows.length) generateErrorUtil('Turno invalido', 403);
+
+    const since = shiftRows[0].realClockIn || shiftRows[0].clockIn || null;
+    const [inspectionRows] = await pool.query(
+        `
+        SELECT id
+        FROM vehicleInspections
+        WHERE serviceId = ?
+          AND employeeId = ?
+          AND deletedAt IS NULL
+          AND inspectionDate >= COALESCE(?, DATE_SUB(UTC_TIMESTAMP(), INTERVAL 24 HOUR))
+        LIMIT 1
+        `,
+        [serviceId, employeeId, since]
+    );
+
+    if (!inspectionRows.length) {
+        generateErrorUtil(
+            'Debes enviar el parte de inspeccion del vehiculo antes de cerrar el parte de trabajo',
+            409
+        );
+    }
+
+    return true;
+};
+
 export const createVehicleFuelLogService = async ({
     vehicleId,
     serviceId = null,

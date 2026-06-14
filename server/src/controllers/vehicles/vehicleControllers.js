@@ -3,6 +3,7 @@ import {
     createVehicleFuelLogService,
     createVehicleInspectionService,
     deleteVehicleService,
+    getVehicleInspectionStatusService,
     listServiceVehiclesService,
     listVehicleLogsService,
     listVehiclesService,
@@ -67,6 +68,20 @@ export const listServiceVehiclesController = async (req, res, next) => {
     try {
         const data = await listServiceVehiclesService({
             serviceId: req.params.serviceId,
+            userId: req.userLogged.id,
+            role: req.userLogged.role,
+        });
+        res.send({ status: 'ok', data });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getVehicleInspectionStatusController = async (req, res, next) => {
+    try {
+        const data = await getVehicleInspectionStatusService({
+            serviceId: req.params.serviceId,
+            shiftRecordId: req.query.shiftRecordId || '',
             userId: req.userLogged.id,
             role: req.userLogged.role,
         });
