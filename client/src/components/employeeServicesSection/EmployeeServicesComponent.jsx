@@ -137,6 +137,7 @@ const EmployeeServicesComponent = () => {
     const { unreadByService } = useChatNotifications();
     const [scheduleModal, setScheduleModal] = useState(null);
     const [vehicleModal, setVehicleModal] = useState(null);
+    const [vehicleSubmitting, setVehicleSubmitting] = useState(false);
     const [vehiclesByService, setVehiclesByService] = useState({});
     const [vehicleInspectedByService, setVehicleInspectedByService] = useState({});
     const [vehicleForm, setVehicleForm] = useState({
@@ -693,8 +694,10 @@ const EmployeeServicesComponent = () => {
 
     const submitVehicleInspection = async (event) => {
         event.preventDefault();
+        if (vehicleSubmitting) return;
         if (!vehicleModal?.serviceId || !vehicleForm.vehicleId) return;
         try {
+            setVehicleSubmitting(true);
             await createVehicleInspection({
                 authToken,
                 serviceId: vehicleModal.serviceId,
@@ -719,6 +722,8 @@ const EmployeeServicesComponent = () => {
             closeVehicleModal();
         } catch (error) {
             toast.error(error.message || 'No se pudo enviar el parte');
+        } finally {
+            setVehicleSubmitting(false);
         }
     };
 
@@ -1262,9 +1267,17 @@ const EmployeeServicesComponent = () => {
                             </label>
                         </div>
 
-                        <button type='submit' className='vehicle-inspection-submit'>
-                            Enviar parte de vehiculo
-                        </button>
+                        <div className='vehicle-inspection-footer'>
+                            <button
+                                type='submit'
+                                className='vehicle-inspection-submit'
+                                disabled={vehicleSubmitting}
+                            >
+                                {vehicleSubmitting
+                                    ? 'Enviando parte...'
+                                    : 'Enviar parte de vehiculo'}
+                            </button>
+                        </div>
                     </form>
                 </div>
             )}

@@ -109,6 +109,7 @@ export const upsertVehicleService = async ({ vehicleId = '', payload }) => {
         payload.model || null,
         payload.vehicleYear || null,
         payload.vin || null,
+        payload.customerServicePhone || null,
         payload.insuranceCompany || null,
         payload.insurancePolicy || null,
         payload.insuranceExpiryDate || null,
@@ -133,7 +134,7 @@ export const upsertVehicleService = async ({ vehicleId = '', payload }) => {
             UPDATE vehicles
             SET name = ?, plate = ?, ownershipType = ?, fuelType = ?,
                 brand = ?, model = ?, vehicleYear = ?, vin = ?,
-                insuranceCompany = ?, insurancePolicy = ?,
+                customerServicePhone = ?, insuranceCompany = ?, insurancePolicy = ?,
                 insuranceExpiryDate = ?, itvExpiryDate = ?,
                 documentationNotes = ?, active = ?
             WHERE id = ?
@@ -147,10 +148,10 @@ export const upsertVehicleService = async ({ vehicleId = '', payload }) => {
         `
         INSERT INTO vehicles (
             id, name, plate, ownershipType, fuelType, brand, model,
-            vehicleYear, vin, insuranceCompany, insurancePolicy,
+            vehicleYear, vin, customerServicePhone, insuranceCompany, insurancePolicy,
             insuranceExpiryDate, itvExpiryDate, documentationNotes, active
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [id, ...values]
     );
@@ -517,8 +518,10 @@ export const listVehicleLogsService = async () => {
     );
     const [inspections] = await pool.query(
         `
-        SELECT vi.*, v.name AS vehicleName, v.plate, s.name AS serviceName,
-               CONCAT_WS(' ', u.firstName, u.lastName) AS employeeName
+        SELECT vi.*, v.name AS vehicleName, v.plate, v.brand, v.model,
+               s.name AS serviceName, s.province,
+               CONCAT_WS(' ', u.firstName, u.lastName) AS employeeName,
+               u.email AS employeeEmail
         FROM vehicleInspections vi
         INNER JOIN vehicles v ON v.id = vi.vehicleId
         INNER JOIN services s ON s.id = vi.serviceId

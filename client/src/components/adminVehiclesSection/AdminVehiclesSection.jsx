@@ -9,6 +9,7 @@ import {
     saveVehicle,
 } from '../../services/vehicleService.js';
 import { fetchAllServicesServices } from '../../services/serviceService.js';
+import { buildImageUrl } from '../../utils/imageUrl.js';
 import './AdminVehiclesSection.css';
 
 const emptyForm = {
@@ -19,7 +20,7 @@ const emptyForm = {
     brand: '',
     model: '',
     vehicleYear: '',
-    vin: '',
+    customerServicePhone: '',
     insuranceCompany: '',
     insurancePolicy: '',
     insuranceExpiryDate: '',
@@ -41,6 +42,16 @@ const fuelLabels = {
     other: 'Otro',
 };
 
+const checklistLabels = {
+    lights: 'Luces',
+    tires: 'Neumaticos',
+    bodywork: 'Carroceria',
+    interior: 'Interior',
+    oil: 'Aceite',
+    documents: 'Documentacion',
+    cleanliness: 'Limpieza',
+};
+
 const formatDateTime = (value) => {
     if (!value) return '-';
     const date = new Date(value);
@@ -53,6 +64,18 @@ const formatDateTime = (value) => {
         minute: '2-digit',
     });
 };
+
+const parseJsonValue = (value, fallback) => {
+    if (!value) return fallback;
+    if (typeof value !== 'string') return value;
+    try {
+        return JSON.parse(value);
+    } catch {
+        return fallback;
+    }
+};
+
+const uploadUrl = (filePath) => buildImageUrl(filePath);
 
 const AdminVehiclesSection = () => {
     const { authToken } = useContext(AuthContext);
@@ -68,6 +91,8 @@ const AdminVehiclesSection = () => {
         vehicleIds: [],
     });
     const [loading, setLoading] = useState(false);
+    const [inspectionDetail, setInspectionDetail] = useState(null);
+    const [vehicleFormOpen, setVehicleFormOpen] = useState(false);
 
     const loadData = async () => {
         if (!authToken) return;
@@ -124,10 +149,23 @@ const AdminVehiclesSection = () => {
             toast.success(editingId ? 'Vehiculo actualizado' : 'Vehiculo creado');
             setForm(emptyForm);
             setEditingId('');
+            setVehicleFormOpen(false);
             await loadData();
         } catch (error) {
             toast.error(error.message || 'No se pudo guardar el vehiculo');
         }
+    };
+
+    const openNewVehicle = () => {
+        setEditingId('');
+        setForm(emptyForm);
+        setVehicleFormOpen(true);
+    };
+
+    const closeVehicleForm = () => {
+        setEditingId('');
+        setForm(emptyForm);
+        setVehicleFormOpen(false);
     };
 
     const handleEdit = (vehicle) => {
@@ -140,7 +178,7 @@ const AdminVehiclesSection = () => {
             brand: vehicle.brand || '',
             model: vehicle.model || '',
             vehicleYear: vehicle.vehicleYear || '',
-            vin: vehicle.vin || '',
+            customerServicePhone: vehicle.customerServicePhone || '',
             insuranceCompany: vehicle.insuranceCompany || '',
             insurancePolicy: vehicle.insurancePolicy || '',
             insuranceExpiryDate: vehicle.insuranceExpiryDate
@@ -152,6 +190,7 @@ const AdminVehiclesSection = () => {
             documentationNotes: vehicle.documentationNotes || '',
             active: Number(vehicle.active) === 1,
         });
+        setVehicleFormOpen(true);
     };
 
     const handleDelete = async (vehicleId) => {
@@ -193,6 +232,15 @@ const AdminVehiclesSection = () => {
         }
     };
 
+    const openInspectionDetail = (inspection) => {
+        setInspectionDetail({
+            ...inspection,
+            checklist: parseJsonValue(inspection.checklist, {}),
+            photoPaths: parseJsonValue(inspection.photoPaths, []),
+            ticketPaths: parseJsonValue(inspection.ticketPaths, []),
+        });
+    };
+
     return (
         <section className='admin-vehicles'>
             <header className='admin-vehicles-header'>
@@ -204,14 +252,44 @@ const AdminVehiclesSection = () => {
                         inspecciones, kilometraje y combustible.
                     </span>
                 </div>
-                <button type='button' onClick={loadData} disabled={loading}>
-                    Actualizar
-                </button>
+                <div className='admin-vehicles-header-actions'>
+                    <button type='button' onClick={openNewVehicle}>
+                        Nuevo vehiculo
+                    </button>
+                    <button type='button' onClick={loadData} disabled={loading}>
+                        Actualizar
+                    </button>
+                </div>
             </header>
 
-            <div className='admin-vehicles-layout'>
-                <form className='admin-vehicles-card' onSubmit={handleSubmit}>
-                    <h3>{editingId ? 'Editar vehiculo' : 'Nuevo vehiculo'}</h3>
+            {vehicleFormOpen ? (
+                <div className='vehicle-admin-modal'>
+                    <button
+                        type='button'
+                        className='vehicle-admin-modal__backdrop'
+                        onClick={closeVehicleForm}
+                        aria-label='Cerrar formulario de vehiculo'
+                    />
+                    <form
+                        className='admin-vehicles-card vehicle-admin-modal__panel'
+                        onSubmit={handleSubmit}
+                    >
+                        <header className='vehicle-admin-modal__header'>
+                            <div>
+                                <h3>
+                                    {editingId
+                                        ? 'Editar vehiculo'
+                                        : 'Nuevo vehiculo'}
+                                </h3>
+                                <p>
+                                    Completa la ficha del vehiculo y su
+                                    documentacion.
+                                </p>
+                            </div>
+                            <button type='button' onClick={closeVehicleForm}>
+                                Cerrar
+                            </button>
+                        </header>
                     <div className='admin-vehicles-grid'>
                         <label>
                             Nombre
@@ -285,7 +363,7 @@ const AdminVehiclesSection = () => {
                             />
                         </label>
                         <label>
-                            Ano
+                            Año
                             <input
                                 type='number'
                                 value={form.vehicleYear}
@@ -294,15 +372,6 @@ const AdminVehiclesSection = () => {
                                         ...form,
                                         vehicleYear: e.target.value,
                                     })
-                                }
-                            />
-                        </label>
-                        <label>
-                            Bastidor
-                            <input
-                                value={form.vin}
-                                onChange={(e) =>
-                                    setForm({ ...form, vin: e.target.value })
                                 }
                             />
                         </label>
@@ -316,6 +385,19 @@ const AdminVehiclesSection = () => {
                                         insuranceCompany: e.target.value,
                                     })
                                 }
+                            />
+                        </label>
+                        <label>
+                            Teléfono atención cliente
+                            <input
+                                value={form.customerServicePhone}
+                                onChange={(e) =>
+                                    setForm({
+                                        ...form,
+                                        customerServicePhone: e.target.value,
+                                    })
+                                }
+                                placeholder='Revisiones, aceite, asistencia...'
                             />
                         </label>
                         <label>
@@ -370,21 +452,16 @@ const AdminVehiclesSection = () => {
                         </label>
                     </div>
                     <div className='admin-vehicles-actions'>
-                        {editingId ? (
-                            <button
-                                type='button'
-                                onClick={() => {
-                                    setEditingId('');
-                                    setForm(emptyForm);
-                                }}
-                            >
-                                Cancelar
-                            </button>
-                        ) : null}
+                        <button type='button' onClick={closeVehicleForm}>
+                            Cancelar
+                        </button>
                         <button type='submit'>Guardar vehiculo</button>
                     </div>
                 </form>
+                </div>
+            ) : null}
 
+            <div className='admin-vehicles-layout admin-vehicles-layout--single'>
                 <form className='admin-vehicles-card' onSubmit={handleAssign}>
                     <h3>Asignar a servicio</h3>
                     <label>
@@ -484,6 +561,12 @@ const AdminVehiclesSection = () => {
                                         .map((service) => service.serviceName)
                                         .join(', ') || 'Sin asignar'}
                                 </small>
+                                {vehicle.customerServicePhone ? (
+                                    <small>
+                                        Atención cliente:{' '}
+                                        {vehicle.customerServicePhone}
+                                    </small>
+                                ) : null}
                             </div>
                             <div className='admin-vehicle-row-actions'>
                                 <button
@@ -522,6 +605,12 @@ const AdminVehiclesSection = () => {
                                     {formatDateTime(inspection.inspectionDate)} ·{' '}
                                     {inspection.odometerKm || '-'} km
                                 </small>
+                                <button
+                                    type='button'
+                                    onClick={() => openInspectionDetail(inspection)}
+                                >
+                                    Ver detalle
+                                </button>
                             </article>
                         ))}
                     </div>
@@ -546,6 +635,140 @@ const AdminVehiclesSection = () => {
                     </div>
                 </section>
             </div>
+
+            {inspectionDetail ? (
+                <div className='vehicle-admin-modal'>
+                    <button
+                        type='button'
+                        className='vehicle-admin-modal__backdrop'
+                        onClick={() => setInspectionDetail(null)}
+                        aria-label='Cerrar detalle de inspeccion'
+                    />
+                    <div className='vehicle-admin-modal__panel'>
+                        <header className='vehicle-admin-modal__header'>
+                            <div>
+                                <h3>Detalle de inspeccion</h3>
+                                <p>{formatDateTime(inspectionDetail.inspectionDate)}</p>
+                            </div>
+                            <button
+                                type='button'
+                                onClick={() => setInspectionDetail(null)}
+                            >
+                                Cerrar
+                            </button>
+                        </header>
+
+                        <div className='vehicle-admin-detail-grid'>
+                            <div>
+                                <span>Trabajador</span>
+                                <strong>{inspectionDetail.employeeName || '-'}</strong>
+                                <small>{inspectionDetail.employeeEmail || '-'}</small>
+                            </div>
+                            <div>
+                                <span>Vehiculo</span>
+                                <strong>
+                                    {inspectionDetail.vehicleName || '-'} ·{' '}
+                                    {inspectionDetail.plate || '-'}
+                                </strong>
+                                <small>
+                                    {[inspectionDetail.brand, inspectionDetail.model]
+                                        .filter(Boolean)
+                                        .join(' ') || '-'}
+                                </small>
+                            </div>
+                            <div>
+                                <span>Servicio</span>
+                                <strong>{inspectionDetail.serviceName || '-'}</strong>
+                                <small>{inspectionDetail.province || '-'}</small>
+                            </div>
+                            <div>
+                                <span>Kilometraje</span>
+                                <strong>{inspectionDetail.odometerKm || '-'} km</strong>
+                            </div>
+                            <div>
+                                <span>Combustible</span>
+                                <strong>{inspectionDetail.fuelLevel || '-'}</strong>
+                                <small>
+                                    {inspectionDetail.fuelLiters || 0} L ·{' '}
+                                    {inspectionDetail.fuelAmount || 0} €
+                                </small>
+                            </div>
+                            <div>
+                                <span>Limpieza</span>
+                                <strong>{inspectionDetail.cleanliness || '-'}</strong>
+                            </div>
+                        </div>
+
+                        <section className='vehicle-admin-detail-section'>
+                            <h4>Checklist</h4>
+                            <div className='vehicle-admin-checklist'>
+                                {Object.entries(checklistLabels).map(
+                                    ([key, label]) => (
+                                        <span
+                                            key={key}
+                                            className={
+                                                inspectionDetail.checklist?.[key]
+                                                    ? 'is-ok'
+                                                    : ''
+                                            }
+                                        >
+                                            {label}:{' '}
+                                            {inspectionDetail.checklist?.[key]
+                                                ? 'Si'
+                                                : 'No'}
+                                        </span>
+                                    )
+                                )}
+                            </div>
+                        </section>
+
+                        <section className='vehicle-admin-detail-section'>
+                            <h4>Observaciones / danos</h4>
+                            <p>{inspectionDetail.damageNotes || '-'}</p>
+                        </section>
+
+                        <section className='vehicle-admin-detail-section'>
+                            <h4>Fotos del vehiculo</h4>
+                            <div className='vehicle-admin-files'>
+                                {inspectionDetail.photoPaths?.length ? (
+                                    inspectionDetail.photoPaths.map((filePath) => (
+                                        <a
+                                            key={filePath}
+                                            href={uploadUrl(filePath)}
+                                            target='_blank'
+                                            rel='noreferrer'
+                                        >
+                                            Ver foto
+                                        </a>
+                                    ))
+                                ) : (
+                                    <span>Sin fotos</span>
+                                )}
+                            </div>
+                        </section>
+
+                        <section className='vehicle-admin-detail-section'>
+                            <h4>Tickets gasolina/diesel</h4>
+                            <div className='vehicle-admin-files'>
+                                {inspectionDetail.ticketPaths?.length ? (
+                                    inspectionDetail.ticketPaths.map((filePath) => (
+                                        <a
+                                            key={filePath}
+                                            href={uploadUrl(filePath)}
+                                            target='_blank'
+                                            rel='noreferrer'
+                                        >
+                                            Ver ticket
+                                        </a>
+                                    ))
+                                ) : (
+                                    <span>Sin tickets</span>
+                                )}
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            ) : null}
         </section>
     );
 };

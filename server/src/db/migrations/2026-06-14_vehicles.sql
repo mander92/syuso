@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS vehicles (
     model VARCHAR(80),
     vehicleYear SMALLINT UNSIGNED,
     vin VARCHAR(80),
+    customerServicePhone VARCHAR(40),
     insuranceCompany VARCHAR(120),
     insurancePolicy VARCHAR(120),
     insuranceExpiryDate DATE,
@@ -80,3 +81,20 @@ CREATE TABLE IF NOT EXISTS vehicleInspections (
     FOREIGN KEY (serviceId) REFERENCES services(id) ON DELETE CASCADE,
     FOREIGN KEY (employeeId) REFERENCES users(id) ON DELETE CASCADE
 );
+
+SET @has_vehicle_customer_service_phone = (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'vehicles'
+      AND COLUMN_NAME = 'customerServicePhone'
+);
+
+SET @sql = IF(
+    @has_vehicle_customer_service_phone = 0,
+    'ALTER TABLE vehicles ADD COLUMN customerServicePhone VARCHAR(40) NULL AFTER vin',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;

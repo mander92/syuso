@@ -754,6 +754,7 @@ const initDb = async () => {
             model VARCHAR(80),
             vehicleYear SMALLINT UNSIGNED,
             vin VARCHAR(80),
+            customerServicePhone VARCHAR(40),
             insuranceCompany VARCHAR(120),
             insurancePolicy VARCHAR(120),
             insuranceExpiryDate DATE,
