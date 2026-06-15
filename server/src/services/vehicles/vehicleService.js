@@ -45,7 +45,11 @@ const saveUploadedFiles = async (files, folder) => {
     return paths;
 };
 
-export const listVehiclesService = async ({ search = '', active = '' } = {}) => {
+export const listVehiclesService = async ({
+    search = '',
+    active = '',
+    serviceId = '',
+} = {}) => {
     const pool = await getPool();
     const filters = ['v.deletedAt IS NULL'];
     const values = [];
@@ -58,6 +62,19 @@ export const listVehiclesService = async ({ search = '', active = '' } = {}) => 
     if (active !== '') {
         filters.push('v.active = ?');
         values.push(active === '1' || active === 'true' ? 1 : 0);
+    }
+
+    if (serviceId) {
+        filters.push(`
+            EXISTS (
+                SELECT 1
+                FROM serviceVehicles svFilter
+                WHERE svFilter.vehicleId = v.id
+                  AND svFilter.serviceId = ?
+                  AND svFilter.deletedAt IS NULL
+            )
+        `);
+        values.push(serviceId);
     }
 
     const [rows] = await pool.query(

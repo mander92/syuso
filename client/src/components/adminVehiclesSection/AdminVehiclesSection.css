@@ -150,7 +150,7 @@
 
 .admin-vehicles-filters {
     display: grid;
-    grid-template-columns: minmax(180px, 1fr) 150px auto;
+    grid-template-columns: minmax(180px, 1fr) 150px minmax(220px, 1fr) auto;
     gap: 0.6rem;
 }
 
@@ -192,14 +192,60 @@
     margin-top: 0.2rem;
 }
 
+.admin-vehicle-service-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.45rem;
+}
+
+.admin-vehicle-service-tags span {
+    display: inline-flex;
+    width: fit-content;
+    margin-top: 0;
+    border-radius: 999px;
+    background: #e8eef6;
+    color: #0f172a;
+    padding: 0.25rem 0.55rem;
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
 .admin-vehicle-row-actions {
     display: flex;
     gap: 0.5rem;
     align-items: center;
 }
 
-.admin-vehicles-log-list article button {
+.admin-vehicles .admin-vehicle-log-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #f8fafc;
+    padding: 0.85rem;
+    text-align: left;
+}
+
+.admin-vehicles .admin-vehicle-log-card:hover {
+    border-color: #b9c7d9;
+    background: #f1f5f9;
+}
+
+.admin-vehicle-log-card > span {
+    min-width: 0;
+}
+
+.admin-vehicle-log-card__action {
     flex: 0 0 auto;
+    border-radius: 999px;
+    background: #e8eef6;
+    color: #0f172a;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.8rem;
 }
 
 .vehicle-admin-modal {

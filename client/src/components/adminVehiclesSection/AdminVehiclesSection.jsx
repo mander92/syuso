@@ -85,7 +85,11 @@ const AdminVehiclesSection = () => {
     const [services, setServices] = useState([]);
     const [form, setForm] = useState(emptyForm);
     const [editingId, setEditingId] = useState('');
-    const [filters, setFilters] = useState({ search: '', active: '1' });
+    const [filters, setFilters] = useState({
+        search: '',
+        active: '1',
+        serviceId: '',
+    });
     const [assignment, setAssignment] = useState({
         serviceId: '',
         vehicleIds: [],
@@ -536,6 +540,27 @@ const AdminVehiclesSection = () => {
                             <option value='0'>Inactivos</option>
                             <option value=''>Todos</option>
                         </select>
+                        <select
+                            value={filters.serviceId}
+                            onChange={(e) =>
+                                setFilters({
+                                    ...filters,
+                                    serviceId: e.target.value,
+                                })
+                            }
+                        >
+                            <option value=''>Todos los servicios</option>
+                            {services.map((service) => {
+                                const serviceId = service.serviceId || service.id;
+                                if (!serviceId) return null;
+                                return (
+                                    <option key={serviceId} value={serviceId}>
+                                        {service.name} -{' '}
+                                        {service.province || 'Sin delegacion'}
+                                    </option>
+                                );
+                            })}
+                        </select>
                         <button type='button' onClick={loadData}>
                             Filtrar
                         </button>
@@ -555,12 +580,20 @@ const AdminVehiclesSection = () => {
                                         .filter(Boolean)
                                         .join(' ')}
                                 </span>
-                                <small>
-                                    Servicios:{' '}
-                                    {(vehicle.services || [])
-                                        .map((service) => service.serviceName)
-                                        .join(', ') || 'Sin asignar'}
-                                </small>
+                                <div className='admin-vehicle-service-tags'>
+                                    {(vehicle.services || []).length ? (
+                                        vehicle.services.map((service) => (
+                                            <span key={service.serviceId}>
+                                                {service.serviceName}
+                                                {service.province
+                                                    ? ` - ${service.province}`
+                                                    : ''}
+                                            </span>
+                                        ))
+                                    ) : (
+                                        <span>Sin asignar</span>
+                                    )}
+                                </div>
                                 {vehicle.customerServicePhone ? (
                                     <small>
                                         Atención cliente:{' '}
@@ -593,7 +626,12 @@ const AdminVehiclesSection = () => {
                     <h3>Inspecciones</h3>
                     <div className='admin-vehicles-log-list'>
                         {inspections.map((inspection) => (
-                            <article key={inspection.id}>
+                            <button
+                                key={inspection.id}
+                                type='button'
+                                className='admin-vehicle-log-card'
+                                onClick={() => openInspectionDetail(inspection)}
+                            >
                                 <strong>
                                     {inspection.vehicleName} · {inspection.plate}
                                 </strong>
@@ -605,13 +643,10 @@ const AdminVehiclesSection = () => {
                                     {formatDateTime(inspection.inspectionDate)} ·{' '}
                                     {inspection.odometerKm || '-'} km
                                 </small>
-                                <button
-                                    type='button'
-                                    onClick={() => openInspectionDetail(inspection)}
-                                >
+                                <span className='admin-vehicle-log-card__action'>
                                     Ver detalle
-                                </button>
-                            </article>
+                                </span>
+                            </button>
                         ))}
                     </div>
                 </section>
