@@ -1,5 +1,8 @@
 import fs from 'fs/promises';
+import os from 'os';
 import path from 'path';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import { v4 as uuid } from 'uuid';
 import { PDFDocument } from 'pdf-lib';
 import { PDFParse } from 'pdf-parse';
@@ -7,6 +10,25 @@ import { PDFParse } from 'pdf-parse';
 import generateErrorUtil from './generateErrorUtil.js';
 
 const PAYROLL_ROOT = path.join(process.cwd(), 'private_uploads', 'payrolls');
+const execFileAsync = promisify(execFile);
+
+const hasReadablePayrollText = (text) => {
+    const words = String(text || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim()
+        .split(' ')
+        .filter(
+            (word) =>
+                word.length > 2 &&
+                !['page', 'pagina'].includes(word) &&
+                !/^\d+$/.test(word)
+        );
+
+    return words.length > 0;
+};
 
 const ensureDir = async (dir) => {
     await fs.mkdir(dir, { recursive: true });
@@ -30,7 +52,61 @@ export const getPayrollFilePath = (relativePath) => {
     return path.join(PAYROLL_ROOT, relativePath);
 };
 
-export const extractPayrollText = async (buffer) => {
+const runTesseract = async (imagePath, lang) => {
+    const { stdout } = await execFileAsync(
+        'tesseract',
+        [imagePath, 'stdout', '-l', lang, '--psm', '6'],
+        { maxBuffer: 20 * 1024 * 1024, timeout: 90000 }
+    );
+
+    return stdout || '';
+};
+
+const extractPayrollTextWithOcr = async (buffer) => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'syuso-payroll-ocr-'));
+    const pdfPath = path.join(tempDir, 'source.pdf');
+    const imagePrefix = path.join(tempDir, 'page');
+
+    try {
+        await fs.writeFile(pdfPath, buffer);
+        await execFileAsync('pdftoppm', ['-r', '220', '-png', pdfPath, imagePrefix], {
+            maxBuffer: 20 * 1024 * 1024,
+            timeout: 90000,
+        });
+
+        const files = (await fs.readdir(tempDir))
+            .filter((file) => /^page-\d+\.png$/i.test(file))
+            .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+        const preferredLang = process.env.PAYROLL_OCR_LANG || 'spa+eng';
+        const texts = [];
+
+        for (const file of files) {
+            const imagePath = path.join(tempDir, file);
+            try {
+                texts.push(await runTesseract(imagePath, preferredLang));
+            } catch {
+                if (preferredLang !== 'eng') {
+                    try {
+                        texts.push(await runTesseract(imagePath, 'eng'));
+                    } catch {
+                        texts.push('');
+                    }
+                } else {
+                    texts.push('');
+                }
+            }
+        }
+
+        return texts.join('\n');
+    } catch {
+        return '';
+    } finally {
+        await fs.rm(tempDir, { recursive: true, force: true });
+    }
+};
+
+const extractPayrollTextFromPdf = async (buffer) => {
     let parser;
     try {
         parser = new PDFParse({ data: buffer });
@@ -41,6 +117,14 @@ export const extractPayrollText = async (buffer) => {
     } finally {
         await parser?.destroy?.();
     }
+};
+
+export const extractPayrollText = async (buffer) => {
+    const text = await extractPayrollTextFromPdf(buffer);
+    if (hasReadablePayrollText(text)) return text;
+
+    const ocrText = await extractPayrollTextWithOcr(buffer);
+    return hasReadablePayrollText(ocrText) ? ocrText : text;
 };
 
 export const savePayrollBuffer = async ({
