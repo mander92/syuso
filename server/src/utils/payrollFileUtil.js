@@ -11,6 +11,17 @@ import generateErrorUtil from './generateErrorUtil.js';
 
 const PAYROLL_ROOT = path.join(process.cwd(), 'private_uploads', 'payrolls');
 const execFileAsync = promisify(execFile);
+const parsePositiveInt = (value, fallback) => {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const OCR_DPI = parsePositiveInt(process.env.PAYROLL_OCR_DPI, 150);
+const OCR_TIMEOUT_MS = parsePositiveInt(
+    process.env.PAYROLL_OCR_TIMEOUT_MS,
+    20000
+);
+const OCR_MAX_PAGES = parsePositiveInt(process.env.PAYROLL_OCR_MAX_PAGES, 1);
 
 const hasReadablePayrollText = (text) => {
     const words = String(text || '')
@@ -56,7 +67,7 @@ const runTesseract = async (imagePath, lang) => {
     const { stdout } = await execFileAsync(
         'tesseract',
         [imagePath, 'stdout', '-l', lang, '--psm', '6'],
-        { maxBuffer: 20 * 1024 * 1024, timeout: 90000 }
+        { maxBuffer: 20 * 1024 * 1024, timeout: OCR_TIMEOUT_MS }
     );
 
     return stdout || '';
@@ -69,10 +80,24 @@ const extractPayrollTextWithOcr = async (buffer) => {
 
     try {
         await fs.writeFile(pdfPath, buffer);
-        await execFileAsync('pdftoppm', ['-r', '220', '-png', pdfPath, imagePrefix], {
-            maxBuffer: 20 * 1024 * 1024,
-            timeout: 90000,
-        });
+        await execFileAsync(
+            'pdftoppm',
+            [
+                '-f',
+                '1',
+                '-l',
+                String(OCR_MAX_PAGES),
+                '-r',
+                String(OCR_DPI),
+                '-png',
+                pdfPath,
+                imagePrefix,
+            ],
+            {
+                maxBuffer: 20 * 1024 * 1024,
+                timeout: OCR_TIMEOUT_MS,
+            }
+        );
 
         const files = (await fs.readdir(tempDir))
             .filter((file) => /^page-\d+\.png$/i.test(file))
