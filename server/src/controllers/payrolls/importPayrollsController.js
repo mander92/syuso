@@ -31,6 +31,8 @@ const SYNC_OCR_MAX_FILES = parsePositiveInt(
     3
 );
 
+const countUploadedFiles = (files) => (Array.isArray(files) ? files.length : 1);
+
 const importPayrollsController = async (req, res, next) => {
     try {
         const { error, value } = schema.validate(req.body || {}, {
@@ -60,7 +62,11 @@ const importPayrollsController = async (req, res, next) => {
 
         const results = [];
         let matchedCount = 0;
-        const useOcr = preparedFiles.length <= SYNC_OCR_MAX_FILES;
+        const uploadedFileCount = countUploadedFiles(files);
+        const useOcr =
+            value.uploadMode === 'onePerPage'
+                ? uploadedFileCount <= SYNC_OCR_MAX_FILES
+                : preparedFiles.length <= SYNC_OCR_MAX_FILES;
 
         for (const file of preparedFiles) {
             const text = await extractPayrollText(file.buffer, { useOcr });

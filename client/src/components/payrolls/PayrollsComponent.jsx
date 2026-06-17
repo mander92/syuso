@@ -93,7 +93,7 @@ const PayrollsComponent = () => {
         status: '',
     });
     const [importForm, setImportForm] = useState({
-        uploadMode: 'multiple',
+        uploadMode: 'onePerPage',
         defaultMonth: getCurrentMonth(),
         publishMatched: false,
     });
@@ -512,11 +512,11 @@ const PayrollsComponent = () => {
                                         }))
                                     }
                                 >
-                                    <option value='multiple'>
-                                        Varios PDFs
-                                    </option>
                                     <option value='onePerPage'>
                                         PDF multipagina: una nomina por pagina
+                                    </option>
+                                    <option value='multiple'>
+                                        Varios PDFs sin separar paginas
                                     </option>
                                 </select>
                             </div>
@@ -559,9 +559,16 @@ const PayrollsComponent = () => {
                                     type='file'
                                     accept='application/pdf,.pdf'
                                     multiple
-                                    onChange={(event) =>
-                                        setFiles(event.target.files)
-                                    }
+                                    onChange={(event) => {
+                                        const selectedFiles = event.target.files;
+                                        setFiles(selectedFiles);
+                                        if (selectedFiles?.length === 1) {
+                                            setImportForm((prev) => ({
+                                                ...prev,
+                                                uploadMode: 'onePerPage',
+                                            }));
+                                        }
+                                    }}
                                 />
                             </div>
                         </div>
