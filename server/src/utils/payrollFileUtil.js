@@ -16,12 +16,13 @@ const parsePositiveInt = (value, fallback) => {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 };
 
-const OCR_DPI = parsePositiveInt(process.env.PAYROLL_OCR_DPI, 150);
+const OCR_DPI = parsePositiveInt(process.env.PAYROLL_OCR_DPI, 220);
 const OCR_TIMEOUT_MS = parsePositiveInt(
     process.env.PAYROLL_OCR_TIMEOUT_MS,
     20000
 );
 const OCR_MAX_PAGES = parsePositiveInt(process.env.PAYROLL_OCR_MAX_PAGES, 1);
+const OCR_PAGE_SEGMENTATION_MODES = ['6', '4', '11'];
 
 const hasReadablePayrollText = (text) => {
     const words = String(text || '')
@@ -63,10 +64,10 @@ export const getPayrollFilePath = (relativePath) => {
     return path.join(PAYROLL_ROOT, relativePath);
 };
 
-const runTesseract = async (imagePath, lang) => {
+const runTesseract = async (imagePath, lang, psm) => {
     const { stdout } = await execFileAsync(
         'tesseract',
-        [imagePath, 'stdout', '-l', lang, '--psm', '6'],
+        [imagePath, 'stdout', '-l', lang, '--psm', psm],
         { maxBuffer: 20 * 1024 * 1024, timeout: OCR_TIMEOUT_MS }
     );
 
@@ -108,23 +109,40 @@ const extractPayrollTextWithOcr = async (buffer) => {
 
         for (const file of files) {
             const imagePath = path.join(tempDir, file);
-            try {
-                texts.push(await runTesseract(imagePath, preferredLang));
-            } catch {
-                if (preferredLang !== 'eng') {
+            let pageText = '';
+
+            for (const psm of OCR_PAGE_SEGMENTATION_MODES) {
+                try {
+                    pageText = await runTesseract(imagePath, preferredLang, psm);
+                    if (hasReadablePayrollText(pageText)) break;
+                } catch (error) {
+                    console.warn(
+                        `[payroll-ocr] tesseract failed (${file}, lang=${preferredLang}, psm=${psm}): ${error.message}`
+                    );
+                }
+
+                if (!hasReadablePayrollText(pageText) && preferredLang !== 'eng') {
                     try {
-                        texts.push(await runTesseract(imagePath, 'eng'));
-                    } catch {
-                        texts.push('');
+                        pageText = await runTesseract(imagePath, 'eng', psm);
+                        if (hasReadablePayrollText(pageText)) break;
+                    } catch (error) {
+                        console.warn(
+                            `[payroll-ocr] tesseract failed (${file}, lang=eng, psm=${psm}): ${error.message}`
+                        );
                     }
-                } else {
-                    texts.push('');
                 }
             }
+
+            if (!hasReadablePayrollText(pageText)) {
+                console.warn(`[payroll-ocr] no readable text found in ${file}`);
+            }
+
+            texts.push(pageText);
         }
 
         return texts.join('\n');
-    } catch {
+    } catch (error) {
+        console.warn(`[payroll-ocr] conversion failed: ${error.message}`);
         return '';
     } finally {
         await fs.rm(tempDir, { recursive: true, force: true });
