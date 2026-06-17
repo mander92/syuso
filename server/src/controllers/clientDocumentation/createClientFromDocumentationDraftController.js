@@ -14,27 +14,24 @@ const createClientFromDocumentationDraftController = async (req, res, next) => {
             generateErrorUtil('Esta ficha ya esta vinculada a un cliente', 409);
         }
 
-        const required = ['displayName', 'email'];
-        const missing = required.filter((field) => !draft[field]);
-        if (missing.length) {
-            generateErrorUtil(
-                `Faltan datos para crear el cliente: ${missing.join(', ')}`,
-                400
-            );
-        }
+        const displayName =
+            draft.displayName ||
+            draft.contactPerson ||
+            draft.taxId ||
+            'Cliente interno';
 
         const clientId = await createInternalClientService({
-            displayName: draft.displayName,
+            displayName,
             taxId: draft.taxId,
             phone: draft.phone,
             email: draft.email,
         });
 
         await upsertClientDocumentationService(clientId, {
-            displayName: draft.displayName,
+            displayName,
             taxId: draft.taxId,
             phone: draft.phone,
-            email: draft.email,
+            email: draft.email || null,
             contactPerson: draft.contactPerson,
             acceptedBudgetPath: draft.acceptedBudgetPath,
             serviceContractPath: draft.serviceContractPath,
@@ -49,7 +46,7 @@ const createClientFromDocumentationDraftController = async (req, res, next) => {
             subjectId: draftId,
             subjectType: 'clientDraft',
             title: 'Alta de cliente convertida',
-            message: `${draft.displayName || draft.email || 'Cliente'}: ficha convertida en cliente interno`,
+            message: `${displayName}: ficha convertida en cliente interno`,
         });
 
         const pool = await getPool();

@@ -1773,10 +1773,6 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                                                 event.target.value
                                             )
                                         }
-                                        required={
-                                            field === 'displayName' ||
-                                            field === 'email'
-                                        }
                                     />
                                 </div>
                             ))}

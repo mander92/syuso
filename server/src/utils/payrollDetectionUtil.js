@@ -42,6 +42,19 @@ const levenshtein = (a, b) => {
     return matrix[b.length][a.length];
 };
 
+const hasReadablePayrollText = (text) => {
+    const words = normalizePayrollText(text)
+        .split(' ')
+        .filter(
+            (word) =>
+                word.length > 2 &&
+                !['page', 'pagina'].includes(word) &&
+                !/^\d+$/.test(word)
+        );
+
+    return words.length > 0;
+};
+
 export const detectPayrollDni = (text) => {
     const match = String(text || '').match(/\b\d{7,8}[A-Za-z]\b/);
     return match ? match[0].toUpperCase() : '';
@@ -93,6 +106,7 @@ export const detectPayrollMonth = (text, fallbackFileName = '') => {
 
 export const detectEmployeeMatch = ({ text, fileName, employees }) => {
     const detectedDni = detectPayrollDni(text);
+    const hasReadableText = hasReadablePayrollText(text);
     const normalizedText = normalizePayrollText(`${text} ${fileName}`);
 
     if (detectedDni) {
@@ -153,7 +167,7 @@ export const detectEmployeeMatch = ({ text, fileName, employees }) => {
     return {
         employee: null,
         detectedDni,
-        detectedName: '',
-        confidence: 'none',
+        detectedName: hasReadableText ? '' : 'PDF sin texto legible',
+        confidence: hasReadableText ? 'none' : 'no_text',
     };
 };

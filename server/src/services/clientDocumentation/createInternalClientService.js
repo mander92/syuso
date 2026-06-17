@@ -23,15 +23,14 @@ const createInternalClientService = async ({
 }) => {
     const pool = await getPool();
 
-    const normalizedEmail = String(email || '').trim().toLowerCase();
-    if (!normalizedEmail) {
-        generateErrorUtil('El email del cliente es obligatorio', 400);
-    }
+    const realEmail = String(email || '').trim().toLowerCase();
+    const normalizedEmail = realEmail || `client+${uuid()}@internal.local`;
 
-    const [existing] = await pool.query(
-        'SELECT id, deletedAt FROM users WHERE email = ?',
-        [normalizedEmail]
-    );
+    const [existing] = realEmail
+        ? await pool.query('SELECT id, deletedAt FROM users WHERE email = ?', [
+              realEmail,
+          ])
+        : [[]];
 
     if (existing.length && !existing[0].deletedAt) {
         generateErrorUtil('Ya existe un usuario con ese email', 409);

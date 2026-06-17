@@ -14,10 +14,12 @@ const upsertClientDocumentationService = async (clientId, data) => {
         const displayName = String(data.displayName || '').trim();
         const firstName = displayName.slice(0, 25) || 'Cliente';
         const lastName = displayName.slice(25, 75).trim();
+        const normalizedEmail = String(data.email || '').trim().toLowerCase();
+        const emailUpdate = normalizedEmail ? ', email = ?' : '';
         await pool.query(
             `
                 UPDATE users
-                SET firstName = ?, lastName = ?, dni = ?, phone = ?, email = ?
+                SET firstName = ?, lastName = ?, dni = ?, phone = ?${emailUpdate}
                 WHERE id = ? AND role = 'client'
             `,
             [
@@ -25,7 +27,7 @@ const upsertClientDocumentationService = async (clientId, data) => {
                 lastName,
                 data.taxId || null,
                 data.phone || null,
-                data.email,
+                ...(normalizedEmail ? [normalizedEmail] : []),
                 clientId,
             ]
         );

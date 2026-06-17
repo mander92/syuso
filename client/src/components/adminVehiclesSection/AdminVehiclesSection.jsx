@@ -42,6 +42,8 @@ const fuelLabels = {
     other: 'Otro',
 };
 
+const inactiveServiceStatuses = new Set(['completed', 'canceled', 'rejected']);
+
 const checklistLabels = {
     lights: 'Luces',
     tires: 'Neumaticos',
@@ -94,6 +96,7 @@ const AdminVehiclesSection = () => {
         serviceId: '',
         vehicleIds: [],
     });
+    const [assignmentServiceSearch, setAssignmentServiceSearch] = useState('');
     const [loading, setLoading] = useState(false);
     const [inspectionDetail, setInspectionDetail] = useState(null);
     const [vehicleFormOpen, setVehicleFormOpen] = useState(false);
@@ -137,6 +140,24 @@ const AdminVehiclesSection = () => {
             )
             .map((vehicle) => vehicle.id);
     }, [assignment.serviceId, vehicles]);
+
+    const assignableServices = useMemo(() => {
+        const search = assignmentServiceSearch.trim().toLowerCase();
+        return services.filter((service) => {
+            const serviceId = service.serviceId || service.id;
+            if (!serviceId) return false;
+            if (inactiveServiceStatuses.has(service.status)) return false;
+            if (!search) return true;
+            return [
+                service.name,
+                service.province,
+                service.type,
+                service.description,
+            ]
+                .filter(Boolean)
+                .some((value) => value.toLowerCase().includes(search));
+        });
+    }, [assignmentServiceSearch, services]);
 
     useEffect(() => {
         if (!assignment.serviceId) return;
@@ -469,6 +490,16 @@ const AdminVehiclesSection = () => {
                 <form className='admin-vehicles-card' onSubmit={handleAssign}>
                     <h3>Asignar a servicio</h3>
                     <label>
+                        Buscar servicio activo
+                        <input
+                            value={assignmentServiceSearch}
+                            onChange={(e) =>
+                                setAssignmentServiceSearch(e.target.value)
+                            }
+                            placeholder='Escribe nombre, delegacion o tipo...'
+                        />
+                    </label>
+                    <label>
                         Servicio
                         <select
                             value={assignment.serviceId}
@@ -480,17 +511,20 @@ const AdminVehiclesSection = () => {
                             }
                         >
                             <option value=''>Selecciona</option>
-                            {services.map((service) => {
+                            {assignableServices.map((service) => {
                                 const serviceId = service.serviceId || service.id;
-                                if (!serviceId) return null;
                                 return (
-                                <option key={serviceId} value={serviceId}>
-                                    {service.name} - {service.province}
-                                </option>
+                                    <option key={serviceId} value={serviceId}>
+                                        {service.name} -{' '}
+                                        {service.province || 'Sin delegacion'}
+                                    </option>
                                 );
                             })}
                         </select>
                     </label>
+                    <small className='admin-vehicles-help-text'>
+                        {assignableServices.length} servicios activos encontrados
+                    </small>
                     <div className='admin-vehicles-checklist'>
                         {activeVehicles.map((vehicle) => (
                             <label key={vehicle.id}>
