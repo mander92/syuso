@@ -21,6 +21,16 @@ const schema = Joi.object({
     publishMatched: Joi.boolean().truthy('true').falsy('false').default(false),
 });
 
+const parsePositiveInt = (value, fallback) => {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const SYNC_OCR_MAX_FILES = parsePositiveInt(
+    process.env.PAYROLL_SYNC_OCR_MAX_FILES,
+    3
+);
+
 const importPayrollsController = async (req, res, next) => {
     try {
         const { error, value } = schema.validate(req.body || {}, {
@@ -50,9 +60,10 @@ const importPayrollsController = async (req, res, next) => {
 
         const results = [];
         let matchedCount = 0;
+        const useOcr = preparedFiles.length <= SYNC_OCR_MAX_FILES;
 
         for (const file of preparedFiles) {
-            const text = await extractPayrollText(file.buffer);
+            const text = await extractPayrollText(file.buffer, { useOcr });
             const match = detectEmployeeMatch({
                 text,
                 fileName: file.originalFileName,

@@ -144,9 +144,9 @@ const extractPayrollTextFromPdf = async (buffer) => {
     }
 };
 
-export const extractPayrollText = async (buffer) => {
+export const extractPayrollText = async (buffer, { useOcr = true } = {}) => {
     const text = await extractPayrollTextFromPdf(buffer);
-    if (hasReadablePayrollText(text)) return text;
+    if (hasReadablePayrollText(text) || !useOcr) return text;
 
     const ocrText = await extractPayrollTextWithOcr(buffer);
     return hasReadablePayrollText(ocrText) ? ocrText : text;

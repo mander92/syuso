@@ -63,6 +63,52 @@ export const insertPayroll = async ({
     uploadedBy,
 }) => {
     const pool = await getPool();
+    const [existing] = await pool.query(
+        `
+            SELECT id
+            FROM payrolls
+            WHERE originalFileName = ?
+              AND payrollMonth <=> ?
+              AND deletedAt IS NULL
+            LIMIT 1
+        `,
+        [originalFileName || null, payrollMonth || null]
+    );
+
+    if (existing.length) {
+        const id = existing[0].id;
+        await pool.query(
+            `
+                UPDATE payrolls
+                SET importId = ?,
+                    employeeId = ?,
+                    filePath = ?,
+                    detectedName = ?,
+                    detectedDni = ?,
+                    status = ?,
+                    uploadedBy = ?,
+                    publishedAt = CASE
+                        WHEN ? = 'published' THEN COALESCE(publishedAt, CURRENT_TIMESTAMP)
+                        ELSE publishedAt
+                    END
+                WHERE id = ?
+            `,
+            [
+                importId,
+                employeeId || null,
+                filePath,
+                detectedName || null,
+                detectedDni || null,
+                status,
+                uploadedBy,
+                status,
+                id,
+            ]
+        );
+
+        return id;
+    }
+
     const id = uuid();
 
     await pool.query(
