@@ -91,9 +91,9 @@ const ClientDocumentationPublic = () => {
                 <div className='employee-documentation-grid'>
                     {[
                         ['displayName', 'Nombre y apellidos / razon social'],
-                        ['taxId', 'DNI/NIE/CIF'],
+                        ['taxId', 'DNI/NIE/CIF *'],
                         ['phone', 'Telefono de contacto'],
-                        ['email', 'Correo electronico'],
+                        ['email', 'Correo electronico (opcional)'],
                         ['contactPerson', 'Persona responsable/contacto'],
                         ['paymentMethod', 'Metodo de pago'],
                     ].map(([field, label]) => (
@@ -105,7 +105,7 @@ const ClientDocumentationPublic = () => {
                                 onChange={(event) =>
                                     handleChange(field, event.target.value)
                                 }
-                                required={field === 'displayName' || field === 'email'}
+                                required={field === 'displayName' || field === 'taxId'}
                             />
                         </div>
                     ))}

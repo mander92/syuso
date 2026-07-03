@@ -13,6 +13,9 @@ const createClientFromDocumentationDraftController = async (req, res, next) => {
         if (draft.linkedClientId) {
             generateErrorUtil('Esta ficha ya esta vinculada a un cliente', 409);
         }
+        if (!String(draft.taxId || '').trim()) {
+            generateErrorUtil('El CIF/DNI/NIE es obligatorio para crear el cliente', 400);
+        }
 
         const displayName =
             draft.displayName ||

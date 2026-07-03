@@ -36,6 +36,8 @@ const formatMonthLabel = (value) => {
     }).format(new Date(Number(year), Number(month) - 1, 1));
 };
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 const buildPayrollMonthRows = (items, sortByEmployee = false) => {
     const groups = new Map();
     items.forEach((payroll) => {
@@ -152,11 +154,22 @@ const PayrollsComponent = () => {
                 files,
                 ...importForm,
             });
+            setFiles(null);
+            await loadPayrolls();
+            if (data.processing) {
+                toast.success(
+                    `${data.totalFiles} paginas en proceso. Se iran mostrando conforme se lean.`
+                );
+                for (let attempts = 0; attempts < 20; attempts += 1) {
+                    await sleep(3000);
+                    await loadPayrolls();
+                }
+                return;
+            }
+
             toast.success(
                 `${data.totalFiles} nominas importadas: ${data.matchedCount} emparejadas`
             );
-            setFiles(null);
-            await loadPayrolls();
         } catch (error) {
             toast.error(error.message || 'No se pudieron importar las nominas');
         } finally {

@@ -23,6 +23,11 @@ const createInternalClientService = async ({
 }) => {
     const pool = await getPool();
 
+    const normalizedTaxId = String(taxId || '').trim().toUpperCase();
+    if (!normalizedTaxId) {
+        generateErrorUtil('El CIF/DNI/NIE es obligatorio para crear un cliente', 400);
+    }
+
     const realEmail = String(email || '').trim().toLowerCase();
     const normalizedEmail = realEmail || `client+${uuid()}@internal.local`;
 
@@ -34,6 +39,22 @@ const createInternalClientService = async ({
 
     if (existing.length && !existing[0].deletedAt) {
         generateErrorUtil('Ya existe un usuario con ese email', 409);
+    }
+
+    const [existingTaxId] = await pool.query(
+        `
+            SELECT id
+            FROM users
+            WHERE role = 'client'
+              AND UPPER(REPLACE(dni, ' ', '')) = ?
+              AND deletedAt IS NULL
+            LIMIT 1
+        `,
+        [normalizedTaxId.replace(/\s/g, '')]
+    );
+
+    if (existingTaxId.length && existingTaxId[0].id !== existing[0]?.id) {
+        generateErrorUtil('Ya existe un cliente con ese CIF/DNI/NIE', 409);
     }
 
     const { firstName, lastName } = splitDisplayName(displayName);
@@ -52,7 +73,7 @@ const createInternalClientService = async ({
             [
                 firstName,
                 lastName,
-                taxId || null,
+                normalizedTaxId,
                 phone || null,
                 normalizedEmail,
                 password,
@@ -72,7 +93,7 @@ const createInternalClientService = async ({
                 password,
                 firstName,
                 lastName,
-                taxId || null,
+                normalizedTaxId,
                 phone || null,
             ]
         );

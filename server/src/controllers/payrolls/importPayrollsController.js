@@ -33,6 +33,91 @@ const SYNC_OCR_MAX_FILES = parsePositiveInt(
 
 const countUploadedFiles = (files) => (Array.isArray(files) ? files.length : 1);
 
+const processPreparedPayrollFiles = async ({
+    preparedFiles,
+    employees,
+    importId,
+    defaultMonth,
+    publishMatched,
+    uploadedBy,
+    useOcr,
+}) => {
+    const results = [];
+    let matchedCount = 0;
+
+    for (const file of preparedFiles) {
+        let text = '';
+
+        try {
+            text = await extractPayrollText(file.buffer, { useOcr });
+        } catch (error) {
+            console.warn(
+                `[payroll-import] text extraction failed for ${file.originalFileName}: ${error.message}`
+            );
+        }
+
+        const match = detectEmployeeMatch({
+            text,
+            fileName: file.originalFileName,
+            employees,
+        });
+        const payrollMonth = defaultMonth;
+        const status = match.employee
+            ? publishMatched
+                ? payrollMonth
+                    ? 'published'
+                    : 'matched'
+                : 'matched'
+            : 'unmatched';
+
+        if (match.employee) matchedCount += 1;
+
+        const id = await insertPayroll({
+            importId,
+            employeeId: match.employee?.id || null,
+            filePath: file.filePath,
+            originalFileName: file.originalFileName,
+            detectedName: match.detectedName,
+            detectedDni: match.detectedDni,
+            payrollMonth,
+            status,
+            uploadedBy,
+        });
+
+        results.push({
+            id,
+            employeeId: match.employee?.id || null,
+            employeeName: match.employee
+                ? `${match.employee.firstName || ''} ${
+                      match.employee.lastName || ''
+                  }`.trim()
+                : '',
+            originalFileName: file.originalFileName,
+            detectedName: match.detectedName,
+            detectedDni: match.detectedDni,
+            payrollMonth,
+            status,
+            confidence: match.confidence,
+        });
+
+        await updatePayrollImportStats({
+            importId,
+            totalFiles: preparedFiles.length,
+            matchedCount,
+            unmatchedCount: results.length - matchedCount,
+        });
+    }
+
+    await updatePayrollImportStats({
+        importId,
+        totalFiles: preparedFiles.length,
+        matchedCount,
+        unmatchedCount: preparedFiles.length - matchedCount,
+    });
+
+    return { results, matchedCount };
+};
+
 const importPayrollsController = async (req, res, next) => {
     try {
         const { error, value } = schema.validate(req.body || {}, {
@@ -60,66 +145,59 @@ const importPayrollsController = async (req, res, next) => {
             uploadMode: value.uploadMode,
         });
 
-        const results = [];
-        let matchedCount = 0;
         const uploadedFileCount = countUploadedFiles(files);
         const useOcr =
             value.uploadMode === 'onePerPage'
                 ? uploadedFileCount <= SYNC_OCR_MAX_FILES
                 : preparedFiles.length <= SYNC_OCR_MAX_FILES;
-
-        for (const file of preparedFiles) {
-            const text = await extractPayrollText(file.buffer, { useOcr });
-            const match = detectEmployeeMatch({
-                text,
-                fileName: file.originalFileName,
-                employees,
-            });
-            const payrollMonth = value.defaultMonth;
-            const status = match.employee
-                ? value.publishMatched
-                    ? payrollMonth
-                        ? 'published'
-                        : 'matched'
-                    : 'matched'
-                : 'unmatched';
-
-            if (match.employee) matchedCount += 1;
-
-            const id = await insertPayroll({
-                importId,
-                employeeId: match.employee?.id || null,
-                filePath: file.filePath,
-                originalFileName: file.originalFileName,
-                detectedName: match.detectedName,
-                detectedDni: match.detectedDni,
-                payrollMonth,
-                status,
-                uploadedBy: req.userLogged.id,
-            });
-
-            results.push({
-                id,
-                employeeId: match.employee?.id || null,
-                employeeName: match.employee
-                    ? `${match.employee.firstName || ''} ${
-                          match.employee.lastName || ''
-                      }`.trim()
-                    : '',
-                originalFileName: file.originalFileName,
-                detectedName: match.detectedName,
-                detectedDni: match.detectedDni,
-                payrollMonth,
-                status,
-                confidence: match.confidence,
-            });
-        }
+        const shouldProcessInBackground =
+            value.uploadMode === 'onePerPage' && preparedFiles.length > 1;
 
         await updatePayrollImportStats({
             importId,
             totalFiles: preparedFiles.length,
-            matchedCount,
-            unmatchedCount: preparedFiles.length - matchedCount,
+            matchedCount: 0,
+            unmatchedCount: 0,
+        });
+
+        if (shouldProcessInBackground) {
+            processPreparedPayrollFiles({
+                preparedFiles,
+                employees,
+                importId,
+                defaultMonth: value.defaultMonth,
+                publishMatched: value.publishMatched,
+                uploadedBy: req.userLogged.id,
+                useOcr,
+            }).catch((error) => {
+                console.error(
+                    `[payroll-import] background import failed (${importId}):`,
+                    error
+                );
+            });
+
+            res.send({
+                status: 'ok',
+                data: {
+                    importId,
+                    totalFiles: preparedFiles.length,
+                    matchedCount: 0,
+                    unmatchedCount: 0,
+                    payrolls: [],
+                    processing: true,
+                },
+            });
+            return;
+        }
+
+        const { results, matchedCount } = await processPreparedPayrollFiles({
+            preparedFiles,
+            employees,
+            importId,
+            defaultMonth: value.defaultMonth,
+            publishMatched: value.publishMatched,
+            uploadedBy: req.userLogged.id,
+            useOcr,
         });
 
         res.send({

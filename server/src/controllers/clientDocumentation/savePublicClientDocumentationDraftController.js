@@ -12,7 +12,7 @@ import { emitDocumentationChanged } from '../../utils/documentationNotificationU
 
 const schema = Joi.object({
     displayName: Joi.string().max(150).allow('', null),
-    taxId: Joi.string().max(20).allow('', null),
+    taxId: Joi.string().trim().max(20).required(),
     phone: Joi.string().max(30).allow('', null),
     email: Joi.string().email().allow('', null),
     contactPerson: Joi.string().max(150).allow('', null),

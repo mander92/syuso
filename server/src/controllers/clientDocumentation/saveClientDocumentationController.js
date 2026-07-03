@@ -33,6 +33,10 @@ const saveClientDocumentationController = async (req, res, next) => {
 
         if (error) generateErrorUtil(error.message, 400);
 
+        if (!req.params.clientId && !String(value.taxId || '').trim()) {
+            generateErrorUtil('El CIF/DNI/NIE es obligatorio para crear el cliente', 400);
+        }
+
         const clientId =
             req.params.clientId ||
             (await createInternalClientService({

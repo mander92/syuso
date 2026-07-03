@@ -826,6 +826,10 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
 
     const handleCreateClientFromDraft = async () => {
         if (!selectedClientDraftId) return;
+        if (!String(clientDraftForm.taxId || '').trim()) {
+            alert('El CIF/DNI/NIE es obligatorio para crear el cliente.');
+            return;
+        }
         if (
             !window.confirm(
                 'Se creara un cliente interno con esta ficha. Continuar?'
@@ -1536,9 +1540,9 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                         <div className='employee-documentation-grid'>
                             {[
                                 ['displayName', 'Nombre y apellidos / razon social'],
-                                ['taxId', 'DNI/NIE/CIF'],
+                                ['taxId', 'DNI/NIE/CIF *'],
                                 ['phone', 'Telefono de contacto'],
-                                ['email', 'Correo electronico'],
+                                ['email', 'Correo electronico (opcional)'],
                                 ['contactPerson', 'Persona responsable/contacto'],
                                 ['paymentMethod', 'Metodo de pago'],
                             ].map(([field, label]) => (
@@ -1753,9 +1757,9 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                         <div className='employee-documentation-grid'>
                             {[
                                 ['displayName', 'Nombre y apellidos / razon social'],
-                                ['taxId', 'DNI/NIE/CIF'],
+                                ['taxId', 'DNI/NIE/CIF *'],
                                 ['phone', 'Telefono de contacto'],
-                                ['email', 'Correo electronico'],
+                                ['email', 'Correo electronico (opcional)'],
                                 ['contactPerson', 'Persona responsable/contacto'],
                                 ['paymentMethod', 'Metodo de pago'],
                             ].map(([field, label]) => (
