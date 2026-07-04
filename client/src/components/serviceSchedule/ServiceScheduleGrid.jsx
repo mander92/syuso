@@ -119,6 +119,7 @@ const ServiceScheduleGrid = ({
 }) => {
     const [draggedShiftId, setDraggedShiftId] = useState(null);
     const [collapsedRows, setCollapsedRows] = useState(() => new Set());
+    const [selectedCellKey, setSelectedCellKey] = useState('');
 
     const { days, year, monthIndex } = useMemo(() => {
         if (!month) {
@@ -407,7 +408,22 @@ const ServiceScheduleGrid = ({
                                         holidaysForDay.length
                                             ? 'service-schedule-grid-cell--holiday'
                                             : ''
+                                    } ${
+                                        selectedCellKey === bucketKey
+                                            ? 'service-schedule-grid-cell--selected'
+                                            : ''
                                     }`}
+                                    tabIndex={readOnly ? undefined : 0}
+                                    onClick={() => {
+                                        if (!readOnly) {
+                                            setSelectedCellKey(bucketKey);
+                                        }
+                                    }}
+                                    onFocus={() => {
+                                        if (!readOnly) {
+                                            setSelectedCellKey(bucketKey);
+                                        }
+                                    }}
                                     onDrop={(event) => handleDrop(event, row.id, day)}
                                     onDragOver={allowDrop}
                                     style={

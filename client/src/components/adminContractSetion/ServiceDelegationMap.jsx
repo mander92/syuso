@@ -7,6 +7,7 @@ import {
     TileLayer,
     useMap,
 } from 'react-leaflet';
+import { fetchGoogleMapsCoordinates } from '../../services/serviceService.js';
 import 'leaflet/dist/leaflet.css';
 
 const DEFAULT_CENTER = [37.3891, -5.9845];
@@ -119,7 +120,7 @@ const FitMapToMarkers = ({ markers }) => {
     return null;
 };
 
-const ServiceDelegationMap = ({ services, onOpenService }) => {
+const ServiceDelegationMap = ({ services, authToken, onOpenService }) => {
     const [coordinatesByService, setCoordinatesByService] = useState({});
     const [loading, setLoading] = useState(false);
 
@@ -130,6 +131,7 @@ const ServiceDelegationMap = ({ services, onOpenService }) => {
             const cache = readGeocodeCache();
             const nextCoordinates = {};
             const pendingByAddress = new Map();
+            const pendingGoogleLinks = [];
 
             services.forEach((service) => {
                 const serviceId = service.serviceId || service.id;
@@ -141,6 +143,22 @@ const ServiceDelegationMap = ({ services, onOpenService }) => {
                 if (linkedCoordinates) {
                     nextCoordinates[serviceId] = linkedCoordinates;
                     return;
+                }
+
+                if (service.locationLink) {
+                    const linkCacheKey = `google:${service.locationLink}`;
+                    if (Array.isArray(cache[linkCacheKey])) {
+                        nextCoordinates[serviceId] = cache[linkCacheKey];
+                        return;
+                    }
+                    if (!Object.prototype.hasOwnProperty.call(cache, linkCacheKey)) {
+                        pendingGoogleLinks.push({
+                            service,
+                            serviceId,
+                            cacheKey: linkCacheKey,
+                        });
+                        return;
+                    }
                 }
 
                 const address = buildAddress(service);
@@ -161,9 +179,64 @@ const ServiceDelegationMap = ({ services, onOpenService }) => {
             });
 
             if (!cancelled) setCoordinatesByService(nextCoordinates);
-            if (!pendingByAddress.size) return;
+            if (!pendingGoogleLinks.length && !pendingByAddress.size) return;
 
             setLoading(true);
+            for (const pending of pendingGoogleLinks) {
+                if (cancelled) return;
+                let coordinates = null;
+                try {
+                    const resolved = await fetchGoogleMapsCoordinates(
+                        authToken,
+                        pending.service.locationLink
+                    );
+                    const latitude = normalizeCoordinate(resolved?.latitude);
+                    const longitude = normalizeCoordinate(resolved?.longitude);
+                    coordinates =
+                        latitude !== null && longitude !== null
+                            ? [latitude, longitude]
+                            : null;
+                } catch {
+                    coordinates = null;
+                }
+
+                cache[pending.cacheKey] = coordinates || false;
+                if (coordinates) {
+                    nextCoordinates[pending.serviceId] = coordinates;
+                    if (!cancelled) {
+                        setCoordinatesByService({ ...nextCoordinates });
+                    }
+                } else {
+                    const address = buildAddress(pending.service);
+                    if (address) {
+                        const addressCacheKey = address.toLocaleLowerCase('es');
+                        if (Array.isArray(cache[addressCacheKey])) {
+                            nextCoordinates[pending.serviceId] =
+                                cache[addressCacheKey];
+                        } else if (
+                            !Object.prototype.hasOwnProperty.call(
+                                cache,
+                                addressCacheKey
+                            )
+                        ) {
+                            if (!pendingByAddress.has(addressCacheKey)) {
+                                pendingByAddress.set(addressCacheKey, {
+                                    address,
+                                    serviceIds: [],
+                                });
+                            }
+                            pendingByAddress
+                                .get(addressCacheKey)
+                                .serviceIds.push(pending.serviceId);
+                        }
+                    }
+                }
+                writeGeocodeCache(cache);
+            }
+            if (!cancelled) {
+                setCoordinatesByService({ ...nextCoordinates });
+            }
+
             let firstRequest = true;
             for (const [cacheKey, pending] of pendingByAddress.entries()) {
                 if (cancelled) return;
@@ -194,7 +267,7 @@ const ServiceDelegationMap = ({ services, onOpenService }) => {
         return () => {
             cancelled = true;
         };
-    }, [services]);
+    }, [authToken, services]);
 
     const markers = useMemo(
         () =>

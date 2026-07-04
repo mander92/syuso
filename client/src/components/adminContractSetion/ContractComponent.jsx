@@ -499,6 +499,7 @@ const ContractsComponent = () => {
                     </div>
                     <ServiceDelegationMap
                         services={visibleServices}
+                        authToken={authToken}
                         onOpenService={(serviceId) =>
                             navigate(`/services/${serviceId}`)
                         }

@@ -54,6 +54,7 @@ import deleteServiceShiftTypeController from '../controllers/schedules/deleteSer
 import simulateServiceScheduleController from '../controllers/schedules/simulateServiceScheduleController.js';
 import applyServiceScheduleSimulationController from '../controllers/schedules/applyServiceScheduleSimulationController.js';
 import importServiceScheduleExcelController from '../controllers/schedules/importServiceScheduleExcelController.js';
+import resolveGoogleMapsLocationController from '../controllers/services/resolveGoogleMapsLocationController.js';
 
 const router = express.Router();
 
@@ -100,6 +101,13 @@ router.get(
 );
 
 router.get('/services/in-progress', authUser, listInProgressServicesController);
+
+router.get(
+    '/services/map-location',
+    authUser,
+    isAdmin,
+    resolveGoogleMapsLocationController
+);
 
 router.get(
     '/services/:serviceId/active-shifts',

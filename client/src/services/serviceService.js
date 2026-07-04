@@ -128,6 +128,17 @@ export const fetchAllServicesServices = async (
     return body;
 };
 
+export const fetchGoogleMapsCoordinates = async (authToken, locationLink) => {
+    const params = new URLSearchParams({ locationLink });
+    const res = await fetch(
+        `${VITE_API_URL}/services/map-location?${params.toString()}`,
+        { headers: { Authorization: authToken } }
+    );
+    const body = await res.json();
+    if (body.status === 'error') throw new Error(body.message);
+    return body.data;
+};
+
 export const fetchConfirmServiceServices = async (validationCode) => {
     const res = await fetch(
         `${VITE_API_URL}/services/validate/${validationCode}`
