@@ -11,6 +11,7 @@ import {
 } from '../../services/serviceService.js';
 import { fetchDelegations } from '../../services/delegationService.js';
 import CalendarComponent from '../calendarComponent/CalendarComponent.jsx';
+import ServiceDelegationMap from './ServiceDelegationMap.jsx';
 import toast from 'react-hot-toast';
 import './ContractsComponent.css';
 
@@ -496,6 +497,12 @@ const ContractsComponent = () => {
                             </button>
                         </div>
                     </div>
+                    <ServiceDelegationMap
+                        services={visibleServices}
+                        onOpenService={(serviceId) =>
+                            navigate(`/services/${serviceId}`)
+                        }
+                    />
                     {servicesByDelegation.length ? (
                         <div className='contracts-delegation-list'>
                             {servicesByDelegation.map((group) => (

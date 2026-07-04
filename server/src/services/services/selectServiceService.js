@@ -13,6 +13,7 @@ const selectServiceService = async (
     SELECT s.id AS serviceId, s.name, s.status, s.type, s.province,
            s.autonomousCommunity, s.hourRuleType, s.startDateTime,
            s.endDateTime, s.hours, s.scheduleImage, s.scheduleView,
+           s.locationLink,
            a.city, a.address, a.postCode,
            (
                SELECT GROUP_CONCAT(pa.employeeId)
