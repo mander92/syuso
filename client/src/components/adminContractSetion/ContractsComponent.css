@@ -294,6 +294,9 @@
 }
 
 .contracts-map {
+    position: relative;
+    isolation: isolate;
+    z-index: 0;
     width: 100%;
     height: 420px;
     overflow: hidden;
@@ -303,6 +306,8 @@
 }
 
 .contracts-map-container {
+    position: relative;
+    z-index: 0;
     width: 100%;
     height: 100%;
 }
