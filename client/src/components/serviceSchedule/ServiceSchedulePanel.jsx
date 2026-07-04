@@ -23,7 +23,12 @@ import {
     createHoliday,
     deleteHoliday,
 } from '../../services/serviceService.js';
-import { fetchAllUsersServices, fetchEmployeeAbsences } from '../../services/userService.js';
+import {
+    createEmployeeAbsence,
+    deleteEmployeeAbsence,
+    fetchAllUsersServices,
+    fetchEmployeeAbsences,
+} from '../../services/userService.js';
 import ServiceScheduleGrid from './ServiceScheduleGrid.jsx';
 import './ServiceSchedulePanel.css';
 
@@ -180,6 +185,7 @@ const ServiceSchedulePanel = ({
     const [isSavingHoliday, setIsSavingHoliday] = useState(false);
     const [isHolidayToolsOpen, setIsHolidayToolsOpen] = useState(false);
     const [shiftOverlapModal, setShiftOverlapModal] = useState(null);
+    const [copiedGridEntry, setCopiedGridEntry] = useState(null);
     const [newShift, setNewShift] = useState({
         scheduleDate: toLocalDateInput(),
         startTime: '18:00',
@@ -461,7 +467,16 @@ const ServiceSchedulePanel = ({
                 const results = await Promise.all(
                     visibleEmployees.map(async (employee) => {
                         const data = await fetchEmployeeAbsences(authToken, employee.id);
-                        return [employee.id, Array.isArray(data) ? data : []];
+                        return [
+                            employee.id,
+                            Array.isArray(data)
+                                ? data.map((absence) => ({
+                                      ...absence,
+                                      employeeId:
+                                          absence.employeeId || employee.id,
+                                  }))
+                                : [],
+                        ];
                     })
                 );
                 setAbsencesByEmployee(Object.fromEntries(results));
@@ -646,6 +661,160 @@ const ServiceSchedulePanel = ({
         }
     };
 
+    const openGridShiftEditor = ({ employeeId, scheduleDate }) => {
+        const copiedShift =
+            copiedGridEntry?.kind === 'shift' ? copiedGridEntry : null;
+        const startTime = copiedShift?.startTime || '18:00';
+        const endTime = copiedShift?.endTime || '08:00';
+        setSelectedShift({
+            isNew: true,
+            scheduleDate,
+            startTime,
+            endTime,
+            hours:
+                copiedShift?.hours || calculateShiftHours(startTime, endTime),
+            employeeId: employeeId || '',
+            shiftTypeId: copiedShift?.shiftTypeId || '',
+        });
+    };
+
+    const handleCopyGridShift = (shift) => {
+        setCopiedGridEntry({
+            kind: 'shift',
+            startTime: shift.startTime,
+            endTime: shift.endTime,
+            hours: shift.hours,
+            shiftTypeId: shift.shiftTypeId || '',
+        });
+        toast.success('Turno copiado');
+    };
+
+    const handleCopyGridAbsence = (absence) => {
+        setCopiedGridEntry({
+            kind: 'absence',
+            type: absence.type || 'off',
+            notes: absence.notes || '',
+        });
+        toast.success('Ausencia copiada');
+    };
+
+    const handlePasteGridEntry = async (targetOrTargets) => {
+        if (!copiedGridEntry) return;
+        const targets = (Array.isArray(targetOrTargets)
+            ? targetOrTargets
+            : [targetOrTargets]
+        )
+            .filter(Boolean)
+            .filter((target) => target.scheduleDate);
+        if (!targets.length) return;
+
+        if (copiedGridEntry.kind === 'absence') {
+            const employeeTargets = targets.filter((target) => target.employeeId);
+            if (!employeeTargets.length) {
+                toast.error('Selecciona una celda de empleado para pegar.');
+                return;
+            }
+            try {
+                const created = await Promise.all(
+                    employeeTargets.map(async (target) => {
+                        const absence = await createEmployeeAbsence(
+                            authToken,
+                            target.employeeId,
+                            {
+                                startDate: target.scheduleDate,
+                                endDate: target.scheduleDate,
+                                type: copiedGridEntry.type || 'off',
+                                notes: copiedGridEntry.notes || '',
+                            }
+                        );
+                        return {
+                            ...absence,
+                            employeeId:
+                                absence?.employeeId || target.employeeId,
+                        };
+                    })
+                );
+                setAbsencesByEmployee((prev) => {
+                    const next = { ...prev };
+                    created.forEach((absence) => {
+                        if (!absence?.employeeId) return;
+                        next[absence.employeeId] = [
+                            absence,
+                            ...(next[absence.employeeId] || []),
+                        ];
+                    });
+                    return next;
+                });
+                toast.success(
+                    created.length === 1
+                        ? 'Ausencia pegada'
+                        : `${created.length} ausencias pegadas`
+                );
+            } catch (error) {
+                toast.error(error.message || 'No se pudo pegar la ausencia');
+            }
+            return;
+        }
+
+        const createTargets = (allowOverlap = false) =>
+            Promise.all(
+                targets.map((target) =>
+                    createServiceScheduleShift(authToken, serviceId, {
+                        scheduleDate: target.scheduleDate,
+                        startTime: copiedGridEntry.startTime,
+                        endTime: copiedGridEntry.endTime,
+                        hours:
+                            copiedGridEntry.hours ||
+                            calculateShiftHours(
+                                copiedGridEntry.startTime,
+                                copiedGridEntry.endTime
+                            ),
+                        employeeId: target.employeeId || null,
+                        shiftTypeId: copiedGridEntry.shiftTypeId || null,
+                        allowOverlap,
+                    })
+                )
+            );
+
+        try {
+            let created;
+            try {
+                created = await createTargets(false);
+            } catch (error) {
+                if (!(await requestShiftOverlapConfirmation(error))) throw error;
+                created = await createTargets(true);
+            }
+            setShifts((prev) => [...created, ...prev]);
+            toast.success(
+                created.length === 1
+                    ? 'Turno pegado'
+                    : `${created.length} turnos pegados`
+            );
+        } catch (error) {
+            toast.error(error.message || 'No se pudieron pegar los turnos');
+        }
+    };
+
+    const handleDeleteGridAbsence = async (absence) => {
+        if (!absence?.id || !absence?.employeeId) return;
+        try {
+            await deleteEmployeeAbsence(
+                authToken,
+                absence.employeeId,
+                absence.id
+            );
+            setAbsencesByEmployee((prev) => ({
+                ...prev,
+                [absence.employeeId]: (prev[absence.employeeId] || []).filter(
+                    (item) => item.id !== absence.id
+                ),
+            }));
+            toast.success('Ausencia eliminada');
+        } catch (error) {
+            toast.error(error.message || 'No se pudo eliminar la ausencia');
+        }
+    };
+
     const handleCreateShift = async (event) => {
         event.preventDefault();
         if (isSimulationActive) {
@@ -673,7 +842,52 @@ const ServiceSchedulePanel = ({
     };
 
     const handleSelectedShiftUpdate = async () => {
-        if (!selectedShift?.id) return;
+        if (!selectedShift) return;
+        if (selectedShift.isNew) {
+            if (isSimulationActive) {
+                toast.error('Desactiva la simulacion para crear turnos nuevos.');
+                return;
+            }
+            try {
+                setIsSavingShift(true);
+                const payload = {
+                    scheduleDate: selectedShift.scheduleDate,
+                    startTime: selectedShift.startTime,
+                    endTime: selectedShift.endTime,
+                    hours:
+                        selectedShift.hours ||
+                        calculateShiftHours(
+                            selectedShift.startTime,
+                            selectedShift.endTime
+                        ),
+                    employeeId: selectedShift.employeeId || null,
+                    shiftTypeId: selectedShift.shiftTypeId || null,
+                };
+                const createShift = (allowOverlap = false) =>
+                    createServiceScheduleShift(authToken, serviceId, {
+                        ...payload,
+                        allowOverlap,
+                    });
+                let data;
+                try {
+                    data = await createShift(false);
+                } catch (error) {
+                    if (!(await requestShiftOverlapConfirmation(error))) {
+                        throw error;
+                    }
+                    data = await createShift(true);
+                }
+                setShifts((prev) => [data, ...prev]);
+                setSelectedShift(null);
+                toast.success('Turno creado');
+            } catch (error) {
+                toast.error(error.message || 'No se pudo crear el turno');
+            } finally {
+                setIsSavingShift(false);
+            }
+            return;
+        }
+        if (!selectedShift.id) return;
         if (isSimulationActive) {
             setShifts((prev) =>
                 prev.map((shift) =>
@@ -1741,9 +1955,28 @@ const ServiceSchedulePanel = ({
                                 absencesByEmployee={absencesByEmployee}
                                 onShiftUpdate={handleShiftUpdate}
                                 onSelectShift={setSelectedShift}
+                                onCreateShift={openGridShiftEditor}
+                                onCopyShift={handleCopyGridShift}
+                                onPasteShift={handlePasteGridEntry}
+                                onDeleteShift={(shift) =>
+                                    handleShiftDelete(shift.id)
+                                }
+                                onCopyAbsence={handleCopyGridAbsence}
+                                onPasteAbsence={handlePasteGridEntry}
+                                onDeleteAbsence={handleDeleteGridAbsence}
                                 onHolidayDrop={handleHolidayDrop}
                                 onHolidayClick={handleHolidayClick}
                                 holidaysByDate={holidaysByDate}
+                                copiedShift={
+                                    copiedGridEntry?.kind === 'shift'
+                                        ? copiedGridEntry
+                                        : null
+                                }
+                                copiedAbsence={
+                                    copiedGridEntry?.kind === 'absence'
+                                        ? copiedGridEntry
+                                        : null
+                                }
                                 showUnassigned={shifts.some((shift) => !shift.employeeId)}
                                 showAgreementHours={
                                     serviceInfo?.hourRuleType === 'convenio'
@@ -1758,7 +1991,11 @@ const ServiceSchedulePanel = ({
                     <div className='service-schedule-modal'>
                         <div className='service-schedule-modal-header'>
                             <div>
-                                <h3>Editar turno</h3>
+                                <h3>
+                                    {selectedShift.isNew
+                                        ? 'Nuevo turno'
+                                        : 'Editar turno'}
+                                </h3>
                                 <p>
                                     {selectedShift.scheduleDate} ·{' '}
                                     {formatTime(selectedShift.startTime)} -{' '}
@@ -1882,13 +2119,15 @@ const ServiceSchedulePanel = ({
                             >
                                 {isSavingShift ? 'Guardando...' : 'Guardar'}
                             </button>
-                            <button
-                                type='button'
-                                className='service-schedule-btn service-schedule-btn--danger'
-                                onClick={handleSelectedShiftDelete}
-                            >
-                                Eliminar
-                            </button>
+                            {!selectedShift.isNew && (
+                                <button
+                                    type='button'
+                                    className='service-schedule-btn service-schedule-btn--danger'
+                                    onClick={handleSelectedShiftDelete}
+                                >
+                                    Eliminar
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
