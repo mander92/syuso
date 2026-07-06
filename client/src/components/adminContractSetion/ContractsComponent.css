@@ -323,6 +323,59 @@
     background: #dc2626;
 }
 
+.contracts-map-missing {
+    position: relative;
+}
+
+.contracts-map-missing summary {
+    cursor: pointer;
+    color: #b45309;
+    font-weight: 700;
+}
+
+.contracts-map-missing ul {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 6px);
+    right: 0;
+    width: min(360px, 80vw);
+    max-height: 260px;
+    overflow-y: auto;
+    margin: 0;
+    padding: 8px;
+    list-style: none;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
+}
+
+.contracts-map-missing li {
+    display: grid;
+    gap: 2px;
+    padding: 7px;
+}
+
+.contracts-map-missing li + li {
+    border-top: 1px solid #e2e8f0;
+}
+
+.contracts-map-missing button {
+    justify-self: start;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: #1d4ed8;
+    cursor: pointer;
+    font-weight: 700;
+    text-align: left;
+}
+
+.contracts-map-missing li small {
+    color: #64748b;
+    line-height: 1.35;
+}
+
 .contracts-map {
     position: relative;
     isolation: isolate;

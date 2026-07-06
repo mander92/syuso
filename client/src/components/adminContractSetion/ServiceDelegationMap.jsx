@@ -304,7 +304,14 @@ const ServiceDelegationMap = ({ services, authToken, onOpenService }) => {
         [coordinatesByService, services]
     );
 
-    const missingCount = services.length - markers.length;
+    const missingServices = useMemo(
+        () =>
+            services.filter((service) => {
+                const serviceId = service.serviceId || service.id;
+                return !coordinatesByService[serviceId];
+            }),
+        [coordinatesByService, services]
+    );
 
     return (
         <div className='contracts-map-block'>
@@ -322,8 +329,34 @@ const ServiceDelegationMap = ({ services, authToken, onOpenService }) => {
                     </small>
                 </span>
                 {loading ? <small>Localizando direcciones...</small> : null}
-                {!loading && missingCount > 0 ? (
-                    <small>{missingCount} sin ubicación reconocida</small>
+                {!loading && missingServices.length > 0 ? (
+                    <details className='contracts-map-missing'>
+                        <summary>
+                            {missingServices.length} sin ubicacion reconocida
+                        </summary>
+                        <ul>
+                            {missingServices.map((service) => {
+                                const serviceId = service.serviceId || service.id;
+                                const address = buildAddress(service);
+                                return (
+                                    <li key={serviceId}>
+                                        <button
+                                            type='button'
+                                            onClick={() => onOpenService(serviceId)}
+                                        >
+                                            {service.name ||
+                                                service.type ||
+                                                'Servicio sin nombre'}
+                                        </button>
+                                        <small>
+                                            {address ||
+                                                'Sin direccion ni enlace de Google Maps'}
+                                        </small>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </details>
                 ) : null}
             </div>
             <div className='contracts-map'>
