@@ -293,6 +293,36 @@
     font-size: inherit;
 }
 
+.contracts-map-summary .contracts-map-legend {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-weight: 400;
+}
+
+.contracts-map-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.contracts-map-legend-item::before {
+    content: '';
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #64748b;
+}
+
+.contracts-map-legend-item--active::before {
+    background: #16a34a;
+}
+
+.contracts-map-legend-item--missed::before {
+    background: #dc2626;
+}
+
 .contracts-map {
     position: relative;
     isolation: isolate;
@@ -324,7 +354,7 @@
     height: 24px;
     border: 3px solid #ffffff;
     border-radius: 50% 50% 50% 0;
-    background: #ea580c;
+    background: #64748b;
     box-shadow: 0 3px 8px rgba(15, 23, 42, 0.4);
     transform: rotate(-45deg);
 }
@@ -340,12 +370,16 @@
     background: #ffffff;
 }
 
-.contracts-map-pin--confirmed {
+.contracts-map-pin--active {
     background: #16a34a;
 }
 
-.contracts-map-pin--completed {
-    background: #166534;
+.contracts-map-pin--missed {
+    background: #dc2626;
+}
+
+.contracts-map-pin--inactive {
+    background: #64748b;
 }
 
 .contracts-map-popup {
@@ -361,6 +395,23 @@
 .contracts-map-popup span {
     color: #475569;
     font-size: 0.82rem;
+}
+
+.contracts-map-popup .contracts-map-popup-status {
+    border-left: 3px solid #94a3b8;
+    padding-left: 7px;
+    color: #334155;
+    font-weight: 600;
+}
+
+.contracts-map-popup .contracts-map-popup-status--active {
+    border-color: #16a34a;
+    color: #166534;
+}
+
+.contracts-map-popup .contracts-map-popup-status--missed {
+    border-color: #dc2626;
+    color: #991b1b;
 }
 
 .contracts-map-popup button {

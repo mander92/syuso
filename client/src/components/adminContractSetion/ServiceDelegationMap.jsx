@@ -90,6 +90,27 @@ const geocodeAddress = async (address) => {
         : null;
 };
 
+const parseNextShift = (value) => {
+    if (!value) return null;
+    if (typeof value === 'object') return value;
+    try {
+        return JSON.parse(value);
+    } catch {
+        return null;
+    }
+};
+
+const formatDate = (value) => {
+    const [year, month, day] = String(value || '').split('-');
+    return year && month && day ? `${day}/${month}/${year}` : value || '';
+};
+
+const getOperationalStatus = (service) => {
+    if (service.activeWorkerNames) return 'active';
+    if (service.missedShiftWorkerNames) return 'missed';
+    return 'inactive';
+};
+
 const createPinIcon = (status) =>
     L.divIcon({
         className: 'contracts-map-pin-wrapper',
@@ -289,6 +310,17 @@ const ServiceDelegationMap = ({ services, authToken, onOpenService }) => {
         <div className='contracts-map-block'>
             <div className='contracts-map-summary'>
                 <span>{markers.length} servicios ubicados</span>
+                <span className='contracts-map-legend'>
+                    <small className='contracts-map-legend-item contracts-map-legend-item--active'>
+                        Turno abierto
+                    </small>
+                    <small className='contracts-map-legend-item contracts-map-legend-item--missed'>
+                        Sin fichar
+                    </small>
+                    <small className='contracts-map-legend-item contracts-map-legend-item--inactive'>
+                        Sin turno abierto
+                    </small>
+                </span>
                 {loading ? <small>Localizando direcciones...</small> : null}
                 {!loading && missingCount > 0 ? (
                     <small>{missingCount} sin ubicación reconocida</small>
@@ -310,7 +342,7 @@ const ServiceDelegationMap = ({ services, authToken, onOpenService }) => {
                         <Marker
                             key={serviceId}
                             position={coordinates}
-                            icon={createPinIcon(service.status)}
+                            icon={createPinIcon(getOperationalStatus(service))}
                         >
                             <Popup>
                                 <div className='contracts-map-popup'>
@@ -318,6 +350,34 @@ const ServiceDelegationMap = ({ services, authToken, onOpenService }) => {
                                         {service.name || service.type || 'Servicio'}
                                     </strong>
                                     <span>{buildAddress(service)}</span>
+                                    {service.activeWorkerNames ? (
+                                        <span className='contracts-map-popup-status contracts-map-popup-status--active'>
+                                            Trabajando ahora:{' '}
+                                            {service.activeWorkerNames}
+                                        </span>
+                                    ) : service.missedShiftWorkerNames ? (
+                                        <span className='contracts-map-popup-status contracts-map-popup-status--missed'>
+                                            Turno sin fichar:{' '}
+                                            {service.missedShiftWorkerNames}
+                                        </span>
+                                    ) : (() => {
+                                        const nextShift = parseNextShift(
+                                            service.nextScheduledShift
+                                        );
+                                        return nextShift ? (
+                                            <span className='contracts-map-popup-status'>
+                                                Proximo turno:{' '}
+                                                {nextShift.employeeName} ·{' '}
+                                                {formatDate(nextShift.date)} ·{' '}
+                                                {nextShift.startTime}-
+                                                {nextShift.endTime}
+                                            </span>
+                                        ) : (
+                                            <span className='contracts-map-popup-status'>
+                                                Sin proximos turnos programados
+                                            </span>
+                                        );
+                                    })()}
                                     <button
                                         type='button'
                                         onClick={() => onOpenService(serviceId)}
