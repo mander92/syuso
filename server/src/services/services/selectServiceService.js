@@ -1,4 +1,5 @@
 import getPool from '../../db/getPool.js';
+import { getMadridDateTimeParts } from '../../utils/scheduleTimeUtil.js';
 
 const selectServiceService = async (
     status,
@@ -8,6 +9,8 @@ const selectServiceService = async (
     startDateTo
 ) => {
     const pool = await getPool();
+    const madridNow = getMadridDateTimeParts();
+    const currentMadridDateTime = `${madridNow.date} ${madridNow.time}`;
 
     let sqlQuery = `
     SELECT s.id AS serviceId, s.name, s.status, s.type, s.province,
@@ -45,8 +48,8 @@ const selectServiceService = async (
                  AND ss_missed.employeeId IS NOT NULL
                  AND ss_missed.status = 'scheduled'
                  AND ss_missed.deletedAt IS NULL
-                 AND NOW() >= TIMESTAMP(ss_missed.scheduleDate, ss_missed.startTime)
-                 AND NOW() < CASE
+                 AND ? >= TIMESTAMP(ss_missed.scheduleDate, ss_missed.startTime)
+                 AND ? < CASE
                      WHEN ss_missed.endTime <= ss_missed.startTime
                          THEN TIMESTAMP(
                              DATE_ADD(ss_missed.scheduleDate, INTERVAL 1 DAY),
@@ -93,7 +96,7 @@ const selectServiceService = async (
                WHERE ss_next.serviceId = s.id
                  AND ss_next.status = 'scheduled'
                  AND ss_next.deletedAt IS NULL
-                 AND TIMESTAMP(ss_next.scheduleDate, ss_next.startTime) > NOW()
+                 AND TIMESTAMP(ss_next.scheduleDate, ss_next.startTime) > ?
                ORDER BY ss_next.scheduleDate, ss_next.startTime
                LIMIT 1
            ) AS nextScheduledShift,
@@ -111,7 +114,11 @@ const selectServiceService = async (
     WHERE s.deletedAt IS NULL
     `;
 
-    let sqlValues = [];
+    let sqlValues = [
+        currentMadridDateTime,
+        currentMadridDateTime,
+        currentMadridDateTime,
+    ];
 
     if (status) {
         sqlQuery += ' AND status = ?';
