@@ -11,7 +11,7 @@ import { fetchGoogleMapsCoordinates } from '../../services/serviceService.js';
 import 'leaflet/dist/leaflet.css';
 
 const DEFAULT_CENTER = [37.3891, -5.9845];
-const GEOCODE_CACHE_KEY = 'syuso_service_geocoding_v1';
+const GEOCODE_CACHE_KEY = 'syuso_service_geocoding_v2';
 const GEOCODE_DELAY_MS = 1100;
 
 const delay = (milliseconds) =>
@@ -28,13 +28,16 @@ const coordinatesFromLocationLink = (locationLink) => {
         /@(-?\d{1,2}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)/,
         /[?&](?:q|query|ll)=(-?\d{1,2}(?:\.\d+)?),\s*(-?\d{1,3}(?:\.\d+)?)/,
         /\/(-?\d{1,2}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)(?:\?|$)/,
+        /!3d(-?\d{1,2}(?:\.\d+)?)!4d(-?\d{1,3}(?:\.\d+)?)/,
+        /!2d(-?\d{1,3}(?:\.\d+)?)!3d(-?\d{1,2}(?:\.\d+)?)/,
     ];
 
     for (const pattern of patterns) {
         const match = value.match(pattern);
         if (!match) continue;
-        const latitude = normalizeCoordinate(match[1]);
-        const longitude = normalizeCoordinate(match[2]);
+        const isLongitudeFirst = pattern.source.startsWith('!2d');
+        const latitude = normalizeCoordinate(match[isLongitudeFirst ? 2 : 1]);
+        const longitude = normalizeCoordinate(match[isLongitudeFirst ? 1 : 2]);
         if (latitude !== null && longitude !== null) {
             return [latitude, longitude];
         }

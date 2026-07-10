@@ -375,8 +375,10 @@ const ScheduleComponent = () => {
                                 scheduleMonth
                             );
 
-                            const filteredShifts = (shifts || []).filter(
-                                (shift) => {
+                            const serviceDelegation =
+                                service.province || service.city || '';
+                            const filteredShifts = (shifts || [])
+                                .filter((shift) => {
                                     if (
                                         scheduleEmployeeFilter &&
                                         shift.employeeId !==
@@ -406,8 +408,13 @@ const ScheduleComponent = () => {
                                         }
                                     }
                                     return true;
-                                }
-                            );
+                                })
+                                .map((shift) => ({
+                                    ...shift,
+                                    serviceDelegation,
+                                    serviceProvince: service.province || '',
+                                    serviceCity: service.city || '',
+                                }));
 
                             shiftMap[service.id] = filteredShifts;
 
@@ -1635,7 +1642,11 @@ const ScheduleComponent = () => {
                 id: employeeId,
                 firstName: firstShift.firstName || 'Empleado',
                 lastName: firstShift.lastName || 'inactivo',
-                delegations: 'Sin delegacion',
+                delegations:
+                    firstShift.serviceDelegation ||
+                    firstShift.serviceProvince ||
+                    firstShift.serviceCity ||
+                    'Sin delegacion',
                 inactiveFromShift: true,
             });
         });

@@ -32,13 +32,16 @@ const extractCoordinates = (value) => {
         /@(-?\d{1,2}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)/,
         /[?&](?:q|query|ll|center)=(-?\d{1,2}(?:\.\d+)?),\s*(-?\d{1,3}(?:\.\d+)?)/,
         /\[null,null,(-?\d{1,2}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)\]/,
+        /!3d(-?\d{1,2}(?:\.\d+)?)!4d(-?\d{1,3}(?:\.\d+)?)/,
+        /!2d(-?\d{1,3}(?:\.\d+)?)!3d(-?\d{1,2}(?:\.\d+)?)/,
     ];
 
     for (const pattern of patterns) {
         const match = source.match(pattern);
         if (!match) continue;
-        const latitude = Number.parseFloat(match[1]);
-        const longitude = Number.parseFloat(match[2]);
+        const isLongitudeFirst = pattern.source.startsWith('!2d');
+        const latitude = Number.parseFloat(match[isLongitudeFirst ? 2 : 1]);
+        const longitude = Number.parseFloat(match[isLongitudeFirst ? 1 : 2]);
         if (validCoordinates(latitude, longitude)) {
             return { latitude, longitude };
         }
