@@ -183,6 +183,7 @@ export const ChatNotificationsProvider = ({ children }) => {
             employeeRequests: 'Mi cuenta > Peticiones',
             chats: 'Mi cuenta > Chats',
             documentations: 'Mi cuenta > Documentacion',
+            vehicles: 'Mi cuenta > Vehiculos',
         };
         return labels[section] || 'Mi cuenta';
     };
@@ -751,11 +752,33 @@ export const ChatNotificationsProvider = ({ children }) => {
             });
         };
 
+        const handleVehicleInspectionCreated = (event) => {
+            if (!event?.notificationId) return;
+
+            addAlertNotification({
+                id: event.notificationId,
+                type: 'vehicleInspection',
+                section: 'vehicles',
+                title: event.title || 'Parte de vehiculo enviado',
+                message:
+                    event.message ||
+                    'Se ha enviado un parte de inspeccion de vehiculo.',
+                routeLabel:
+                    event.routeLabel || buildAlertRoute('vehicles'),
+                inspectionId: event.inspectionId || null,
+                serviceId: event.serviceId || null,
+            });
+            toast(event.message || 'Parte de vehiculo enviado', {
+                id: event.notificationId,
+            });
+        };
+
         socket.on('connect', handleConnect);
         socket.on('chat:message', handleMessage);
         socket.on('generalChat:message', handleGeneralMessage);
         socket.on('serviceSchedule:changed', handleServiceScheduleChanged);
         socket.on('documentation:changed', handleDocumentationChanged);
+        socket.on('vehicleInspection:created', handleVehicleInspectionCreated);
         socket.on('shiftSwap:created', handleShiftSwapEvent);
         socket.on('shiftSwap:confirmed', handleShiftSwapEvent);
         socket.on('shiftSwap:approved', handleShiftSwapEvent);
@@ -770,6 +793,10 @@ export const ChatNotificationsProvider = ({ children }) => {
             socket.off('generalChat:message', handleGeneralMessage);
             socket.off('serviceSchedule:changed', handleServiceScheduleChanged);
             socket.off('documentation:changed', handleDocumentationChanged);
+            socket.off(
+                'vehicleInspection:created',
+                handleVehicleInspectionCreated
+            );
             socket.off('shiftSwap:created', handleShiftSwapEvent);
             socket.off('shiftSwap:confirmed', handleShiftSwapEvent);
             socket.off('shiftSwap:approved', handleShiftSwapEvent);

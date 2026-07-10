@@ -5,6 +5,7 @@ import { v4 as uuid } from 'uuid';
 import getPool from '../../db/getPool.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import { UPLOADS_DIR } from '../../../env.js';
+import { getIO } from '../../sockets/io.js';
 import ensureServiceDelegationAccessService from '../delegations/ensureServiceDelegationAccessService.js';
 
 const ensureDir = async (dirPath) => {
@@ -43,6 +44,62 @@ const saveUploadedFiles = async (files, folder) => {
     }
 
     return paths;
+};
+
+const emitVehicleInspectionCreated = async (inspectionId) => {
+    const io = getIO();
+    if (!io || !inspectionId) return;
+
+    try {
+        const pool = await getPool();
+        const [rows] = await pool.query(
+            `
+            SELECT
+                vi.id,
+                vi.inspectionDate,
+                v.name AS vehicleName,
+                v.plate,
+                s.id AS serviceId,
+                s.name AS serviceName,
+                s.province,
+                CONCAT_WS(' ', u.firstName, u.lastName) AS employeeName
+            FROM vehicleInspections vi
+            INNER JOIN vehicles v ON v.id = vi.vehicleId
+            INNER JOIN services s ON s.id = vi.serviceId
+            INNER JOIN users u ON u.id = vi.employeeId
+            WHERE vi.id = ?
+            LIMIT 1
+            `,
+            [inspectionId]
+        );
+
+        const inspection = rows[0] || {};
+        const serviceName = inspection.serviceName || 'Servicio';
+        const vehicleName = [inspection.vehicleName, inspection.plate]
+            .filter(Boolean)
+            .join(' - ');
+        const employeeName =
+            inspection.employeeName?.trim() || 'Trabajador';
+
+        io.to('admins').emit('vehicleInspection:created', {
+            notificationId: `vehicle-inspection-${inspectionId}`,
+            inspectionId,
+            serviceId: inspection.serviceId || null,
+            serviceName,
+            vehicleName: vehicleName || 'Vehiculo',
+            employeeName,
+            province: inspection.province || '',
+            createdAt: new Date().toISOString(),
+            title: 'Parte de vehiculo enviado',
+            message: `${employeeName} ha enviado el parte de vehiculo de ${vehicleName || 'vehiculo'} en ${serviceName}.`,
+            routeLabel: 'Mi cuenta > Vehiculos > Inspecciones',
+        });
+    } catch (error) {
+        console.error('[vehicle-inspection-notification] emit failed', {
+            inspectionId,
+            message: error.message,
+        });
+    }
 };
 
 export const listVehiclesService = async ({
@@ -514,6 +571,8 @@ export const createVehicleInspectionService = async ({
             ticketFile: null,
         });
     }
+
+    await emitVehicleInspectionCreated(id);
 
     return { id };
 };
