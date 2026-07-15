@@ -45,6 +45,21 @@
     margin-top: 0.25rem;
 }
 
+.admin-vehicles-section-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+}
+
+.admin-vehicles-section-head span {
+    display: block;
+    margin-top: 0.2rem;
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
 .admin-vehicles-layout {
     display: grid;
     grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
@@ -255,6 +270,25 @@
     font-size: 0.8rem;
 }
 
+.admin-vehicles-pagination {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.85rem;
+}
+
+.admin-vehicles-pagination span {
+    color: #64748b;
+    font-size: 0.85rem;
+    font-weight: 800;
+}
+
+.admin-vehicles-pagination button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
 .vehicle-admin-modal {
     position: fixed;
     inset: 0;
@@ -378,6 +412,7 @@
     .admin-vehicles-layout,
     .admin-vehicles-filters,
     .admin-vehicles-list-head,
+    .admin-vehicles-section-head,
     .admin-vehicle-row,
     .admin-vehicles-header {
         grid-template-columns: 1fr;

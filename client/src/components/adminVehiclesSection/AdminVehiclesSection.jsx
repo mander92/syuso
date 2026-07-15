@@ -43,6 +43,7 @@ const fuelLabels = {
 };
 
 const inactiveServiceStatuses = new Set(['completed', 'canceled', 'rejected']);
+const INSPECTIONS_PER_PAGE = 10;
 
 const checklistLabels = {
     lights: 'Luces',
@@ -99,6 +100,7 @@ const AdminVehiclesSection = () => {
     const [assignmentServiceSearch, setAssignmentServiceSearch] = useState('');
     const [loading, setLoading] = useState(false);
     const [inspectionDetail, setInspectionDetail] = useState(null);
+    const [inspectionPage, setInspectionPage] = useState(1);
     const [vehicleFormOpen, setVehicleFormOpen] = useState(false);
 
     const loadData = async () => {
@@ -141,6 +143,18 @@ const AdminVehiclesSection = () => {
             .map((vehicle) => vehicle.id);
     }, [assignment.serviceId, vehicles]);
 
+    const inspectionPageCount = Math.max(
+        1,
+        Math.ceil(inspections.length / INSPECTIONS_PER_PAGE)
+    );
+    const paginatedInspections = useMemo(() => {
+        const startIndex = (inspectionPage - 1) * INSPECTIONS_PER_PAGE;
+        return inspections.slice(
+            startIndex,
+            startIndex + INSPECTIONS_PER_PAGE
+        );
+    }, [inspectionPage, inspections]);
+
     const assignableServices = useMemo(() => {
         const search = assignmentServiceSearch.trim().toLowerCase();
         return services.filter((service) => {
@@ -166,6 +180,12 @@ const AdminVehiclesSection = () => {
             vehicleIds: selectedServiceVehicles,
         }));
     }, [assignment.serviceId, selectedServiceVehicles]);
+
+    useEffect(() => {
+        setInspectionPage((currentPage) =>
+            Math.min(currentPage, inspectionPageCount)
+        );
+    }, [inspectionPageCount]);
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -657,9 +677,17 @@ const AdminVehiclesSection = () => {
 
             <div className='admin-vehicles-layout'>
                 <section className='admin-vehicles-card'>
-                    <h3>Inspecciones</h3>
+                    <div className='admin-vehicles-section-head'>
+                        <div>
+                            <h3>Inspecciones</h3>
+                            <span>
+                                {inspections.length} registros · pagina{' '}
+                                {inspectionPage} de {inspectionPageCount}
+                            </span>
+                        </div>
+                    </div>
                     <div className='admin-vehicles-log-list'>
-                        {inspections.map((inspection) => (
+                        {paginatedInspections.map((inspection) => (
                             <button
                                 key={inspection.id}
                                 type='button'
@@ -683,6 +711,38 @@ const AdminVehiclesSection = () => {
                             </button>
                         ))}
                     </div>
+                    {inspections.length > INSPECTIONS_PER_PAGE ? (
+                        <div className='admin-vehicles-pagination'>
+                            <button
+                                type='button'
+                                onClick={() =>
+                                    setInspectionPage((page) =>
+                                        Math.max(1, page - 1)
+                                    )
+                                }
+                                disabled={inspectionPage <= 1}
+                            >
+                                Anterior
+                            </button>
+                            <span>
+                                {inspectionPage} / {inspectionPageCount}
+                            </span>
+                            <button
+                                type='button'
+                                onClick={() =>
+                                    setInspectionPage((page) =>
+                                        Math.min(
+                                            inspectionPageCount,
+                                            page + 1
+                                        )
+                                    )
+                                }
+                                disabled={inspectionPage >= inspectionPageCount}
+                            >
+                                Siguiente
+                            </button>
+                        </div>
+                    ) : null}
                 </section>
                 <section className='admin-vehicles-card'>
                     <h3>Combustible</h3>

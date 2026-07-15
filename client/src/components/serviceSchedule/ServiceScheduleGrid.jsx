@@ -159,24 +159,40 @@ const ServiceScheduleGrid = ({
     const rows = useMemo(() => {
         const employeesWithShifts = new Set();
         let hasUnassignedShifts = false;
+        const employeeRowsById = new Map();
 
+        (employees || []).forEach((employee) => {
+            if (!employee?.id) return;
+            employeeRowsById.set(employee.id, {
+                id: employee.id,
+                label: `${employee.firstName || ''} ${
+                    employee.lastName || ''
+                }`.trim(),
+            });
+        });
         (shifts || []).forEach((shift) => {
             if (shift?.employeeId) {
                 employeesWithShifts.add(shift.employeeId);
+                if (!employeeRowsById.has(shift.employeeId)) {
+                    employeeRowsById.set(shift.employeeId, {
+                        id: shift.employeeId,
+                        label:
+                            `${shift.firstName || ''} ${
+                                shift.lastName || ''
+                            }`.trim() ||
+                            shift.employeeName ||
+                            'Empleado inactivo',
+                    });
+                }
             } else {
                 hasUnassignedShifts = true;
             }
         });
 
-        const base = employees
-            .filter(
-                (employee) =>
-                    showAllEmployees || employeesWithShifts.has(employee.id)
-            )
-            .map((employee) => ({
-                id: employee.id,
-                label: `${employee.firstName || ''} ${employee.lastName || ''}`.trim(),
-            }));
+        const base = [...employeeRowsById.values()].filter(
+            (employee) =>
+                showAllEmployees || employeesWithShifts.has(employee.id)
+        );
 
         return showUnassigned && hasUnassignedShifts
             ? [{ id: null, label: 'Sin asignar' }, ...base]
