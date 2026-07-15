@@ -1,14 +1,18 @@
 import getPool from '../../db/getPool.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
+import {
+    monthFromDate,
+    saveServiceScheduleSnapshot,
+} from './serviceScheduleSnapshotService.js';
 
 const deleteServiceScheduleShiftService = async (shiftId) => {
     const pool = await getPool();
 
     const [rows] = await pool.query(
         `
-        SELECT id, deletedAt
-        FROM serviceScheduleShifts
-        WHERE id = ?
+            SELECT id, serviceId, scheduleDate, deletedAt
+            FROM serviceScheduleShifts
+            WHERE id = ?
         `,
         [shiftId]
     );
@@ -28,6 +32,12 @@ const deleteServiceScheduleShiftService = async (shiftId) => {
         WHERE id = ?
         `,
         [shiftId]
+    );
+
+    await saveServiceScheduleSnapshot(
+        pool,
+        rows[0].serviceId,
+        monthFromDate(rows[0].scheduleDate)
     );
 
     return true;

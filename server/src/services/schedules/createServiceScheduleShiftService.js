@@ -2,6 +2,10 @@ import getPool from '../../db/getPool.js';
 import { v4 as uuid } from 'uuid';
 import { calculateShiftHourBreakdown } from './calculateShiftHourBreakdownsService.js';
 import validateEmployeeShiftOverlapsService from './validateEmployeeShiftOverlapsService.js';
+import {
+    monthFromDate,
+    saveServiceScheduleSnapshot,
+} from './serviceScheduleSnapshotService.js';
 
 const createServiceScheduleShiftService = async (
     serviceId,
@@ -66,6 +70,13 @@ const createServiceScheduleShiftService = async (
             breakdown.regularHours,
             createdBy,
         ]
+    );
+
+    await saveServiceScheduleSnapshot(
+        pool,
+        serviceId,
+        monthFromDate(scheduleDate),
+        createdBy
     );
 
     return {

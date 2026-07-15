@@ -1,48 +1,20 @@
 import getPool from '../../db/getPool.js';
+import {
+    listActiveScheduleRows,
+    listDeletedScheduleRows,
+    listScheduleSnapshotRows,
+} from './serviceScheduleSnapshotService.js';
 
 const listServiceScheduleShiftsService = async (serviceId, month) => {
     const pool = await getPool();
 
-    const params = [serviceId];
-    let monthFilter = '';
+    const rows = await listActiveScheduleRows(pool, serviceId, month);
+    if (rows.length || !month) return rows;
 
-    if (month) {
-        monthFilter = 'AND DATE_FORMAT(scheduleDate, "%Y-%m") = ?';
-        params.push(month);
-    }
+    const snapshotRows = await listScheduleSnapshotRows(pool, serviceId, month);
+    if (snapshotRows.length) return snapshotRows;
 
-    const [rows] = await pool.query(
-        `
-        SELECT
-            ss.id,
-            ss.serviceId,
-            ss.employeeId,
-            ss.shiftTypeId,
-            ss.scheduleDate,
-            ss.startTime,
-            ss.endTime,
-            ss.hours,
-            ss.realHours,
-            ss.nightHours,
-            ss.holidayHours,
-            ss.regularHours,
-            ss.status,
-            u.firstName,
-            u.lastName,
-            st.name AS shiftTypeName,
-            st.color AS shiftTypeColor
-        FROM serviceScheduleShifts ss
-        LEFT JOIN users u ON u.id = ss.employeeId
-        LEFT JOIN serviceShiftTypes st ON st.id = ss.shiftTypeId
-        WHERE ss.serviceId = ?
-          AND ss.deletedAt IS NULL
-          ${monthFilter}
-        ORDER BY ss.scheduleDate DESC, ss.startTime DESC
-        `,
-        params
-    );
-
-    return rows;
+    return listDeletedScheduleRows(pool, serviceId, month);
 };
 
 export default listServiceScheduleShiftsService;

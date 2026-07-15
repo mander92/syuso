@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid';
 import { calculateShiftHours } from '../../utils/scheduleTimeUtil.js';
 import { calculateShiftHourBreakdowns } from './calculateShiftHourBreakdownsService.js';
 import validateEmployeeShiftOverlapsService from './validateEmployeeShiftOverlapsService.js';
+import { saveServiceScheduleSnapshot } from './serviceScheduleSnapshotService.js';
 
 const normalizeShift = (shift) => ({
     id: shift.id,
@@ -142,6 +143,8 @@ const applyServiceScheduleSimulationService = async (
             [insertValues]
         );
     }
+
+    await saveServiceScheduleSnapshot(pool, serviceId, month);
 
     return { applied: toUpdate.length, created: toInsert.length };
 };

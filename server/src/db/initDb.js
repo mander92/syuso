@@ -19,7 +19,7 @@ const initDb = async () => {
 
         await pool.query(
             `
-            DROP TABLE IF EXISTS vehicleInspections, vehicleFuelLogs, serviceVehicles, vehicles, serviceNfcTagLogs, workReportIncidentPhotos, workReportPhotos, workReportIncidents, workReportDrafts, workReports, warehouseMovements, payrolls, payrollImports, employeeRequests, shiftSwapRequests, generalChatMessages, generalChatReads, generalChatMembers, generalChats, serviceChatMessages, serviceChatReads, serviceScheduleShifts, serviceScheduleTemplates, serviceShiftTypes, holidays, employeeAbsences, employeeRules, personsAssigned, serviceNfcTags, shiftRecords, adminDelegations, delegations, services, clientDocumentationDraftTokens, clientDocumentationDrafts, clientDocumentations, employeeDocumentationDraftTokens, employeeDocumentationDrafts, employeeSignatureDocuments, employeeDocumentations, typeOfServices, users, addresses, consulting_requests, job_applications
+            DROP TABLE IF EXISTS vehicleInspections, vehicleFuelLogs, serviceVehicles, vehicles, serviceNfcTagLogs, workReportIncidentPhotos, workReportPhotos, workReportIncidents, workReportDrafts, workReports, warehouseMovements, payrolls, payrollImports, employeeRequests, shiftSwapRequests, generalChatMessages, generalChatReads, generalChatMembers, generalChats, serviceChatMessages, serviceChatReads, serviceScheduleSnapshots, serviceScheduleShifts, serviceScheduleTemplates, serviceShiftTypes, holidays, employeeAbsences, employeeRules, personsAssigned, serviceNfcTags, shiftRecords, adminDelegations, delegations, services, clientDocumentationDraftTokens, clientDocumentationDrafts, clientDocumentations, employeeDocumentationDraftTokens, employeeDocumentationDrafts, employeeSignatureDocuments, employeeDocumentations, typeOfServices, users, addresses, consulting_requests, job_applications
             `
         );
 
@@ -255,6 +255,30 @@ const initDb = async () => {
         );
 
         console.log('serviceScheduleShifts creada');
+
+        await pool.query(
+            `
+            CREATE TABLE IF NOT EXISTS serviceScheduleSnapshots (
+                id CHAR(36) PRIMARY KEY NOT NULL,
+                serviceId CHAR(36) NOT NULL,
+                month CHAR(7) NOT NULL,
+                serviceName VARCHAR(255),
+                serviceType VARCHAR(255),
+                delegation VARCHAR(100),
+                shiftCount INT UNSIGNED NOT NULL DEFAULT 0,
+                totalHours DECIMAL(10,2) NOT NULL DEFAULT 0,
+                payload JSON NOT NULL,
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                modifiedAt TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                deletedAt TIMESTAMP,
+                UNIQUE KEY uniq_service_schedule_snapshot (serviceId, month),
+                INDEX idx_service_schedule_snapshot_month (month),
+                FOREIGN KEY (serviceId) REFERENCES services(id) ON DELETE CASCADE
+            )
+            `
+        );
+
+        console.log('serviceScheduleSnapshots creada');
 
         await pool.query(
             `

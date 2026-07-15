@@ -2,6 +2,10 @@ import getPool from '../../db/getPool.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import { calculateShiftHourBreakdown } from './calculateShiftHourBreakdownsService.js';
 import validateEmployeeShiftOverlapsService from './validateEmployeeShiftOverlapsService.js';
+import {
+    monthFromDate,
+    saveServiceScheduleSnapshot,
+} from './serviceScheduleSnapshotService.js';
 
 const updateServiceScheduleShiftService = async (
     shiftId,
@@ -89,6 +93,13 @@ const updateServiceScheduleShiftService = async (
             shiftId,
         ]
     );
+
+    const previousMonth = monthFromDate(current.scheduleDate);
+    const nextMonth = monthFromDate(resolvedScheduleDate);
+    await saveServiceScheduleSnapshot(pool, current.serviceId, previousMonth);
+    if (nextMonth !== previousMonth) {
+        await saveServiceScheduleSnapshot(pool, current.serviceId, nextMonth);
+    }
 
     return {
         id: shiftId,

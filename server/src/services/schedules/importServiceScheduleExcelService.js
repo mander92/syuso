@@ -6,6 +6,7 @@ import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import { calculateShiftHours } from '../../utils/scheduleTimeUtil.js';
 import { calculateShiftHourBreakdowns } from './calculateShiftHourBreakdownsService.js';
 import validateEmployeeShiftOverlapsService from './validateEmployeeShiftOverlapsService.js';
+import { saveServiceScheduleSnapshot } from './serviceScheduleSnapshotService.js';
 
 const DAY_START_COL = 5;
 const DAY_END_COL = 35;
@@ -530,6 +531,8 @@ const importServiceScheduleExcelService = async ({
     } finally {
         conn.release();
     }
+
+    await saveServiceScheduleSnapshot(pool, serviceId, month, createdBy);
 
     return {
         ...preview,

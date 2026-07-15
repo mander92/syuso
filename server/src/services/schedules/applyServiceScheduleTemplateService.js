@@ -2,6 +2,7 @@ import getPool from '../../db/getPool.js';
 import { v4 as uuid } from 'uuid';
 import { calculateShiftHours } from '../../utils/scheduleTimeUtil.js';
 import { calculateShiftHourBreakdowns } from './calculateShiftHourBreakdownsService.js';
+import { saveServiceScheduleSnapshot } from './serviceScheduleSnapshotService.js';
 
 const buildDateString = (date) => {
     const year = date.getUTCFullYear();
@@ -58,7 +59,8 @@ const applyServiceScheduleTemplateService = async (
 
     await pool.query(
         `
-        DELETE FROM serviceScheduleShifts
+        UPDATE serviceScheduleShifts
+        SET deletedAt = CURRENT_TIMESTAMP
         WHERE serviceId = ?
           AND deletedAt IS NULL
           AND status = 'scheduled'
@@ -114,7 +116,10 @@ const applyServiceScheduleTemplateService = async (
         });
     }
 
-    if (!shiftsToCreate.length) return [];
+    if (!shiftsToCreate.length) {
+        await saveServiceScheduleSnapshot(pool, serviceId, month, createdBy);
+        return [];
+    }
 
     const breakdowns = await calculateShiftHourBreakdowns(
         pool,
@@ -153,6 +158,8 @@ const applyServiceScheduleTemplateService = async (
         `,
         [values]
     );
+
+    await saveServiceScheduleSnapshot(pool, serviceId, month, createdBy);
 
     return values.map(
         ([
