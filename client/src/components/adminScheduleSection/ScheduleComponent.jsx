@@ -233,7 +233,6 @@ const ScheduleComponent = () => {
             try {
                 const params = new URLSearchParams({
                     role: 'employee',
-                    active: '1',
                 });
 
                 const data = await fetchAllUsersServices(
