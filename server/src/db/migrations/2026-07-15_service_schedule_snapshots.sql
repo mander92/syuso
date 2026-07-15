@@ -43,7 +43,7 @@ FROM (
         DATE_FORMAT(ss.scheduleDate, '%Y-%m') AS month,
         s.name AS serviceName,
         s.type AS serviceType,
-        COALESCE(s.province, s.city, '') AS delegation,
+        COALESCE(s.province, a.city, '') AS delegation,
         COUNT(*) AS shiftCount,
         COALESCE(SUM(ss.hours), 0) AS totalHours,
         JSON_OBJECT(
@@ -53,7 +53,7 @@ FROM (
                 'name', s.name,
                 'type', s.type,
                 'province', s.province,
-                'city', s.city,
+                'city', a.city,
                 'address', a.address
             ),
             'shifts',

@@ -118,7 +118,7 @@ export const saveServiceScheduleSnapshot = async (
             s.name,
             s.type,
             s.province,
-            s.city,
+            a.city,
             a.address
         FROM services s
         LEFT JOIN addresses a ON a.id = s.addressId
