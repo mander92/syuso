@@ -32,6 +32,50 @@
     background: #111827;
 }
 
+.employee-services-open-warning {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.9rem;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.95rem 1rem;
+    border-radius: 12px;
+    border: 1px solid #f59e0b;
+    background: #fffbeb;
+    color: #78350f;
+}
+
+.employee-services-open-warning strong {
+    display: block;
+    color: #7c2d12;
+    margin-bottom: 0.25rem;
+}
+
+.employee-services-open-warning p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.employee-services-open-warning__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.employee-services-open-warning__list button {
+    border: none;
+    border-radius: 999px;
+    padding: 0.45rem 0.85rem;
+    background: #0f172a;
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.employee-services-open-warning__list button:hover {
+    background: #111827;
+}
+
 .employee-services-header {
     display: flex;
     flex-direction: column;

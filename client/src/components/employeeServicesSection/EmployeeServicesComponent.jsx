@@ -127,6 +127,8 @@ const EmployeeServicesComponent = () => {
     const [services, setServices] = useState([]);
     const [type, setType] = useState('');
     const [openShifts, setOpenShifts] = useState({});
+    const [openShiftDetails, setOpenShiftDetails] = useState([]);
+    const [startingShifts, setStartingShifts] = useState({});
     const [openChats, setOpenChats] = useState({});
     const [readingNfc, setReadingNfc] = useState({});
     const [expandedAddress, setExpandedAddress] = useState({});
@@ -164,6 +166,19 @@ const EmployeeServicesComponent = () => {
         String(a || '').localeCompare(String(b || ''), 'es', {
             sensitivity: 'base',
         });
+
+    const formatOpenShiftDate = (value) => {
+        if (!value) return '';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '';
+        return new Intl.DateTimeFormat('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        }).format(date);
+    };
 
     const openLocationSettings = () => {
         if (typeof window === 'undefined') return;
@@ -361,12 +376,15 @@ const EmployeeServicesComponent = () => {
             try {
                 const data = await fetchShiftRecordsEmployee('', authToken);
                 const open = {};
+                const details = [];
                 (data?.details || []).forEach((record) => {
                     if (!record.clockOut) {
                         open[record.serviceId] = record.id;
+                        details.push(record);
                     }
                 });
                 setOpenShifts(open);
+                setOpenShiftDetails(details);
             } catch (error) {
                 toast.error(
                     error.message || 'No se pudieron cargar los turnos'
@@ -423,23 +441,70 @@ const EmployeeServicesComponent = () => {
     );
 
     const handleStart = async (serviceId) => {
+        if (startingShifts[serviceId] || Object.keys(openShifts).length > 0) {
+            return;
+        }
+
         try {
+            setStartingShifts((prev) => ({ ...prev, [serviceId]: true }));
             setLocationWarning('');
             const location = await getLocation();
-            const shiftId = await fetchStartShiftRecord(
+            const response = await fetchStartShiftRecord(
                 authToken,
                 serviceId,
                 user?.id,
                 location,
                 new Date().toISOString()
             );
-            setOpenShifts((prev) => ({ ...prev, [serviceId]: shiftId }));
-            toast.success('Inicio de servicio registrado');
+            const shiftId =
+                typeof response === 'string' ? response : response?.id;
+            const responseServiceId =
+                typeof response === 'string'
+                    ? serviceId
+                    : response?.serviceId || serviceId;
+
+            if (shiftId) {
+                setOpenShifts((prev) => ({
+                    ...prev,
+                    [responseServiceId]: shiftId,
+                }));
+                setOpenShiftDetails((prev) => {
+                    if (prev.some((item) => item.id === shiftId)) return prev;
+                    const service = services.find(
+                        (item) =>
+                            (item.serviceId || item.id) === responseServiceId
+                    );
+                    return [
+                        {
+                            id: shiftId,
+                            serviceId: responseServiceId,
+                            serviceName:
+                                response?.serviceName ||
+                                service?.name ||
+                                service?.type ||
+                                'Servicio',
+                            clockIn:
+                                response?.clockIn ||
+                                response?.realClockIn ||
+                                new Date().toISOString(),
+                        },
+                        ...prev,
+                    ];
+                });
+            }
+
+            toast.success(
+                response?.alreadyOpen
+                    ? 'Ya tenias un turno abierto'
+                    : 'Inicio de servicio registrado'
+            );
         } catch (error) {
             setLocationWarning(
                 'Activa la ubicacion del movil para poder fichar.'
             );
             toast.error(error.message || 'No se pudo iniciar el servicio');
+        } finally {
+            setStartingShifts((prev) => ({ ...prev, [serviceId]: false }));
         }
     };
 
@@ -816,6 +881,37 @@ const EmployeeServicesComponent = () => {
                     </button>
                 </div>
             )}
+
+            {openShiftDetails.length ? (
+                <div className='employee-services-open-warning'>
+                    <div>
+                        <strong>Tienes turnos abiertos</strong>
+                        <p>
+                            Cierra el turno pendiente antes de iniciar otro
+                            servicio.
+                        </p>
+                    </div>
+                    <div className='employee-services-open-warning__list'>
+                        {openShiftDetails.map((record) => (
+                            <button
+                                key={record.id}
+                                type='button'
+                                onClick={() =>
+                                    navigate(
+                                        `/shiftRecords/${record.id}/report?serviceId=${record.serviceId}`
+                                    )
+                                }
+                            >
+                                {record.serviceName || 'Servicio'} ·{' '}
+                                {formatOpenShiftDate(
+                                    record.realClockIn || record.clockIn
+                                ) || 'turno abierto'}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            ) : null}
+
             <div className='employee-services-header'>
                 <div>
                     <h1>Servicios asignados</h1>
@@ -856,6 +952,8 @@ const EmployeeServicesComponent = () => {
                         const hasNfc = Number(service.nfcCount || 0) > 0;
                         const nextShiftInfo = nextShiftByService[serviceId];
                         const startDisabled =
+                            startingShifts[serviceId] ||
+                            Object.keys(openShifts).length > 0 ||
                             isOpen ||
                             (nextShiftInfo &&
                                 nextShiftInfo.label &&
@@ -930,7 +1028,11 @@ const EmployeeServicesComponent = () => {
                                             }
                                             disabled={startDisabled}
                                         >
-                                            {isOpen ? 'En curso' : 'Iniciar'}
+                                            {startingShifts[serviceId]
+                                                ? 'Iniciando...'
+                                                : isOpen
+                                                ? 'En curso'
+                                                : 'Iniciar'}
                                         </button>
                                         {isOpen ? (
                                             <button

@@ -57,6 +57,41 @@ const startShiftRecordService = async (
     const { date: localDate, time: localTime } =
         getMadridDateTimeParts(clockInDate);
 
+    const selectOpenShift = async () => {
+        const [openRows] = await pool.query(
+            `
+            SELECT
+                sr.id,
+                sr.serviceId,
+                sr.clockIn,
+                sr.realClockIn,
+                s.name AS serviceName
+            FROM shiftRecords sr
+            INNER JOIN services s ON s.id = sr.serviceId
+            WHERE sr.employeeId = ?
+              AND sr.clockOut IS NULL
+              AND sr.deletedAt IS NULL
+            ORDER BY sr.realClockIn DESC, sr.clockIn DESC
+            LIMIT 1
+            `,
+            [employeeId]
+        );
+
+        return openRows[0] || null;
+    };
+
+    const existingOpenShift = await selectOpenShift();
+    if (existingOpenShift) {
+        return {
+            id: existingOpenShift.id,
+            serviceId: existingOpenShift.serviceId,
+            serviceName: existingOpenShift.serviceName,
+            clockIn: existingOpenShift.clockIn,
+            realClockIn: existingOpenShift.realClockIn,
+            alreadyOpen: true,
+        };
+    }
+
     const [serviceRows] = await pool.query(
         `
         SELECT allowUnscheduledClockIn, clockInEarlyMinutes
@@ -191,37 +226,44 @@ const startShiftRecordService = async (
         }
     }
 
-    // Verificar si ya hay un turno abierto
-    const [rows] = await pool.query(
-        `
-    SELECT id
-    FROM shiftRecords
-    WHERE employeeId = ? AND clockOut IS NULL
-    `,
-        [employeeId]
-    );
-
-    if (rows.length > 0) {
-        generateErrorUtil("Ya tienes un turno abierto", 401);
+    // Insertar nuevo turno
+    try {
+        await pool.query(
+            `
+        INSERT INTO shiftRecords (id, clockIn, realClockIn, employeeId, serviceId, latitudeIn, longitudeIn)
+        VALUES (?, ?, UTC_TIMESTAMP(), ?, ?, ?, ?)
+        `,
+            [
+                id,
+                startDateTime,
+                employeeId,
+                serviceId,
+                latitudeIn,
+                longitudeIn,
+            ]
+        );
+    } catch (error) {
+        if (error?.code === 'ER_DUP_ENTRY') {
+            const duplicatedOpenShift = await selectOpenShift();
+            if (duplicatedOpenShift) {
+                return {
+                    id: duplicatedOpenShift.id,
+                    serviceId: duplicatedOpenShift.serviceId,
+                    serviceName: duplicatedOpenShift.serviceName,
+                    clockIn: duplicatedOpenShift.clockIn,
+                    realClockIn: duplicatedOpenShift.realClockIn,
+                    alreadyOpen: true,
+                };
+            }
+        }
+        throw error;
     }
 
-    // Insertar nuevo turno
-    await pool.query(
-        `
-    INSERT INTO shiftRecords (id, clockIn, realClockIn, employeeId, serviceId, latitudeIn, longitudeIn)
-    VALUES (?, ?, UTC_TIMESTAMP(), ?, ?, ?, ?)
-    `,
-        [
-            id,
-            startDateTime,
-            employeeId,
-            serviceId,
-            latitudeIn,
-            longitudeIn,
-        ]
-    );
-
-    return id;
+    return {
+        id,
+        serviceId,
+        alreadyOpen: false,
+    };
 
 };
 

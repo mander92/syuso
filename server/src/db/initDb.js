@@ -138,8 +138,10 @@ const initDb = async () => {
                 longitudeOut DECIMAL(11,8),
                 serviceId CHAR(36) NOT NULL,
                 employeeId CHAR(36) NOT NULL,
+                openShiftKey TINYINT GENERATED ALWAYS AS (CASE WHEN clockOut IS NULL AND deletedAt IS NULL THEN 1 ELSE NULL END) STORED,
                 FOREIGN KEY (serviceId) REFERENCES services(id),
                 FOREIGN KEY (employeeId) REFERENCES users(id),
+                UNIQUE KEY uniq_shift_open_employee (employeeId, openShiftKey),
                 createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 modifiedAt TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 deletedAt TIMESTAMP )
