@@ -32,6 +32,7 @@ const ShiftComponent = () => {
     const [city, setCity] = useState('');
     const [delegationId, setDelegationId] = useState('');
     const [delegations, setDelegations] = useState([]);
+    const [openOnly, setOpenOnly] = useState(false);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [loading, setLoading] = useState(false);
@@ -158,6 +159,7 @@ const ShiftComponent = () => {
         delegationId,
         startDate,
         endDate,
+        openOnly,
     ]);
 
     useEffect(() => {
@@ -179,6 +181,7 @@ const ShiftComponent = () => {
         setPersonSearch('');
         setCity('');
         setDelegationId('');
+        setOpenOnly(false);
         setStartDate('');
         setEndDate('');
         setLocationMode('shifts');
@@ -250,9 +253,31 @@ const ShiftComponent = () => {
         [details]
     );
 
+    const filteredDetails = useMemo(
+        () =>
+            openOnly
+                ? details.filter(
+                      (record) => !record.clockOut && !record.realClockOut
+                  )
+                : details,
+        [details, openOnly]
+    );
+
+    const openShiftRows = useMemo(
+        () =>
+            details
+                .filter((record) => !record.clockOut && !record.realClockOut)
+                .sort((a, b) =>
+                    String(b.realClockIn || b.clockIn || '').localeCompare(
+                        String(a.realClockIn || a.clockIn || '')
+                    )
+                ),
+        [details]
+    );
+
     const calendarEvents = useMemo(
         () =>
-            details.map((record) => {
+            filteredDetails.map((record) => {
                 const start =
                     parseLocalDateTime(record.clockIn) ||
                     toMadridDate(record.realClockIn) ||
@@ -286,13 +311,13 @@ const ShiftComponent = () => {
                     employeeName: `${record.firstName} ${record.lastName}`.trim(),
                 };
             }),
-        [details]
+        [filteredDetails]
     );
 
     const locationRows = useMemo(() => {
         const textPerson = normalizeText(personSearch);
 
-        return details
+        return filteredDetails
             .filter((record) => {
                 if (locationMode === 'punches') {
                     if (!record.realClockIn && !record.realClockOut) {
@@ -347,7 +372,7 @@ const ShiftComponent = () => {
                 longitudeOut: record.longitudeOut,
             }));
     }, [
-        details,
+        filteredDetails,
         serviceName,
         employeeId,
         startDate,
@@ -568,6 +593,20 @@ const ShiftComponent = () => {
                         </select>
                     </div>
 
+                    {isAdminLike && (
+                        <label className='shift-filter shift-filter--checkbox'>
+                            <span>Fichajes</span>
+                            <input
+                                type='checkbox'
+                                checked={openOnly}
+                                onChange={(e) =>
+                                    setOpenOnly(e.target.checked)
+                                }
+                            />
+                            <strong>Solo turnos abiertos</strong>
+                        </label>
+                    )}
+
                     <div className='shift-filter'>
                         <label htmlFor='startDate'>Desde</label>
                         <input
@@ -603,6 +642,51 @@ const ShiftComponent = () => {
                     )}
                 </form>
             </div>
+
+            {isAdminLike && openShiftRows.length ? (
+                <div className='shift-open-card'>
+                    <div>
+                        <h2>Turnos abiertos</h2>
+                        <p>
+                            {openShiftRows.length} fichaje
+                            {openShiftRows.length === 1 ? '' : 's'} sin salida.
+                        </p>
+                    </div>
+                    <div className='shift-open-list'>
+                        {openShiftRows.map((row) => (
+                            <button
+                                key={row.id}
+                                type='button'
+                                className='shift-open-item'
+                                onClick={() =>
+                                    handleSelectEvent({
+                                        shiftId: row.id,
+                                        serviceId: row.serviceId,
+                                        serviceName:
+                                            row.serviceName || row.type,
+                                        employeeName: `${row.firstName || ''} ${
+                                            row.lastName || ''
+                                        }`.trim(),
+                                    })
+                                }
+                            >
+                                <strong>
+                                    {row.firstName} {row.lastName}
+                                </strong>
+                                <span>
+                                    {row.serviceName || row.type || 'Servicio'}
+                                </span>
+                                <small>
+                                    Entrada:{' '}
+                                    {formatDateTimeMadrid(
+                                        row.realClockIn || row.clockIn
+                                    )}
+                                </small>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            ) : null}
 
             <div className='shift-calendar-card'>
                 {loading ? (

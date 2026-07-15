@@ -314,15 +314,11 @@ const ContractsComponent = () => {
                 }`.trim()
             )
             .filter(Boolean);
-        const visibleNames = names.slice(0, 2).join(', ');
-        const extraCount = names.length - 2;
         const prefix =
             rows.length === 1 ? 'Turno abierto' : 'Turnos abiertos';
 
-        if (!visibleNames) return `${prefix} (${rows.length})`;
-        return extraCount > 0
-            ? `${prefix}: ${visibleNames} +${extraCount}`
-            : `${prefix}: ${visibleNames}`;
+        if (!names.length) return `${prefix} (${rows.length})`;
+        return `${prefix}: ${names.join(', ')}`;
     };
 
     const handleSelectEvent = (event) => {
