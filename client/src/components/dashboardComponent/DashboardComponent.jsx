@@ -1,5 +1,12 @@
 // src/components/DashboardComponent.jsx
 import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+    FaBriefcase,
+    FaBuilding,
+    FaComments,
+    FaLayerGroup,
+    FaUser,
+} from 'react-icons/fa';
 import useUser from '../../hooks/useUser.js';
 import ProfileComponent from '../profileComponent/PorfileComponent';
 import './DashboardComponent.css';
@@ -204,6 +211,7 @@ const DashboardComponent = () => {
     const [isAdministrationOpen, setIsAdministrationOpen] = useState(true);
     const [isCommunicationOpen, setIsCommunicationOpen] = useState(true);
     const [isManagementOpen, setIsManagementOpen] = useState(true);
+    const [activeMobileGroup, setActiveMobileGroup] = useState('');
     const hasSetDefault = useRef(false);
     const userRole = String(user?.role || '').trim().toLowerCase();
     const isAdminLike = userRole === 'admin' || userRole === 'sudo';
@@ -432,6 +440,117 @@ const DashboardComponent = () => {
             ? alertUnreadTotal
             : 0);
 
+    const getSectionBadge = (sectionId) => {
+        if (sectionId === 'chats') return unreadTotal;
+        if (sectionId === 'alerts') return alertUnreadTotal;
+        if (sectionId === 'shiftSwaps') return shiftSwapUnread;
+        if (sectionId === 'employeeRequests') return employeeRequestUnread;
+        if (sectionId === 'documentations') return documentationUnread;
+        return 0;
+    };
+
+    const getGroupBadge = (group) =>
+        group.sections.reduce(
+            (sum, section) => sum + getSectionBadge(section.id),
+            0
+        );
+
+    const mobileGroups = useMemo(() => {
+        if (!sections.length) return [];
+
+        const byIds = (ids) =>
+            sections.filter((section) => ids.includes(section.id));
+
+        const buildGroup = ({ id, label, icon, ids }) => ({
+            id,
+            label,
+            icon,
+            sections: byIds(ids),
+        });
+
+        if (isAdminLike) {
+            return [
+                {
+                    id: 'operative',
+                    label: 'Operativa',
+                    icon: FaBriefcase,
+                    sections: operativeSections,
+                },
+                {
+                    id: 'administration',
+                    label: 'Admin.',
+                    icon: FaBuilding,
+                    sections: administrationSections,
+                },
+                {
+                    id: 'communication',
+                    label: 'Comunica.',
+                    icon: FaComments,
+                    sections: communicationSections,
+                },
+                {
+                    id: 'management',
+                    label: 'Gestion',
+                    icon: FaLayerGroup,
+                    sections: managementSections,
+                },
+            ].filter((group) => group.sections.length);
+        }
+
+        const groups = [
+            buildGroup({
+                id: 'operative',
+                label: 'Operativa',
+                icon: FaBriefcase,
+                ids: ['services', 'contracts', 'schedule', 'shiftSwaps', 'employeeRequests'],
+            }),
+            buildGroup({
+                id: 'administration',
+                label: 'Docs',
+                icon: FaBuilding,
+                ids: ['documentations', 'payrolls'],
+            }),
+            buildGroup({
+                id: 'communication',
+                label: 'Comunic.',
+                icon: FaComments,
+                ids: ['chats', 'alerts'],
+            }),
+            buildGroup({
+                id: 'profile',
+                label: 'Perfil',
+                icon: FaUser,
+                ids: ['profile'],
+            }),
+        ].filter((group) => group.sections.length);
+
+        const includedIds = new Set(
+            groups.flatMap((group) => group.sections.map((section) => section.id))
+        );
+        const remaining = sections.filter((section) => !includedIds.has(section.id));
+        if (remaining.length) {
+            groups.splice(Math.max(groups.length - 1, 0), 0, {
+                id: 'more',
+                label: 'Mas',
+                icon: FaLayerGroup,
+                sections: remaining,
+            });
+        }
+
+        return groups.slice(0, 4);
+    }, [
+        administrationSections,
+        communicationSections,
+        isAdminLike,
+        managementSections,
+        operativeSections,
+        sections,
+    ]);
+
+    useEffect(() => {
+        setActiveMobileGroup('');
+    }, [activeSection]);
+
     useEffect(() => {
         if (operativeSectionIds.includes(activeSection)) {
             setIsOperativeOpen(true);
@@ -467,34 +586,89 @@ const DashboardComponent = () => {
             <span className='dashboard-navitem-label'>
                 {section.label}
             </span>
-            {section.id === 'chats' && unreadTotal > 0 ? (
+            {getSectionBadge(section.id) > 0 ? (
                 <span className='dashboard-nav-badge'>
-                    {unreadTotal}
-                </span>
-            ) : null}
-            {section.id === 'alerts' && alertUnreadTotal > 0 ? (
-                <span className='dashboard-nav-badge'>
-                    {alertUnreadTotal}
-                </span>
-            ) : null}
-            {section.id === 'shiftSwaps' && shiftSwapUnread > 0 ? (
-                <span className='dashboard-nav-badge'>
-                    {shiftSwapUnread}
-                </span>
-            ) : null}
-            {section.id === 'employeeRequests' &&
-            employeeRequestUnread > 0 ? (
-                <span className='dashboard-nav-badge'>
-                    {employeeRequestUnread}
-                </span>
-            ) : null}
-            {section.id === 'documentations' && documentationUnread > 0 ? (
-                <span className='dashboard-nav-badge'>
-                    {documentationUnread}
+                    {getSectionBadge(section.id)}
                 </span>
             ) : null}
         </button>
     );
+
+    const renderMobileDashboardNav = () => {
+        if (!mobileGroups.length) return null;
+        const selectedGroup = mobileGroups.find(
+            (group) => group.id === activeMobileGroup
+        );
+
+        return (
+            <div className='dashboard-mobile-nav-shell'>
+                {selectedGroup ? (
+                    <div className='dashboard-mobile-sheet'>
+                        <div className='dashboard-mobile-sheet-handle' />
+                        <div className='dashboard-mobile-sheet-title'>
+                            {selectedGroup.label}
+                        </div>
+                        <div className='dashboard-mobile-sheet-list'>
+                            {selectedGroup.sections.map((section) => (
+                                <button
+                                    key={section.id}
+                                    type='button'
+                                    className={
+                                        'dashboard-mobile-sheet-item' +
+                                        (activeSection === section.id
+                                            ? ' dashboard-mobile-sheet-item--active'
+                                            : '')
+                                    }
+                                    onClick={() => setActiveSection(section.id)}
+                                >
+                                    <span>{section.label}</span>
+                                    {getSectionBadge(section.id) > 0 ? (
+                                        <span className='dashboard-nav-badge'>
+                                            {getSectionBadge(section.id)}
+                                        </span>
+                                    ) : null}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                ) : null}
+                <nav className='dashboard-mobile-nav' aria-label='Menu movil'>
+                    {mobileGroups.map((group) => {
+                        const Icon = group.icon || FaLayerGroup;
+                        const isActiveGroup = group.sections.some(
+                            (section) => section.id === activeSection
+                        );
+                        const badge = getGroupBadge(group);
+                        return (
+                            <button
+                                key={group.id}
+                                type='button'
+                                className={
+                                    'dashboard-mobile-nav-button' +
+                                    (isActiveGroup
+                                        ? ' dashboard-mobile-nav-button--active'
+                                        : '')
+                                }
+                                onClick={() =>
+                                    setActiveMobileGroup((prev) =>
+                                        prev === group.id ? '' : group.id
+                                    )
+                                }
+                            >
+                                <Icon aria-hidden='true' />
+                                <span>{group.label}</span>
+                                {badge > 0 ? (
+                                    <span className='dashboard-mobile-nav-badge'>
+                                        {badge}
+                                    </span>
+                                ) : null}
+                            </button>
+                        );
+                    })}
+                </nav>
+            </div>
+        );
+    };
 
     const renderSectionContent = () => {
         if (!user) return null;
@@ -794,6 +968,7 @@ const DashboardComponent = () => {
                 {/* CONTENIDO PRINCIPAL */}
                 <main className='dashboard-main'>{renderSectionContent()}</main>
             </div>
+            {renderMobileDashboardNav()}
         </div>
     );
 };
