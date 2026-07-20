@@ -13,13 +13,17 @@
 
 .contracts-map-stage {
     position: relative;
-    min-height: 620px;
-    height: calc(100dvh - 92px);
-    overflow: visible;
-    border: 1px solid #dbeafe;
+    z-index: 0;
+    height: clamp(520px, calc(100dvh - 170px), 760px);
+    min-height: 0;
+    overflow: hidden;
+    isolation: isolate;
+    border: 1px solid #cbd5e1;
     border-radius: 18px;
     background: #e2e8f0;
-    box-shadow: 0 22px 50px rgba(15, 23, 42, 0.14);
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.82) inset,
+        0 18px 42px rgba(15, 23, 42, 0.12);
 }
 
 .contracts-map-stage .contracts-map-block,
@@ -30,7 +34,7 @@
 
 .contracts-map-toolbar {
     position: absolute;
-    z-index: 32;
+    z-index: 16;
     top: 76px;
     right: 18px;
     display: grid;
@@ -90,7 +94,7 @@
 
 .contracts-floating-panel {
     position: absolute;
-    z-index: 31;
+    z-index: 15;
     border: 1px solid rgba(226, 232, 240, 0.92);
     border-radius: 18px;
     background: rgba(255, 255, 255, 0.95);
@@ -156,7 +160,7 @@
 
 .contracts-map-search {
     position: absolute;
-    z-index: 23;
+    z-index: 14;
     top: 18px;
     right: 18px;
     width: min(460px, calc(100% - 150px));
@@ -173,7 +177,7 @@
 
 .contracts-calendar-overlay {
     position: absolute;
-    z-index: 40;
+    z-index: 18;
     top: 18px;
     right: 18px;
     bottom: 18px;
@@ -564,7 +568,7 @@
 
 .contracts-map-missing ul {
     position: absolute;
-    z-index: 20;
+    z-index: 12;
     top: calc(100% + 6px);
     left: 0;
     right: auto;
@@ -921,20 +925,22 @@
     .contracts-wrapper {
         position: relative;
         gap: 0;
-        margin: -0.75rem -0.75rem 0;
+        margin: 0;
     }
 
     .contracts-wrapper--map-first {
-        margin: -0.75rem -0.75rem 0;
+        margin: 0;
     }
 
     .contracts-map-stage {
-        height: calc(100dvh - 4.5rem);
-        min-height: 720px;
+        height: clamp(460px, calc(100dvh - 158px), 680px);
+        min-height: 0;
         margin-right: 0;
-        border-radius: 0;
-        border-width: 0;
-        box-shadow: none;
+        border: 1px solid #cbd5e1;
+        border-radius: 16px;
+        box-shadow:
+            0 0 0 1px rgba(255, 255, 255, 0.82) inset,
+            0 14px 32px rgba(15, 23, 42, 0.12);
     }
 
     .contracts-map-toolbar {
@@ -1000,7 +1006,7 @@
         right: 10px;
         bottom: 164px;
         width: auto;
-        z-index: 23;
+        z-index: 14;
         padding: 0;
         grid-template-columns: 1fr;
     }
@@ -1096,8 +1102,8 @@
     }
 
     .contracts-map {
-        height: calc(100dvh - 4.5rem);
-        min-height: 650px;
+        height: 100%;
+        min-height: 0;
     }
 
     .contracts-map-stage .contracts-map {
@@ -1112,7 +1118,7 @@
         right: 10px;
         bottom: 164px;
         width: auto;
-        z-index: 23;
+        z-index: 14;
         padding: 0;
         grid-template-columns: 1fr;
     }
@@ -1128,8 +1134,8 @@
 
 @media (max-width: 480px) {
     .contracts-map-stage {
-        height: calc(100dvh - 4.5rem);
-        min-height: 720px;
+        height: clamp(440px, calc(100dvh - 152px), 640px);
+        min-height: 0;
         margin-right: 0;
     }
 
@@ -1209,8 +1215,8 @@
     }
 
     .contracts-map {
-        height: calc(100dvh - 4.5rem);
-        min-height: 720px;
+        height: 100%;
+        min-height: 0;
     }
 
     .contracts-map-stage .contracts-map {
