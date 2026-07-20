@@ -14,7 +14,7 @@
 .contracts-map-stage {
     position: relative;
     z-index: 0;
-    height: clamp(520px, calc(100dvh - 170px), 760px);
+    height: clamp(520px, calc(100dvh - 190px), 780px);
     min-height: 0;
     overflow: hidden;
     isolation: isolate;
@@ -161,18 +161,23 @@
 .contracts-map-search {
     position: absolute;
     z-index: 14;
-    top: 18px;
-    right: 18px;
-    width: min(460px, calc(100% - 150px));
+    top: auto;
+    right: auto;
+    bottom: 18px;
+    left: 50%;
+    width: min(520px, calc(100% - 36px));
+    transform: translateX(-50%);
     padding: 0;
     grid-template-columns: minmax(0, 1fr);
 }
 
 .contracts-map-stage--services-open .contracts-map-search {
-    top: 188px;
-    left: 78px;
+    top: auto;
     right: auto;
-    width: min(520px, calc(100% - 120px));
+    bottom: 18px;
+    left: 50%;
+    width: min(520px, calc(100% - 36px));
+    transform: translateX(-50%);
 }
 
 .contracts-calendar-overlay {
@@ -499,8 +504,8 @@
 .contracts-map-summary {
     position: absolute;
     top: 14px;
-    left: 14px;
-    right: 14px;
+    left: 50%;
+    right: auto;
     z-index: 10;
     display: flex;
     align-items: center;
@@ -508,6 +513,7 @@
     gap: 8px 16px;
     width: fit-content;
     max-width: calc(100% - 28px);
+    transform: translateX(-50%);
     padding: 9px 12px;
     border: 1px solid rgba(203, 213, 225, 0.9);
     border-radius: 999px;
@@ -933,7 +939,7 @@
     }
 
     .contracts-map-stage {
-        height: clamp(460px, calc(100dvh - 158px), 680px);
+        height: clamp(470px, calc(100dvh - 170px), 680px);
         min-height: 0;
         margin-right: 0;
         border: 1px solid #cbd5e1;
@@ -1002,10 +1008,11 @@
     .contracts-map-search,
     .contracts-map-stage--services-open .contracts-map-search {
         top: auto;
-        left: 10px;
-        right: 10px;
-        bottom: 164px;
-        width: auto;
+        left: 50%;
+        right: auto;
+        bottom: 16px;
+        width: min(420px, calc(100% - 20px));
+        transform: translateX(-50%);
         z-index: 14;
         padding: 0;
         grid-template-columns: 1fr;
@@ -1114,10 +1121,11 @@
     .contracts-map-search,
     .contracts-map-stage--services-open .contracts-map-search {
         top: auto;
-        left: 10px;
-        right: 10px;
-        bottom: 164px;
-        width: auto;
+        left: 50%;
+        right: auto;
+        bottom: 16px;
+        width: min(420px, calc(100% - 20px));
+        transform: translateX(-50%);
         z-index: 14;
         padding: 0;
         grid-template-columns: 1fr;
@@ -1125,16 +1133,17 @@
 
     .contracts-map-stage .contracts-map-summary {
         top: 10px;
-        left: 10px;
-        right: 68px;
-        max-width: calc(100% - 88px);
+        left: auto;
+        right: 10px;
+        max-width: calc(100% - 82px);
+        transform: none;
     }
 
 }
 
 @media (max-width: 480px) {
     .contracts-map-stage {
-        height: clamp(440px, calc(100dvh - 152px), 640px);
+        height: clamp(470px, calc(100dvh - 158px), 660px);
         min-height: 0;
         margin-right: 0;
     }
@@ -1169,10 +1178,11 @@
     .contracts-map-search,
     .contracts-map-stage--services-open .contracts-map-search {
         top: auto;
-        left: 9px;
-        right: 9px;
-        bottom: 150px;
-        width: auto;
+        left: 50%;
+        right: auto;
+        bottom: 14px;
+        width: calc(100% - 18px);
+        transform: translateX(-50%);
         grid-template-columns: 1fr;
     }
 
@@ -1248,17 +1258,19 @@
     .contracts-map-search,
     .contracts-map-stage--services-open .contracts-map-search {
         top: auto;
-        left: 9px;
-        right: 9px;
-        bottom: 150px;
-        width: auto;
+        left: 50%;
+        right: auto;
+        bottom: 14px;
+        width: calc(100% - 18px);
+        transform: translateX(-50%);
         grid-template-columns: 1fr;
     }
 
     .contracts-map-stage .contracts-map-summary {
         top: 9px;
-        left: 9px;
+        left: auto;
         right: 64px;
         max-width: calc(100% - 82px);
+        transform: none;
     }
 }

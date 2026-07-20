@@ -7,10 +7,13 @@ import FloatingCallButton from '../../components/floatingCallButton/FloatingCall
 const Layout = ({ children }) => {
     const location = useLocation();
     const showWhatsapp = location.pathname === '/';
+    const isAccountPage = location.pathname === '/account';
     return (
         <div className='layout'>
             <Header />
-            <main className='pages'>{children}</main>
+            <main className={`pages${isAccountPage ? ' pages--account' : ''}`}>
+                {children}
+            </main>
             {showWhatsapp ? <FloatingCallButton /> : null}
             <Footer />
         </div>

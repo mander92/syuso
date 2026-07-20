@@ -786,8 +786,15 @@ const DashboardComponent = () => {
         );
     }
 
+    const isWideDashboardView = isAdminLike;
+
     return (
-        <div className='dashboard-wrapper'>
+        <div
+            className={
+                'dashboard-wrapper' +
+                (isWideDashboardView ? ' dashboard-wrapper--map-view' : '')
+            }
+        >
             <div className='dashboard-container'>
                 {/* SIDEBAR */}
                 <aside className='dashboard-sidebar'>
