@@ -103,9 +103,10 @@
 }
 
 .contracts-floating-panel--services {
-    top: 18px;
-    left: 78px;
-    width: min(720px, calc(100% - 150px));
+    top: 76px;
+    right: 78px;
+    left: auto;
+    width: min(640px, calc(100% - 120px));
     padding: 18px;
 }
 
@@ -146,6 +147,11 @@
     width: min(520px, calc(100% - 110px));
     max-height: min(68dvh, calc(100% - 156px));
     overflow: hidden;
+}
+
+.contracts-map-stage--services-open .contracts-floating-panel--delegations {
+    top: 270px;
+    max-height: min(50dvh, calc(100% - 294px));
 }
 
 .contracts-floating-panel--delegations .contracts-delegation-panel {
@@ -970,8 +976,8 @@
 
     .contracts-floating-panel--services {
         top: 60px;
-        left: 10px;
         right: 62px;
+        left: auto;
         width: auto;
         padding: 12px;
         border-radius: 14px;
@@ -1003,6 +1009,11 @@
         width: auto;
         max-height: 54dvh;
         border-radius: 14px;
+    }
+
+    .contracts-map-stage--services-open .contracts-floating-panel--delegations {
+        top: 268px;
+        max-height: min(46dvh, calc(100% - 292px));
     }
 
     .contracts-map-search,
@@ -1166,8 +1177,8 @@
 
     .contracts-floating-panel--services {
         top: 56px;
-        left: 9px;
         right: 58px;
+        left: auto;
         padding: 11px;
     }
 
@@ -1191,6 +1202,11 @@
         right: 9px;
         top: 120px;
         bottom: auto;
+    }
+
+    .contracts-map-stage--services-open .contracts-floating-panel--delegations {
+        top: 260px;
+        max-height: min(44dvh, calc(100% - 284px));
     }
 
     .contracts-header {

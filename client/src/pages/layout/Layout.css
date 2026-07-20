@@ -17,7 +17,11 @@
 
 .pages--account {
     max-width: none;
-    padding: 0.4rem 0.75rem 1.25rem;
+    padding: 0.4rem 0.75rem 0;
+}
+
+.pages--account + .footer {
+    margin-top: 0;
 }
 
 /* Opcional: fondo general */
