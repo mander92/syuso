@@ -2038,227 +2038,232 @@ const ScheduleComponent = () => {
 
     return (
         <section className='schedule-section'>
-            <div className='schedule-header'>
-                <div>
-                    <h1>Cuadrantes</h1>
-                    <p>Gestiona cuadrantes por servicio y empleados.</p>
-                </div>
-                <button
-                    type='button'
-                    className='schedule-btn schedule-btn--ghost'
-                    onClick={handleScheduleReset}
-                >
-                    Limpiar filtros
-                </button>
-            </div>
+            <div className='schedule-layout'>
+                <aside className='schedule-sidebar-filters'>
+                    <div className='schedule-toggle'>
+                        <button
+                            type='button'
+                            className={`btn schedule-toggle-btn ${
+                                scheduleViewMode === 'services'
+                                    ? 'btn-primary'
+                                    : 'btn-secondary'
+                            }`}
+                            onClick={() => setScheduleViewMode('services')}
+                        >
+                            Cuadrantes por servicio
+                        </button>
+                        <button
+                            type='button'
+                            className={`btn schedule-toggle-btn ${
+                                scheduleViewMode === 'personal'
+                                    ? 'btn-primary'
+                                    : 'btn-secondary'
+                            }`}
+                            onClick={() => setScheduleViewMode('personal')}
+                        >
+                            Cuadrantes personales
+                        </button>
+                    </div>
 
-            <div className='schedule-filters'>
-                <div className='schedule-filter'>
-                    <label htmlFor='scheduleMonth'>Mes</label>
-                    <input
-                        id='scheduleMonth'
-                        type='month'
-                        value={scheduleMonth}
-                        onChange={(e) => setScheduleMonth(e.target.value)}
-                    />
-                </div>
-                <div className='schedule-filter'>
-                    <label htmlFor='scheduleStart'>Desde</label>
-                    <input
-                        id='scheduleStart'
-                        type='date'
-                        value={scheduleStartDate}
-                        onChange={(e) =>
-                            setScheduleStartDate(e.target.value)
-                        }
-                    />
-                </div>
-                <div className='schedule-filter'>
-                    <label htmlFor='scheduleEnd'>Hasta</label>
-                    <input
-                        id='scheduleEnd'
-                        type='date'
-                        value={scheduleEndDate}
-                        onChange={(e) =>
-                            setScheduleEndDate(e.target.value)
-                        }
-                    />
-                </div>
-                <div className='schedule-filter'>
-                    <label htmlFor='scheduleServiceStatus'>
-                        Estado servicio
-                    </label>
-                    <select
-                        id='scheduleServiceStatus'
-                        value={scheduleServiceStatus}
-                        onChange={(e) =>
-                            setScheduleServiceStatus(e.target.value)
-                        }
-                    >
-                        <option value=''>Todos</option>
-                        <option value='confirmed'>Confirmado</option>
-                        <option value='pending'>Pendiente</option>
-                        <option value='completed'>Completado</option>
-                        <option value='canceled'>Cancelado</option>
-                        <option value='accepted'>Aceptado</option>
-                        <option value='rejected'>Rechazado</option>
-                    </select>
-                </div>
-                <div className='schedule-filter'>
-                    <label htmlFor='scheduleServiceFilter'>Servicio</label>
-                    <select
-                        id='scheduleServiceFilter'
-                        value={scheduleServiceFilter}
-                        onChange={(e) =>
-                            setScheduleServiceFilter(e.target.value)
-                        }
-                    >
-                        <option value=''>Todos</option>
-                        {scheduleServices.map((service) => (
-                            <option key={service.id} value={service.id}>
-                                {service.name}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-                <div className='schedule-filter'>
-                    <label htmlFor='scheduleEmployeeFilter'>Empleado</label>
-                    <select
-                        id='scheduleEmployeeFilter'
-                        value={scheduleEmployeeFilter}
-                        onChange={(e) =>
-                            setScheduleEmployeeFilter(e.target.value)
-                        }
-                    >
-                        <option value=''>Todos</option>
-                        {employees.map((employee) => (
-                            <option key={employee.id} value={employee.id}>
-                                {employee.firstName} {employee.lastName}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-                <div className='schedule-filter'>
-                    <label htmlFor='scheduleDelegationFilter'>
-                        Delegacion
-                    </label>
-                    <select
-                        id='scheduleDelegationFilter'
-                        value={scheduleDelegationFilter}
-                        onChange={(e) =>
-                            setScheduleDelegationFilter(e.target.value)
-                        }
-                    >
-                        <option value=''>Todas</option>
-                        {delegations.map((delegation) => (
-                            <option key={delegation.id} value={delegation.id}>
-                                {delegation.name}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-            </div>
-
-            <div className='schedule-toggle'>
-                <button
-                    type='button'
-                    className={`btn schedule-toggle-btn ${
-                        scheduleViewMode === 'services'
-                            ? 'btn-primary'
-                            : 'btn-secondary'
-                    }`}
-                    onClick={() => setScheduleViewMode('services')}
-                >
-                    Cuadrantes por servicio
-                </button>
-                <button
-                    type='button'
-                    className={`btn schedule-toggle-btn ${
-                        scheduleViewMode === 'personal'
-                            ? 'btn-primary'
-                            : 'btn-secondary'
-                    }`}
-                    onClick={() => setScheduleViewMode('personal')}
-                >
-                    Cuadrantes personales
-                </button>
-            </div>
-
-            <div className='schedule-downloads'>
-                {scheduleViewMode === 'services' ? (
-                    <>
+                    <div className='schedule-header'>
+                        <div>
+                            <h1>Cuadrantes</h1>
+                            <p>Gestiona cuadrantes por servicio y empleados.</p>
+                        </div>
                         <button
                             type='button'
                             className='schedule-btn schedule-btn--ghost'
-                            onClick={handleServicePdfDownload}
-                            disabled={!scheduleServiceId || isDownloadingServicePdf}
+                            onClick={handleScheduleReset}
                         >
-                            {isDownloadingServicePdf ? 'Generando...' : 'PDF servicio'}
+                            Limpiar filtros
                         </button>
-                        <button
-                            type='button'
-                            className='schedule-btn schedule-btn--ghost'
-                            onClick={handleServiceExcelDownload}
-                            disabled={
-                                !scheduleServiceId || isDownloadingServiceExcel
-                            }
-                        >
-                            {isDownloadingServiceExcel
-                                ? 'Generando...'
-                                : 'Excel servicio'}
-                        </button>
-                        <button
-                            type='button'
-                            className='schedule-btn'
-                            onClick={handleServiceZipDownload}
-                            disabled={!scheduleCards.length || isDownloadingServiceZip}
-                        >
-                            {isDownloadingServiceZip ? 'Generando...' : 'ZIP servicios'}
-                        </button>
-                        <button
-                            type='button'
-                            className='schedule-btn'
-                            onClick={handleServiceExcelZipDownload}
-                            disabled={
-                                !scheduleCards.length || isDownloadingServiceExcelZip
-                            }
-                        >
-                            {isDownloadingServiceExcelZip
-                                ? 'Generando...'
-                                : 'ZIP Excel'}
-                        </button>
-                    </>
-                ) : (
-                    <>
-                        <button
-                            type='button'
-                            className='schedule-btn schedule-btn--ghost'
-                            onClick={handlePersonalZipDownload}
-                            disabled={
-                                !personalScheduleRows.length ||
-                                isDownloadingPersonalZip
-                            }
-                        >
-                            {isDownloadingPersonalZip
-                                ? 'Generando...'
-                                : 'ZIP PDF personales'}
-                        </button>
-                        <button
-                            type='button'
-                            className='schedule-btn'
-                            onClick={handlePersonalExcelZipDownload}
-                            disabled={
-                                !personalScheduleRows.length ||
-                                isDownloadingPersonalExcelZip
-                            }
-                        >
-                            {isDownloadingPersonalExcelZip
-                                ? 'Generando...'
-                                : 'ZIP Excel personales'}
-                        </button>
-                    </>
-                )}
-            </div>
+                    </div>
+
+                    <div className='schedule-filters'>
+                        <div className='schedule-filter'>
+                            <label htmlFor='scheduleMonth'>Mes</label>
+                            <input
+                                id='scheduleMonth'
+                                type='month'
+                                value={scheduleMonth}
+                                onChange={(e) => setScheduleMonth(e.target.value)}
+                            />
+                        </div>
+                        <div className='schedule-filter'>
+                            <label htmlFor='scheduleStart'>Desde</label>
+                            <input
+                                id='scheduleStart'
+                                type='date'
+                                value={scheduleStartDate}
+                                onChange={(e) =>
+                                    setScheduleStartDate(e.target.value)
+                                }
+                            />
+                        </div>
+                        <div className='schedule-filter'>
+                            <label htmlFor='scheduleEnd'>Hasta</label>
+                            <input
+                                id='scheduleEnd'
+                                type='date'
+                                value={scheduleEndDate}
+                                onChange={(e) =>
+                                    setScheduleEndDate(e.target.value)
+                                }
+                            />
+                        </div>
+                        <div className='schedule-filter'>
+                            <label htmlFor='scheduleServiceStatus'>
+                                Estado servicio
+                            </label>
+                            <select
+                                id='scheduleServiceStatus'
+                                value={scheduleServiceStatus}
+                                onChange={(e) =>
+                                    setScheduleServiceStatus(e.target.value)
+                                }
+                            >
+                                <option value=''>Todos</option>
+                                <option value='confirmed'>Confirmado</option>
+                                <option value='pending'>Pendiente</option>
+                                <option value='completed'>Completado</option>
+                                <option value='canceled'>Cancelado</option>
+                                <option value='accepted'>Aceptado</option>
+                                <option value='rejected'>Rechazado</option>
+                            </select>
+                        </div>
+                        <div className='schedule-filter'>
+                            <label htmlFor='scheduleServiceFilter'>Servicio</label>
+                            <select
+                                id='scheduleServiceFilter'
+                                value={scheduleServiceFilter}
+                                onChange={(e) =>
+                                    setScheduleServiceFilter(e.target.value)
+                                }
+                            >
+                                <option value=''>Todos</option>
+                                {scheduleServices.map((service) => (
+                                    <option key={service.id} value={service.id}>
+                                        {service.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className='schedule-filter'>
+                            <label htmlFor='scheduleEmployeeFilter'>Empleado</label>
+                            <select
+                                id='scheduleEmployeeFilter'
+                                value={scheduleEmployeeFilter}
+                                onChange={(e) =>
+                                    setScheduleEmployeeFilter(e.target.value)
+                                }
+                            >
+                                <option value=''>Todos</option>
+                                {employees.map((employee) => (
+                                    <option key={employee.id} value={employee.id}>
+                                        {employee.firstName} {employee.lastName}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className='schedule-filter'>
+                            <label htmlFor='scheduleDelegationFilter'>
+                                Delegacion
+                            </label>
+                            <select
+                                id='scheduleDelegationFilter'
+                                value={scheduleDelegationFilter}
+                                onChange={(e) =>
+                                    setScheduleDelegationFilter(e.target.value)
+                                }
+                            >
+                                <option value=''>Todas</option>
+                                {delegations.map((delegation) => (
+                                    <option key={delegation.id} value={delegation.id}>
+                                        {delegation.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                </aside>
+
+                <div className='schedule-content'>
+                    <div className='schedule-downloads'>
+                        {scheduleViewMode === 'services' ? (
+                            <>
+                                <button
+                                    type='button'
+                                    className='schedule-btn schedule-btn--ghost'
+                                    onClick={handleServicePdfDownload}
+                                    disabled={!scheduleServiceId || isDownloadingServicePdf}
+                                >
+                                    {isDownloadingServicePdf ? 'Generando...' : 'PDF servicio'}
+                                </button>
+                                <button
+                                    type='button'
+                                    className='schedule-btn schedule-btn--ghost'
+                                    onClick={handleServiceExcelDownload}
+                                    disabled={
+                                        !scheduleServiceId || isDownloadingServiceExcel
+                                    }
+                                >
+                                    {isDownloadingServiceExcel
+                                        ? 'Generando...'
+                                        : 'Excel servicio'}
+                                </button>
+                                <button
+                                    type='button'
+                                    className='schedule-btn'
+                                    onClick={handleServiceZipDownload}
+                                    disabled={!scheduleCards.length || isDownloadingServiceZip}
+                                >
+                                    {isDownloadingServiceZip ? 'Generando...' : 'ZIP servicios'}
+                                </button>
+                                <button
+                                    type='button'
+                                    className='schedule-btn'
+                                    onClick={handleServiceExcelZipDownload}
+                                    disabled={
+                                        !scheduleCards.length || isDownloadingServiceExcelZip
+                                    }
+                                >
+                                    {isDownloadingServiceExcelZip
+                                        ? 'Generando...'
+                                        : 'ZIP Excel'}
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <button
+                                    type='button'
+                                    className='schedule-btn schedule-btn--ghost'
+                                    onClick={handlePersonalZipDownload}
+                                    disabled={
+                                        !personalScheduleRows.length ||
+                                        isDownloadingPersonalZip
+                                    }
+                                >
+                                    {isDownloadingPersonalZip
+                                        ? 'Generando...'
+                                        : 'ZIP PDF personales'}
+                                </button>
+                                <button
+                                    type='button'
+                                    className='schedule-btn'
+                                    onClick={handlePersonalExcelZipDownload}
+                                    disabled={
+                                        !personalScheduleRows.length ||
+                                        isDownloadingPersonalExcelZip
+                                    }
+                                >
+                                    {isDownloadingPersonalExcelZip
+                                        ? 'Generando...'
+                                        : 'ZIP Excel personales'}
+                                </button>
+                            </>
+                        )}
+                    </div>
 
             {scheduleViewMode === 'services' ? (
                 <>
@@ -2809,6 +2814,8 @@ const ScheduleComponent = () => {
                     )}
                 </div>
             )}
+                </div>
+            </div>
 
             {serviceScheduleViewModal && (
                 <div className='schedule-service-modal'>
