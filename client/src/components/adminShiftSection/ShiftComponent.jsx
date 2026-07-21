@@ -500,250 +500,254 @@ const ShiftComponent = () => {
 
     return (
         <section className='shift-wrapper'>
-            <div className='shift-header'>
-                <div>
-                    <h1 className='shift-title'>Turnos</h1>
-                    <p className='shift-subtitle'>
-                        Filtra turnos por empleado, zona, servicio y fechas.
-                    </p>
-                </div>
+            <div className='shift-layout'>
+                <aside className='shift-sidebar-filters'>
+                    <div className='shift-header'>
+                        <div>
+                            <h1 className='shift-title'>Turnos</h1>
+                            <p className='shift-subtitle'>
+                                Filtra turnos por empleado, zona, servicio y fechas.
+                            </p>
+                        </div>
 
-                <div className='shift-header-actions'>
-                    {isAdminLike && (
-                        <NavLink className='shift-btn' to='/shiftRecords/create'>
-                            Crear turno
-                        </NavLink>
-                    )}
-                </div>
+                        <div className='shift-header-actions'>
+                            {isAdminLike && (
+                                <NavLink className='shift-btn' to='/shiftRecords/create'>
+                                    Crear turno
+                                </NavLink>
+                            )}
+                        </div>
+                    </div>
 
-                <form className='shift-filters' onSubmit={handleReset}>
-                    {isAdminLike && (
+                    <form className='shift-filters' onSubmit={handleReset}>
+                        {isAdminLike && (
+                            <div className='shift-filter'>
+                                <label htmlFor='employeeId'>Empleado</label>
+                                <select
+                                    id='employeeId'
+                                    value={employeeId}
+                                    onChange={(e) => setEmployeeId(e.target.value)}
+                                >
+                                    <option value=''>Todos</option>
+                                    {employees.map((employee) => (
+                                        <option
+                                            key={employee.id}
+                                            value={employee.id}
+                                        >
+                                            {employee.firstName} {employee.lastName}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
                         <div className='shift-filter'>
-                            <label htmlFor='employeeId'>Empleado</label>
+                            <label htmlFor='serviceName'>Nombre del servicio</label>
                             <select
-                                id='employeeId'
-                                value={employeeId}
-                                onChange={(e) => setEmployeeId(e.target.value)}
+                                id='serviceName'
+                                value={serviceName}
+                                onChange={(e) => setServiceName(e.target.value)}
                             >
                                 <option value=''>Todos</option>
-                                {employees.map((employee) => (
-                                    <option
-                                        key={employee.id}
-                                        value={employee.id}
-                                    >
-                                        {employee.firstName} {employee.lastName}
+                                {uniqueServiceNames.map((name) => (
+                                    <option key={name} value={name}>
+                                        {name}
                                     </option>
                                 ))}
                             </select>
                         </div>
-                    )}
 
-                    <div className='shift-filter'>
-                        <label htmlFor='serviceName'>Nombre del servicio</label>
-                        <select
-                            id='serviceName'
-                            value={serviceName}
-                            onChange={(e) => setServiceName(e.target.value)}
-                        >
-                            <option value=''>Todos</option>
-                            {uniqueServiceNames.map((name) => (
-                                <option key={name} value={name}>
-                                    {name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                        {isAdminLike && (
+                            <div className='shift-filter'>
+                                <label htmlFor='delegationId'>Delegacion</label>
+                                <select
+                                    id='delegationId'
+                                    value={delegationId}
+                                    onChange={(e) =>
+                                        setDelegationId(e.target.value)
+                                    }
+                                >
+                                    <option value=''>Todas</option>
+                                    {delegations.map((delegation) => (
+                                        <option
+                                            key={delegation.id}
+                                            value={delegation.id}
+                                        >
+                                            {delegation.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
 
-                    {isAdminLike && (
                         <div className='shift-filter'>
-                            <label htmlFor='delegationId'>Delegacion</label>
+                            <label htmlFor='shiftCity'>Zona</label>
                             <select
-                                id='delegationId'
-                                value={delegationId}
-                                onChange={(e) =>
-                                    setDelegationId(e.target.value)
-                                }
+                                id='shiftCity'
+                                value={city}
+                                onChange={(e) => setCity(e.target.value)}
                             >
                                 <option value=''>Todas</option>
-                                {delegations.map((delegation) => (
-                                    <option
-                                        key={delegation.id}
-                                        value={delegation.id}
-                                    >
-                                        {delegation.name}
+                                {uniqueCities.map((item) => (
+                                    <option key={item} value={item}>
+                                        {item}
                                     </option>
                                 ))}
                             </select>
                         </div>
-                    )}
 
-                    <div className='shift-filter'>
-                        <label htmlFor='shiftCity'>Zona</label>
-                        <select
-                            id='shiftCity'
-                            value={city}
-                            onChange={(e) => setCity(e.target.value)}
-                        >
-                            <option value=''>Todas</option>
-                            {uniqueCities.map((item) => (
-                                <option key={item} value={item}>
-                                    {item}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                        {isAdminLike && (
+                            <label className='shift-filter shift-filter--checkbox'>
+                                <span>Fichajes</span>
+                                <input
+                                    type='checkbox'
+                                    checked={openOnly}
+                                    onChange={(e) =>
+                                        setOpenOnly(e.target.checked)
+                                    }
+                                />
+                                <strong>Solo turnos abiertos</strong>
+                            </label>
+                        )}
 
-                    {isAdminLike && (
-                        <label className='shift-filter shift-filter--checkbox'>
-                            <span>Fichajes</span>
+                        <div className='shift-filter'>
+                            <label htmlFor='startDate'>Desde</label>
                             <input
-                                type='checkbox'
-                                checked={openOnly}
-                                onChange={(e) =>
-                                    setOpenOnly(e.target.checked)
-                                }
-                            />
-                            <strong>Solo turnos abiertos</strong>
-                        </label>
-                    )}
-
-                    <div className='shift-filter'>
-                        <label htmlFor='startDate'>Desde</label>
-                        <input
-                            id='startDate'
-                            type='date'
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                        />
-                    </div>
-
-                    <div className='shift-filter'>
-                        <label htmlFor='endDate'>Hasta</label>
-                        <input
-                            id='endDate'
-                            type='date'
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                        />
-                    </div>
-
-                    <button className='shift-btn shift-btn--ghost' type='submit'>
-                        Limpiar filtros
-                    </button>
-                    {isAdminLike && (
-                        <button
-                            className='shift-btn'
-                            type='button'
-                            onClick={handleExport}
-                            disabled={isDownloading}
-                        >
-                            {isDownloading ? 'Generando...' : 'Exportar Excel'}
-                        </button>
-                    )}
-                </form>
-            </div>
-
-            {isAdminLike && openShiftRows.length ? (
-                <div className='shift-open-card'>
-                    <div>
-                        <h2>Turnos abiertos</h2>
-                        <p>
-                            {openShiftRows.length} fichaje
-                            {openShiftRows.length === 1 ? '' : 's'} sin salida.
-                        </p>
-                    </div>
-                    <div className='shift-open-list'>
-                        {openShiftRows.map((row) => (
-                            <button
-                                key={row.id}
-                                type='button'
-                                className='shift-open-item'
-                                onClick={() =>
-                                    handleSelectEvent({
-                                        shiftId: row.id,
-                                        serviceId: row.serviceId,
-                                        serviceName:
-                                            row.serviceName || row.type,
-                                        employeeName: `${row.firstName || ''} ${
-                                            row.lastName || ''
-                                        }`.trim(),
-                                    })
-                                }
-                            >
-                                <strong>
-                                    {row.firstName} {row.lastName}
-                                </strong>
-                                <span>
-                                    {row.serviceName || row.type || 'Servicio'}
-                                </span>
-                                <small>
-                                    Entrada:{' '}
-                                    {formatDateTimeMadrid(
-                                        row.realClockIn || row.clockIn
-                                    )}
-                                </small>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            ) : null}
-
-            <div className='shift-calendar-card'>
-                {loading ? (
-                    <p className='shift-loading'>Cargando turnos...</p>
-                ) : (
-                    <CalendarComponent
-                        events={calendarEvents}
-                        onSelectEvent={handleSelectEvent}
-                    />
-                )}
-            </div>
-
-            {isAdminLike && (
-                <div className='shift-location-card'>
-                    <h2>Geolocalizaciones</h2>
-                    <div className='shift-location-filters'>
-                        <select
-                            value={locationMode}
-                            onChange={(e) => setLocationMode(e.target.value)}
-                        >
-                            <option value='shifts'>Turnos</option>
-                            <option value='punches'>Picadas</option>
-                            <option value='clockin'>Entradas</option>
-                        </select>
-                        <select
-                            value={serviceName}
-                            onChange={(e) => setServiceName(e.target.value)}
-                        >
-                            <option value=''>Todos los servicios</option>
-                            {uniqueServiceNames.map((name) => (
-                                <option key={name} value={name}>
-                                    {name}
-                                </option>
-                            ))}
-                        </select>
-                        <input
-                            type='text'
-                            placeholder='Buscar persona'
-                            value={personSearch}
-                            onChange={(e) => setPersonSearch(e.target.value)}
-                        />
-                        <div className='shift-location-range'>
-                            <input
+                                id='startDate'
                                 type='date'
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
                             />
+                        </div>
+
+                        <div className='shift-filter'>
+                            <label htmlFor='endDate'>Hasta</label>
                             <input
+                                id='endDate'
                                 type='date'
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
                             />
                         </div>
+
+                        <button className='shift-btn shift-btn--ghost' type='submit'>
+                            Limpiar filtros
+                        </button>
+                        {isAdminLike && (
+                            <button
+                                className='shift-btn'
+                                type='button'
+                                onClick={handleExport}
+                                disabled={isDownloading}
+                            >
+                                {isDownloading ? 'Generando...' : 'Exportar Excel'}
+                            </button>
+                        )}
+                    </form>
+                </aside>
+
+                <div className='shift-content'>
+                    {isAdminLike && openShiftRows.length ? (
+                        <div className='shift-open-card'>
+                            <div>
+                                <h2>Turnos abiertos</h2>
+                                <p>
+                                    {openShiftRows.length} fichaje
+                                    {openShiftRows.length === 1 ? '' : 's'} sin salida.
+                                </p>
+                            </div>
+                            <div className='shift-open-list'>
+                                {openShiftRows.map((row) => (
+                                    <button
+                                        key={row.id}
+                                        type='button'
+                                        className='shift-open-item'
+                                        onClick={() =>
+                                            handleSelectEvent({
+                                                shiftId: row.id,
+                                                serviceId: row.serviceId,
+                                                serviceName:
+                                                    row.serviceName || row.type,
+                                                employeeName: `${row.firstName || ''} ${
+                                                    row.lastName || ''
+                                                }`.trim(),
+                                            })
+                                        }
+                                    >
+                                        <strong>
+                                            {row.firstName} {row.lastName}
+                                        </strong>
+                                        <span>
+                                            {row.serviceName || row.type || 'Servicio'}
+                                        </span>
+                                        <small>
+                                            Entrada:{' '}
+                                            {formatDateTimeMadrid(
+                                                row.realClockIn || row.clockIn
+                                            )}
+                                        </small>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    ) : null}
+
+                    <div className='shift-calendar-card'>
+                        {loading ? (
+                            <p className='shift-loading'>Cargando turnos...</p>
+                        ) : (
+                            <CalendarComponent
+                                events={calendarEvents}
+                                onSelectEvent={handleSelectEvent}
+                            />
+                        )}
                     </div>
-                    {locationRows.length ? (
-                        <div className='shift-location-list'>
-                            {pagedLocationRows.map((row, index) => {
+
+                    {isAdminLike && (
+                        <div className='shift-location-card'>
+                            <h2>Geolocalizaciones</h2>
+                            <div className='shift-location-filters'>
+                                <select
+                                    value={locationMode}
+                                    onChange={(e) => setLocationMode(e.target.value)}
+                                >
+                                    <option value='shifts'>Turnos</option>
+                                    <option value='punches'>Picadas</option>
+                                    <option value='clockin'>Entradas</option>
+                                </select>
+                                <select
+                                    value={serviceName}
+                                    onChange={(e) => setServiceName(e.target.value)}
+                                >
+                                    <option value=''>Todos los servicios</option>
+                                    {uniqueServiceNames.map((name) => (
+                                        <option key={name} value={name}>
+                                            {name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <input
+                                    type='text'
+                                    placeholder='Buscar persona'
+                                    value={personSearch}
+                                    onChange={(e) => setPersonSearch(e.target.value)}
+                                />
+                                <div className='shift-location-range'>
+                                    <input
+                                        type='date'
+                                        value={startDate}
+                                        onChange={(e) => setStartDate(e.target.value)}
+                                    />
+                                    <input
+                                        type='date'
+                                        value={endDate}
+                                        onChange={(e) => setEndDate(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            {locationRows.length ? (
+                                <div className='shift-location-list'>
+                                    {pagedLocationRows.map((row, index) => {
                                 const hasIn =
                                     row.latitudeIn && row.longitudeIn;
                                 const hasOut =
@@ -867,8 +871,10 @@ const ShiftComponent = () => {
                             </button>
                         </div>
                     )}
+                        </div>
+                    )}
                 </div>
-            )}
+            </div>
 
             {selectedShift && (
                 <div className='shift-modal-overlay'>
