@@ -367,6 +367,11 @@
 
 .dashboard-mobile-nav-shell {
     display: none;
+    position: sticky;
+    bottom: 0.45rem;
+    z-index: 30;
+    pointer-events: auto;
+    width: 100%;
 }
 
 .dashboard-wrapper--map-view {
@@ -389,8 +394,9 @@
 
 .dashboard-wrapper--map-view .dashboard-mobile-nav-shell {
     display: block;
-    position: relative;
-    z-index: 20;
+    position: sticky;
+    bottom: 0.45rem;
+    z-index: 30;
     pointer-events: auto;
     width: 100%;
 }
@@ -522,8 +528,9 @@
 @media (max-width: 720px) {
     .dashboard-mobile-nav-shell {
         display: block;
-        position: relative;
-        z-index: 20;
+        position: sticky;
+        bottom: 0.45rem;
+        z-index: 30;
         pointer-events: auto;
         width: 100%;
     }

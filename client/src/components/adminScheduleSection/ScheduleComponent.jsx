@@ -2194,7 +2194,7 @@ const ScheduleComponent = () => {
                             <>
                                 <button
                                     type='button'
-                                    className='schedule-btn schedule-btn--ghost'
+                                    className='schedule-btn schedule-btn--ghost schedule-btn--primary-outline'
                                     onClick={handleServicePdfDownload}
                                     disabled={!scheduleServiceId || isDownloadingServicePdf}
                                 >
@@ -2202,7 +2202,7 @@ const ScheduleComponent = () => {
                                 </button>
                                 <button
                                     type='button'
-                                    className='schedule-btn schedule-btn--ghost'
+                                    className='schedule-btn schedule-btn--ghost schedule-btn--primary-outline'
                                     onClick={handleServiceExcelDownload}
                                     disabled={
                                         !scheduleServiceId || isDownloadingServiceExcel
