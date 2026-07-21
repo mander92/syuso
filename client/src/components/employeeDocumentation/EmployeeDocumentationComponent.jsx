@@ -116,12 +116,16 @@ const emptyForm = {
     address: '',
     phone: '',
     socialSecurityNumber: '',
+    poloSize: '',
+    pantsSize: '',
     dni: '',
     tip: '',
     active: 1,
     status: 'pending',
     reviewNotes: '',
 };
+
+const clothingSizeOptions = ['XXXL', 'XXL', 'XL', 'L', 'M', 'S'];
 
 const emptyClientForm = {
     displayName: '',
@@ -897,6 +901,8 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                 address: form.address,
                 phone: form.phone,
                 socialSecurityNumber: form.socialSecurityNumber,
+                poloSize: form.poloSize,
+                pantsSize: form.pantsSize,
                 status: form.status,
                 reviewNotes: form.reviewNotes,
             };
@@ -1026,6 +1032,8 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                     address: draftForm.address,
                     phone: draftForm.phone,
                     socialSecurityNumber: draftForm.socialSecurityNumber,
+                    poloSize: draftForm.poloSize,
+                    pantsSize: draftForm.pantsSize,
                     status: draftForm.status,
                     reviewNotes: draftForm.reviewNotes,
                 },
@@ -1127,6 +1135,8 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                         address: draftForm.address,
                         phone: draftForm.phone,
                         socialSecurityNumber: draftForm.socialSecurityNumber,
+                        poloSize: draftForm.poloSize,
+                        pantsSize: draftForm.pantsSize,
                         status: draftForm.status || 'draft',
                         reviewNotes: draftForm.reviewNotes,
                     },
@@ -1283,6 +1293,8 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                         address: draftForm.address,
                         phone: draftForm.phone,
                         socialSecurityNumber: draftForm.socialSecurityNumber,
+                        poloSize: draftForm.poloSize,
+                        pantsSize: draftForm.pantsSize,
                         status: draftForm.status || 'draft',
                         reviewNotes: draftForm.reviewNotes,
                     },
@@ -1968,6 +1980,44 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                                     <option value='rejected'>Rechazada</option>
                                 </select>
                             </div>
+                            <div className='employee-documentation-field'>
+                                <label>Talla polo</label>
+                                <select
+                                    value={draftForm.poloSize || ''}
+                                    onChange={(event) =>
+                                        handleDraftChange(
+                                            'poloSize',
+                                            event.target.value
+                                        )
+                                    }
+                                >
+                                    <option value=''>Selecciona</option>
+                                    {clothingSizeOptions.map((size) => (
+                                        <option key={size} value={size}>
+                                            {size}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className='employee-documentation-field'>
+                                <label>Talla pantalon</label>
+                                <select
+                                    value={draftForm.pantsSize || ''}
+                                    onChange={(event) =>
+                                        handleDraftChange(
+                                            'pantsSize',
+                                            event.target.value
+                                        )
+                                    }
+                                >
+                                    <option value=''>Selecciona</option>
+                                    {clothingSizeOptions.map((size) => (
+                                        <option key={size} value={size}>
+                                            {size}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                             <div className='employee-documentation-field employee-documentation-field--wide'>
                                 <label>Direccion</label>
                                 <input
@@ -2328,6 +2378,38 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                                     handleChange('phone', event.target.value)
                                 }
                             />
+                        </div>
+                        <div className='employee-documentation-field'>
+                            <label>Talla polo</label>
+                            <select
+                                value={form.poloSize || ''}
+                                onChange={(event) =>
+                                    handleChange('poloSize', event.target.value)
+                                }
+                            >
+                                <option value=''>Selecciona</option>
+                                {clothingSizeOptions.map((size) => (
+                                    <option key={size} value={size}>
+                                        {size}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className='employee-documentation-field'>
+                            <label>Talla pantalon</label>
+                            <select
+                                value={form.pantsSize || ''}
+                                onChange={(event) =>
+                                    handleChange('pantsSize', event.target.value)
+                                }
+                            >
+                                <option value=''>Selecciona</option>
+                                {clothingSizeOptions.map((size) => (
+                                    <option key={size} value={size}>
+                                        {size}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                         {isAdminLike ? (
                             <div className='employee-documentation-field'>

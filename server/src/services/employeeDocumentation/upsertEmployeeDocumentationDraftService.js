@@ -17,6 +17,8 @@ const fields = [
     'address',
     'phone',
     'socialSecurityNumber',
+    'poloSize',
+    'pantsSize',
     'status',
     'reviewNotes',
     'linkedUserId',
@@ -56,8 +58,9 @@ const upsertEmployeeDocumentationDraftService = async (draftId, data) => {
             INSERT INTO employeeDocumentationDrafts
                 (id, firstName, lastName, email, dni, tip, birthDate, bankAccount,
                  dniFrontPath, dniBackPath, tipFrontPath, tipBackPath, address,
-                 phone, socialSecurityNumber, status, reviewNotes, linkedUserId)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 phone, socialSecurityNumber, poloSize, pantsSize, status, reviewNotes,
+                 linkedUserId)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [
             id,
@@ -75,6 +78,8 @@ const upsertEmployeeDocumentationDraftService = async (draftId, data) => {
             payload.address || null,
             payload.phone || null,
             payload.socialSecurityNumber || null,
+            payload.poloSize || null,
+            payload.pantsSize || null,
             payload.status || 'draft',
             payload.reviewNotes || null,
             payload.linkedUserId || null,

@@ -51,6 +51,8 @@ const createUserFromDocumentationDraftController = async (req, res, next) => {
             address: draft.address,
             phone: draft.phone,
             socialSecurityNumber: draft.socialSecurityNumber,
+            poloSize: draft.poloSize,
+            pantsSize: draft.pantsSize,
             status: 'submitted',
             reviewNotes: draft.reviewNotes,
         });

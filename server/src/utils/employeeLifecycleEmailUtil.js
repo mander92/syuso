@@ -158,6 +158,8 @@ export const sendEmployeeLifecycleEmail = async ({
         ['Direccion', employee?.address],
         ['Numero de cuenta bancaria', employee?.bankAccount],
         ['Numero Seguridad Social', employee?.socialSecurityNumber],
+        ['Talla polo', employee?.poloSize],
+        ['Talla pantalon', employee?.pantsSize],
     ];
 
     const subject =

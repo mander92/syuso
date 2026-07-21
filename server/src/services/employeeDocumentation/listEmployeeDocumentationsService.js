@@ -37,6 +37,8 @@ const listEmployeeDocumentationsService = async ({ viewerId, viewerRole } = {}) 
                 d.address,
                 d.phone,
                 d.socialSecurityNumber,
+                d.poloSize,
+                d.pantsSize,
                 d.status,
                 d.reviewNotes,
                 d.modifiedAt

@@ -32,6 +32,12 @@ const updateEmployeeDocumentationController = async (req, res, next) => {
             address: Joi.string().max(255).allow('', null),
             phone: Joi.string().max(20).allow('', null),
             socialSecurityNumber: Joi.string().max(40).allow('', null),
+            poloSize: Joi.string()
+                .valid('XXXL', 'XXL', 'XL', 'L', 'M', 'S')
+                .allow('', null),
+            pantsSize: Joi.string()
+                .valid('XXXL', 'XXL', 'XL', 'L', 'M', 'S')
+                .allow('', null),
             status: Joi.string()
                 .valid('pending', 'submitted', 'reviewed', 'rejected')
                 .allow(null),

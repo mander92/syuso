@@ -20,6 +20,8 @@ const upsertEmployeeDocumentationService = async (userId, data) => {
         'address',
         'phone',
         'socialSecurityNumber',
+        'poloSize',
+        'pantsSize',
         'status',
         'reviewNotes',
     ];
@@ -50,8 +52,8 @@ const upsertEmployeeDocumentationService = async (userId, data) => {
             INSERT INTO employeeDocumentations
                 (id, userId, birthDate, bankAccount, dniFrontPath, dniBackPath,
                  tipFrontPath, tipBackPath, address, phone, socialSecurityNumber,
-                 status, reviewNotes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 poloSize, pantsSize, status, reviewNotes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [
             id,
@@ -65,6 +67,8 @@ const upsertEmployeeDocumentationService = async (userId, data) => {
             payload.address || null,
             payload.phone || null,
             payload.socialSecurityNumber || null,
+            payload.poloSize || null,
+            payload.pantsSize || null,
             payload.status || 'pending',
             payload.reviewNotes || null,
         ]
@@ -74,4 +78,3 @@ const upsertEmployeeDocumentationService = async (userId, data) => {
 };
 
 export default upsertEmployeeDocumentationService;
-
