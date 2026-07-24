@@ -11,13 +11,13 @@ import {
     fetchAdminShiftSwapRequests,
     fetchMyShiftSwapRequests,
     rejectCounterpartShiftSwapRequest,
-    rejectShiftSwapRequest,
+    rejectShiftSwapRequest
 } from '../../services/shiftSwapService.js';
 import {
     fetchAllServicesServices,
     fetchDetailServiceServices,
     fetchEmployeeAllServicesServices,
-    fetchServiceScheduleShifts,
+    fetchServiceScheduleShifts
 } from '../../services/serviceService.js';
 import { fetchAllUsersServices } from '../../services/userService.js';
 import { formatDateTimeMadrid } from '../../utils/dateTimeMadrid.js';
@@ -28,13 +28,13 @@ const statusLabels = {
     pending_counterpart: 'Pendiente del compañero',
     pending_admin: 'Pendiente de aprobación',
     approved: 'Aprobada',
-    rejected: 'Rechazada',
+    rejected: 'Rechazada'
 };
 
 const requestTypeLabels = {
     swap: 'Cambiar turnos',
     transfer: 'Ceder turnos',
-    request: 'Pedir turnos',
+    request: 'Pedir turnos'
 };
 
 const normalizeServices = (data) => {
@@ -50,7 +50,9 @@ const getDateKey = (value) => (value ? String(value).slice(0, 10) : '');
 const ShiftSwapsComponent = () => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
-    const userRole = String(user?.role || '').trim().toLowerCase();
+    const userRole = String(user?.role || '')
+        .trim()
+        .toLowerCase();
     const isAdminLike = userRole === 'admin' || userRole === 'sudo';
     const isEmployee = userRole === 'employee' || userRole === 'empleado';
 
@@ -59,8 +61,8 @@ const ShiftSwapsComponent = () => {
     const [services, setServices] = useState([]);
     const [employees, setEmployees] = useState([]);
     const [serviceEmployees, setServiceEmployees] = useState([]);
-    const [month, setMonth] = useState(
-        () => new Date().toISOString().slice(0, 7)
+    const [month, setMonth] = useState(() =>
+        new Date().toISOString().slice(0, 7)
     );
     const [formServiceId, setFormServiceId] = useState('');
     const [form, setForm] = useState({
@@ -69,7 +71,7 @@ const ShiftSwapsComponent = () => {
         fromShiftIds: [],
         toShiftIds: [],
         counterpartId: '',
-        reason: '',
+        reason: ''
     });
     const [coworkerSearch, setCoworkerSearch] = useState('');
     const [myShifts, setMyShifts] = useState([]);
@@ -87,11 +89,12 @@ const ShiftSwapsComponent = () => {
         status: '',
         dateFrom: '',
         dateTo: '',
-        search: '',
+        search: ''
     });
     const [myPage, setMyPage] = useState(1);
     const [adminPage, setAdminPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
+    const [activePanel, setActivePanel] = useState('inbox');
 
     const serviceNameMap = useMemo(() => {
         const map = new Map();
@@ -117,9 +120,8 @@ const ShiftSwapsComponent = () => {
         });
         serviceShifts.forEach((shift) => {
             if (!shift.employeeId || map.has(shift.employeeId)) return;
-            const label = `${shift.firstName || ''} ${
-                shift.lastName || ''
-            }`.trim();
+            const label =
+                `${shift.firstName || ''} ${shift.lastName || ''}`.trim();
             map.set(shift.employeeId, label || 'Empleado');
         });
         serviceEmployees.forEach((employee) => {
@@ -159,11 +161,7 @@ const ShiftSwapsComponent = () => {
                 : request.counterpartName || request.counterpartEmail;
         const id =
             kind === 'requestor' ? request.requestorId : request.counterpartId;
-        return (
-            String(name || '').trim() ||
-            employeeNameMap.get(id) ||
-            ''
-        );
+        return String(name || '').trim() || employeeNameMap.get(id) || '';
     };
 
     const getShiftEmployeeName = (shift) => {
@@ -179,13 +177,13 @@ const ShiftSwapsComponent = () => {
         const requestorId = isAdminLike ? form.requestorId : user?.id;
         const selectedEmployeeIds = new Set(
             serviceEmployees
-                .filter((employee) => employee.id && employee.id !== requestorId)
+                .filter(
+                    (employee) => employee.id && employee.id !== requestorId
+                )
                 .filter((employee) => {
                     if (!search) return true;
                     return normalizeSearch(
-                        `${employee.firstName || ''} ${
-                            employee.lastName || ''
-                        }`.trim() ||
+                        `${employee.firstName || ''} ${employee.lastName || ''}`.trim() ||
                             employee.email ||
                             ''
                     ).includes(search);
@@ -217,7 +215,7 @@ const ShiftSwapsComponent = () => {
         isAdminLike,
         serviceEmployees,
         serviceShifts,
-        user?.id,
+        user?.id
     ]);
 
     const coworkerSearchMatches = useMemo(() => {
@@ -233,21 +231,25 @@ const ShiftSwapsComponent = () => {
             .filter((employee) => employee.id && employee.id !== requestorId)
             .filter((employee) =>
                 normalizeSearch(
-                    `${employee.firstName || ''} ${
-                        employee.lastName || ''
-                    }`.trim() ||
+                    `${employee.firstName || ''} ${employee.lastName || ''}`.trim() ||
                         employee.email ||
                         ''
                 ).includes(search)
             );
-    }, [coworkerSearch, form.requestorId, isAdminLike, serviceEmployees, user?.id]);
+    }, [
+        coworkerSearch,
+        form.requestorId,
+        isAdminLike,
+        serviceEmployees,
+        user?.id
+    ]);
 
     const coworkerResultGroups = useMemo(() => {
         return coworkerSearchMatches.slice(0, 12).map((employee) => ({
             employee,
             shifts: coworkerShiftOptions.filter(
                 (shift) => shift.employeeId === employee.id
-            ),
+            )
         }));
     }, [coworkerSearchMatches, coworkerShiftOptions]);
 
@@ -349,7 +351,7 @@ const ShiftSwapsComponent = () => {
             requestorId: '',
             fromShiftIds: [],
             toShiftIds: [],
-            counterpartId: '',
+            counterpartId: ''
         }));
         setCoworkerSearch('');
         setMyShifts([]);
@@ -362,7 +364,7 @@ const ShiftSwapsComponent = () => {
                 setLoadingShifts(true);
                 const [team, serviceDetail] = await Promise.all([
                     fetchServiceScheduleShifts(authToken, formServiceId, month),
-                    fetchDetailServiceServices(formServiceId, authToken),
+                    fetchDetailServiceServices(formServiceId, authToken)
                 ]);
 
                 setServiceShifts(Array.isArray(team) ? team : []);
@@ -383,7 +385,7 @@ const ShiftSwapsComponent = () => {
                                   id: row.employeeId,
                                   firstName: row.firstName,
                                   lastName: row.lastName,
-                                  email: row.email,
+                                  email: row.email
                               }))
                               .filter(
                                   (employee, index, list) =>
@@ -420,7 +422,7 @@ const ShiftSwapsComponent = () => {
             ? new Intl.DateTimeFormat('es-ES', {
                   weekday: 'short',
                   day: '2-digit',
-                  month: 'short',
+                  month: 'short'
               }).format(new Date(rawDate))
             : 'Sin fecha';
         const start =
@@ -470,13 +472,13 @@ const ShiftSwapsComponent = () => {
     };
 
     const renderShiftBoxes = (label, shifts) => (
-        <div className='shift-swaps-turns'>
+        <div className="shift-swaps-turns">
             <strong>{label}</strong>
             {shifts.length ? (
-                <div className='shift-swaps-turns__list'>
+                <div className="shift-swaps-turns__list">
                     {shifts.map((shift, index) => (
                         <span
-                            className='shift-swaps-turn'
+                            className="shift-swaps-turn"
                             key={`${label}-${shift}-${index}`}
                         >
                             {shift}
@@ -531,7 +533,9 @@ const ShiftSwapsComponent = () => {
     };
 
     const describeRequestService = (request) =>
-        request.serviceName || serviceNameMap.get(request.serviceId) || request.serviceId;
+        request.serviceName ||
+        serviceNameMap.get(request.serviceId) ||
+        request.serviceId;
 
     const describeUser = (userId) => {
         if (!userId) return '—';
@@ -554,17 +558,20 @@ const ShiftSwapsComponent = () => {
         allRequestRows.forEach((request) => {
             [
                 ['requestor', request.requestorId],
-                ['counterpart', request.counterpartId],
+                ['counterpart', request.counterpartId]
             ].forEach(([kind, id]) => {
                 if (!id || map.has(id)) return;
-                map.set(id, getRequestPersonLabel(request, kind) || describeUser(id));
+                map.set(
+                    id,
+                    getRequestPersonLabel(request, kind) || describeUser(id)
+                );
             });
         });
         return [...map.entries()]
             .map(([id, name]) => ({ id, name }))
             .sort((a, b) =>
                 String(a.name || '').localeCompare(String(b.name || ''), 'es', {
-                    sensitivity: 'base',
+                    sensitivity: 'base'
                 })
             );
     }, [allRequestRows, employeeNameMap, user?.id]);
@@ -579,7 +586,7 @@ const ShiftSwapsComponent = () => {
             .map(([id, name]) => ({ id, name }))
             .sort((a, b) =>
                 String(a.name || '').localeCompare(String(b.name || ''), 'es', {
-                    sensitivity: 'base',
+                    sensitivity: 'base'
                 })
             );
     }, [allRequestRows, serviceNameMap]);
@@ -607,7 +614,8 @@ const ShiftSwapsComponent = () => {
             }
 
             const createdDate = getDateKey(request.createdAt);
-            if (filters.dateFrom && createdDate < filters.dateFrom) return false;
+            if (filters.dateFrom && createdDate < filters.dateFrom)
+                return false;
             if (filters.dateTo && createdDate > filters.dateTo) return false;
 
             if (!query) return true;
@@ -621,8 +629,16 @@ const ShiftSwapsComponent = () => {
                     statusLabels[request.status],
                     request.status,
                     request.reason,
-                    getShiftDescriptions(request, 'fromShiftIds', 'fromShiftId').join(' '),
-                    getShiftDescriptions(request, 'toShiftIds', 'toShiftId').join(' '),
+                    getShiftDescriptions(
+                        request,
+                        'fromShiftIds',
+                        'fromShiftId'
+                    ).join(' '),
+                    getShiftDescriptions(
+                        request,
+                        'toShiftIds',
+                        'toShiftId'
+                    ).join(' ')
                 ].join(' ')
             ).includes(query);
         });
@@ -641,13 +657,16 @@ const ShiftSwapsComponent = () => {
     const getPaginated = (rows, page) => {
         const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
         const safePage = Math.min(page, totalPages);
-        const items = rows.slice((safePage - 1) * pageSize, safePage * pageSize);
+        const items = rows.slice(
+            (safePage - 1) * pageSize,
+            safePage * pageSize
+        );
         return {
             items,
             totalPages,
             safePage,
             firstVisible: rows.length ? (safePage - 1) * pageSize + 1 : 0,
-            lastVisible: Math.min(safePage * pageSize, rows.length),
+            lastVisible: Math.min(safePage * pageSize, rows.length)
         };
     };
 
@@ -656,9 +675,8 @@ const ShiftSwapsComponent = () => {
     const filteredTotal = isAdminLike
         ? filteredAdminRequests.length
         : filteredMyRequests.length;
-    const pendingFilteredCount = (isAdminLike
-        ? filteredAdminRequests
-        : filteredMyRequests
+    const pendingFilteredCount = (
+        isAdminLike ? filteredAdminRequests : filteredMyRequests
     ).filter((request) =>
         ['pending', 'pending_admin', 'pending_counterpart'].includes(
             request.status
@@ -671,7 +689,8 @@ const ShiftSwapsComponent = () => {
     }, [filters, pageSize]);
 
     useEffect(() => {
-        if (myPage > myPagination.totalPages) setMyPage(myPagination.totalPages);
+        if (myPage > myPagination.totalPages)
+            setMyPage(myPagination.totalPages);
         if (adminPage > adminPagination.totalPages) {
             setAdminPage(adminPagination.totalPages);
         }
@@ -679,8 +698,14 @@ const ShiftSwapsComponent = () => {
         adminPage,
         adminPagination.totalPages,
         myPage,
-        myPagination.totalPages,
+        myPagination.totalPages
     ]);
+
+    useEffect(() => {
+        if (!isAdminLike && activePanel === 'inbox') {
+            setActivePanel('new');
+        }
+    }, [activePanel, isAdminLike]);
 
     const updateFilter = (field, value) => {
         setFilters((prev) => ({ ...prev, [field]: value }));
@@ -694,14 +719,14 @@ const ShiftSwapsComponent = () => {
             status: '',
             dateFrom: '',
             dateTo: '',
-            search: '',
+            search: ''
         });
     };
 
     const renderPagination = (rows, pagination, pageSetter) => {
         if (!rows.length) return null;
         return (
-            <div className='shift-swaps-pagination'>
+            <div className="shift-swaps-pagination">
                 <span>
                     Mostrando {pagination.firstVisible}-{pagination.lastVisible}{' '}
                     de {rows.length}
@@ -721,9 +746,9 @@ const ShiftSwapsComponent = () => {
                         ))}
                     </select>
                 </label>
-                <div className='shift-swaps-pagination__actions'>
+                <div className="shift-swaps-pagination__actions">
                     <button
-                        type='button'
+                        type="button"
                         onClick={() =>
                             pageSetter((current) => Math.max(1, current - 1))
                         }
@@ -735,7 +760,7 @@ const ShiftSwapsComponent = () => {
                         {pagination.safePage} / {pagination.totalPages}
                     </strong>
                     <button
-                        type='button'
+                        type="button"
                         onClick={() =>
                             pageSetter((current) =>
                                 Math.min(pagination.totalPages, current + 1)
@@ -759,7 +784,7 @@ const ShiftSwapsComponent = () => {
             ...prev,
             [field]: prev[field].includes(shiftId)
                 ? prev[field].filter((id) => id !== shiftId)
-                : [...prev[field], shiftId],
+                : [...prev[field], shiftId]
         }));
     };
 
@@ -769,7 +794,7 @@ const ShiftSwapsComponent = () => {
             requestType,
             fromShiftIds: [],
             toShiftIds: [],
-            counterpartId: '',
+            counterpartId: ''
         }));
         setCoworkerSearch('');
     };
@@ -780,7 +805,7 @@ const ShiftSwapsComponent = () => {
             requestorId,
             fromShiftIds: [],
             toShiftIds: [],
-            counterpartId: '',
+            counterpartId: ''
         }));
         setCoworkerSearch('');
     };
@@ -792,7 +817,7 @@ const ShiftSwapsComponent = () => {
             toShiftIds:
                 prev.counterpartId && prev.counterpartId !== employeeId
                     ? []
-                    : prev.toShiftIds,
+                    : prev.toShiftIds
         }));
         setCoworkerSearch(employeeNameMap.get(employeeId) || '');
     };
@@ -810,7 +835,7 @@ const ShiftSwapsComponent = () => {
                 counterpartId: targetShift.employeeId,
                 toShiftIds: currentIds.includes(shiftId)
                     ? currentIds.filter((id) => id !== shiftId)
-                    : [...currentIds, shiftId],
+                    : [...currentIds, shiftId]
             };
         });
         if (targetShift) {
@@ -822,7 +847,7 @@ const ShiftSwapsComponent = () => {
         setForm((prev) => ({
             ...prev,
             toShiftIds: [],
-            counterpartId: '',
+            counterpartId: ''
         }));
         setCoworkerSearch('');
     };
@@ -837,10 +862,9 @@ const ShiftSwapsComponent = () => {
             ...(isAdminLike ? { requestorId: form.requestorId } : {}),
             fromShiftIds:
                 form.requestType === 'request' ? [] : form.fromShiftIds,
-            toShiftIds:
-                form.requestType === 'transfer' ? [] : form.toShiftIds,
+            toShiftIds: form.requestType === 'transfer' ? [] : form.toShiftIds,
             counterpartId: form.counterpartId,
-            reason: form.reason.trim() || null,
+            reason: form.reason.trim() || null
         };
 
         const missing = Object.entries({
@@ -854,7 +878,7 @@ const ShiftSwapsComponent = () => {
                 payload.requestType === 'transfer'
                     ? true
                     : payload.toShiftIds.length,
-            counterpartId: payload.counterpartId,
+            counterpartId: payload.counterpartId
         }).filter(([, value]) => !value);
         if (missing.length) {
             toast.error('Completa servicio, tus turnos y el del compañero.');
@@ -873,11 +897,13 @@ const ShiftSwapsComponent = () => {
                 fromShiftIds: [],
                 toShiftIds: [],
                 counterpartId: '',
-                reason: '',
+                reason: ''
             }));
             if (isAdminLike) {
                 const admin = await fetchAdminShiftSwapRequests(authToken);
-                setAdminRequests(Array.isArray(admin) ? admin : admin?.data || []);
+                setAdminRequests(
+                    Array.isArray(admin) ? admin : admin?.data || []
+                );
             } else {
                 const mine = await fetchMyShiftSwapRequests(authToken);
                 setMyRequests(Array.isArray(mine) ? mine : mine?.data || []);
@@ -893,12 +919,8 @@ const ShiftSwapsComponent = () => {
         const mergeRequest = (req) =>
             req.id === updated.id ? { ...req, ...updated } : req;
 
-        setAdminRequests((prev) =>
-            prev.map((req) => mergeRequest(req))
-        );
-        setMyRequests((prev) =>
-            prev.map((req) => mergeRequest(req))
-        );
+        setAdminRequests((prev) => prev.map((req) => mergeRequest(req)));
+        setMyRequests((prev) => prev.map((req) => mergeRequest(req)));
     };
 
     const handleApprove = async (requestId) => {
@@ -939,7 +961,9 @@ const ShiftSwapsComponent = () => {
         try {
             setActioningId(requestId);
             const data = await confirmShiftSwapRequest(authToken, requestId);
-            toast.success('Solicitud confirmada. Queda pendiente de aprobación.');
+            toast.success(
+                'Solicitud confirmada. Queda pendiente de aprobación.'
+            );
             updateRequestLocal(data?.data || data);
         } catch (error) {
             toast.error(error.message || 'No se pudo confirmar');
@@ -969,12 +993,12 @@ const ShiftSwapsComponent = () => {
 
     if (!user || (!isEmployee && !isAdminLike)) {
         return (
-            <section className='shift-swaps'>
-                <div className='shift-swaps-card'>
+            <section className="shift-swaps">
+                <div className="shift-swaps-card">
                     <h2>Cambios de turno</h2>
                     <p>
-                        Esta funcionalidad está disponible solo para empleados
-                        y administradores.
+                        Esta funcionalidad está disponible solo para empleados y
+                        administradores.
                     </p>
                 </div>
             </section>
@@ -982,739 +1006,925 @@ const ShiftSwapsComponent = () => {
     }
 
     return (
-        <section className='shift-swaps'>
-            <header className='shift-swaps__header'>
-                <div>
-                    <p className='shift-swaps__eyebrow'>Operativa interna</p>
-                    <h2>Cambios de turno</h2>
-                    <p className='shift-swaps__subtitle'>
-                        Solicita intercambios entre compañeros y gestiona las
-                        aprobaciones desde un único panel.
-                    </p>
-                </div>
-                <div className='shift-swaps__meta'>
-                    <span className='shift-swaps__badge'>
-                        {filteredTotal} filtradas
-                    </span>
-                    <span className='shift-swaps__badge'>
-                        {pendingFilteredCount} pendientes
-                    </span>
-                    {isAdminLike ? (
-                        <span className='shift-swaps__badge shift-swaps__badge--accent'>
-                            {adminRequests.filter(
-                                (req) =>
-                                    req.status === 'pending_admin' ||
-                                    req.status === 'pending'
-                            ).length || 0}{' '}
-                            pendientes
-                        </span>
-                    ) : null}
-                </div>
-            </header>
-
-            <div className='shift-swaps-filters'>
-                <label>
-                    Empleado
-                    <select
-                        value={filters.employeeId}
-                        onChange={(event) =>
-                            updateFilter('employeeId', event.target.value)
-                        }
-                    >
-                        <option value=''>Todos</option>
-                        {requestEmployeeOptions.map((employee) => (
-                            <option key={employee.id} value={employee.id}>
-                                {employee.name}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-                <label>
-                    Servicio
-                    <select
-                        value={filters.serviceId}
-                        onChange={(event) =>
-                            updateFilter('serviceId', event.target.value)
-                        }
-                    >
-                        <option value=''>Todos</option>
-                        {requestServiceOptions.map((service) => (
-                            <option key={service.id} value={service.id}>
-                                {service.name}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-                <label>
-                    Tipo
-                    <select
-                        value={filters.requestType}
-                        onChange={(event) =>
-                            updateFilter('requestType', event.target.value)
-                        }
-                    >
-                        <option value=''>Todos</option>
-                        {Object.entries(requestTypeLabels).map(
-                            ([value, label]) => (
-                                <option key={value} value={value}>
-                                    {label}
-                                </option>
-                            )
-                        )}
-                    </select>
-                </label>
-                <label>
-                    Estado
-                    <select
-                        value={filters.status}
-                        onChange={(event) =>
-                            updateFilter('status', event.target.value)
-                        }
-                    >
-                        <option value=''>Todos</option>
-                        {Object.entries(statusLabels).map(([value, label]) => (
-                            <option key={value} value={value}>
-                                {label}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-                <label>
-                    Desde
-                    <input
-                        type='date'
-                        value={filters.dateFrom}
-                        onChange={(event) =>
-                            updateFilter('dateFrom', event.target.value)
-                        }
-                    />
-                </label>
-                <label>
-                    Hasta
-                    <input
-                        type='date'
-                        value={filters.dateTo}
-                        onChange={(event) =>
-                            updateFilter('dateTo', event.target.value)
-                        }
-                    />
-                </label>
-                <label className='shift-swaps-filters__search'>
-                    Buscar
-                    <input
-                        type='search'
-                        value={filters.search}
-                        onChange={(event) =>
-                            updateFilter('search', event.target.value)
-                        }
-                        placeholder='Nombre, servicio, turno...'
-                    />
-                </label>
-                <button
-                    type='button'
-                    className='shift-swaps-filter-clear'
-                    onClick={clearFilters}
-                >
-                    Limpiar filtros
-                </button>
-            </div>
-
-            <div className='shift-swaps__grid'>
-                <form className='shift-swaps-card' onSubmit={handleSubmit}>
-                    <div className='shift-swaps-card__header'>
+        <section className="shift-swaps">
+            <div className="shift-swaps-layout">
+                <aside className="shift-swaps-sidebar">
+                    <header className="shift-swaps__header">
                         <div>
-                            <p className='shift-swaps__eyebrow'>
-                                Nueva solicitud
+                            <p className="shift-swaps__eyebrow">
+                                Operativa interna
                             </p>
-                            <h3>Proponer intercambio</h3>
+                            <h2>Cambios de turno</h2>
+                            <p className="shift-swaps__subtitle">
+                                Solicita intercambios entre compañeros y
+                                gestiona las aprobaciones desde un único panel.
+                            </p>
                         </div>
-                        <div className='shift-swaps__month'>
-                            <label htmlFor='shift-swaps-month'>Mes</label>
-                            <input
-                                id='shift-swaps-month'
-                                type='month'
-                                value={month}
-                                onChange={(event) =>
-                                    setMonth(event.target.value)
-                                }
-                            />
-                        </div>
-                    </div>
-
-                    <div className='shift-swaps-form'>
-                        <label className='shift-swaps-field'>
-                            <span>Servicio</span>
-                            <select
-                                value={formServiceId}
-                                onChange={(event) =>
-                                    setFormServiceId(event.target.value)
-                                }
-                            >
-                                <option value=''>Selecciona servicio</option>
-                                {services.map((svc) => {
-                                    const id = svc.serviceId || svc.id;
-                                    return (
-                                        <option value={id} key={id}>
-                                            {serviceNameMap.get(id) || id}
-                                        </option>
-                                    );
-                                })}
-                            </select>
-                        </label>
-
-                        {isAdminLike ? (
-                            <label className='shift-swaps-field'>
-                                <span>Trabajador que solicita</span>
-                                <select
-                                    value={form.requestorId}
-                                    onChange={(event) =>
-                                        handleRequestorSelect(event.target.value)
-                                    }
-                                    disabled={!formServiceId || loadingShifts}
-                                >
-                                    <option value=''>Selecciona trabajador</option>
-                                    {serviceEmployees.map((employee) => (
-                                        <option
-                                            value={employee.id}
-                                            key={employee.id}
-                                        >
-                                            {employeeNameMap.get(employee.id) ||
-                                                employee.email ||
-                                                employee.id}
-                                        </option>
-                                    ))}
-                                </select>
-                                <small>
-                                    Admin propone el cambio en nombre de este
-                                    trabajador.
-                                </small>
-                            </label>
-                        ) : null}
-
-                        <label className='shift-swaps-field'>
-                            <span>Operacion</span>
-                            <select
-                                value={form.requestType}
-                                onChange={(event) =>
-                                    handleRequestTypeChange(event.target.value)
-                                }
-                            >
-                                <option value='swap'>Cambiar turnos</option>
-                                <option value='transfer'>Ceder turnos</option>
-                                <option value='request'>Pedir turnos</option>
-                            </select>
-                        </label>
-
-                        {form.requestType !== 'request' ? (
-                            <div className='shift-swaps-field'>
-                                <span>
-                                    {isAdminLike
-                                        ? `Turnos de ${
-                                              form.requestorId
-                                                  ? describeUser(
-                                                        form.requestorId
-                                                    )
-                                                  : 'trabajador'
-                                          }`
-                                        : 'Tus turnos'}
+                        <div className="shift-swaps__meta">
+                            <span className="shift-swaps__badge">
+                                {filteredTotal} filtradas
+                            </span>
+                            <span className="shift-swaps__badge">
+                                {pendingFilteredCount} pendientes
+                            </span>
+                            {isAdminLike ? (
+                                <span className="shift-swaps__badge shift-swaps__badge--accent">
+                                    {adminRequests.filter(
+                                        (req) =>
+                                            req.status === 'pending_admin' ||
+                                            req.status === 'pending'
+                                    ).length || 0}{' '}
+                                    pendientes
                                 </span>
-                                <div className='shift-swaps-check-list'>
-                                    {loadingShifts ? (
-                                        <p>Cargando turnos...</p>
-                                    ) : isAdminLike && !form.requestorId ? (
-                                        <p>
-                                            Selecciona primero el trabajador.
-                                        </p>
-                                    ) : !myShifts.length ? (
-                                        <p>
-                                            No hay turnos para ese trabajador en
-                                            este servicio y mes.
-                                        </p>
-                                    ) : (
-                                        myShifts.map((shift) => (
-                                            <label key={shift.id}>
-                                                <input
-                                                    type='checkbox'
-                                                    checked={form.fromShiftIds.includes(
-                                                        shift.id
-                                                    )}
-                                                    onChange={() =>
-                                                        toggleShiftId(
-                                                            'fromShiftIds',
-                                                            shift.id
-                                                        )
-                                                    }
-                                                />
-                                                <span>{formatShift(shift)}</span>
-                                            </label>
-                                        ))
-                                    )}
-                                </div>
-                                <small>
-                                    Puedes seleccionar uno o varios turnos.
-                                </small>
-                            </div>
-                        ) : null}
-
-                        <div className='shift-swaps-field'>
-                            <span>Turno del compañero</span>
-                            <input
-                                type='search'
-                                placeholder='Escribe el nombre del compañero'
-                                value={coworkerSearch}
-                                onChange={(event) => {
-                                    setCoworkerSearch(event.target.value);
-                                    setForm((prev) => ({
-                                        ...prev,
-                                        toShiftIds: [],
-                                        counterpartId: '',
-                                    }));
-                                }}
-                                disabled={
-                                    !formServiceId ||
-                                    loadingShifts ||
-                                    (isAdminLike && !form.requestorId)
-                                }
-                            />
-
-                            {form.counterpartId ? (
-                                <div className='shift-swaps-selected'>
-                                    <span>
-                                        {describeUser(form.counterpartId)} ·{' '}
-                                        {form.toShiftIds.length
-                                            ? `${form.toShiftIds.length} turno(s)`
-                                            : ''}
-                                    </span>
-                                    <button
-                                        type='button'
-                                        onClick={clearCoworkerShift}
-                                    >
-                                        Cambiar
-                                    </button>
-                                </div>
                             ) : null}
-
-                            <div className='shift-swaps-search-results'>
-                                {!formServiceId ? (
-                                    <p>Selecciona un servicio primero.</p>
-                                ) : loadingShifts ? (
-                                    <p>Cargando turnos...</p>
-                                ) : !serviceEmployees.length ? (
-                                    <p>No hay compañeros asignados al servicio.</p>
-                                ) : !coworkerResultGroups.length ? (
-                                    <p>No hay compañeros con ese nombre.</p>
-                                ) : (
-                                    coworkerResultGroups.map(
-                                        ({ employee, shifts }) => (
-                                            <div
-                                                className='shift-swaps-coworker'
-                                                key={employee.id}
-                                            >
-                                                <strong>
-                                                    {employeeNameMap.get(
-                                                        employee.id
-                                                    ) || 'Empleado'}
-                                                </strong>
-                                                {form.requestType ===
-                                                'transfer' ? (
-                                                    <button
-                                                        type='button'
-                                                        className={
-                                                            form.counterpartId ===
-                                                            employee.id
-                                                                ? 'is-selected'
-                                                                : ''
-                                                        }
-                                                        onClick={() =>
-                                                            handleCounterpartSelect(
-                                                                employee.id
-                                                            )
-                                                        }
-                                                    >
-                                                        Seleccionar compañero
-                                                    </button>
-                                                ) : null}
-                                                {form.requestType !==
-                                                    'transfer' &&
-                                                shifts.length ? (
-                                                    shifts.map((shift) => (
-                                                        <button
-                                                            type='button'
-                                                            key={shift.id}
-                                                            className={
-                                                                form.toShiftIds.includes(
-                                                                    shift.id
-                                                                )
-                                                                    ? 'is-selected'
-                                                                    : ''
-                                                            }
-                                                            onClick={() =>
-                                                                handleCoworkerShiftToggle(
-                                                                    shift.id
-                                                                )
-                                                            }
-                                                        >
-                                                            <span>
-                                                                {formatShift(
-                                                                    shift
-                                                                )}
-                                                            </span>
-                                                        </button>
-                                                    ))
-                                                ) : form.requestType !==
-                                                  'transfer' ? (
-                                                    <p>
-                                                        Sin turnos en el mes
-                                                        seleccionado.
-                                                    </p>
-                                                ) : null}
-                                            </div>
-                                        )
-                                    )
-                                )}
-                            </div>
-
-                            {serviceShifts.length ? (
-                                <small>
-                                    Escribe el nombre y selecciona uno de sus
-                                    turnos del mes.
-                                </small>
-                            ) : (
-                                <small>
-                                    Los compañeros aparecen al seleccionar el
-                                    servicio; para solicitar el cambio necesitan
-                                    tener turnos en el mes.
-                                </small>
-                            )}
                         </div>
+                    </header>
 
-                        <label className='shift-swaps-field'>
-                            <span>Motivo (opcional)</span>
-                            <textarea
-                                rows={3}
-                                value={form.reason}
+                    <div className="shift-swaps-filters">
+                        <label>
+                            Empleado
+                            <select
+                                value={filters.employeeId}
                                 onChange={(event) =>
-                                    handleFieldChange(
-                                        'reason',
+                                    updateFilter(
+                                        'employeeId',
                                         event.target.value
                                     )
                                 }
-                                placeholder='Breve contexto para el responsable'
+                            >
+                                <option value="">Todos</option>
+                                {requestEmployeeOptions.map((employee) => (
+                                    <option
+                                        key={employee.id}
+                                        value={employee.id}
+                                    >
+                                        {employee.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                        <label>
+                            Servicio
+                            <select
+                                value={filters.serviceId}
+                                onChange={(event) =>
+                                    updateFilter(
+                                        'serviceId',
+                                        event.target.value
+                                    )
+                                }
+                            >
+                                <option value="">Todos</option>
+                                {requestServiceOptions.map((service) => (
+                                    <option key={service.id} value={service.id}>
+                                        {service.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                        <label>
+                            Tipo
+                            <select
+                                value={filters.requestType}
+                                onChange={(event) =>
+                                    updateFilter(
+                                        'requestType',
+                                        event.target.value
+                                    )
+                                }
+                            >
+                                <option value="">Todos</option>
+                                {Object.entries(requestTypeLabels).map(
+                                    ([value, label]) => (
+                                        <option key={value} value={value}>
+                                            {label}
+                                        </option>
+                                    )
+                                )}
+                            </select>
+                        </label>
+                        <label>
+                            Estado
+                            <select
+                                value={filters.status}
+                                onChange={(event) =>
+                                    updateFilter('status', event.target.value)
+                                }
+                            >
+                                <option value="">Todos</option>
+                                {Object.entries(statusLabels).map(
+                                    ([value, label]) => (
+                                        <option key={value} value={value}>
+                                            {label}
+                                        </option>
+                                    )
+                                )}
+                            </select>
+                        </label>
+                        <label>
+                            Desde
+                            <input
+                                type="date"
+                                value={filters.dateFrom}
+                                onChange={(event) =>
+                                    updateFilter('dateFrom', event.target.value)
+                                }
                             />
                         </label>
-                    </div>
-
-                    <div className='shift-swaps-actions'>
+                        <label>
+                            Hasta
+                            <input
+                                type="date"
+                                value={filters.dateTo}
+                                onChange={(event) =>
+                                    updateFilter('dateTo', event.target.value)
+                                }
+                            />
+                        </label>
+                        <label className="shift-swaps-filters__search">
+                            Buscar
+                            <input
+                                type="search"
+                                value={filters.search}
+                                onChange={(event) =>
+                                    updateFilter('search', event.target.value)
+                                }
+                                placeholder="Nombre, servicio, turno..."
+                            />
+                        </label>
                         <button
-                            type='submit'
-                            className='shift-swaps-btn shift-swaps-btn--primary'
-                            disabled={creating || loadingShifts}
+                            type="button"
+                            className="shift-swaps-filter-clear"
+                            onClick={clearFilters}
                         >
-                            {creating ? 'Enviando...' : 'Solicitar cambio'}
+                            Limpiar filtros
                         </button>
                     </div>
-                </form>
+                </aside>
 
-                <div className='shift-swaps-card'>
-                    <div className='shift-swaps-card__header'>
-                        <div>
-                            <p className='shift-swaps__eyebrow'>
-                                Historial
-                            </p>
-                            <h3>Mis solicitudes</h3>
-                        </div>
+                <div className="shift-swaps-content">
+                    <div className="shift-swaps-floating-tabs">
+                        {isAdminLike ? (
+                            <button
+                                type="button"
+                                className={
+                                    activePanel === 'inbox' ? 'is-active' : ''
+                                }
+                                onClick={() => setActivePanel('inbox')}
+                            >
+                                Bandeja de entrada
+                                <span>{filteredAdminRequests.length}</span>
+                            </button>
+                        ) : null}
+                        <button
+                            type="button"
+                            className={activePanel === 'new' ? 'is-active' : ''}
+                            onClick={() => setActivePanel('new')}
+                        >
+                            Nueva solicitud
+                        </button>
+                        <button
+                            type="button"
+                            className={
+                                activePanel === 'history' ? 'is-active' : ''
+                            }
+                            onClick={() => setActivePanel('history')}
+                        >
+                            Historial
+                            <span>{filteredMyRequests.length}</span>
+                        </button>
                     </div>
 
-                    {loadingRequests ? (
-                        <p className='shift-swaps-empty'>Cargando...</p>
-                    ) : !filteredMyRequests.length ? (
-                        <p className='shift-swaps-empty'>
-                            Aún no has enviado solicitudes.
-                        </p>
-                    ) : (
-                        <>
-                            <ul className='shift-swaps-list'>
-                            {myPagination.items.map((req) => (
-                                <li
-                                    key={req.id}
-                                    className='shift-swaps-item'
-                                >
-                                    <div className='shift-swaps-item__head'>
-                                        <div>
-                                            <p className='shift-swaps-service'>
-                                                {describeRequestService(req)}
-                                            </p>
-                                            <p className='shift-swaps-date'>
-                                                {formatDateTimeMadrid(
-                                                    req.createdAt
-                                                )}
-                                            </p>
-                                        </div>
-                                        <span
-                                            className={`shift-swaps-status shift-swaps-status--${req.status}`}
+                    <div
+                        className={`shift-swaps-panel ${
+                            activePanel === 'new' ? 'is-active' : ''
+                        }`}
+                    >
+                        <form
+                            className="shift-swaps-card"
+                            onSubmit={handleSubmit}
+                        >
+                            <div className="shift-swaps-card__header">
+                                <div>
+                                    <p className="shift-swaps__eyebrow">
+                                        Nueva solicitud
+                                    </p>
+                                    <h3>Proponer intercambio</h3>
+                                </div>
+                                <div className="shift-swaps__month">
+                                    <label htmlFor="shift-swaps-month">
+                                        Mes
+                                    </label>
+                                    <input
+                                        id="shift-swaps-month"
+                                        type="month"
+                                        value={month}
+                                        onChange={(event) =>
+                                            setMonth(event.target.value)
+                                        }
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="shift-swaps-form">
+                                <label className="shift-swaps-field">
+                                    <span>Servicio</span>
+                                    <select
+                                        value={formServiceId}
+                                        onChange={(event) =>
+                                            setFormServiceId(event.target.value)
+                                        }
+                                    >
+                                        <option value="">
+                                            Selecciona servicio
+                                        </option>
+                                        {services.map((svc) => {
+                                            const id = svc.serviceId || svc.id;
+                                            return (
+                                                <option value={id} key={id}>
+                                                    {serviceNameMap.get(id) ||
+                                                        id}
+                                                </option>
+                                            );
+                                        })}
+                                    </select>
+                                </label>
+
+                                {isAdminLike ? (
+                                    <label className="shift-swaps-field">
+                                        <span>Trabajador que solicita</span>
+                                        <select
+                                            value={form.requestorId}
+                                            onChange={(event) =>
+                                                handleRequestorSelect(
+                                                    event.target.value
+                                                )
+                                            }
+                                            disabled={
+                                                !formServiceId || loadingShifts
+                                            }
                                         >
-                                            {statusLabels[req.status] ||
-                                                req.status}
-                                        </span>
-                                    </div>
-                                    <div className='shift-swaps-item__body'>
-                                        <p>
-                                            <strong>Servicio:</strong>{' '}
-                                            {describeRequestService(req)}
-                                        </p>
-                                        <p>
-                                            <strong>Solicitante:</strong>{' '}
-                                            {describeRequestPerson(
-                                                req,
-                                                'requestor'
-                                            )}
-                                        </p>
-                                        <p>
-                                            <strong>Compañero:</strong>{' '}
-                                            {describeRequestPerson(
-                                                req,
-                                                'counterpart'
-                                            )}
-                                        </p>
-                                        <p>
-                                            <strong>Tipo:</strong>{' '}
-                                            {requestTypeLabels[
-                                                req.requestType || 'swap'
-                                            ] || req.requestType}
-                                        </p>
-                                        {renderRequestShifts(req)}
-                                        {req.reason ? (
-                                            <p className='shift-swaps-reason'>
-                                                {req.reason}
-                                            </p>
-                                        ) : null}
-                                        {req.status === 'approved' ||
-                                        req.status === 'rejected' ? (
-                                            <p className='shift-swaps-resolution'>
-                                                Resuelto el{' '}
-                                                {formatDateTimeMadrid(
-                                                    req.decidedAt
-                                                ) || '—'}
-                                            </p>
-                                        ) : null}
-                                        {req.status ===
-                                            'pending_counterpart' &&
-                                        req.counterpartId === user?.id ? (
-                                            <div className='shift-swaps-admin'>
-                                                <input
-                                                    type='text'
-                                                    placeholder='Motivo de rechazo (opcional)'
-                                                    value={
-                                                        rejectNotes[req.id] || ''
-                                                    }
-                                                    onChange={(event) =>
-                                                        setRejectNotes(
-                                                            (prev) => ({
-                                                                ...prev,
-                                                                [req.id]:
-                                                                    event
-                                                                        .target
-                                                                        .value,
-                                                            })
-                                                        )
-                                                    }
-                                                />
-                                                <div className='shift-swaps-admin__actions'>
-                                                    <button
-                                                        type='button'
-                                                        className='shift-swaps-btn'
-                                                        onClick={() =>
-                                                            handleCounterpartReject(
-                                                                req.id
-                                                            )
-                                                        }
-                                                        disabled={
-                                                            actioningId ===
-                                                            req.id
-                                                        }
+                                            <option value="">
+                                                Selecciona trabajador
+                                            </option>
+                                            {serviceEmployees.map(
+                                                (employee) => (
+                                                    <option
+                                                        value={employee.id}
+                                                        key={employee.id}
                                                     >
-                                                        Rechazar
-                                                    </button>
-                                                    <button
-                                                        type='button'
-                                                        className='shift-swaps-btn shift-swaps-btn--primary'
-                                                        onClick={() =>
-                                                            handleCounterpartConfirm(
-                                                                req.id
-                                                            )
-                                                        }
-                                                        disabled={
-                                                            actioningId ===
-                                                            req.id
-                                                        }
-                                                    >
-                                                        Confirmar
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ) : null}
-                                    </div>
-                                </li>
-                            ))}
-                            </ul>
-                            {renderPagination(
-                                filteredMyRequests,
-                                myPagination,
-                                setMyPage
-                            )}
-                        </>
-                    )}
-                </div>
-            </div>
+                                                        {employeeNameMap.get(
+                                                            employee.id
+                                                        ) ||
+                                                            employee.email ||
+                                                            employee.id}
+                                                    </option>
+                                                )
+                                            )}
+                                        </select>
+                                        <small>
+                                            Admin propone el cambio en nombre de
+                                            este trabajador.
+                                        </small>
+                                    </label>
+                                ) : null}
 
-            {isAdminLike ? (
-                <div className='shift-swaps-card'>
-                    <div className='shift-swaps-card__header'>
-                        <div>
-                            <p className='shift-swaps__eyebrow'>
-                                Bandeja de aprobación
-                            </p>
-                            <h3>Solicitudes de empleados</h3>
-                        </div>
-                    </div>
-                    {loadingAdmin ? (
-                        <p className='shift-swaps-empty'>Cargando...</p>
-                    ) : !filteredAdminRequests.length ? (
-                        <p className='shift-swaps-empty'>
-                            No hay solicitudes registradas.
-                        </p>
-                    ) : (
-                        <>
-                            <ul className='shift-swaps-list'>
-                            {adminPagination.items.map((req) => (
-                                <li
-                                    key={req.id}
-                                    className='shift-swaps-item'
-                                >
-                                    <div className='shift-swaps-item__head'>
-                                        <div>
-                                            <p className='shift-swaps-service'>
-                                                {describeRequestService(req)}
-                                            </p>
-                                            <p className='shift-swaps-date'>
-                                                {formatDateTimeMadrid(
-                                                    req.createdAt
-                                                )}
-                                            </p>
-                                            <p className='shift-swaps-meta'>
-                                                Solicitante:{' '}
-                                                {describeRequestPerson(
-                                                    req,
-                                                    'requestor'
+                                <label className="shift-swaps-field">
+                                    <span>Operacion</span>
+                                    <select
+                                        value={form.requestType}
+                                        onChange={(event) =>
+                                            handleRequestTypeChange(
+                                                event.target.value
+                                            )
+                                        }
+                                    >
+                                        <option value="swap">
+                                            Cambiar turnos
+                                        </option>
+                                        <option value="transfer">
+                                            Ceder turnos
+                                        </option>
+                                        <option value="request">
+                                            Pedir turnos
+                                        </option>
+                                    </select>
+                                </label>
+
+                                {form.requestType !== 'request' ? (
+                                    <div className="shift-swaps-field">
+                                        <span>
+                                            {isAdminLike
+                                                ? `Turnos de ${
+                                                      form.requestorId
+                                                          ? describeUser(
+                                                                form.requestorId
+                                                            )
+                                                          : 'trabajador'
+                                                  }`
+                                                : 'Tus turnos'}
+                                        </span>
+                                        <div className="shift-swaps-check-list">
+                                            {loadingShifts ? (
+                                                <p>Cargando turnos...</p>
+                                            ) : isAdminLike &&
+                                              !form.requestorId ? (
+                                                <p>
+                                                    Selecciona primero el
+                                                    trabajador.
+                                                </p>
+                                            ) : !myShifts.length ? (
+                                                <p>
+                                                    No hay turnos para ese
+                                                    trabajador en este servicio
+                                                    y mes.
+                                                </p>
+                                            ) : (
+                                                myShifts.map((shift) => (
+                                                    <label key={shift.id}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={form.fromShiftIds.includes(
+                                                                shift.id
+                                                            )}
+                                                            onChange={() =>
+                                                                toggleShiftId(
+                                                                    'fromShiftIds',
+                                                                    shift.id
+                                                                )
+                                                            }
+                                                        />
+                                                        <span>
+                                                            {formatShift(shift)}
+                                                        </span>
+                                                    </label>
+                                                ))
+                                            )}
+                                        </div>
+                                        <small>
+                                            Puedes seleccionar uno o varios
+                                            turnos.
+                                        </small>
+                                    </div>
+                                ) : null}
+
+                                <div className="shift-swaps-field">
+                                    <span>Turno del compañero</span>
+                                    <input
+                                        type="search"
+                                        placeholder="Escribe el nombre del compañero"
+                                        value={coworkerSearch}
+                                        onChange={(event) => {
+                                            setCoworkerSearch(
+                                                event.target.value
+                                            );
+                                            setForm((prev) => ({
+                                                ...prev,
+                                                toShiftIds: [],
+                                                counterpartId: ''
+                                            }));
+                                        }}
+                                        disabled={
+                                            !formServiceId ||
+                                            loadingShifts ||
+                                            (isAdminLike && !form.requestorId)
+                                        }
+                                    />
+
+                                    {form.counterpartId ? (
+                                        <div className="shift-swaps-selected">
+                                            <span>
+                                                {describeUser(
+                                                    form.counterpartId
                                                 )}{' '}
-                                                · Compañero:{' '}
-                                                {describeRequestPerson(
-                                                    req,
-                                                    'counterpart'
-                                                )}
-                                            </p>
-                                        </div>
-                                        <span
-                                            className={`shift-swaps-status shift-swaps-status--${req.status}`}
-                                        >
-                                            {statusLabels[req.status] ||
-                                                req.status}
-                                        </span>
-                                    </div>
-                                    <div className='shift-swaps-item__body'>
-                                        <p>
-                                            <strong>Servicio:</strong>{' '}
-                                            {describeRequestService(req)}
-                                        </p>
-                                        <p>
-                                            <strong>Solicitante:</strong>{' '}
-                                            {describeRequestPerson(
-                                                req,
-                                                'requestor'
-                                            )}
-                                        </p>
-                                        <p>
-                                            <strong>Compañero:</strong>{' '}
-                                            {describeRequestPerson(
-                                                req,
-                                                'counterpart'
-                                            )}
-                                        </p>
-                                        <p>
-                                            <strong>Tipo:</strong>{' '}
-                                            {requestTypeLabels[
-                                                req.requestType || 'swap'
-                                            ] || req.requestType}
-                                        </p>
-                                        {renderRequestShifts(req)}
-                                        {req.reason ? (
-                                            <p className='shift-swaps-reason'>
-                                                {req.reason}
-                                            </p>
-                                        ) : null}
-                                    </div>
-                                    {req.status === 'pending_admin' ||
-                                    req.status === 'pending' ? (
-                                        <div className='shift-swaps-admin'>
-                                            <input
-                                                type='text'
-                                                placeholder='Motivo de rechazo (opcional)'
-                                                value={rejectNotes[req.id] || ''}
-                                                onChange={(event) =>
-                                                    setRejectNotes(
-                                                        (prev) => ({
-                                                            ...prev,
-                                                            [req.id]:
-                                                                event.target
-                                                                    .value,
-                                                        })
-                                                    )
-                                                }
-                                            />
-                                            <div className='shift-swaps-admin__actions'>
-                                                <button
-                                                    type='button'
-                                                    className='shift-swaps-btn'
-                                                    onClick={() =>
-                                                        handleReject(req.id)
-                                                    }
-                                                    disabled={
-                                                        actioningId === req.id
-                                                    }
-                                                >
-                                                    {actioningId === req.id
-                                                        ? 'Guardando...'
-                                                        : 'Rechazar'}
-                                                </button>
-                                                <button
-                                                    type='button'
-                                                    className='shift-swaps-btn shift-swaps-btn--primary'
-                                                    onClick={() =>
-                                                        handleApprove(req.id)
-                                                    }
-                                                    disabled={
-                                                        actioningId === req.id
-                                                    }
-                                                >
-                                                    {actioningId === req.id
-                                                        ? 'Procesando...'
-                                                        : 'Aprobar'}
-                                                </button>
-                                            </div>
+                                                ·{' '}
+                                                {form.toShiftIds.length
+                                                    ? `${form.toShiftIds.length} turno(s)`
+                                                    : ''}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={clearCoworkerShift}
+                                            >
+                                                Cambiar
+                                            </button>
                                         </div>
                                     ) : null}
-                                </li>
-                            ))}
-                            </ul>
-                            {renderPagination(
-                                filteredAdminRequests,
-                                adminPagination,
-                                setAdminPage
+
+                                    <div className="shift-swaps-search-results">
+                                        {!formServiceId ? (
+                                            <p>
+                                                Selecciona un servicio primero.
+                                            </p>
+                                        ) : loadingShifts ? (
+                                            <p>Cargando turnos...</p>
+                                        ) : !serviceEmployees.length ? (
+                                            <p>
+                                                No hay compañeros asignados al
+                                                servicio.
+                                            </p>
+                                        ) : !coworkerResultGroups.length ? (
+                                            <p>
+                                                No hay compañeros con ese
+                                                nombre.
+                                            </p>
+                                        ) : (
+                                            coworkerResultGroups.map(
+                                                ({ employee, shifts }) => (
+                                                    <div
+                                                        className="shift-swaps-coworker"
+                                                        key={employee.id}
+                                                    >
+                                                        <strong>
+                                                            {employeeNameMap.get(
+                                                                employee.id
+                                                            ) || 'Empleado'}
+                                                        </strong>
+                                                        {form.requestType ===
+                                                        'transfer' ? (
+                                                            <button
+                                                                type="button"
+                                                                className={
+                                                                    form.counterpartId ===
+                                                                    employee.id
+                                                                        ? 'is-selected'
+                                                                        : ''
+                                                                }
+                                                                onClick={() =>
+                                                                    handleCounterpartSelect(
+                                                                        employee.id
+                                                                    )
+                                                                }
+                                                            >
+                                                                Seleccionar
+                                                                compañero
+                                                            </button>
+                                                        ) : null}
+                                                        {form.requestType !==
+                                                            'transfer' &&
+                                                        shifts.length ? (
+                                                            shifts.map(
+                                                                (shift) => (
+                                                                    <button
+                                                                        type="button"
+                                                                        key={
+                                                                            shift.id
+                                                                        }
+                                                                        className={
+                                                                            form.toShiftIds.includes(
+                                                                                shift.id
+                                                                            )
+                                                                                ? 'is-selected'
+                                                                                : ''
+                                                                        }
+                                                                        onClick={() =>
+                                                                            handleCoworkerShiftToggle(
+                                                                                shift.id
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <span>
+                                                                            {formatShift(
+                                                                                shift
+                                                                            )}
+                                                                        </span>
+                                                                    </button>
+                                                                )
+                                                            )
+                                                        ) : form.requestType !==
+                                                          'transfer' ? (
+                                                            <p>
+                                                                Sin turnos en el
+                                                                mes
+                                                                seleccionado.
+                                                            </p>
+                                                        ) : null}
+                                                    </div>
+                                                )
+                                            )
+                                        )}
+                                    </div>
+
+                                    {serviceShifts.length ? (
+                                        <small>
+                                            Escribe el nombre y selecciona uno
+                                            de sus turnos del mes.
+                                        </small>
+                                    ) : (
+                                        <small>
+                                            Los compañeros aparecen al
+                                            seleccionar el servicio; para
+                                            solicitar el cambio necesitan tener
+                                            turnos en el mes.
+                                        </small>
+                                    )}
+                                </div>
+
+                                <label className="shift-swaps-field">
+                                    <span>Motivo (opcional)</span>
+                                    <textarea
+                                        rows={3}
+                                        value={form.reason}
+                                        onChange={(event) =>
+                                            handleFieldChange(
+                                                'reason',
+                                                event.target.value
+                                            )
+                                        }
+                                        placeholder="Breve contexto para el responsable"
+                                    />
+                                </label>
+                            </div>
+
+                            <div className="shift-swaps-actions">
+                                <button
+                                    type="submit"
+                                    className="shift-swaps-btn shift-swaps-btn--primary"
+                                    disabled={creating || loadingShifts}
+                                >
+                                    {creating
+                                        ? 'Enviando...'
+                                        : 'Solicitar cambio'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div
+                        className={`shift-swaps-panel ${
+                            activePanel === 'history' ? 'is-active' : ''
+                        }`}
+                    >
+                        <div className="shift-swaps-card">
+                            <div className="shift-swaps-card__header">
+                                <div>
+                                    <p className="shift-swaps__eyebrow">
+                                        Historial
+                                    </p>
+                                    <h3>Mis solicitudes</h3>
+                                </div>
+                            </div>
+
+                            {loadingRequests ? (
+                                <p className="shift-swaps-empty">Cargando...</p>
+                            ) : !filteredMyRequests.length ? (
+                                <p className="shift-swaps-empty">
+                                    Aún no has enviado solicitudes.
+                                </p>
+                            ) : (
+                                <>
+                                    <ul className="shift-swaps-list">
+                                        {myPagination.items.map((req) => (
+                                            <li
+                                                key={req.id}
+                                                className="shift-swaps-item"
+                                            >
+                                                <div className="shift-swaps-item__head">
+                                                    <div>
+                                                        <p className="shift-swaps-service">
+                                                            {describeRequestService(
+                                                                req
+                                                            )}
+                                                        </p>
+                                                        <p className="shift-swaps-date">
+                                                            {formatDateTimeMadrid(
+                                                                req.createdAt
+                                                            )}
+                                                        </p>
+                                                    </div>
+                                                    <span
+                                                        className={`shift-swaps-status shift-swaps-status--${req.status}`}
+                                                    >
+                                                        {statusLabels[
+                                                            req.status
+                                                        ] || req.status}
+                                                    </span>
+                                                </div>
+                                                <div className="shift-swaps-item__body">
+                                                    <p>
+                                                        <strong>
+                                                            Servicio:
+                                                        </strong>{' '}
+                                                        {describeRequestService(
+                                                            req
+                                                        )}
+                                                    </p>
+                                                    <p>
+                                                        <strong>
+                                                            Solicitante:
+                                                        </strong>{' '}
+                                                        {describeRequestPerson(
+                                                            req,
+                                                            'requestor'
+                                                        )}
+                                                    </p>
+                                                    <p>
+                                                        <strong>
+                                                            Compañero:
+                                                        </strong>{' '}
+                                                        {describeRequestPerson(
+                                                            req,
+                                                            'counterpart'
+                                                        )}
+                                                    </p>
+                                                    <p>
+                                                        <strong>Tipo:</strong>{' '}
+                                                        {requestTypeLabels[
+                                                            req.requestType ||
+                                                                'swap'
+                                                        ] || req.requestType}
+                                                    </p>
+                                                    {renderRequestShifts(req)}
+                                                    {req.reason ? (
+                                                        <p className="shift-swaps-reason">
+                                                            {req.reason}
+                                                        </p>
+                                                    ) : null}
+                                                    {req.status ===
+                                                        'approved' ||
+                                                    req.status ===
+                                                        'rejected' ? (
+                                                        <p className="shift-swaps-resolution">
+                                                            Resuelto el{' '}
+                                                            {formatDateTimeMadrid(
+                                                                req.decidedAt
+                                                            ) || '—'}
+                                                        </p>
+                                                    ) : null}
+                                                    {req.status ===
+                                                        'pending_counterpart' &&
+                                                    req.counterpartId ===
+                                                        user?.id ? (
+                                                        <div className="shift-swaps-admin">
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Motivo de rechazo (opcional)"
+                                                                value={
+                                                                    rejectNotes[
+                                                                        req.id
+                                                                    ] || ''
+                                                                }
+                                                                onChange={(
+                                                                    event
+                                                                ) =>
+                                                                    setRejectNotes(
+                                                                        (
+                                                                            prev
+                                                                        ) => ({
+                                                                            ...prev,
+                                                                            [req.id]:
+                                                                                event
+                                                                                    .target
+                                                                                    .value
+                                                                        })
+                                                                    )
+                                                                }
+                                                            />
+                                                            <div className="shift-swaps-admin__actions">
+                                                                <button
+                                                                    type="button"
+                                                                    className="shift-swaps-btn"
+                                                                    onClick={() =>
+                                                                        handleCounterpartReject(
+                                                                            req.id
+                                                                        )
+                                                                    }
+                                                                    disabled={
+                                                                        actioningId ===
+                                                                        req.id
+                                                                    }
+                                                                >
+                                                                    Rechazar
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    className="shift-swaps-btn shift-swaps-btn--primary"
+                                                                    onClick={() =>
+                                                                        handleCounterpartConfirm(
+                                                                            req.id
+                                                                        )
+                                                                    }
+                                                                    disabled={
+                                                                        actioningId ===
+                                                                        req.id
+                                                                    }
+                                                                >
+                                                                    Confirmar
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ) : null}
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    {renderPagination(
+                                        filteredMyRequests,
+                                        myPagination,
+                                        setMyPage
+                                    )}
+                                </>
                             )}
-                        </>
-                    )}
+                        </div>
+                    </div>
+
+                    <div
+                        className={`shift-swaps-panel ${
+                            activePanel === 'inbox' ? 'is-active' : ''
+                        }`}
+                    >
+                        {isAdminLike ? (
+                            <div className="shift-swaps-card">
+                                <div className="shift-swaps-card__header">
+                                    <div>
+                                        <p className="shift-swaps__eyebrow">
+                                            Bandeja de aprobación
+                                        </p>
+                                        <h3>Solicitudes de empleados</h3>
+                                    </div>
+                                </div>
+                                {loadingAdmin ? (
+                                    <p className="shift-swaps-empty">
+                                        Cargando...
+                                    </p>
+                                ) : !filteredAdminRequests.length ? (
+                                    <p className="shift-swaps-empty">
+                                        No hay solicitudes registradas.
+                                    </p>
+                                ) : (
+                                    <>
+                                        <ul className="shift-swaps-list">
+                                            {adminPagination.items.map(
+                                                (req) => (
+                                                    <li
+                                                        key={req.id}
+                                                        className="shift-swaps-item"
+                                                    >
+                                                        <div className="shift-swaps-item__head">
+                                                            <div>
+                                                                <p className="shift-swaps-service">
+                                                                    {describeRequestService(
+                                                                        req
+                                                                    )}
+                                                                </p>
+                                                                <p className="shift-swaps-date">
+                                                                    {formatDateTimeMadrid(
+                                                                        req.createdAt
+                                                                    )}
+                                                                </p>
+                                                                <p className="shift-swaps-meta">
+                                                                    Solicitante:{' '}
+                                                                    {describeRequestPerson(
+                                                                        req,
+                                                                        'requestor'
+                                                                    )}{' '}
+                                                                    · Compañero:{' '}
+                                                                    {describeRequestPerson(
+                                                                        req,
+                                                                        'counterpart'
+                                                                    )}
+                                                                </p>
+                                                            </div>
+                                                            <span
+                                                                className={`shift-swaps-status shift-swaps-status--${req.status}`}
+                                                            >
+                                                                {statusLabels[
+                                                                    req.status
+                                                                ] || req.status}
+                                                            </span>
+                                                        </div>
+                                                        <div className="shift-swaps-item__body">
+                                                            <p>
+                                                                <strong>
+                                                                    Servicio:
+                                                                </strong>{' '}
+                                                                {describeRequestService(
+                                                                    req
+                                                                )}
+                                                            </p>
+                                                            <p>
+                                                                <strong>
+                                                                    Solicitante:
+                                                                </strong>{' '}
+                                                                {describeRequestPerson(
+                                                                    req,
+                                                                    'requestor'
+                                                                )}
+                                                            </p>
+                                                            <p>
+                                                                <strong>
+                                                                    Compañero:
+                                                                </strong>{' '}
+                                                                {describeRequestPerson(
+                                                                    req,
+                                                                    'counterpart'
+                                                                )}
+                                                            </p>
+                                                            <p>
+                                                                <strong>
+                                                                    Tipo:
+                                                                </strong>{' '}
+                                                                {requestTypeLabels[
+                                                                    req.requestType ||
+                                                                        'swap'
+                                                                ] ||
+                                                                    req.requestType}
+                                                            </p>
+                                                            {renderRequestShifts(
+                                                                req
+                                                            )}
+                                                            {req.reason ? (
+                                                                <p className="shift-swaps-reason">
+                                                                    {req.reason}
+                                                                </p>
+                                                            ) : null}
+                                                        </div>
+                                                        {req.status ===
+                                                            'pending_admin' ||
+                                                        req.status ===
+                                                            'pending' ? (
+                                                            <div className="shift-swaps-admin">
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Motivo de rechazo (opcional)"
+                                                                    value={
+                                                                        rejectNotes[
+                                                                            req
+                                                                                .id
+                                                                        ] || ''
+                                                                    }
+                                                                    onChange={(
+                                                                        event
+                                                                    ) =>
+                                                                        setRejectNotes(
+                                                                            (
+                                                                                prev
+                                                                            ) => ({
+                                                                                ...prev,
+                                                                                [req.id]:
+                                                                                    event
+                                                                                        .target
+                                                                                        .value
+                                                                            })
+                                                                        )
+                                                                    }
+                                                                />
+                                                                <div className="shift-swaps-admin__actions">
+                                                                    <button
+                                                                        type="button"
+                                                                        className="shift-swaps-btn"
+                                                                        onClick={() =>
+                                                                            handleReject(
+                                                                                req.id
+                                                                            )
+                                                                        }
+                                                                        disabled={
+                                                                            actioningId ===
+                                                                            req.id
+                                                                        }
+                                                                    >
+                                                                        {actioningId ===
+                                                                        req.id
+                                                                            ? 'Guardando...'
+                                                                            : 'Rechazar'}
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        className="shift-swaps-btn shift-swaps-btn--primary"
+                                                                        onClick={() =>
+                                                                            handleApprove(
+                                                                                req.id
+                                                                            )
+                                                                        }
+                                                                        disabled={
+                                                                            actioningId ===
+                                                                            req.id
+                                                                        }
+                                                                    >
+                                                                        {actioningId ===
+                                                                        req.id
+                                                                            ? 'Procesando...'
+                                                                            : 'Aprobar'}
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        ) : null}
+                                                    </li>
+                                                )
+                                            )}
+                                        </ul>
+                                        {renderPagination(
+                                            filteredAdminRequests,
+                                            adminPagination,
+                                            setAdminPage
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        ) : null}
+                    </div>
                 </div>
-            ) : null}
+            </div>
         </section>
     );
 };

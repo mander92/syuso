@@ -815,42 +815,16 @@ const WorkReportsComponent = () => {
 
     return (
         <section className='shift-wrapper'>
-            <div className='shift-header'>
-                <div>
-                    <h1 className='shift-title'>Partes de trabajo</h1>
-                    <p className='shift-subtitle'>
-                        Filtra partes por empleado, zona, servicio y fechas.
-                    </p>
-                </div>
-
-                <div className='shift-header-actions'>
-                    <button
-                        className='shift-btn'
-                        type='button'
-                        onClick={handleOpenCreateModal}
-                    >
-                        Crear parte
-                    </button>
-                    <button
-                        className='shift-btn'
-                        type='button'
-                        onClick={handleDownloadZip}
-                        disabled={isDownloading}
-                    >
-                        {isDownloading
-                            ? 'Descargando...'
-                            : 'Descargar ZIP'}
-                    </button>
-                    <button
-                        className='shift-btn shift-btn--ghost'
-                        type='button'
-                        onClick={handleOpenDeleteModal}
-                        disabled={isDownloading || isDeleting}
-                    >
-                        {isDeleting ? 'Eliminando...' : 'Eliminar partes'}
-                    </button>
-                </div>
-
+            <div className='shift-layout'>
+                <aside className='shift-sidebar-filters'>
+                    <div className='shift-header'>
+                        <div>
+                            <h1 className='shift-title'>Partes de trabajo</h1>
+                            <p className='shift-subtitle'>
+                                Filtra partes por empleado, zona, servicio y fechas.
+                            </p>
+                        </div>
+                    </div>
                 <form className='shift-filters' onSubmit={handleReset}>
                     <div className='shift-filter'>
                         <label htmlFor='workEmployeeId'>Empleado</label>
@@ -975,8 +949,36 @@ const WorkReportsComponent = () => {
                         Limpiar filtros
                     </button>
                 </form>
-            </div>
+                </aside>
 
+                <div className='shift-content'>
+                    <div className='shift-floating-actions'>
+                        <button
+                            className='shift-btn'
+                            type='button'
+                            onClick={handleOpenCreateModal}
+                        >
+                            Crear parte
+                        </button>
+                        <button
+                            className='shift-btn'
+                            type='button'
+                            onClick={handleDownloadZip}
+                            disabled={isDownloading}
+                        >
+                            {isDownloading
+                                ? 'Descargando...'
+                                : 'Descargar ZIP'}
+                        </button>
+                        <button
+                            className='shift-btn shift-btn--ghost'
+                            type='button'
+                            onClick={handleOpenDeleteModal}
+                            disabled={isDownloading || isDeleting}
+                        >
+                            {isDeleting ? 'Eliminando...' : 'Eliminar partes'}
+                        </button>
+                    </div>
             <div className='shift-calendar-card'>
                 {loading ? (
                     <p className='shift-loading'>Cargando partes...</p>
@@ -990,6 +992,8 @@ const WorkReportsComponent = () => {
                         No hay partes de trabajo con esos filtros.
                     </p>
                 )}
+            </div>
+                </div>
             </div>
 
             {deleteModalOpen && (

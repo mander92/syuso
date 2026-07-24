@@ -64,6 +64,7 @@ const EmployeeRequestsComponent = () => {
     });
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
+    const [activePanel, setActivePanel] = useState(canCreate ? 'new' : 'inbox');
     const [form, setForm] = useState({
         requestType: 'vacation',
         startDate: today(),
@@ -153,6 +154,12 @@ const EmployeeRequestsComponent = () => {
     useEffect(() => {
         if (page > totalPages) setPage(totalPages);
     }, [page, totalPages]);
+
+    useEffect(() => {
+        if (!canCreate && activePanel === 'new') {
+            setActivePanel('inbox');
+        }
+    }, [activePanel, canCreate]);
 
     const loadRequests = useCallback(async () => {
         if (!authToken || !user) return;
@@ -255,22 +262,142 @@ const EmployeeRequestsComponent = () => {
 
     return (
         <section className='employee-requests'>
-            <div className='employee-requests__header'>
-                <div>
-                    <p className='employee-requests__eyebrow'>Peticiones</p>
-                    <h2>{isAdminLike ? 'Solicitudes del equipo' : 'Mis peticiones'}</h2>
-                </div>
-                <div className='employee-requests-header__meta'>
-                    <span className='employee-requests-counter'>
-                        {pendingCount} pendientes
-                    </span>
-                    <span className='employee-requests-counter employee-requests-counter--muted'>
-                        {filteredRequests.length} filtradas
-                    </span>
-                </div>
-            </div>
+            <div className='employee-requests-layout'>
+                <aside className='employee-requests-sidebar'>
+                    <div className='employee-requests__header'>
+                        <div>
+                            <p className='employee-requests__eyebrow'>Peticiones</p>
+                            <h2>{isAdminLike ? 'Solicitudes del equipo' : 'Mis peticiones'}</h2>
+                        </div>
+                        <div className='employee-requests-header__meta'>
+                            <span className='employee-requests-counter'>
+                                {pendingCount} pendientes
+                            </span>
+                            <span className='employee-requests-counter employee-requests-counter--muted'>
+                                {filteredRequests.length} filtradas
+                            </span>
+                        </div>
+                    </div>
 
-            {canCreate ? (
+                    <div className='employee-requests-filters'>
+                        {isAdminLike ? (
+                            <label>
+                                Empleado
+                                <select
+                                    value={filters.employeeId}
+                                    onChange={(event) =>
+                                        updateFilter('employeeId', event.target.value)
+                                    }
+                                >
+                                    <option value=''>Todos</option>
+                                    {employeeOptions.map((employee) => (
+                                        <option key={employee.id} value={employee.id}>
+                                            {employee.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+                        ) : null}
+                        <label>
+                            Tipo
+                            <select
+                                value={filters.requestType}
+                                onChange={(event) =>
+                                    updateFilter('requestType', event.target.value)
+                                }
+                            >
+                                <option value=''>Todos</option>
+                                {Object.entries(requestTypeLabels).map(([value, label]) => (
+                                    <option key={value} value={value}>
+                                        {label}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                        <label>
+                            Estado
+                            <select
+                                value={filters.status}
+                                onChange={(event) =>
+                                    updateFilter('status', event.target.value)
+                                }
+                            >
+                                <option value=''>Todos</option>
+                                {Object.entries(statusLabels).map(([value, label]) => (
+                                    <option key={value} value={value}>
+                                        {label}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                        <label>
+                            Desde
+                            <input
+                                type='date'
+                                value={filters.dateFrom}
+                                onChange={(event) =>
+                                    updateFilter('dateFrom', event.target.value)
+                                }
+                            />
+                        </label>
+                        <label>
+                            Hasta
+                            <input
+                                type='date'
+                                value={filters.dateTo}
+                                onChange={(event) =>
+                                    updateFilter('dateTo', event.target.value)
+                                }
+                            />
+                        </label>
+                        <label className='employee-requests-filters__search'>
+                            Buscar
+                            <input
+                                type='search'
+                                value={filters.search}
+                                onChange={(event) =>
+                                    updateFilter('search', event.target.value)
+                                }
+                                placeholder='Nombre, nota...'
+                            />
+                        </label>
+                        <button
+                            type='button'
+                            className='employee-requests-filter-clear'
+                            onClick={clearFilters}
+                        >
+                            Limpiar filtros
+                        </button>
+                    </div>
+                </aside>
+
+                <div className='employee-requests-content'>
+                    <div className='employee-requests-floating-tabs'>
+                        {canCreate ? (
+                            <button
+                                type='button'
+                                className={activePanel === 'new' ? 'is-active' : ''}
+                                onClick={() => setActivePanel('new')}
+                            >
+                                Nueva petición
+                            </button>
+                        ) : null}
+                        <button
+                            type='button'
+                            className={activePanel === 'inbox' ? 'is-active' : ''}
+                            onClick={() => setActivePanel('inbox')}
+                        >
+                            {isAdminLike ? 'Bandeja de entrada' : 'Historial'}
+                            <span>{filteredRequests.length}</span>
+                        </button>
+                    </div>
+
+                    {canCreate ? (
+                        <div
+                            className={`employee-requests-panel ${
+                                activePanel === 'new' ? 'is-active' : ''
+                            }`}
+                        >
                 <form className='employee-requests-form' onSubmit={handleSubmit}>
                     <label>
                         Tipo
@@ -335,99 +462,14 @@ const EmployeeRequestsComponent = () => {
                         {saving ? 'Enviando...' : 'Enviar peticion'}
                     </button>
                 </form>
-            ) : null}
+                        </div>
+                    ) : null}
 
-            <div className='employee-requests-filters'>
-                {isAdminLike ? (
-                    <label>
-                        Empleado
-                        <select
-                            value={filters.employeeId}
-                            onChange={(event) =>
-                                updateFilter('employeeId', event.target.value)
-                            }
-                        >
-                            <option value=''>Todos</option>
-                            {employeeOptions.map((employee) => (
-                                <option key={employee.id} value={employee.id}>
-                                    {employee.name}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                ) : null}
-                <label>
-                    Tipo
-                    <select
-                        value={filters.requestType}
-                        onChange={(event) =>
-                            updateFilter('requestType', event.target.value)
-                        }
+                    <div
+                        className={`employee-requests-panel ${
+                            activePanel === 'inbox' ? 'is-active' : ''
+                        }`}
                     >
-                        <option value=''>Todos</option>
-                        {Object.entries(requestTypeLabels).map(([value, label]) => (
-                            <option key={value} value={value}>
-                                {label}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-                <label>
-                    Estado
-                    <select
-                        value={filters.status}
-                        onChange={(event) =>
-                            updateFilter('status', event.target.value)
-                        }
-                    >
-                        <option value=''>Todos</option>
-                        {Object.entries(statusLabels).map(([value, label]) => (
-                            <option key={value} value={value}>
-                                {label}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-                <label>
-                    Desde
-                    <input
-                        type='date'
-                        value={filters.dateFrom}
-                        onChange={(event) =>
-                            updateFilter('dateFrom', event.target.value)
-                        }
-                    />
-                </label>
-                <label>
-                    Hasta
-                    <input
-                        type='date'
-                        value={filters.dateTo}
-                        onChange={(event) =>
-                            updateFilter('dateTo', event.target.value)
-                        }
-                    />
-                </label>
-                <label className='employee-requests-filters__search'>
-                    Buscar
-                    <input
-                        type='search'
-                        value={filters.search}
-                        onChange={(event) =>
-                            updateFilter('search', event.target.value)
-                        }
-                        placeholder='Nombre, nota...'
-                    />
-                </label>
-                <button
-                    type='button'
-                    className='employee-requests-filter-clear'
-                    onClick={clearFilters}
-                >
-                    Limpiar filtros
-                </button>
-            </div>
-
             <div className='employee-requests-list-wrap'>
                 {loading ? (
                     <p className='employee-requests-empty'>Cargando...</p>
@@ -580,6 +622,9 @@ const EmployeeRequestsComponent = () => {
                         </div>
                     </>
                 )}
+            </div>
+                    </div>
+                </div>
             </div>
         </section>
     );

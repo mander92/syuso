@@ -33,6 +33,25 @@
     min-width: 0;
 }
 
+.shift-floating-actions {
+    position: sticky;
+    top: 96px;
+    z-index: 6;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.7rem;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 0.55rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.12);
+    backdrop-filter: blur(10px);
+}
+
 .shift-header {
     display: flex;
     flex-direction: column;
@@ -359,6 +378,12 @@
         position: static;
         padding: 0.85rem;
         border-radius: 0.85rem;
+    }
+
+    .shift-floating-actions {
+        position: static;
+        width: 100%;
+        border-radius: 1rem;
     }
 
     .shift-filters {
