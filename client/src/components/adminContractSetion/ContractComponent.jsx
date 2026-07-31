@@ -410,8 +410,17 @@ const ContractsComponent = () => {
         </button>
     );
 
+    const stopMapInteraction = (event) => {
+        event.stopPropagation();
+    };
+
     const renderDelegationPanel = () => (
-        <div className='contracts-delegation-panel'>
+        <div
+            className='contracts-delegation-panel'
+            onPointerDown={stopMapInteraction}
+            onTouchMove={stopMapInteraction}
+            onWheel={stopMapInteraction}
+        >
             <div className='contracts-delegations-header'>
                 <div>
                     <h2>Delegaciones</h2>

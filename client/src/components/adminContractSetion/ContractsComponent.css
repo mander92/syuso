@@ -786,6 +786,7 @@
 .contracts-delegation-group {
     border: 1px solid #e2e8f0;
     border-radius: 10px;
+    min-height: 0;
     overflow: hidden;
 }
 
