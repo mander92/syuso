@@ -170,6 +170,10 @@
     overflow: hidden;
 }
 
+.contracts-floating-panel--delegations .contracts-delegations-header {
+    flex: 0 0 auto;
+}
+
 .contracts-map-search {
     position: absolute;
     z-index: 14;
@@ -746,6 +750,7 @@
 
 .contracts-floating-panel--delegations .contracts-delegation-list {
     flex: 1 1 auto;
+    max-height: 100%;
     overflow-y: auto;
     overscroll-behavior: contain;
     padding-right: 4px;
@@ -1111,6 +1116,11 @@
         padding: 15px;
     }
 
+    .contracts-floating-panel--delegations .contracts-delegation-panel {
+        margin: 0;
+        padding: 15px;
+    }
+
     .contracts-delegation-toggle {
         grid-template-columns: 1fr;
     }
@@ -1216,6 +1226,7 @@
         right: 9px;
         top: 120px;
         bottom: auto;
+        max-height: 56dvh;
     }
 
     .contracts-map-stage--services-open .contracts-floating-panel--delegations {
