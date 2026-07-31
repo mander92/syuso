@@ -156,7 +156,9 @@
 }
 
 .contracts-floating-panel--delegations:has(.contracts-delegation-services) {
-    height: 68dvh;
+    bottom: 0;
+    height: auto;
+    max-height: none;
     overflow-y: auto;
 }
 
@@ -167,7 +169,9 @@
 }
 
 .contracts-map-stage--services-open .contracts-floating-panel--delegations:has(.contracts-delegation-services) {
-    height: 50dvh;
+    bottom: 0;
+    height: auto;
+    max-height: none;
 }
 
 .contracts-floating-panel--delegations .contracts-delegation-panel {
@@ -1064,7 +1068,9 @@
     }
 
     .contracts-floating-panel--delegations:has(.contracts-delegation-services) {
-        height: 54dvh;
+        bottom: 0;
+        height: auto;
+        max-height: none;
     }
 
     .contracts-map-stage--services-open .contracts-floating-panel--delegations {
@@ -1074,7 +1080,9 @@
     }
 
     .contracts-map-stage--services-open .contracts-floating-panel--delegations:has(.contracts-delegation-services) {
-        height: 46dvh;
+        bottom: 0;
+        height: auto;
+        max-height: none;
     }
 
     .contracts-map-search,
@@ -1272,7 +1280,9 @@
     }
 
     .contracts-floating-panel--delegations:has(.contracts-delegation-services) {
-        height: 56dvh;
+        bottom: 0;
+        height: auto;
+        max-height: none;
     }
 
     .contracts-map-stage--services-open .contracts-floating-panel--delegations {
@@ -1282,7 +1292,9 @@
     }
 
     .contracts-map-stage--services-open .contracts-floating-panel--delegations:has(.contracts-delegation-services) {
-        height: 44dvh;
+        bottom: 0;
+        height: auto;
+        max-height: none;
     }
 
     .contracts-header {
