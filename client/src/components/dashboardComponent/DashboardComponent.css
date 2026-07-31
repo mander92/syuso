@@ -1,5 +1,8 @@
 .dashboard-wrapper {
     width: 100%;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
     padding: 1.5rem;
     box-sizing: border-box;
 }
@@ -370,6 +373,7 @@
     position: sticky;
     bottom: 0.45rem;
     z-index: 30;
+    margin-top: auto;
     pointer-events: auto;
     width: 100%;
 }

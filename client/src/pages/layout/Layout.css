@@ -16,8 +16,14 @@
 }
 
 .pages--account {
+    display: flex;
+    flex-direction: column;
     max-width: none;
     padding: 0.4rem 0.75rem 0;
+}
+
+.pages--account > .dashboard-wrapper {
+    flex: 1;
 }
 
 .pages--account + .footer {
