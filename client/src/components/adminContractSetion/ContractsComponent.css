@@ -753,26 +753,34 @@
 
 .contracts-floating-panel--delegations .contracts-delegation-list {
     flex: 1 1 auto;
+    height: 100%;
     min-height: 0;
     overflow-y: scroll;
     overscroll-behavior: contain;
-    padding-right: 4px;
+    padding-right: 10px;
+    scrollbar-color: #64748b #e2e8f0;
+    scrollbar-width: thin;
     scrollbar-gutter: stable;
     touch-action: pan-y;
 }
 
 .contracts-floating-panel--delegations .contracts-delegation-list::-webkit-scrollbar {
-    width: 8px;
+    width: 10px;
 }
 
 .contracts-floating-panel--delegations .contracts-delegation-list::-webkit-scrollbar-track {
-    background: #e5e7eb;
+    background: #e2e8f0;
     border-radius: 999px;
 }
 
 .contracts-floating-panel--delegations .contracts-delegation-list::-webkit-scrollbar-thumb {
-    background: #94a3b8;
+    background: #64748b;
+    border: 2px solid #e2e8f0;
     border-radius: 999px;
+}
+
+.contracts-floating-panel--delegations .contracts-delegation-list::-webkit-scrollbar-thumb:hover {
+    background: #334155;
 }
 
 .contracts-delegation-group {
