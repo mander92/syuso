@@ -145,20 +145,29 @@
     right: 78px;
     bottom: auto;
     width: min(520px, calc(100% - 110px));
-    height: 68dvh;
+    height: auto;
     max-height: calc(100dvh - 190px);
     min-height: 0;
-    overflow-y: auto;
+    overflow-y: visible;
     overscroll-behavior: contain;
     scrollbar-color: #64748b #e2e8f0;
     scrollbar-gutter: stable;
     scrollbar-width: thin;
 }
 
+.contracts-floating-panel--delegations:has(.contracts-delegation-services) {
+    height: 68dvh;
+    overflow-y: auto;
+}
+
 .contracts-map-stage--services-open .contracts-floating-panel--delegations {
     top: 270px;
-    height: 50dvh;
+    height: auto;
     max-height: calc(100dvh - 320px);
+}
+
+.contracts-map-stage--services-open .contracts-floating-panel--delegations:has(.contracts-delegation-services) {
+    height: 50dvh;
 }
 
 .contracts-floating-panel--delegations .contracts-delegation-panel {
@@ -1049,15 +1058,23 @@
         top: 124px;
         bottom: auto;
         width: auto;
-        height: 54dvh;
+        height: auto;
         max-height: calc(100dvh - 160px);
         border-radius: 14px;
     }
 
+    .contracts-floating-panel--delegations:has(.contracts-delegation-services) {
+        height: 54dvh;
+    }
+
     .contracts-map-stage--services-open .contracts-floating-panel--delegations {
         top: 268px;
-        height: 46dvh;
+        height: auto;
         max-height: calc(100dvh - 300px);
+    }
+
+    .contracts-map-stage--services-open .contracts-floating-panel--delegations:has(.contracts-delegation-services) {
+        height: 46dvh;
     }
 
     .contracts-map-search,
@@ -1250,14 +1267,22 @@
         right: 9px;
         top: 120px;
         bottom: auto;
-        height: 56dvh;
+        height: auto;
         max-height: calc(100dvh - 150px);
+    }
+
+    .contracts-floating-panel--delegations:has(.contracts-delegation-services) {
+        height: 56dvh;
     }
 
     .contracts-map-stage--services-open .contracts-floating-panel--delegations {
         top: 260px;
-        height: 44dvh;
+        height: auto;
         max-height: calc(100dvh - 290px);
+    }
+
+    .contracts-map-stage--services-open .contracts-floating-panel--delegations:has(.contracts-delegation-services) {
+        height: 44dvh;
     }
 
     .contracts-header {
