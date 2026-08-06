@@ -197,8 +197,11 @@ const ShiftComponent = () => {
             params.append('employeeId', employeeId);
         }
 
-        if (startDate && endDate) {
+        if (startDate) {
             params.append('startDate', `${startDate} 00:00:00`);
+        }
+
+        if (endDate) {
             params.append('endDate', `${endDate} 23:59:59`);
         }
 
@@ -253,15 +256,64 @@ const ShiftComponent = () => {
         [details]
     );
 
-    const filteredDetails = useMemo(
-        () =>
-            openOnly
-                ? details.filter(
-                      (record) => !record.clockOut && !record.realClockOut
-                  )
-                : details,
-        [details, openOnly]
-    );
+    const filteredDetails = useMemo(() => {
+        const textPerson = normalizeText(personSearch);
+        const start = startDate ? new Date(`${startDate}T00:00:00`) : null;
+        const end = endDate ? new Date(`${endDate}T23:59:59`) : null;
+
+        return details.filter((record) => {
+            if (openOnly && (record.clockOut || record.realClockOut)) {
+                return false;
+            }
+
+            if (serviceName && record.serviceName !== serviceName) {
+                return false;
+            }
+
+            if (city && record.city !== city) {
+                return false;
+            }
+
+            if (delegationId && record.delegationId !== delegationId) {
+                return false;
+            }
+
+            if (isAdminLike && employeeId && record.employeeId !== employeeId) {
+                return false;
+            }
+
+            if (textPerson) {
+                const person = normalizeText(
+                    `${record.firstName} ${record.lastName}`
+                );
+                if (!person.includes(textPerson)) return false;
+            }
+
+            if (start || end) {
+                const recordDate =
+                    toMadridDate(record.realClockIn) ||
+                    parseLocalDateTime(record.clockIn) ||
+                    parseLocalDateTime(record.startDateTime);
+
+                if (!recordDate) return false;
+                if (start && recordDate < start) return false;
+                if (end && recordDate > end) return false;
+            }
+
+            return true;
+        });
+    }, [
+        details,
+        openOnly,
+        serviceName,
+        city,
+        delegationId,
+        isAdminLike,
+        employeeId,
+        personSearch,
+        startDate,
+        endDate,
+    ]);
 
     const openShiftRows = useMemo(
         () =>

@@ -388,14 +388,6 @@ const WorkReportsComponent = () => {
         [details]
     );
 
-    const uniqueServiceNames = useMemo(
-        () =>
-            [...new Set(details.map((item) => item.serviceName))]
-                .filter(Boolean)
-                .sort(compareText),
-        [details]
-    );
-
     const serviceOptions = useMemo(
         () =>
             services
@@ -419,6 +411,19 @@ const WorkReportsComponent = () => {
                 .filter((service) => service.id)
                 .sort((a, b) => compareText(a.name, b.name)),
         [services]
+    );
+
+    const uniqueServiceNames = useMemo(
+        () =>
+            [
+                ...new Set([
+                    ...serviceOptions.map((service) => service.name),
+                    ...details.map((item) => item.serviceName),
+                ]),
+            ]
+                .filter(Boolean)
+                .sort(compareText),
+        [details, serviceOptions]
     );
 
     const selectedManualService = useMemo(
