@@ -979,20 +979,18 @@ const WorkReportsComponent = () => {
                             {isDeleting ? 'Eliminando...' : 'Eliminar partes'}
                         </button>
                     </div>
-            <div className='shift-calendar-card'>
-                {loading ? (
-                    <p className='shift-loading'>Cargando partes...</p>
-                ) : calendarEvents.length ? (
-                    <CalendarComponent
-                        events={calendarEvents}
-                        onSelectEvent={handleSelectEvent}
-                    />
-                ) : (
-                    <p className='shift-loading'>
-                        No hay partes de trabajo con esos filtros.
-                    </p>
-                )}
-            </div>
+                    <div className='shift-calendar-card work-reports-calendar-card'>
+                        {loading ? (
+                            <p className='shift-loading'>Cargando partes...</p>
+                        ) : (
+                            <CalendarComponent
+                                events={calendarEvents}
+                                onSelectEvent={handleSelectEvent}
+                                mobileDefaultView='agenda'
+                                mobileViews={['agenda', 'day']}
+                            />
+                        )}
+                    </div>
                 </div>
             </div>
 

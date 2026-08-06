@@ -692,13 +692,15 @@ const ShiftComponent = () => {
                         </div>
                     ) : null}
 
-                    <div className='shift-calendar-card'>
+                    <div className='shift-calendar-card shift-admin-calendar-card'>
                         {loading ? (
                             <p className='shift-loading'>Cargando turnos...</p>
                         ) : (
                             <CalendarComponent
                                 events={calendarEvents}
                                 onSelectEvent={handleSelectEvent}
+                                mobileDefaultView='agenda'
+                                mobileViews={['agenda', 'day']}
                             />
                         )}
                     </div>

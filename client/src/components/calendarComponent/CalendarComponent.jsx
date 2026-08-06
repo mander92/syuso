@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react';
 import { Calendar, dayjsLocalizer } from 'react-big-calendar';
 import dayjs from 'dayjs';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -7,7 +8,53 @@ dayjs.locale('es');
 
 const localizer = dayjsLocalizer(dayjs);
 
-const CalendarComponent = ({ events, onSelectEvent, defaultView }) => {
+const CalendarComponent = ({
+    events,
+    onSelectEvent,
+    defaultView = 'month',
+    views = ['month', 'week', 'day'],
+    mobileDefaultView,
+    mobileViews,
+}) => {
+    const getIsMobile = () =>
+        typeof window !== 'undefined' &&
+        window.matchMedia('(max-width: 720px)').matches;
+
+    const [isMobile, setIsMobile] = useState(getIsMobile);
+    const [view, setView] = useState(
+        getIsMobile() && mobileDefaultView ? mobileDefaultView : defaultView
+    );
+
+    const activeViews = useMemo(
+        () => (isMobile && mobileViews?.length ? mobileViews : views),
+        [isMobile, mobileViews, views]
+    );
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return undefined;
+
+        const mediaQuery = window.matchMedia('(max-width: 720px)');
+        const handleChange = (event) => {
+            const nextIsMobile = event.matches;
+            setIsMobile(nextIsMobile);
+            setView(
+                nextIsMobile && mobileDefaultView
+                    ? mobileDefaultView
+                    : defaultView
+            );
+        };
+
+        handleChange(mediaQuery);
+        mediaQuery.addEventListener('change', handleChange);
+        return () => mediaQuery.removeEventListener('change', handleChange);
+    }, [defaultView, mobileDefaultView]);
+
+    useEffect(() => {
+        if (!activeViews.includes(view)) {
+            setView(activeViews[0] || defaultView);
+        }
+    }, [activeViews, defaultView, view]);
+
     const eventStyle = (event) => {
         let backgroundColor = '';
         switch (event.status) {
@@ -53,9 +100,7 @@ const CalendarComponent = ({ events, onSelectEvent, defaultView }) => {
         <div className='calendar'>
             <Calendar
                 formats={{
-                    dayHeaderFormat: (date) => {
-                        return dayjs(date).format('DD/MM/YYYY');
-                    },
+                    dayHeaderFormat: (date) => dayjs(date).format('DD/MM/YYYY'),
                 }}
                 messages={{
                     next: '+',
@@ -63,15 +108,19 @@ const CalendarComponent = ({ events, onSelectEvent, defaultView }) => {
                     today: 'Hoy',
                     month: 'Mes',
                     week: 'Semana',
-                    day: 'Día',
+                    day: 'Dia',
+                    agenda: 'Agenda',
+                    noEventsInRange: 'No hay eventos en este rango.',
                 }}
                 localizer={localizer}
                 events={events}
-                views={['month', 'week', 'day']}
+                views={activeViews}
                 onSelectEvent={onSelectEvent}
                 eventPropGetter={eventStyle}
                 dayPropGetter={dayStyle}
                 defaultView={defaultView}
+                view={view}
+                onView={setView}
             />
         </div>
     );

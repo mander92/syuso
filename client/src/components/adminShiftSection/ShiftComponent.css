@@ -420,6 +420,224 @@
         padding: 0.35rem 0.7rem;
         font-size: 0.75rem;
     }
+
+    .shift-open-card,
+    .shift-location-card {
+        padding: 0.85rem;
+        border-radius: 0.9rem;
+    }
+
+    .shift-open-list {
+        grid-template-columns: 1fr;
+        gap: 0.55rem;
+    }
+
+    .shift-open-item {
+        padding: 0.65rem 0.75rem;
+    }
+
+    .shift-location-filters {
+        grid-template-columns: 1fr;
+        gap: 0.55rem;
+    }
+
+    .shift-location-filters select,
+    .shift-location-filters input {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        font-size: 0.82rem;
+    }
+
+    .shift-location-range {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+    }
+
+    .shift-location-item {
+        display: grid;
+        gap: 0.65rem;
+        padding: 0.7rem;
+    }
+
+    .shift-location-item span {
+        display: block;
+        margin-top: 0.2rem;
+        line-height: 1.35;
+    }
+
+    .shift-location-links {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.45rem;
+        width: 100%;
+    }
+
+    .shift-location-links a,
+    .shift-location-links span {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2rem;
+        border-radius: 999px;
+        background: #e2e8f0;
+        color: #0f172a;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-align: center;
+        text-decoration: none;
+    }
+
+    .shift-location-pagination {
+        justify-content: center;
+        gap: 0.5rem;
+        font-size: 0.78rem;
+    }
+
+    .shift-location-pagination .shift-btn {
+        flex: 1 1 0;
+    }
+
+    .shift-admin-calendar-card {
+        overflow-x: hidden;
+        padding: 0.65rem;
+    }
+
+    .shift-admin-calendar-card .calendar {
+        height: 520px;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .shift-admin-calendar-card .rbc-toolbar {
+        z-index: 2;
+        width: 100%;
+        min-width: 0;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.45rem;
+        align-items: stretch;
+        padding-bottom: 0.2rem;
+        background: linear-gradient(135deg, #f9fafb, #eef2ff);
+    }
+
+    .shift-admin-calendar-card .rbc-toolbar-label {
+        order: -1;
+        font-size: 0.95rem;
+        font-weight: 800;
+        text-align: left;
+    }
+
+    .shift-admin-calendar-card .rbc-btn-group {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.35rem;
+    }
+
+    .shift-admin-calendar-card .rbc-btn-group button {
+        min-width: 0;
+        padding: 0.35rem 0.45rem;
+        font-size: 0.78rem;
+        white-space: nowrap;
+    }
+
+    .shift-admin-calendar-card .rbc-event {
+        padding: 2px 4px;
+        font-size: 0.72rem;
+    }
+
+    .shift-admin-calendar-card .rbc-agenda-view {
+        overflow-x: hidden;
+    }
+
+    .shift-admin-calendar-card .rbc-agenda-table {
+        width: 100%;
+        table-layout: fixed;
+    }
+
+    .shift-admin-calendar-card .rbc-agenda-table th,
+    .shift-admin-calendar-card .rbc-agenda-table td {
+        padding: 0.45rem 0.35rem;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        font-size: 0.78rem;
+    }
+
+    .shift-admin-calendar-card .rbc-agenda-date-cell,
+    .shift-admin-calendar-card .rbc-agenda-time-cell {
+        width: 5.3rem;
+    }
+
+    .work-reports-calendar-card {
+        overflow-x: hidden;
+        padding: 0.65rem;
+    }
+
+    .work-reports-calendar-card .calendar {
+        height: 520px;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .work-reports-calendar-card .rbc-toolbar {
+        z-index: 2;
+        width: 100%;
+        min-width: 0;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.45rem;
+        align-items: stretch;
+        padding-bottom: 0.2rem;
+        background: linear-gradient(135deg, #f9fafb, #eef2ff);
+    }
+
+    .work-reports-calendar-card .rbc-toolbar-label {
+        order: -1;
+        font-size: 0.95rem;
+        font-weight: 800;
+        text-align: left;
+    }
+
+    .work-reports-calendar-card .rbc-btn-group {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.35rem;
+    }
+
+    .work-reports-calendar-card .rbc-btn-group button {
+        min-width: 0;
+        padding: 0.35rem 0.45rem;
+        font-size: 0.78rem;
+        white-space: nowrap;
+    }
+
+    .work-reports-calendar-card .rbc-event {
+        padding: 2px 4px;
+        font-size: 0.72rem;
+    }
+
+    .work-reports-calendar-card .rbc-agenda-view {
+        overflow-x: hidden;
+    }
+
+    .work-reports-calendar-card .rbc-agenda-table {
+        width: 100%;
+        table-layout: fixed;
+    }
+
+    .work-reports-calendar-card .rbc-agenda-table th,
+    .work-reports-calendar-card .rbc-agenda-table td {
+        padding: 0.45rem 0.35rem;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        font-size: 0.78rem;
+    }
+
+    .work-reports-calendar-card .rbc-agenda-date-cell,
+    .work-reports-calendar-card .rbc-agenda-time-cell {
+        width: 5.3rem;
+    }
 }
 
 .shift-modal-overlay {
