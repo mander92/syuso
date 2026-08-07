@@ -366,6 +366,11 @@ const ShiftComponent = () => {
         [filteredDetails]
     );
 
+    const calendarDate = useMemo(
+        () => (startDate ? new Date(`${startDate}T00:00:00`) : undefined),
+        [startDate]
+    );
+
     const locationRows = useMemo(() => {
         const textPerson = normalizeText(personSearch);
 
@@ -753,6 +758,7 @@ const ShiftComponent = () => {
                                 onSelectEvent={handleSelectEvent}
                                 mobileDefaultView='agenda'
                                 mobileViews={['agenda', 'day']}
+                                calendarDate={calendarDate}
                             />
                         )}
                     </div>

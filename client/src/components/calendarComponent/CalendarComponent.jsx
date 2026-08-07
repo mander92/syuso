@@ -15,6 +15,7 @@ const CalendarComponent = ({
     views = ['month', 'week', 'day'],
     mobileDefaultView,
     mobileViews,
+    calendarDate,
 }) => {
     const getIsMobile = () =>
         typeof window !== 'undefined' &&
@@ -24,6 +25,7 @@ const CalendarComponent = ({
     const [view, setView] = useState(
         getIsMobile() && mobileDefaultView ? mobileDefaultView : defaultView
     );
+    const [date, setDate] = useState(calendarDate || new Date());
 
     const activeViews = useMemo(
         () => (isMobile && mobileViews?.length ? mobileViews : views),
@@ -54,6 +56,12 @@ const CalendarComponent = ({
             setView(activeViews[0] || defaultView);
         }
     }, [activeViews, defaultView, view]);
+
+    useEffect(() => {
+        if (calendarDate) {
+            setDate(calendarDate);
+        }
+    }, [calendarDate]);
 
     const eventStyle = (event) => {
         let backgroundColor = '';
@@ -121,6 +129,8 @@ const CalendarComponent = ({
                 defaultView={defaultView}
                 view={view}
                 onView={setView}
+                date={date}
+                onNavigate={setDate}
             />
         </div>
     );

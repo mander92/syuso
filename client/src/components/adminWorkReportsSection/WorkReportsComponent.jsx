@@ -512,6 +512,11 @@ const WorkReportsComponent = () => {
         [filteredDetails]
     );
 
+    const calendarDate = useMemo(
+        () => (startDate ? new Date(`${startDate}T00:00:00`) : undefined),
+        [startDate]
+    );
+
     const handleSelectEvent = async (event) => {
         if (!event?.reportId) {
             toast.error('Este turno no tiene parte de trabajo');
@@ -993,6 +998,7 @@ const WorkReportsComponent = () => {
                                 onSelectEvent={handleSelectEvent}
                                 mobileDefaultView='agenda'
                                 mobileViews={['agenda', 'day']}
+                                calendarDate={calendarDate}
                             />
                         )}
                     </div>
