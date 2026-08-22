@@ -640,4 +640,9 @@
     min-width: max-content;
     overflow: visible;
     text-overflow: clip;
+    white-space: nowrap;
+}
+
+.service-schedule-grid-employee .service-schedule-grid-row-order button {
+    flex: 0 0 auto;
 }

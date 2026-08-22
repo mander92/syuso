@@ -145,6 +145,7 @@ const ServiceSchedulePanel = ({
     modalOnly = false,
     initialGridOpen = false,
     onCloseModal,
+    onOpenSettings,
 }) => {
     const [month, setMonth] = useState(
         () => initialMonth || new Date().toISOString().slice(0, 7)
@@ -1995,6 +1996,50 @@ const ServiceSchedulePanel = ({
                                     }
                                 />
                             </label>
+                            <div className='service-schedule-grid-modal__actions'>
+                                <button
+                                    type='button'
+                                    className='service-schedule-grid-modal__action'
+                                    onClick={handleSimulateSchedule}
+                                    disabled={isSimulating}
+                                >
+                                    {isSimulating
+                                        ? 'Generando...'
+                                        : 'Generar cuadrante'}
+                                </button>
+                                {isSimulationActive && (
+                                    <button
+                                        type='button'
+                                        className='service-schedule-grid-modal__action service-schedule-grid-modal__action--apply'
+                                        onClick={handleApplySimulation}
+                                        disabled={isApplyingSimulation}
+                                    >
+                                        {isApplyingSimulation
+                                            ? 'Aplicando...'
+                                            : 'Aplicar cuadrante'}
+                                    </button>
+                                )}
+                                <button
+                                    type='button'
+                                    className='service-schedule-grid-modal__action'
+                                    onClick={() =>
+                                        setIsHolidayToolsOpen((prev) => !prev)
+                                    }
+                                >
+                                    {isHolidayToolsOpen
+                                        ? 'Ocultar festivos'
+                                        : 'Festivos'}
+                                </button>
+                                {onOpenSettings && (
+                                    <button
+                                        type='button'
+                                        className='service-schedule-grid-modal__action'
+                                        onClick={onOpenSettings}
+                                    >
+                                        Ajustes
+                                    </button>
+                                )}
+                            </div>
                             <button
                                 type='button'
                                 className='service-schedule-grid-modal__close'
@@ -2004,6 +2049,11 @@ const ServiceSchedulePanel = ({
                             </button>
                         </div>
                         <div className='service-schedule-grid-modal__body'>
+                            {isSimulationActive && (
+                                <div className='service-schedule-grid-modal__preview-alert'>
+                                    Previsualizacion generada. Revisa el cuadrante y pulsa Aplicar cuadrante para guardarlo.
+                                </div>
+                            )}
                             <div className='service-schedule-holidays'>
                                 <div className='service-schedule-holidays__header'>
                                     <div>

@@ -710,6 +710,11 @@ const ContractsComponent = () => {
                             initialGridOpen
                             modalOnly
                             onCloseModal={() => setScheduleModalService(null)}
+                            onOpenSettings={() => {
+                                const serviceId = scheduleModalService.id;
+                                setScheduleModalService(null);
+                                navigate(`/services/${serviceId}?tab=schedule`);
+                            }}
                         />
                     )}
                 </section>
