@@ -144,7 +144,12 @@ const FitMapToMarkers = ({ markers }) => {
     return null;
 };
 
-const ServiceDelegationMap = ({ services, authToken, onOpenService }) => {
+const ServiceDelegationMap = ({
+    services,
+    authToken,
+    onOpenService,
+    onOpenSchedule,
+}) => {
     const [coordinatesByService, setCoordinatesByService] = useState({});
     const [loading, setLoading] = useState(false);
 
@@ -414,12 +419,24 @@ const ServiceDelegationMap = ({ services, authToken, onOpenService }) => {
                                             </span>
                                         );
                                     })()}
-                                    <button
-                                        type='button'
-                                        onClick={() => onOpenService(serviceId)}
-                                    >
-                                        Abrir servicio
-                                    </button>
+                                    <div className='contracts-map-popup-actions'>
+                                        <button
+                                            type='button'
+                                            onClick={() =>
+                                                onOpenService(serviceId)
+                                            }
+                                        >
+                                            Abrir servicio
+                                        </button>
+                                        <button
+                                            type='button'
+                                            onClick={() =>
+                                                onOpenSchedule?.(service)
+                                            }
+                                        >
+                                            Ver cuadrante
+                                        </button>
+                                    </div>
                                 </div>
                             </Popup>
                         </Marker>

@@ -101,6 +101,7 @@ const ServiceScheduleGrid = ({
     onCopyShift,
     onPasteShift,
     onDeleteShift,
+    onMoveEmployee,
     onCopyAbsence,
     onPasteAbsence,
     onDeleteAbsence,
@@ -359,6 +360,12 @@ const ServiceScheduleGrid = ({
             {rows.map((row) => {
                 const rowKey = row.id || 'unassigned';
                 const isCollapsed = collapsedRows.has(rowKey);
+                const orderedEmployeeIds = rows
+                    .map((item) => item.id)
+                    .filter(Boolean);
+                const employeeRowIndex = row.id
+                    ? orderedEmployeeIds.indexOf(row.id)
+                    : -1;
                 const rowAbsences = row.id ? absencesByEmployee[row.id] || [] : [];
                 const rowTotalHours = rowTotals.get(rowKey) || 0;
                 const rowAgreementTotals = agreementTotals.get(rowKey) || {
@@ -376,6 +383,35 @@ const ServiceScheduleGrid = ({
                     >
                         <div className='service-schedule-grid-employee'>
                             <span>{row.label}</span>
+                            {!readOnly && row.id && onMoveEmployee && (
+                                <span className='service-schedule-grid-row-order'>
+                                    <button
+                                        type='button'
+                                        onClick={() =>
+                                            onMoveEmployee(row.id, 'up')
+                                        }
+                                        disabled={employeeRowIndex <= 0}
+                                        title='Subir trabajador'
+                                        aria-label='Subir trabajador'
+                                    >
+                                        ^
+                                    </button>
+                                    <button
+                                        type='button'
+                                        onClick={() =>
+                                            onMoveEmployee(row.id, 'down')
+                                        }
+                                        disabled={
+                                            employeeRowIndex ===
+                                            orderedEmployeeIds.length - 1
+                                        }
+                                        title='Bajar trabajador'
+                                        aria-label='Bajar trabajador'
+                                    >
+                                        v
+                                    </button>
+                                </span>
+                            )}
                             <strong className='service-schedule-grid-mobile-total'>
                                 {showTotals ? `${formatHours(rowTotalHours)} h` : ''}
                             </strong>

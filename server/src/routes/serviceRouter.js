@@ -54,6 +54,8 @@ import deleteServiceShiftTypeController from '../controllers/schedules/deleteSer
 import simulateServiceScheduleController from '../controllers/schedules/simulateServiceScheduleController.js';
 import applyServiceScheduleSimulationController from '../controllers/schedules/applyServiceScheduleSimulationController.js';
 import importServiceScheduleExcelController from '../controllers/schedules/importServiceScheduleExcelController.js';
+import listServiceScheduleEmployeeOrderController from '../controllers/schedules/listServiceScheduleEmployeeOrderController.js';
+import replaceServiceScheduleEmployeeOrderController from '../controllers/schedules/replaceServiceScheduleEmployeeOrderController.js';
 import resolveGoogleMapsLocationController from '../controllers/services/resolveGoogleMapsLocationController.js';
 
 const router = express.Router();
@@ -170,6 +172,22 @@ router.post(
     isAdmin,
     serviceExists,
     importServiceScheduleExcelController
+);
+
+router.get(
+    '/services/:serviceId/schedule/employee-order',
+    authUser,
+    isAdmin,
+    serviceExists,
+    listServiceScheduleEmployeeOrderController
+);
+
+router.put(
+    '/services/:serviceId/schedule/employee-order',
+    authUser,
+    isAdmin,
+    serviceExists,
+    replaceServiceScheduleEmployeeOrderController
 );
 
 router.get(

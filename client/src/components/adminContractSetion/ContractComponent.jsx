@@ -12,9 +12,11 @@ import {
 } from '../../services/serviceService.js';
 import { fetchDelegations } from '../../services/delegationService.js';
 import CalendarComponent from '../calendarComponent/CalendarComponent.jsx';
+import ServiceSchedulePanel from '../serviceSchedule/ServiceSchedulePanel.jsx';
 import ServiceDelegationMap from './ServiceDelegationMap.jsx';
 import toast from 'react-hot-toast';
 import './ContractsComponent.css';
+import '../serviceSchedule/ServiceSchedulePanel.css';
 
 const managedStatusOptions = [
     { value: 'pending', label: 'Pendiente' },
@@ -47,6 +49,7 @@ const ContractsComponent = () => {
     const [expandedDelegations, setExpandedDelegations] = useState({});
     const [activeShifts, setActiveShifts] = useState({});
     const [activeShiftLoading, setActiveShiftLoading] = useState({});
+    const [scheduleModalService, setScheduleModalService] = useState(null);
     const [loading, setLoading] = useState(false);
 
     const resetFilter = (e) => {
@@ -325,6 +328,12 @@ const ContractsComponent = () => {
         }
     };
 
+    const openScheduleModal = (service) => {
+        const serviceId = getServiceId(service);
+        if (!serviceId) return;
+        setScheduleModalService({ ...service, id: serviceId });
+    };
+
     const renderSearch = (className = 'contracts-calendar-search') => (
         <div className={className}>
             <input
@@ -592,6 +601,7 @@ const ContractsComponent = () => {
                         onOpenService={(serviceId) =>
                             navigate(`/services/${serviceId}`)
                         }
+                        onOpenSchedule={openScheduleModal}
                     />
 
                     <div className='contracts-map-toolbar'>
@@ -689,6 +699,48 @@ const ContractsComponent = () => {
                                         onSelectEvent={handleSelectEvent}
                                     />
                                 )}
+                            </div>
+                        </div>
+                    )}
+
+                    {scheduleModalService && (
+                        <div className='contracts-schedule-modal'>
+                            <div className='contracts-schedule-modal-card'>
+                                <div className='contracts-schedule-modal-header'>
+                                    <div>
+                                        <h2>
+                                            {scheduleModalService.name ||
+                                                scheduleModalService.type ||
+                                                'Cuadrante'}
+                                        </h2>
+                                        <p>
+                                            {scheduleModalService.city ||
+                                                scheduleModalService.province ||
+                                                ''}
+                                        </p>
+                                    </div>
+                                    <button
+                                        type='button'
+                                        className='contracts-calendar-close'
+                                        onClick={() =>
+                                            setScheduleModalService(null)
+                                        }
+                                        aria-label='Cerrar cuadrante'
+                                        title='Cerrar cuadrante'
+                                    >
+                                        x
+                                    </button>
+                                </div>
+                                <ServiceSchedulePanel
+                                    serviceId={scheduleModalService.id}
+                                    authToken={authToken}
+                                    scheduleImage={
+                                        scheduleModalService.scheduleImage
+                                    }
+                                    scheduleView={
+                                        scheduleModalService.scheduleView
+                                    }
+                                />
                             </div>
                         </div>
                     )}

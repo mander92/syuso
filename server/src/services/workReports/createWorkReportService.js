@@ -708,6 +708,7 @@ const createWorkReportService = async ({
     incidentFiles,
     reportData,
     inspectionFiles = {},
+    skipVehicleInspection = false,
 }) => {
     const pool = await getPool();
 
@@ -731,11 +732,13 @@ const createWorkReportService = async ({
         generateErrorUtil('El turno ya esta cerrado', 409);
     }
 
-    await ensureVehicleInspectionForShiftService({
-        serviceId,
-        shiftRecordId,
-        employeeId,
-    });
+    if (!skipVehicleInspection) {
+        await ensureVehicleInspectionForShiftService({
+            serviceId,
+            shiftRecordId,
+            employeeId,
+        });
+    }
 
     const [draftRows] = await pool.query(
         `

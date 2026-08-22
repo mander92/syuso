@@ -634,3 +634,10 @@
         padding: 4px 2px;
     }
 }
+
+.service-schedule-grid-employee .service-schedule-grid-row-order {
+    flex: 0 0 auto;
+    min-width: max-content;
+    overflow: visible;
+    text-overflow: clip;
+}

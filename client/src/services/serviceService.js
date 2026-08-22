@@ -648,6 +648,54 @@ export const fetchServiceScheduleShifts = async (
     return body.data;
 };
 
+export const fetchServiceScheduleEmployeeOrder = async (
+    authToken,
+    serviceId
+) => {
+    const res = await fetch(
+        `${VITE_API_URL}/services/${serviceId}/schedule/employee-order`,
+        {
+            headers: {
+                Authorization: authToken,
+            },
+        }
+    );
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};
+
+export const saveServiceScheduleEmployeeOrder = async (
+    authToken,
+    serviceId,
+    employeeIds
+) => {
+    const res = await fetch(
+        `${VITE_API_URL}/services/${serviceId}/schedule/employee-order`,
+        {
+            method: 'PUT',
+            headers: {
+                Authorization: authToken,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ employeeIds }),
+        }
+    );
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};
+
 const getDownloadFileName = (contentDisposition, fallback) => {
     if (!contentDisposition) return fallback;
     const match = contentDisposition.match(/filename="([^"]+)"/i);

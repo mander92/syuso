@@ -8,9 +8,11 @@ import {
     fetchServiceShiftTypes,
     fetchServiceScheduleShifts,
     fetchServiceScheduleTemplates,
+    fetchServiceScheduleEmployeeOrder,
     fetchEditServiceServices,
     fetchDetailServiceServices,
     saveServiceScheduleTemplates,
+    saveServiceScheduleEmployeeOrder,
     createServiceShiftType,
     updateServiceShiftType,
     deleteServiceShiftType,
@@ -158,6 +160,7 @@ const ServiceSchedulePanel = ({
     const [isLoadingShifts, setIsLoadingShifts] = useState(false);
     const [employees, setEmployees] = useState([]);
     const [assignedEmployees, setAssignedEmployees] = useState([]);
+    const [employeeOrder, setEmployeeOrder] = useState([]);
     const [shiftTypes, setShiftTypes] = useState([]);
     const [isSavingShiftType, setIsSavingShiftType] = useState(false);
     const [newShiftType, setNewShiftType] = useState({ name: '', color: '#38bdf8' });
@@ -251,12 +254,32 @@ const ServiceSchedulePanel = ({
         return [...map.values()];
     }, [assignedEmployees, shifts, employees]);
 
+    const orderedVisibleEmployees = useMemo(() => {
+        if (!employeeOrder.length) return visibleEmployees;
+
+        const positionByEmployee = new Map(
+            employeeOrder.map((employeeId, index) => [employeeId, index])
+        );
+
+        return [...visibleEmployees].sort((a, b) => {
+            const aPosition = positionByEmployee.has(a.id)
+                ? positionByEmployee.get(a.id)
+                : Number.MAX_SAFE_INTEGER;
+            const bPosition = positionByEmployee.has(b.id)
+                ? positionByEmployee.get(b.id)
+                : Number.MAX_SAFE_INTEGER;
+
+            if (aPosition !== bPosition) return aPosition - bPosition;
+            return visibleEmployees.indexOf(a) - visibleEmployees.indexOf(b);
+        });
+    }, [employeeOrder, visibleEmployees]);
+
     const employeeOptions = useMemo(() => {
-        return visibleEmployees.map((employee) => ({
+        return orderedVisibleEmployees.map((employee) => ({
             value: employee.id,
             label: `${employee.firstName || ''} ${employee.lastName || ''}`.trim(),
         }));
-    }, [visibleEmployees]);
+    }, [orderedVisibleEmployees]);
 
     const importPreviewEmployees = useMemo(() => {
         const map = new Map();
@@ -428,6 +451,39 @@ const ServiceSchedulePanel = ({
         loadAssignedEmployees();
     }, [authToken, serviceId]);
 
+    useEffect(() => {
+        const loadEmployeeOrder = async () => {
+            if (!authToken || !serviceId) {
+                setEmployeeOrder([]);
+                return;
+            }
+
+            try {
+                const rows = await fetchServiceScheduleEmployeeOrder(
+                    authToken,
+                    serviceId
+                );
+                setEmployeeOrder(
+                    (Array.isArray(rows) ? rows : [])
+                        .sort(
+                            (a, b) =>
+                                (Number(a.position) || 0) -
+                                (Number(b.position) || 0)
+                        )
+                        .map((row) => row.employeeId)
+                        .filter(Boolean)
+                );
+            } catch (error) {
+                toast.error(
+                    error.message ||
+                        'No se pudo cargar el orden de trabajadores'
+                );
+            }
+        };
+
+        loadEmployeeOrder();
+    }, [authToken, serviceId]);
+
     const loadHolidays = useCallback(async () => {
         if (!authToken || !month) return;
         try {
@@ -457,7 +513,7 @@ const ServiceSchedulePanel = ({
     }, [authToken, serviceId]);
 
     useEffect(() => {
-        if (!visibleEmployees.length || !authToken) {
+        if (!orderedVisibleEmployees.length || !authToken) {
             setAbsencesByEmployee({});
             return;
         }
@@ -465,7 +521,7 @@ const ServiceSchedulePanel = ({
         const loadAbsences = async () => {
             try {
                 const results = await Promise.all(
-                    visibleEmployees.map(async (employee) => {
+                    orderedVisibleEmployees.map(async (employee) => {
                         const data = await fetchEmployeeAbsences(authToken, employee.id);
                         return [
                             employee.id,
@@ -486,7 +542,40 @@ const ServiceSchedulePanel = ({
         };
 
         loadAbsences();
-    }, [authToken, visibleEmployees, month]);
+    }, [authToken, orderedVisibleEmployees, month]);
+
+    const handleMoveEmployee = async (employeeId, direction) => {
+        const currentIds = orderedVisibleEmployees
+            .map((employee) => employee.id)
+            .filter(Boolean);
+        const currentIndex = currentIds.indexOf(employeeId);
+        if (currentIndex === -1) return;
+
+        const nextIndex =
+            direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+        if (nextIndex < 0 || nextIndex >= currentIds.length) return;
+
+        const nextIds = [...currentIds];
+        const [moved] = nextIds.splice(currentIndex, 1);
+        nextIds.splice(nextIndex, 0, moved);
+
+        const previousOrder = employeeOrder;
+        setEmployeeOrder(nextIds);
+
+        try {
+            await saveServiceScheduleEmployeeOrder(
+                authToken,
+                serviceId,
+                nextIds
+            );
+            toast.success('Orden de trabajadores guardado');
+        } catch (error) {
+            setEmployeeOrder(previousOrder);
+            toast.error(
+                error.message || 'No se pudo guardar el orden de trabajadores'
+            );
+        }
+    };
 
     useEffect(() => {
         if (!defaultShiftTypeId) return;
@@ -1951,7 +2040,7 @@ const ServiceSchedulePanel = ({
                             <ServiceScheduleGrid
                                 month={month}
                                 shifts={shifts}
-                                employees={visibleEmployees}
+                                employees={orderedVisibleEmployees}
                                 absencesByEmployee={absencesByEmployee}
                                 onShiftUpdate={handleShiftUpdate}
                                 onSelectShift={setSelectedShift}
@@ -1961,6 +2050,7 @@ const ServiceSchedulePanel = ({
                                 onDeleteShift={(shift) =>
                                     handleShiftDelete(shift.id)
                                 }
+                                onMoveEmployee={handleMoveEmployee}
                                 onCopyAbsence={handleCopyGridAbsence}
                                 onPasteAbsence={handlePasteGridEntry}
                                 onDeleteAbsence={handleDeleteGridAbsence}

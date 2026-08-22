@@ -144,6 +144,7 @@ const createAdminWorkReportController = async (req, res, next) => {
             incidents: [],
             incidentFiles: {},
             inspectionFiles: isInspection ? req.files || {} : {},
+            skipVehicleInspection: true,
             reportData: {
                 folio:
                     value.folio ||
