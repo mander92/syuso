@@ -461,6 +461,8 @@
         position: sticky;
         left: 0;
         z-index: 5;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
         font-size: 0.62rem;
         line-height: 1.08;
         padding: 5px 4px;
@@ -468,13 +470,15 @@
         color: #ffffff;
         border: 1px solid #1e293b;
         min-height: 48px;
-        gap: 4px;
+        gap: 2px;
     }
 
-    .service-schedule-grid-employee span {
+    .service-schedule-grid-employee > span:first-child {
         min-width: 0;
         overflow: hidden;
         text-overflow: ellipsis;
+        white-space: normal;
+        word-break: break-word;
     }
 
     .service-schedule-grid-mobile-total {
@@ -597,10 +601,12 @@
     }
 
     .service-schedule-grid-toggle {
-        width: 22px;
-        height: 22px;
-        flex: 0 0 22px;
-        font-size: 0.74rem;
+        width: 16px;
+        height: 16px;
+        flex: 0 0 16px;
+        font-size: 0.62rem;
+        margin-left: 0;
+        padding: 0;
     }
 
     .service-schedule-grid-row-total {
@@ -645,4 +651,35 @@
 
 .service-schedule-grid-employee .service-schedule-grid-row-order button {
     flex: 0 0 auto;
+}
+
+@media (max-width: 768px) {
+    .service-schedule-grid-employee .service-schedule-grid-row-order {
+        display: inline-flex;
+        flex-direction: column;
+        gap: 1px;
+        min-width: 12px;
+        width: 12px;
+    }
+
+    .service-schedule-grid-employee .service-schedule-grid-row-order button {
+        align-items: center;
+        background: rgba(255, 255, 255, 0.94);
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        border-radius: 999px;
+        color: #0f172a;
+        display: inline-flex;
+        font-size: 0.45rem;
+        font-weight: 800;
+        height: 11px;
+        justify-content: center;
+        line-height: 1;
+        min-width: 11px;
+        padding: 0;
+        width: 11px;
+    }
+
+    .service-schedule-grid-employee .service-schedule-grid-row-order button:disabled {
+        opacity: 0.35;
+    }
 }

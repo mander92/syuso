@@ -420,7 +420,7 @@
 .schedule-service-modal {
     position: fixed;
     inset: 0;
-    z-index: 2100;
+    z-index: 10000;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -456,6 +456,10 @@
     gap: 16px;
     padding: 16px 20px;
     border-bottom: 1px solid #e2e8f0;
+    background: #ffffff;
+    position: sticky;
+    top: 0;
+    z-index: 2;
 }
 
 .schedule-service-modal__header h3 {
@@ -642,13 +646,14 @@
     }
 
     .schedule-service-modal {
-        padding: 0;
+        align-items: stretch;
+        padding: env(safe-area-inset-top) 0 0;
     }
 
     .schedule-service-modal__panel {
         width: 100%;
-        height: 100vh;
-        max-height: 100vh;
+        height: calc(100dvh - env(safe-area-inset-top));
+        max-height: calc(100dvh - env(safe-area-inset-top));
         border-radius: 0;
     }
 
@@ -661,6 +666,10 @@
     .schedule-service-modal__header-actions {
         justify-content: flex-start;
         width: 100%;
+    }
+
+    .schedule-service-modal__close {
+        margin-left: auto;
     }
 
     .schedule-service-modal__month {

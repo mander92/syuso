@@ -592,7 +592,7 @@
 .service-schedule-grid-modal {
     position: fixed;
     inset: 0;
-    z-index: 2100;
+    z-index: 10000;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -628,6 +628,10 @@
     gap: 16px;
     padding: 16px 20px;
     border-bottom: 1px solid #e2e8f0;
+    background: #ffffff;
+    position: sticky;
+    top: 0;
+    z-index: 2;
 }
 
 .service-schedule-grid-modal__header h3 {
@@ -830,14 +834,30 @@
 
 @media (max-width: 720px) {
     .service-schedule-grid-modal {
-        padding: 0;
+        align-items: stretch;
+        padding: env(safe-area-inset-top) 0 0;
     }
 
     .service-schedule-grid-modal__panel {
         width: 100%;
-        max-height: 100vh;
-        height: 100vh;
+        max-height: calc(100dvh - env(safe-area-inset-top));
+        height: calc(100dvh - env(safe-area-inset-top));
         border-radius: 0;
+    }
+
+    .service-schedule-grid-modal__header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 10px;
+        padding: 10px 12px;
+    }
+
+    .service-schedule-grid-modal__actions {
+        width: 100%;
+    }
+
+    .service-schedule-grid-modal__close {
+        margin-left: auto;
     }
 
     .service-schedule-grid-modal__body {
