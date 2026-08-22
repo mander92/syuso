@@ -846,33 +846,30 @@
     }
 
     .service-schedule-grid-modal__header {
-        align-items: center;
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        gap: 10px;
-        padding: 10px 12px;
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 12px;
     }
 
     .service-schedule-grid-modal__month {
-        grid-column: 1 / -1;
+        flex: 1 1 180px;
         margin-left: 0;
-        width: 100%;
+        min-width: 0;
+        width: auto;
     }
 
     .service-schedule-grid-modal__month input {
+        flex: 1;
         min-width: 0;
-        width: 100%;
     }
 
     .service-schedule-grid-modal__actions {
-        grid-column: 1 / -1;
+        justify-content: flex-start;
         width: 100%;
     }
 
     .service-schedule-grid-modal__close {
-        grid-column: 2;
-        grid-row: 1;
-        margin-left: auto;
+        margin-left: 0;
     }
 
     .service-schedule-grid-modal__body {

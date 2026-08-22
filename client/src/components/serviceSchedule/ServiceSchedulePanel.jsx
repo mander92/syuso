@@ -2039,14 +2039,14 @@ const ServiceSchedulePanel = ({
                                         Ajustes
                                     </button>
                                 )}
+                                <button
+                                    type='button'
+                                    className='service-schedule-grid-modal__close'
+                                    onClick={closeGridModal}
+                                >
+                                    Cerrar
+                                </button>
                             </div>
-                            <button
-                                type='button'
-                                className='service-schedule-grid-modal__close'
-                                onClick={closeGridModal}
-                            >
-                                Cerrar
-                            </button>
                         </div>
                         <div className='service-schedule-grid-modal__body'>
                             {isSimulationActive && (
