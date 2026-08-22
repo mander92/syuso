@@ -1973,33 +1973,43 @@ const ServiceSchedulePanel = ({
             )}
 
             {isGridOpen && (
-                <div className='service-schedule-grid-modal'>
+                <div className='schedule-service-modal'>
                     <button
                         type='button'
-                        className='service-schedule-grid-modal__backdrop'
+                        className='schedule-service-modal__backdrop'
                         onClick={closeGridModal}
                         aria-label='Cerrar cuadrante'
                     />
-                    <div className='service-schedule-grid-modal__panel'>
-                        <div className='service-schedule-grid-modal__header'>
+                    <div className='schedule-service-modal__panel'>
+                        <div className='schedule-service-modal__header'>
                             <div>
-                                <h3>Cuadrante mensual</h3>
-                                <p>{month}</p>
+                                <h3>
+                                    {serviceInfo?.name ||
+                                        serviceInfo?.type ||
+                                        'Cuadrante por servicio'}
+                                </h3>
+                                <p>
+                                    {serviceInfo?.delegation ||
+                                        serviceInfo?.province ||
+                                        serviceInfo?.city ||
+                                        'Servicio'}{' '}
+                                    - {month}
+                                </p>
                             </div>
-                            <label className='service-schedule-grid-modal__month'>
-                                <span>Mes</span>
-                                <input
-                                    type='month'
-                                    value={month}
-                                    onChange={(event) =>
-                                        setMonth(event.target.value)
-                                    }
-                                />
-                            </label>
-                            <div className='service-schedule-grid-modal__actions'>
+                            <div className='schedule-service-modal__header-actions'>
+                                <label className='schedule-service-modal__month'>
+                                    <span>Mes</span>
+                                    <input
+                                        type='month'
+                                        value={month}
+                                        onChange={(event) =>
+                                            setMonth(event.target.value)
+                                        }
+                                    />
+                                </label>
                                 <button
                                     type='button'
-                                    className='service-schedule-grid-modal__action'
+                                    className='schedule-service-modal__settings'
                                     onClick={handleSimulateSchedule}
                                     disabled={isSimulating}
                                 >
@@ -2010,7 +2020,7 @@ const ServiceSchedulePanel = ({
                                 {isSimulationActive && (
                                     <button
                                         type='button'
-                                        className='service-schedule-grid-modal__action service-schedule-grid-modal__action--apply'
+                                        className='schedule-service-modal__apply'
                                         onClick={handleApplySimulation}
                                         disabled={isApplyingSimulation}
                                     >
@@ -2021,7 +2031,7 @@ const ServiceSchedulePanel = ({
                                 )}
                                 <button
                                     type='button'
-                                    className='service-schedule-grid-modal__action'
+                                    className='schedule-service-modal__settings'
                                     onClick={() =>
                                         setIsHolidayToolsOpen((prev) => !prev)
                                     }
@@ -2033,7 +2043,7 @@ const ServiceSchedulePanel = ({
                                 {onOpenSettings && (
                                     <button
                                         type='button'
-                                        className='service-schedule-grid-modal__action'
+                                        className='schedule-service-modal__settings'
                                         onClick={onOpenSettings}
                                     >
                                         Ajustes
@@ -2041,16 +2051,16 @@ const ServiceSchedulePanel = ({
                                 )}
                                 <button
                                     type='button'
-                                    className='service-schedule-grid-modal__close'
+                                    className='schedule-service-modal__close'
                                     onClick={closeGridModal}
                                 >
                                     Cerrar
                                 </button>
                             </div>
                         </div>
-                        <div className='service-schedule-grid-modal__body'>
+                        <div className='schedule-service-modal__body'>
                             {isSimulationActive && (
-                                <div className='service-schedule-grid-modal__preview-alert'>
+                                <div className='schedule-service-modal__preview-alert'>
                                     Previsualizacion generada. Revisa el cuadrante y pulsa Aplicar cuadrante para guardarlo.
                                 </div>
                             )}
