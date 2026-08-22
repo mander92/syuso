@@ -704,45 +704,13 @@ const ContractsComponent = () => {
                     )}
 
                     {scheduleModalService && (
-                        <div className='contracts-schedule-modal'>
-                            <div className='contracts-schedule-modal-card'>
-                                <div className='contracts-schedule-modal-header'>
-                                    <div>
-                                        <h2>
-                                            {scheduleModalService.name ||
-                                                scheduleModalService.type ||
-                                                'Cuadrante'}
-                                        </h2>
-                                        <p>
-                                            {scheduleModalService.city ||
-                                                scheduleModalService.province ||
-                                                ''}
-                                        </p>
-                                    </div>
-                                    <button
-                                        type='button'
-                                        className='contracts-calendar-close'
-                                        onClick={() =>
-                                            setScheduleModalService(null)
-                                        }
-                                        aria-label='Cerrar cuadrante'
-                                        title='Cerrar cuadrante'
-                                    >
-                                        x
-                                    </button>
-                                </div>
-                                <ServiceSchedulePanel
-                                    serviceId={scheduleModalService.id}
-                                    authToken={authToken}
-                                    scheduleImage={
-                                        scheduleModalService.scheduleImage
-                                    }
-                                    scheduleView={
-                                        scheduleModalService.scheduleView
-                                    }
-                                />
-                            </div>
-                        </div>
+                        <ServiceSchedulePanel
+                            serviceId={scheduleModalService.id}
+                            authToken={authToken}
+                            initialGridOpen
+                            modalOnly
+                            onCloseModal={() => setScheduleModalService(null)}
+                        />
                     )}
                 </section>
             </section>

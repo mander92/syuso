@@ -639,6 +639,21 @@
     color: #64748b;
 }
 
+.service-schedule-grid-modal__month {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #475569;
+    font-size: 0.9rem;
+    margin-left: auto;
+}
+
+.service-schedule-grid-modal__month input {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 6px 8px;
+}
+
 .service-schedule-grid-modal__close {
     border: none;
     background: #e2e8f0;

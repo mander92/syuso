@@ -142,6 +142,9 @@ const ServiceSchedulePanel = ({
     scheduleImage: initialScheduleImage = '',
     scheduleView: initialScheduleView = 'grid',
     onServiceUpdate,
+    modalOnly = false,
+    initialGridOpen = false,
+    onCloseModal,
 }) => {
     const [month, setMonth] = useState(
         () => initialMonth || new Date().toISOString().slice(0, 7)
@@ -167,7 +170,7 @@ const ServiceSchedulePanel = ({
     const [absencesByEmployee, setAbsencesByEmployee] = useState({});
     const [selectedShift, setSelectedShift] = useState(null);
     const [isSavingShift, setIsSavingShift] = useState(false);
-    const [isGridOpen, setIsGridOpen] = useState(false);
+    const [isGridOpen, setIsGridOpen] = useState(Boolean(initialGridOpen));
     const [isSimulationActive, setIsSimulationActive] = useState(false);
     const [isSimulating, setIsSimulating] = useState(false);
     const [isApplyingSimulation, setIsApplyingSimulation] = useState(false);
@@ -198,6 +201,11 @@ const ServiceSchedulePanel = ({
         shiftTypeId: '',
     });
 
+    const closeGridModal = () => {
+        setIsGridOpen(false);
+        onCloseModal?.();
+    };
+
     const requestShiftOverlapConfirmation = (error) => {
         if (!isShiftOverlapError(error)) return Promise.resolve(false);
         return new Promise((resolve) => {
@@ -223,6 +231,10 @@ const ServiceSchedulePanel = ({
     useEffect(() => {
         if (initialMonth) setMonth(initialMonth);
     }, [initialMonth]);
+
+    useEffect(() => {
+        if (initialGridOpen) setIsGridOpen(true);
+    }, [initialGridOpen, serviceId]);
 
     useEffect(() => {
         setScheduleView(initialScheduleView === 'image' ? 'image' : 'grid');
@@ -757,6 +769,7 @@ const ServiceSchedulePanel = ({
         const endTime = copiedShift?.endTime || '08:00';
         setSelectedShift({
             isNew: true,
+            entryType: 'shift',
             scheduleDate,
             startTime,
             endTime,
@@ -935,6 +948,44 @@ const ServiceSchedulePanel = ({
         if (selectedShift.isNew) {
             if (isSimulationActive) {
                 toast.error('Desactiva la simulacion para crear turnos nuevos.');
+                return;
+            }
+            if ((selectedShift.entryType || 'shift') !== 'shift') {
+                if (!selectedShift.employeeId) {
+                    toast.error('Selecciona un trabajador');
+                    return;
+                }
+                try {
+                    setIsSavingShift(true);
+                    const absence = await createEmployeeAbsence(
+                        authToken,
+                        selectedShift.employeeId,
+                        {
+                            startDate: selectedShift.scheduleDate,
+                            endDate: selectedShift.scheduleDate,
+                            type: selectedShift.entryType,
+                            notes: selectedShift.notes || '',
+                        }
+                    );
+                    setAbsencesByEmployee((prev) => ({
+                        ...prev,
+                        [selectedShift.employeeId]: [
+                            {
+                                ...absence,
+                                employeeId:
+                                    absence?.employeeId ||
+                                    selectedShift.employeeId,
+                            },
+                            ...(prev[selectedShift.employeeId] || []),
+                        ],
+                    }));
+                    setSelectedShift(null);
+                    toast.success('Marca creada');
+                } catch (error) {
+                    toast.error(error.message || 'No se pudo crear la marca');
+                } finally {
+                    setIsSavingShift(false);
+                }
                 return;
             }
             try {
@@ -1276,7 +1327,13 @@ const ServiceSchedulePanel = ({
     };
 
     return (
-        <section className='service-schedule-panel'>
+        <section
+            className={`service-schedule-panel${
+                modalOnly ? ' service-schedule-panel--modal-only' : ''
+            }`}
+        >
+            {!modalOnly && (
+                <>
             <header className='service-schedule-header'>
                 <div>
                     <h2>Cuadrante mensual</h2>
@@ -1911,13 +1968,15 @@ const ServiceSchedulePanel = ({
                     Abre el cuadrante en una ventana completa para verlo sin recortes.
                 </p>
             </div>
+                </>
+            )}
 
             {isGridOpen && (
                 <div className='service-schedule-grid-modal'>
                     <button
                         type='button'
                         className='service-schedule-grid-modal__backdrop'
-                        onClick={() => setIsGridOpen(false)}
+                        onClick={closeGridModal}
                         aria-label='Cerrar cuadrante'
                     />
                     <div className='service-schedule-grid-modal__panel'>
@@ -1926,10 +1985,20 @@ const ServiceSchedulePanel = ({
                                 <h3>Cuadrante mensual</h3>
                                 <p>{month}</p>
                             </div>
+                            <label className='service-schedule-grid-modal__month'>
+                                <span>Mes</span>
+                                <input
+                                    type='month'
+                                    value={month}
+                                    onChange={(event) =>
+                                        setMonth(event.target.value)
+                                    }
+                                />
+                            </label>
                             <button
                                 type='button'
                                 className='service-schedule-grid-modal__close'
-                                onClick={() => setIsGridOpen(false)}
+                                onClick={closeGridModal}
                             >
                                 Cerrar
                             </button>
@@ -2101,6 +2170,30 @@ const ServiceSchedulePanel = ({
                             </button>
                         </div>
                         <div className='service-schedule-modal-grid'>
+                            {selectedShift.isNew && (
+                                <label>
+                                    Que quieres crear
+                                    <select
+                                        value={selectedShift.entryType || 'shift'}
+                                        onChange={(event) =>
+                                            setSelectedShift((prev) => ({
+                                                ...prev,
+                                                entryType: event.target.value,
+                                            }))
+                                        }
+                                    >
+                                        <option value='shift'>Turno</option>
+                                        <option value='vacation'>
+                                            Vacaciones
+                                        </option>
+                                        <option value='free'>Libre</option>
+                                        <option value='sick'>Baja</option>
+                                        <option value='available'>
+                                            Disponible
+                                        </option>
+                                    </select>
+                                </label>
+                            )}
                             <label>
                                 Fecha
                                 <input
@@ -2114,48 +2207,53 @@ const ServiceSchedulePanel = ({
                                     }
                                 />
                             </label>
+                            {(selectedShift.entryType || 'shift') === 'shift' && (
+                                <>
+                                    <label>
+                                        Inicio
+                                        <input
+                                            type='time'
+                                            value={selectedShift.startTime || ''}
+                                            onChange={(event) =>
+                                                setSelectedShift((prev) => ({
+                                                    ...prev,
+                                                    startTime:
+                                                        event.target.value,
+                                                }))
+                                            }
+                                        />
+                                    </label>
+                                    <label>
+                                        Fin
+                                        <input
+                                            type='time'
+                                            value={selectedShift.endTime || ''}
+                                            onChange={(event) =>
+                                                setSelectedShift((prev) => ({
+                                                    ...prev,
+                                                    endTime: event.target.value,
+                                                }))
+                                            }
+                                        />
+                                    </label>
+                                    <label>
+                                        Horas
+                                        <input
+                                            type='number'
+                                            step='0.25'
+                                            value={selectedShift.hours ?? ''}
+                                            onChange={(event) =>
+                                                setSelectedShift((prev) => ({
+                                                    ...prev,
+                                                    hours: event.target.value,
+                                                }))
+                                            }
+                                        />
+                                    </label>
+                                </>
+                            )}
                             <label>
-                                Inicio
-                                <input
-                                    type='time'
-                                    value={selectedShift.startTime || ''}
-                                    onChange={(event) =>
-                                        setSelectedShift((prev) => ({
-                                            ...prev,
-                                            startTime: event.target.value,
-                                        }))
-                                    }
-                                />
-                            </label>
-                            <label>
-                                Fin
-                                <input
-                                    type='time'
-                                    value={selectedShift.endTime || ''}
-                                    onChange={(event) =>
-                                        setSelectedShift((prev) => ({
-                                            ...prev,
-                                            endTime: event.target.value,
-                                        }))
-                                    }
-                                />
-                            </label>
-                            <label>
-                                Horas
-                                <input
-                                    type='number'
-                                    step='0.25'
-                                    value={selectedShift.hours ?? ''}
-                                    onChange={(event) =>
-                                        setSelectedShift((prev) => ({
-                                            ...prev,
-                                            hours: event.target.value,
-                                        }))
-                                    }
-                                />
-                            </label>
-                            <label>
-                                Empleado
+                                Trabajador
                                 <select
                                     value={selectedShift.employeeId || ''}
                                     onChange={(event) =>
@@ -2173,25 +2271,46 @@ const ServiceSchedulePanel = ({
                                     ))}
                                 </select>
                             </label>
-                            <label>
-                                Tipo de turno
-                                <select
-                                    value={selectedShift.shiftTypeId || ''}
-                                    onChange={(event) =>
-                                        setSelectedShift((prev) => ({
-                                            ...prev,
-                                            shiftTypeId: event.target.value,
-                                        }))
-                                    }
-                                >
-                                    <option value=''>Sin tipo</option>
-                                    {shiftTypeOptions.map((option) => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </label>
+                            {(selectedShift.entryType || 'shift') === 'shift' ? (
+                                <label>
+                                    Tipo de turno
+                                    <select
+                                        value={selectedShift.shiftTypeId || ''}
+                                        onChange={(event) =>
+                                            setSelectedShift((prev) => ({
+                                                ...prev,
+                                                shiftTypeId:
+                                                    event.target.value,
+                                            }))
+                                        }
+                                    >
+                                        <option value=''>Sin tipo</option>
+                                        {shiftTypeOptions.map((option) => (
+                                            <option
+                                                key={option.value}
+                                                value={option.value}
+                                            >
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+                            ) : (
+                                <label>
+                                    Nota
+                                    <input
+                                        type='text'
+                                        value={selectedShift.notes || ''}
+                                        onChange={(event) =>
+                                            setSelectedShift((prev) => ({
+                                                ...prev,
+                                                notes: event.target.value,
+                                            }))
+                                        }
+                                        placeholder='Opcional'
+                                    />
+                                </label>
+                            )}
                         </div>
                         <div className='service-schedule-modal-actions'>
                             <button
