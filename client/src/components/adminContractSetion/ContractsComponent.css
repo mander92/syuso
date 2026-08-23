@@ -26,6 +26,11 @@
         0 18px 42px rgba(15, 23, 42, 0.12);
 }
 
+.contracts-map-stage--schedule-open {
+    z-index: 60;
+    overflow: visible;
+}
+
 .contracts-map-stage .contracts-map-block,
 .contracts-map-stage .contracts-map {
     height: 100%;

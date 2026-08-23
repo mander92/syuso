@@ -593,6 +593,10 @@ const ContractsComponent = () => {
                         isDelegationsPanelOpen
                             ? ' contracts-map-stage--delegations-open'
                             : ''
+                    }${
+                        scheduleModalService
+                            ? ' contracts-map-stage--schedule-open'
+                            : ''
                     }`}
                 >
                     <ServiceDelegationMap
