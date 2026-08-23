@@ -1,6 +1,7 @@
 import path from 'path';
 import listServiceScheduleShiftsService from '../../services/schedules/listServiceScheduleShiftsService.js';
 import listEmployeeAbsencesInMonthService from '../../services/schedules/listEmployeeAbsencesInMonthService.js';
+import listServiceHolidayDatesInMonthService from '../../services/schedules/listServiceHolidayDatesInMonthService.js';
 import ensureServiceDelegationAccessService from '../../services/delegations/ensureServiceDelegationAccessService.js';
 import selectServiceByIdService from '../../services/services/selectServiceByIdService.js';
 import { createScheduleGridExcelUtil } from '../../utils/scheduleExcelUtil.js';
@@ -36,6 +37,10 @@ const downloadServiceScheduleExcelController = async (req, res, next) => {
             employeeIds,
             effectiveMonth
         );
+        const holidayDates = await listServiceHolidayDatesInMonthService(
+            [serviceId],
+            effectiveMonth
+        );
 
         const filePath = await createScheduleGridExcelUtil({
             sections: [
@@ -44,6 +49,7 @@ const downloadServiceScheduleExcelController = async (req, res, next) => {
                     shifts,
                     month: effectiveMonth,
                     absences,
+                    holidayDates,
                 }),
             ],
             fileName: `${getServiceScheduleFileBaseName(

@@ -1,6 +1,7 @@
 import path from 'path';
 import listServiceScheduleShiftsService from '../../services/schedules/listServiceScheduleShiftsService.js';
 import listEmployeeAbsencesInMonthService from '../../services/schedules/listEmployeeAbsencesInMonthService.js';
+import listServiceHolidayDatesInMonthService from '../../services/schedules/listServiceHolidayDatesInMonthService.js';
 import ensureServiceDelegationAccessService from '../../services/delegations/ensureServiceDelegationAccessService.js';
 import selectServiceByIdService from '../../services/services/selectServiceByIdService.js';
 import { createScheduleGridPdfUtil } from '../../utils/schedulePdfUtil.js';
@@ -36,12 +37,17 @@ const downloadServiceSchedulePdfController = async (req, res, next) => {
             employeeIds,
             effectiveMonth
         );
+        const holidayDates = await listServiceHolidayDatesInMonthService(
+            [serviceId],
+            effectiveMonth
+        );
 
         const section = buildServiceScheduleSection({
             service,
             shifts,
             month: effectiveMonth,
             absences,
+            holidayDates,
         });
         const fileName = `${getServiceScheduleFileBaseName(
             service,

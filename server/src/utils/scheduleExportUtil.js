@@ -99,6 +99,7 @@ export const buildServiceScheduleSection = ({
     shifts,
     month,
     absences = [],
+    holidayDates = [],
 }) => {
     const serviceInfo = getFirstRow(service);
     const employeeMap = new Map();
@@ -213,6 +214,7 @@ export const buildServiceScheduleSection = ({
 
     return {
         month,
+        holidayDates,
         meta: {
             center: serviceInfo?.name || '',
             phone: serviceInfo?.clientPhone || '',
@@ -236,6 +238,7 @@ export const buildEmployeeScheduleSection = ({
     shifts,
     month,
     absences = [],
+    holidayDates = [],
 }) => {
     const employeeName = getEmployeeName(employee);
     const serviceMap = new Map();
@@ -326,6 +329,7 @@ export const buildEmployeeScheduleSection = ({
 
     return {
         month,
+        holidayDates,
         meta: {
             center: employeeName,
             phone: employee?.phone || '',

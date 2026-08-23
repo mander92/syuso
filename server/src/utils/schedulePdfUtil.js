@@ -134,7 +134,7 @@ const drawGrid = (doc, days, rows, meta = {}) => {
         const x = startX + nameColWidth + index * dayColWidth;
         doc
             .rect(x, y, dayColWidth, headerHeight)
-            .fillAndStroke(day.isWeekend ? '#fde2e2' : '#f8fafc', '#cbd5f1');
+            .fillAndStroke(day.isHighlighted ? '#fde2e2' : '#f8fafc', '#cbd5f1');
         doc
             .fillColor('#0f172a')
             .text(day.weekday, x + 2, y + 4, { width: dayColWidth - 4 });
@@ -156,7 +156,10 @@ const drawGrid = (doc, days, rows, meta = {}) => {
 
     days.forEach((day, index) => {
         const x = startX + nameColWidth + index * dayColWidth;
-        doc.rect(x, y, dayColWidth, dayHeight).stroke('#cbd5f1');
+        doc
+            .rect(x, y, dayColWidth, dayHeight)
+            .fillAndStroke(day.isHighlighted ? '#fde2e2' : '#f8fafc', '#cbd5f1');
+        doc.fillColor('#0f172a');
         doc.text(day.dayNumber, x + 4, y + 4, {
             width: dayColWidth - 8,
         });
@@ -264,7 +267,13 @@ export const createScheduleGridPdfUtil = async ({ sections, fileName }) => {
             doc.addPage({ layout: 'landscape' });
         }
 
-        const days = getMonthDays(section.month);
+        const holidayDates = new Set(section.holidayDates || []);
+        const days = getMonthDays(section.month).map((day) => ({
+            ...day,
+            isHighlighted:
+                day.isWeekend ||
+                (day.dateKey && holidayDates.has(day.dateKey)),
+        }));
         const monthLabel = formatMonthLabel(section.month);
 
         drawHeader(doc, section.meta, monthLabel);

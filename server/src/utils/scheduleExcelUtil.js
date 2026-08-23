@@ -73,13 +73,15 @@ const getMonthDays = (month) => {
             return { dayNumber: '', weekday: '', dateKey: '' };
         }
         const date = new Date(Date.UTC(year, monthValue - 1, dayNumber));
+        const weekdayIndex = date.getUTCDay();
         const dateKey = `${year}-${String(monthValue).padStart(2, '0')}-${String(
             dayNumber
         ).padStart(2, '0')}`;
         return {
             dayNumber,
-            weekday: weekdays[date.getUTCDay()],
+            weekday: weekdays[weekdayIndex],
             dateKey,
+            isWeekend: weekdayIndex === 0 || weekdayIndex === 6,
         };
     });
 };
@@ -114,12 +116,35 @@ const fillServiceMeta = (worksheet, meta) => {
     worksheet.getCell('N5').value = meta.description || '';
 };
 
-const fillDays = (worksheet, month) => {
+const setHeaderFill = (cell, color) => {
+    cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: color },
+    };
+};
+
+const fillDays = (worksheet, section) => {
+    const month = section.month;
     const days = getMonthDays(month);
+    const holidayDates = new Set(section.holidayDates || []);
     days.forEach((day, index) => {
         const col = DAY_START_COL + index;
-        worksheet.getCell(9, col).value = day.weekday;
-        worksheet.getCell(10, col).value = day.dayNumber;
+        const weekdayCell = worksheet.getCell(9, col);
+        const dayCell = worksheet.getCell(10, col);
+        const isHighlighted =
+            day.isWeekend ||
+            (day.dateKey && holidayDates.has(day.dateKey));
+        const fillColor = day.dateKey
+            ? isHighlighted
+                ? 'FFF4CCCC'
+                : 'FFFFFFFF'
+            : 'FFFFFFFF';
+
+        weekdayCell.value = day.weekday;
+        dayCell.value = day.dayNumber;
+        setHeaderFill(weekdayCell, fillColor);
+        setHeaderFill(dayCell, fillColor);
     });
 };
 
@@ -271,7 +296,7 @@ const prepareSheet = (worksheet, section, rows) => {
     fillServiceMeta(worksheet, section.meta || {});
     worksheet.getCell(11, 1).value =
         section.meta?.rowHeader || 'Dos apellidos y nombre';
-    fillDays(worksheet, section.month);
+    fillDays(worksheet, section);
     fillAgreementHeaders(worksheet, showAgreementHours);
 
     for (let index = 0; index < EMPLOYEE_BLOCKS_PER_SHEET; index += 1) {

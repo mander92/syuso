@@ -1,6 +1,7 @@
 import path from 'path';
 import listEmployeeScheduleShiftsService from '../../services/schedules/listEmployeeScheduleShiftsService.js';
 import listEmployeeAbsencesInMonthService from '../../services/schedules/listEmployeeAbsencesInMonthService.js';
+import listServiceHolidayDatesInMonthService from '../../services/schedules/listServiceHolidayDatesInMonthService.js';
 import selectUserByIdService from '../../services/users/selectUserByIdService.js';
 import { createScheduleGridPdfUtil } from '../../utils/schedulePdfUtil.js';
 import {
@@ -28,6 +29,10 @@ const downloadEmployeeSchedulePdfController = async (req, res, next) => {
             [employeeId],
             effectiveMonth
         );
+        const holidayDates = await listServiceHolidayDatesInMonthService(
+            shifts.map((shift) => shift.serviceId),
+            effectiveMonth
+        );
 
         const fileName = `${getEmployeeScheduleFileBaseName(
             employee,
@@ -41,6 +46,7 @@ const downloadEmployeeSchedulePdfController = async (req, res, next) => {
                     shifts,
                     month: effectiveMonth,
                     absences,
+                    holidayDates,
                 }),
             ],
             fileName,
