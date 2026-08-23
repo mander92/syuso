@@ -869,7 +869,9 @@ const WorkReportsComponent = ({
     }
 
     return (
-        <section className='shift-wrapper'>
+        <section
+            className={`shift-wrapper${embedded ? ' shift-wrapper--embedded' : ''}`}
+        >
             <div className='shift-layout'>
                 <aside className='shift-sidebar-filters'>
                     <div className='shift-header'>

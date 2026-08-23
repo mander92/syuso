@@ -52,6 +52,21 @@
     backdrop-filter: blur(10px);
 }
 
+.shift-wrapper--embedded .shift-floating-actions {
+    position: static;
+    z-index: auto;
+    align-self: flex-end;
+    justify-content: flex-end;
+    width: auto;
+    margin: 0;
+    border-radius: 999px;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.shift-wrapper--embedded .shift-calendar-card {
+    margin-top: 0;
+}
+
 .shift-header {
     display: flex;
     flex-direction: column;
