@@ -8,7 +8,7 @@
 
 .service-schedule-panel--map-modal {
     position: fixed;
-    inset: 80px 0 0;
+    inset: 80px 0 calc(5.8rem + env(safe-area-inset-bottom)) 0;
     z-index: 10000;
     pointer-events: none;
 }
@@ -16,7 +16,20 @@
 .service-schedule-panel--map-modal .schedule-service-modal {
     position: absolute;
     inset: 0;
+    align-items: stretch;
+    padding: 0 24px 10px;
     pointer-events: auto;
+}
+
+.service-schedule-panel--map-modal .schedule-service-modal__panel {
+    height: 100%;
+    max-height: 100%;
+}
+
+.service-schedule-panel--map-modal .schedule-service-modal__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 .service-schedule-panel *,
@@ -981,7 +994,8 @@
 
 @media (max-width: 720px) {
     .service-schedule-panel--map-modal {
-        inset: calc(70px + env(safe-area-inset-top)) 0 0 0;
+        inset: calc(70px + env(safe-area-inset-top)) 0
+            calc(5.6rem + env(safe-area-inset-bottom)) 0;
     }
 
     .service-schedule-panel--map-modal .schedule-service-modal {
