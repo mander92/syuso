@@ -709,6 +709,7 @@ const ContractsComponent = () => {
                             authToken={authToken}
                             initialGridOpen
                             modalOnly
+                            mapModal
                             onCloseModal={() => setScheduleModalService(null)}
                             onOpenSettings={() => {
                                 const serviceId = scheduleModalService.id;

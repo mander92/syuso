@@ -647,13 +647,14 @@
 
     .schedule-service-modal {
         align-items: stretch;
-        padding: env(safe-area-inset-top) 0 0;
+        inset: calc(70px + env(safe-area-inset-top)) 0 0 0;
+        padding: 0;
     }
 
     .schedule-service-modal__panel {
         width: 100%;
-        height: calc(100dvh - env(safe-area-inset-top));
-        max-height: calc(100dvh - env(safe-area-inset-top));
+        height: 100%;
+        max-height: 100%;
         border-radius: 0;
     }
 
@@ -661,14 +662,31 @@
         align-items: center;
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
-        padding: 12px;
-        gap: 10px;
+        padding: 8px 12px;
+        gap: 6px;
     }
 
     .schedule-service-modal__header-actions {
+        gap: 6px;
         grid-column: 1 / -1;
         justify-content: flex-start;
         width: 100%;
+    }
+
+    .schedule-service-modal__header h3 {
+        font-size: 0.9rem;
+    }
+
+    .schedule-service-modal__header p {
+        font-size: 0.76rem;
+        margin-top: 2px;
+    }
+
+    .schedule-service-modal__settings,
+    .schedule-service-modal__apply,
+    .schedule-service-modal__close {
+        font-size: 0.82rem;
+        padding: 6px 12px;
     }
 
     .schedule-service-modal__close {
@@ -687,7 +705,7 @@
     }
 
     .schedule-service-modal__body {
-        padding: 12px;
+        padding: 10px 12px 12px;
     }
 }
 

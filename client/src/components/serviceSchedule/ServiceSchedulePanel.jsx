@@ -143,6 +143,7 @@ const ServiceSchedulePanel = ({
     scheduleView: initialScheduleView = 'grid',
     onServiceUpdate,
     modalOnly = false,
+    mapModal = false,
     initialGridOpen = false,
     onCloseModal,
     onOpenSettings,
@@ -1331,6 +1332,7 @@ const ServiceSchedulePanel = ({
         <section
             className={`service-schedule-panel${
                 modalOnly ? ' service-schedule-panel--modal-only' : ''
+            }${mapModal ? ' service-schedule-panel--map-modal' : ''
             }`}
         >
             {!modalOnly && (
