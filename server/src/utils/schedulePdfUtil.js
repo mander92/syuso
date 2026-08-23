@@ -186,7 +186,12 @@ const drawGrid = (doc, days, rows, meta = {}) => {
 
         days.forEach((day, index) => {
             const x = startX + nameColWidth + index * dayColWidth;
-            doc.rect(x, y, dayColWidth, rowHeight).stroke('#cbd5f1');
+            doc
+                .rect(x, y, dayColWidth, rowHeight)
+                .fillAndStroke(
+                    row.absenceByDay?.[day.dateKey] ? '#fef3c7' : '#ffffff',
+                    '#cbd5f1'
+                );
             doc
                 .moveTo(x, y + lineHeight)
                 .lineTo(x + dayColWidth, y + lineHeight)
@@ -197,6 +202,7 @@ const drawGrid = (doc, days, rows, meta = {}) => {
                 .stroke('#e5e7eb');
             doc
                 .font('Helvetica')
+                .fillColor('#0f172a')
                 .text(getStartText(row, day.dateKey), x + 2, y + 4, {
                     width: dayColWidth - 4,
                     align: 'center',

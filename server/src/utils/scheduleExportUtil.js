@@ -20,32 +20,107 @@ const getEmployeeName = (employee, fallback = 'empleado') =>
     employee?.email ||
     fallback;
 
-export const buildServiceScheduleSection = ({ service, shifts, month }) => {
+const absenceLabels = {
+    vacation: 'VAC',
+    off: 'LIB',
+    free: 'LIB',
+    sick: 'BAJ',
+    available: 'DIS',
+};
+
+const normalizeDateKey = (value) => String(value || '').slice(0, 10);
+
+const getMonthBounds = (month) => {
+    const [year, monthValue] = String(month || '').split('-').map(Number);
+    const start = new Date(Date.UTC(year, monthValue - 1, 1));
+    const end = new Date(Date.UTC(year, monthValue, 0));
+    return { start, end };
+};
+
+const addCellValue = (target, dateKey, value) => {
+    if (!dateKey || !value) return;
+    if (!target[dateKey]) target[dateKey] = [];
+    if (!target[dateKey].includes(value)) target[dateKey].push(value);
+};
+
+const addAbsencesToEntry = (entry, absences, month) => {
+    if (!entry || !Array.isArray(absences) || !absences.length) return;
+
+    const { start, end } = getMonthBounds(month);
+    absences.forEach((absence) => {
+        const label = absenceLabels[absence.type] || 'AUS';
+        const absenceStart = new Date(`${normalizeDateKey(absence.startDate)}T00:00:00Z`);
+        const absenceEnd = new Date(`${normalizeDateKey(absence.endDate)}T00:00:00Z`);
+        const cursor = new Date(Math.max(absenceStart.getTime(), start.getTime()));
+        const limit = new Date(Math.min(absenceEnd.getTime(), end.getTime()));
+
+        while (cursor.getTime() <= limit.getTime()) {
+            const dateKey = cursor.toISOString().slice(0, 10);
+            addCellValue(entry.startsByDay, dateKey, label);
+            entry.absenceByDay[dateKey] = label;
+            cursor.setUTCDate(cursor.getUTCDate() + 1);
+        }
+    });
+};
+
+const buildEmptyEntry = (name, employeeId = '') => ({
+    name,
+    employeeId,
+    shifts: {},
+    startsByDay: {},
+    endsByDay: {},
+    hoursByDay: {},
+    absenceByDay: {},
+    totalHours: 0,
+    totalRealHours: 0,
+    totalNightHours: 0,
+    totalHolidayHours: 0,
+    totalRegularHours: 0,
+});
+
+export const buildServiceScheduleSection = ({
+    service,
+    shifts,
+    month,
+    absences = [],
+}) => {
     const serviceInfo = getFirstRow(service);
     const employeeMap = new Map();
+    const serviceRows = Array.isArray(service) ? service : [service].filter(Boolean);
+    const absencesByEmployee = new Map();
+
+    absences.forEach((absence) => {
+        if (!absence?.employeeId) return;
+        if (!absencesByEmployee.has(absence.employeeId)) {
+            absencesByEmployee.set(absence.employeeId, []);
+        }
+        absencesByEmployee.get(absence.employeeId).push(absence);
+    });
+
+    serviceRows.forEach((row) => {
+        if (!row?.employeeId || employeeMap.has(row.employeeId)) return;
+        const employeeName =
+            row.firstName || row.lastName
+                ? `${row.firstName || ''} ${row.lastName || ''}`.trim()
+                : row.email || 'Trabajador';
+        employeeMap.set(row.employeeId, buildEmptyEntry(employeeName, row.employeeId));
+    });
 
     shifts.forEach((shift) => {
+        const employeeKey = shift.employeeId || 'unassigned';
         const employeeName =
             shift.firstName || shift.lastName
                 ? `${shift.firstName || ''} ${shift.lastName || ''}`.trim()
                 : 'Sin asignar';
 
-        if (!employeeMap.has(employeeName)) {
-            employeeMap.set(employeeName, {
-                name: employeeName,
-                shifts: {},
-                startsByDay: {},
-                endsByDay: {},
-                hoursByDay: {},
-                totalHours: 0,
-                totalRealHours: 0,
-                totalNightHours: 0,
-                totalHolidayHours: 0,
-                totalRegularHours: 0,
-            });
+        if (!employeeMap.has(employeeKey)) {
+            employeeMap.set(
+                employeeKey,
+                buildEmptyEntry(employeeName, shift.employeeId || '')
+            );
         }
 
-        const entry = employeeMap.get(employeeName);
+        const entry = employeeMap.get(employeeKey);
         const dateKey = toDateKey(shift.scheduleDate);
         const startTime = timeShort(shift.startTime);
         const endTime = timeShort(shift.endTime);
@@ -56,13 +131,10 @@ export const buildServiceScheduleSection = ({ service, shifts, month }) => {
         const regularHoursValue = Number(shift.regularHours) || 0;
 
         if (!entry.shifts[dateKey]) entry.shifts[dateKey] = [];
-        if (!entry.startsByDay[dateKey]) entry.startsByDay[dateKey] = [];
-        if (!entry.endsByDay[dateKey]) entry.endsByDay[dateKey] = [];
-
         if (startTime && endTime) {
             entry.shifts[dateKey].push(`${startTime}-${endTime}`);
-            entry.startsByDay[dateKey].push(startTime);
-            entry.endsByDay[dateKey].push(endTime);
+            addCellValue(entry.startsByDay, dateKey, startTime);
+            addCellValue(entry.endsByDay, dateKey, endTime);
         }
 
         entry.hoursByDay[dateKey] = (entry.hoursByDay[dateKey] || 0) + hoursValue;
@@ -71,6 +143,14 @@ export const buildServiceScheduleSection = ({ service, shifts, month }) => {
         entry.totalNightHours += nightHoursValue;
         entry.totalHolidayHours += holidayHoursValue;
         entry.totalRegularHours += regularHoursValue;
+    });
+
+    employeeMap.forEach((entry) => {
+        addAbsencesToEntry(
+            entry,
+            absencesByEmployee.get(entry.employeeId) || [],
+            month
+        );
     });
 
     const rows = Array.from(employeeMap.values()).map((entry) => ({
@@ -99,6 +179,7 @@ export const buildServiceScheduleSection = ({ service, shifts, month }) => {
                 value ? value.toFixed(2) : '',
             ])
         ),
+        absenceByDay: entry.absenceByDay,
         totalHours: entry.totalHours ? entry.totalHours.toFixed(2) : '',
         totalRealHours: entry.totalRealHours
             ? entry.totalRealHours.toFixed(2)
@@ -134,7 +215,12 @@ export const buildServiceScheduleSection = ({ service, shifts, month }) => {
 export const getServiceScheduleFileBaseName = (service, serviceId, month) =>
     `${cleanFilePart(getFirstRow(service)?.name, serviceId)}-${month}`;
 
-export const buildEmployeeScheduleSection = ({ employee, shifts, month }) => {
+export const buildEmployeeScheduleSection = ({
+    employee,
+    shifts,
+    month,
+    absences = [],
+}) => {
     const employeeName = getEmployeeName(employee);
     const serviceMap = new Map();
     let hasAgreementService = false;
@@ -146,18 +232,7 @@ export const buildEmployeeScheduleSection = ({ employee, shifts, month }) => {
         if (hourRuleType === 'convenio') hasAgreementService = true;
 
         if (!serviceMap.has(serviceId)) {
-            serviceMap.set(serviceId, {
-                name: serviceName,
-                shifts: {},
-                startsByDay: {},
-                endsByDay: {},
-                hoursByDay: {},
-                totalHours: 0,
-                totalRealHours: 0,
-                totalNightHours: 0,
-                totalHolidayHours: 0,
-                totalRegularHours: 0,
-            });
+            serviceMap.set(serviceId, buildEmptyEntry(serviceName));
         }
 
         const entry = serviceMap.get(serviceId);
@@ -171,13 +246,10 @@ export const buildEmployeeScheduleSection = ({ employee, shifts, month }) => {
         const regularHoursValue = Number(shift.regularHours) || 0;
 
         if (!entry.shifts[dateKey]) entry.shifts[dateKey] = [];
-        if (!entry.startsByDay[dateKey]) entry.startsByDay[dateKey] = [];
-        if (!entry.endsByDay[dateKey]) entry.endsByDay[dateKey] = [];
-
         if (startTime && endTime) {
             entry.shifts[dateKey].push(`${startTime}-${endTime}`);
-            entry.startsByDay[dateKey].push(startTime);
-            entry.endsByDay[dateKey].push(endTime);
+            addCellValue(entry.startsByDay, dateKey, startTime);
+            addCellValue(entry.endsByDay, dateKey, endTime);
         }
 
         entry.hoursByDay[dateKey] = (entry.hoursByDay[dateKey] || 0) + hoursValue;
@@ -187,6 +259,12 @@ export const buildEmployeeScheduleSection = ({ employee, shifts, month }) => {
         entry.totalHolidayHours += holidayHoursValue;
         entry.totalRegularHours += regularHoursValue;
     });
+
+    if (absences.length) {
+        const absenceEntry = buildEmptyEntry('Ausencias');
+        addAbsencesToEntry(absenceEntry, absences, month);
+        serviceMap.set('__absences__', absenceEntry);
+    }
 
     const rows = Array.from(serviceMap.values()).map((entry) => ({
         name: entry.name,
@@ -214,6 +292,7 @@ export const buildEmployeeScheduleSection = ({ employee, shifts, month }) => {
                 value ? value.toFixed(2) : '',
             ])
         ),
+        absenceByDay: entry.absenceByDay,
         totalHours: entry.totalHours ? entry.totalHours.toFixed(2) : '',
         totalRealHours: entry.totalRealHours
             ? entry.totalRealHours.toFixed(2)

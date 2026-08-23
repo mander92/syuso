@@ -2246,7 +2246,7 @@ const ServiceSchedulePanel = ({
                                         <option value='vacation'>
                                             Vacaciones
                                         </option>
-                                        <option value='free'>Libre</option>
+                                        <option value='off'>Libre</option>
                                         <option value='sick'>Baja</option>
                                         <option value='available'>
                                             Disponible

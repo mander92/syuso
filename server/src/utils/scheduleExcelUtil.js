@@ -161,16 +161,32 @@ const fillEmployeeBlock = (
     days.forEach((day, index) => {
         if (!day.dateKey) return;
         const col = DAY_START_COL + index;
-        const start = parseTime(row.startsByDay?.[day.dateKey]);
-        const end = parseTime(row.endsByDay?.[day.dateKey]);
+        const startText = row.startsByDay?.[day.dateKey] || '';
+        const endText = row.endsByDay?.[day.dateKey] || '';
+        const start = parseTime(startText);
+        const end = parseTime(endText);
         const duration = calculateDuration(start, end);
+        const hasAbsence = Boolean(row.absenceByDay?.[day.dateKey]);
 
-        worksheet.getCell(baseRow, col).value = start;
-        worksheet.getCell(baseRow + 1, col).value = end;
-        worksheet.getCell(baseRow + 2, col).value = {
-            formula: `IF(${worksheet.getCell(baseRow, col).address}>0,IF(${worksheet.getCell(baseRow, col).address}>${worksheet.getCell(baseRow + 1, col).address},${worksheet.getCell(baseRow + 1, col).address}-${worksheet.getCell(baseRow, col).address}+1,(${worksheet.getCell(baseRow + 1, col).address}-${worksheet.getCell(baseRow, col).address})),"-")`,
-            result: duration === null ? '-' : duration,
-        };
+        worksheet.getCell(baseRow, col).value = (start ?? startText) || null;
+        worksheet.getCell(baseRow + 1, col).value = (end ?? endText) || null;
+        worksheet.getCell(baseRow + 2, col).value =
+            duration === null
+                ? '-'
+                : {
+                      formula: `IF(${worksheet.getCell(baseRow, col).address}>0,IF(${worksheet.getCell(baseRow, col).address}>${worksheet.getCell(baseRow + 1, col).address},${worksheet.getCell(baseRow + 1, col).address}-${worksheet.getCell(baseRow, col).address}+1,(${worksheet.getCell(baseRow + 1, col).address}-${worksheet.getCell(baseRow, col).address})),"-")`,
+                      result: duration,
+                  };
+
+        if (hasAbsence) {
+            [baseRow, baseRow + 1, baseRow + 2].forEach((rowNumber) => {
+                worksheet.getCell(rowNumber, col).fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFFEF3C7' },
+                };
+            });
+        }
 
         if (duration !== null) {
             dailyTotals[index] = (dailyTotals[index] || 0) + duration;
