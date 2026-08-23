@@ -1421,7 +1421,9 @@ const ScheduleComponent = () => {
         return absences.reduce((total, absence) => {
             if (!absence) return total;
             const normalizedType =
-                absence.type === 'leave' ? 'free' : absence.type;
+                absence.type === 'leave' || absence.type === 'free'
+                    ? 'off'
+                    : absence.type;
             if (normalizedType !== type) return total;
             const start = absence.startDate ? new Date(absence.startDate) : null;
             const end = absence.endDate ? new Date(absence.endDate) : null;
@@ -1786,7 +1788,7 @@ const ScheduleComponent = () => {
         setAbsenceDrafts((prev) => ({
             ...prev,
             [employeeId]: {
-                type: 'free',
+                type: 'off',
                 startDate: '',
                 endDate: '',
                 notes: '',
@@ -1809,7 +1811,10 @@ const ScheduleComponent = () => {
             const created = await createEmployeeAbsence(authToken, employeeId, {
                 startDate: draft.startDate,
                 endDate: draft.endDate,
-                type: draft.type || 'free',
+                type:
+                    draft.type === 'free' || draft.type === 'leave'
+                        ? 'off'
+                        : draft.type || 'off',
                 notes: draft.notes || '',
             });
             setEmployeeAbsencesMap((prev) => ({
@@ -1819,7 +1824,10 @@ const ScheduleComponent = () => {
             setAbsenceDrafts((prev) => ({
                 ...prev,
                 [employeeId]: {
-                    type: draft.type || 'free',
+                    type:
+                        draft.type === 'free' || draft.type === 'leave'
+                            ? 'off'
+                            : draft.type || 'off',
                     startDate: '',
                     endDate: '',
                     notes: '',
@@ -2453,7 +2461,7 @@ const ScheduleComponent = () => {
                                     isAbsenceInRange(absence, monthRange)
                                 );
                                 const draft = absenceDrafts[item.id] || {
-                                    type: 'free',
+                                    type: 'off',
                                     startDate: '',
                                     endDate: '',
                                     notes: '',
@@ -2464,7 +2472,7 @@ const ScheduleComponent = () => {
                                         : false;
                                 const freeDays = countAbsenceDays(
                                     monthAbsences,
-                                    'free',
+                                    'off',
                                     monthRange
                                 );
                                 const vacationDays = countAbsenceDays(
@@ -2753,7 +2761,7 @@ const ScheduleComponent = () => {
                                                     <label>
                                                         Tipo
                                                         <select
-                                                            value={draft.type || 'free'}
+                                                            value={draft.type || 'off'}
                                                             onChange={(event) =>
                                                                 handleAbsenceDraftChange(
                                                                     item.id,
@@ -2762,7 +2770,7 @@ const ScheduleComponent = () => {
                                                                 )
                                                             }
                                                         >
-                                                            <option value='free'>Libre</option>
+                                                            <option value='off'>Libre</option>
                                                             <option value='vacation'>
                                                                 Vacaciones
                                                             </option>

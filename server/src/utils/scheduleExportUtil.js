@@ -28,7 +28,19 @@ const absenceLabels = {
     available: 'DIS',
 };
 
-const normalizeDateKey = (value) => String(value || '').slice(0, 10);
+const normalizeDateKey = (value) => {
+    if (!value) return '';
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+        return value.toISOString().slice(0, 10);
+    }
+    const text = String(value);
+    const match = text.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (match) return match[1];
+    const parsed = new Date(text);
+    return Number.isNaN(parsed.getTime())
+        ? ''
+        : parsed.toISOString().slice(0, 10);
+};
 
 const getMonthBounds = (month) => {
     const [year, monthValue] = String(month || '').split('-').map(Number);
@@ -49,8 +61,12 @@ const addAbsencesToEntry = (entry, absences, month) => {
     const { start, end } = getMonthBounds(month);
     absences.forEach((absence) => {
         const label = absenceLabels[absence.type] || 'AUS';
-        const absenceStart = new Date(`${normalizeDateKey(absence.startDate)}T00:00:00Z`);
-        const absenceEnd = new Date(`${normalizeDateKey(absence.endDate)}T00:00:00Z`);
+        const startKey = normalizeDateKey(absence.startDate);
+        const endKey = normalizeDateKey(absence.endDate);
+        if (!startKey || !endKey) return;
+
+        const absenceStart = new Date(`${startKey}T00:00:00Z`);
+        const absenceEnd = new Date(`${endKey}T00:00:00Z`);
         const cursor = new Date(Math.max(absenceStart.getTime(), start.getTime()));
         const limit = new Date(Math.min(absenceEnd.getTime(), end.getTime()));
 

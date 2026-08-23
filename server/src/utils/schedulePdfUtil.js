@@ -188,10 +188,7 @@ const drawGrid = (doc, days, rows, meta = {}) => {
             const x = startX + nameColWidth + index * dayColWidth;
             doc
                 .rect(x, y, dayColWidth, rowHeight)
-                .fillAndStroke(
-                    row.absenceByDay?.[day.dateKey] ? '#fef3c7' : '#ffffff',
-                    '#cbd5f1'
-                );
+                .fillAndStroke('#ffffff', '#cbd5f1');
             doc
                 .moveTo(x, y + lineHeight)
                 .lineTo(x + dayColWidth, y + lineHeight)
