@@ -166,8 +166,6 @@ const fillEmployeeBlock = (
         const start = parseTime(startText);
         const end = parseTime(endText);
         const duration = calculateDuration(start, end);
-        const hasAbsence = Boolean(row.absenceByDay?.[day.dateKey]);
-
         worksheet.getCell(baseRow, col).value = (start ?? startText) || null;
         worksheet.getCell(baseRow + 1, col).value = (end ?? endText) || null;
         worksheet.getCell(baseRow + 2, col).value =
@@ -177,16 +175,6 @@ const fillEmployeeBlock = (
                       formula: `IF(${worksheet.getCell(baseRow, col).address}>0,IF(${worksheet.getCell(baseRow, col).address}>${worksheet.getCell(baseRow + 1, col).address},${worksheet.getCell(baseRow + 1, col).address}-${worksheet.getCell(baseRow, col).address}+1,(${worksheet.getCell(baseRow + 1, col).address}-${worksheet.getCell(baseRow, col).address})),"-")`,
                       result: duration,
                   };
-
-        if (hasAbsence) {
-            [baseRow, baseRow + 1, baseRow + 2].forEach((rowNumber) => {
-                worksheet.getCell(rowNumber, col).fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: 'FFFEF3C7' },
-                };
-            });
-        }
 
         if (duration !== null) {
             dailyTotals[index] = (dailyTotals[index] || 0) + duration;
