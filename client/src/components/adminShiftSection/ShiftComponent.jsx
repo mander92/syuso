@@ -19,7 +19,11 @@ import './ShiftComponent.css';
 
 const { VITE_API_URL } = import.meta.env;
 
-const ShiftComponent = () => {
+const ShiftComponent = ({
+    fixedServiceId = '',
+    fixedServiceName = '',
+    embedded = false,
+} = {}) => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
     const isAdminLike = user?.role === 'admin' || user?.role === 'sudo';
@@ -153,6 +157,7 @@ const ShiftComponent = () => {
     }, [
         authToken,
         user,
+        fixedServiceId,
         employeeId,
         serviceName,
         city,
@@ -177,10 +182,12 @@ const ShiftComponent = () => {
     const handleReset = (e) => {
         e.preventDefault();
         setEmployeeId('');
-        setServiceName('');
+        if (!fixedServiceId) setServiceName('');
         setPersonSearch('');
-        setCity('');
-        setDelegationId('');
+        if (!fixedServiceId) {
+            setCity('');
+            setDelegationId('');
+        }
         setOpenOnly(false);
         setStartDate('');
         setEndDate('');
@@ -189,9 +196,15 @@ const ShiftComponent = () => {
 
     const buildParams = () => {
         const params = new URLSearchParams();
-        if (serviceName) params.append('serviceName', serviceName);
-        if (city) params.append('city', city);
-        if (delegationId) params.append('delegationId', delegationId);
+        if (fixedServiceId) {
+            params.append('serviceId', fixedServiceId);
+        } else if (serviceName) {
+            params.append('serviceName', serviceName);
+        }
+        if (!fixedServiceId && city) params.append('city', city);
+        if (!fixedServiceId && delegationId) {
+            params.append('delegationId', delegationId);
+        }
 
         if (isAdminLike && employeeId) {
             params.append('employeeId', employeeId);
@@ -266,15 +279,23 @@ const ShiftComponent = () => {
                 return false;
             }
 
-            if (serviceName && record.serviceName !== serviceName) {
+            if (
+                !fixedServiceId &&
+                serviceName &&
+                record.serviceName !== serviceName
+            ) {
                 return false;
             }
 
-            if (city && record.city !== city) {
+            if (!fixedServiceId && city && record.city !== city) {
                 return false;
             }
 
-            if (delegationId && record.delegationId !== delegationId) {
+            if (
+                !fixedServiceId &&
+                delegationId &&
+                record.delegationId !== delegationId
+            ) {
                 return false;
             }
 
@@ -305,6 +326,7 @@ const ShiftComponent = () => {
     }, [
         details,
         openOnly,
+        fixedServiceId,
         serviceName,
         city,
         delegationId,
@@ -386,7 +408,11 @@ const ShiftComponent = () => {
                         return false;
                     }
                 }
-                if (serviceName && record.serviceName !== serviceName) {
+                if (
+                    !fixedServiceId &&
+                    serviceName &&
+                    record.serviceName !== serviceName
+                ) {
                     return false;
                 }
                 if (employeeId && record.employeeId !== employeeId) {
@@ -430,6 +456,7 @@ const ShiftComponent = () => {
             }));
     }, [
         filteredDetails,
+        fixedServiceId,
         serviceName,
         employeeId,
         startDate,
@@ -561,9 +588,13 @@ const ShiftComponent = () => {
                 <aside className='shift-sidebar-filters'>
                     <div className='shift-header'>
                         <div>
-                            <h1 className='shift-title'>Turnos</h1>
+                            <h1 className='shift-title'>
+                                {embedded ? 'Turnos del servicio' : 'Turnos'}
+                            </h1>
                             <p className='shift-subtitle'>
-                                Filtra turnos por empleado, zona, servicio y fechas.
+                                {fixedServiceName
+                                    ? fixedServiceName
+                                    : 'Filtra turnos por empleado, zona, servicio y fechas.'}
                             </p>
                         </div>
 
@@ -598,23 +629,25 @@ const ShiftComponent = () => {
                             </div>
                         )}
 
-                        <div className='shift-filter'>
-                            <label htmlFor='serviceName'>Nombre del servicio</label>
-                            <select
-                                id='serviceName'
-                                value={serviceName}
-                                onChange={(e) => setServiceName(e.target.value)}
-                            >
-                                <option value=''>Todos</option>
-                                {uniqueServiceNames.map((name) => (
-                                    <option key={name} value={name}>
-                                        {name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                        {!fixedServiceId && (
+                            <div className='shift-filter'>
+                                <label htmlFor='serviceName'>Nombre del servicio</label>
+                                <select
+                                    id='serviceName'
+                                    value={serviceName}
+                                    onChange={(e) => setServiceName(e.target.value)}
+                                >
+                                    <option value=''>Todos</option>
+                                    {uniqueServiceNames.map((name) => (
+                                        <option key={name} value={name}>
+                                            {name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
 
-                        {isAdminLike && (
+                        {isAdminLike && !fixedServiceId && (
                             <div className='shift-filter'>
                                 <label htmlFor='delegationId'>Delegacion</label>
                                 <select
@@ -637,21 +670,23 @@ const ShiftComponent = () => {
                             </div>
                         )}
 
-                        <div className='shift-filter'>
-                            <label htmlFor='shiftCity'>Zona</label>
-                            <select
-                                id='shiftCity'
-                                value={city}
-                                onChange={(e) => setCity(e.target.value)}
-                            >
-                                <option value=''>Todas</option>
-                                {uniqueCities.map((item) => (
-                                    <option key={item} value={item}>
-                                        {item}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                        {!fixedServiceId && (
+                            <div className='shift-filter'>
+                                <label htmlFor='shiftCity'>Zona</label>
+                                <select
+                                    id='shiftCity'
+                                    value={city}
+                                    onChange={(e) => setCity(e.target.value)}
+                                >
+                                    <option value=''>Todas</option>
+                                    {uniqueCities.map((item) => (
+                                        <option key={item} value={item}>
+                                            {item}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
 
                         {isAdminLike && (
                             <label className='shift-filter shift-filter--checkbox'>
@@ -775,17 +810,19 @@ const ShiftComponent = () => {
                                     <option value='punches'>Picadas</option>
                                     <option value='clockin'>Entradas</option>
                                 </select>
-                                <select
-                                    value={serviceName}
-                                    onChange={(e) => setServiceName(e.target.value)}
-                                >
-                                    <option value=''>Todos los servicios</option>
-                                    {uniqueServiceNames.map((name) => (
-                                        <option key={name} value={name}>
-                                            {name}
-                                        </option>
-                                    ))}
-                                </select>
+                                {!fixedServiceId && (
+                                    <select
+                                        value={serviceName}
+                                        onChange={(e) => setServiceName(e.target.value)}
+                                    >
+                                        <option value=''>Todos los servicios</option>
+                                        {uniqueServiceNames.map((name) => (
+                                            <option key={name} value={name}>
+                                                {name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
                                 <input
                                     type='text'
                                     placeholder='Buscar persona'

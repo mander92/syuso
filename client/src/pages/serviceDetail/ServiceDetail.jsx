@@ -7,7 +7,6 @@ import useUser from '../../hooks/useUser.js';
 import {
     fetchDetailServiceServices,
     fetchEditServiceServices,
-    fetchActiveServiceShifts,
 } from '../../services/serviceService.js';
 import { fetchUpdateServiceStatus } from '../../services/serviceService.js';
 import { fetchDeleteEmployeeService } from '../../services/personAssigned.js';
@@ -16,6 +15,8 @@ import ListEmployeeComponent from '../../components/adminServiceSection/listEmpl
 import ServiceChat from '../../components/serviceChat/ServiceChat.jsx';
 import NfcTagsManager from '../../components/nfcTags/NfcTagsManager.jsx';
 import ServiceSchedulePanel from '../../components/serviceSchedule/ServiceSchedulePanel.jsx';
+import ShiftComponent from '../../components/adminShiftSection/ShiftComponent.jsx';
+import WorkReportsComponent from '../../components/adminWorkReportsSection/WorkReportsComponent.jsx';
 import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 import './ServiceDetail.css';
 
@@ -82,8 +83,6 @@ const ServiceDetail = () => {
         targetStatus: '',
     });
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
-    const [activeShifts, setActiveShifts] = useState([]);
-    const [activeShiftsLoading, setActiveShiftsLoading] = useState(false);
     const { unreadByService, resetServiceUnread } = useChatNotifications();
     const unreadChats = unreadByService?.[serviceId] || 0;
 
@@ -97,6 +96,7 @@ const ServiceDetail = () => {
             'summary',
             'chat',
             'shifts',
+            'workReports',
             'employees',
             'nfc',
             'schedule',
@@ -367,21 +367,6 @@ const ServiceDetail = () => {
         }
     };
 
-    const loadActiveShifts = async () => {
-        if (!authToken || !serviceId) return;
-        try {
-            setActiveShiftsLoading(true);
-            const rows = await fetchActiveServiceShifts(authToken, serviceId);
-            setActiveShifts(rows || []);
-        } catch (error) {
-            toast.error(
-                error.message || 'No se pudieron cargar los turnos abiertos'
-            );
-        } finally {
-            setActiveShiftsLoading(false);
-        }
-    };
-
     const handleSummaryChange = (field) => (event) => {
         const { type, checked, value } = event.target;
         setSummaryForm((prev) => ({
@@ -447,12 +432,6 @@ const ServiceDetail = () => {
 
 
     useEffect(() => {
-        if (activeTab === 'shifts') {
-            loadActiveShifts();
-        }
-    }, [activeTab, authToken, serviceId]);
-
-    useEffect(() => {
         if (activeTab === 'chat') {
             resetServiceUnread(serviceId);
         }
@@ -465,7 +444,9 @@ const ServiceDetail = () => {
         return (
             <div
                 className={`service-detail-page${
-                    activeTab === 'schedule' ? ' service-detail-page--wide' : ''
+                    ['schedule', 'shifts', 'workReports'].includes(activeTab)
+                        ? ' service-detail-page--wide'
+                        : ''
                 }`}
             >
                 <div className='service-detail-card'>
@@ -482,7 +463,9 @@ const ServiceDetail = () => {
     return (
         <div
             className={`service-detail-page${
-                activeTab === 'schedule' ? ' service-detail-page--wide' : ''
+                ['schedule', 'shifts', 'workReports'].includes(activeTab)
+                    ? ' service-detail-page--wide'
+                    : ''
             }`}
         >
             <div className='service-detail-header'>
@@ -545,8 +528,21 @@ const ServiceDetail = () => {
                             className={activeTab === 'shifts' ? 'is-active' : ''}
                             onClick={() => setActiveTab('shifts')}
                         >
-                            Turnos abiertos
+                            Turnos
                         </button>
+                        {(user?.role === 'admin' || user?.role === 'sudo') && (
+                            <button
+                                type='button'
+                                className={
+                                    activeTab === 'workReports'
+                                        ? 'is-active'
+                                        : ''
+                                }
+                                onClick={() => setActiveTab('workReports')}
+                            >
+                                Partes de trabajo
+                            </button>
+                        )}
                         <button
                             type='button'
                             className={activeTab === 'employees' ? 'is-active' : ''}
@@ -993,41 +989,25 @@ const ServiceDetail = () => {
                     )}
 
                     {activeTab === 'shifts' && (
-                        <section className='service-detail-card service-detail-section'>
-                            <div className='service-detail-section-header'>
-                                <h2>Turnos abiertos</h2>
-                            </div>
-                            <div className='service-detail-collapsible'>
-                                {activeShiftsLoading ? (
-                                    <p className='service-detail-empty'>
-                                        Cargando turnos abiertos...
-                                    </p>
-                                ) : activeShifts.length ? (
-                                    <div className='service-detail-list'>
-                                        {activeShifts.map((employee) => (
-                                            <div
-                                                key={employee.shiftId}
-                                                className='service-detail-employee service-detail-employee--active'
-                                            >
-                                                <div>
-                                                    <strong>
-                                                        {employee.firstName || ''} {employee.lastName || ''}
-                                                    </strong>
-                                                    <p>{employee.email || 'Sin email'}</p>
-                                                    <p>{employee.phone || 'Sin telefono'}</p>
-                                                </div>
-                                                <span className='service-detail-active-dot' />
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className='service-detail-empty'>
-                                        Sin turnos abiertos.
-                                    </p>
-                                )}
-                            </div>
+                        <section className='service-detail-card service-detail-section service-detail-section--embedded-admin'>
+                            <ShiftComponent
+                                fixedServiceId={serviceId}
+                                fixedServiceName={detail.name || detail.type || ''}
+                                embedded
+                            />
                         </section>
                     )}
+
+                    {activeTab === 'workReports' &&
+                        (user?.role === 'admin' || user?.role === 'sudo') && (
+                            <section className='service-detail-card service-detail-section service-detail-section--embedded-admin'>
+                                <WorkReportsComponent
+                                    fixedServiceId={serviceId}
+                                    fixedServiceName={detail.name || detail.type || ''}
+                                    embedded
+                                />
+                            </section>
+                        )}
 
                     {activeTab === 'reports' &&
                         (user?.role === 'admin' || user?.role === 'sudo') && (

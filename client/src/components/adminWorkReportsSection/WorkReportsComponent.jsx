@@ -69,7 +69,11 @@ const defaultInspectionReport = {
     observations: '',
 };
 
-const WorkReportsComponent = () => {
+const WorkReportsComponent = ({
+    fixedServiceId = '',
+    fixedServiceName = '',
+    embedded = false,
+} = {}) => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
     const isAdminLike = user?.role === 'admin' || user?.role === 'sudo';
@@ -295,6 +299,14 @@ const WorkReportsComponent = () => {
     }, [authToken, isAdminLike]);
 
     useEffect(() => {
+        if (!fixedServiceId) return;
+        setManualReport((prev) => ({
+            ...prev,
+            serviceId: fixedServiceId,
+        }));
+    }, [fixedServiceId]);
+
+    useEffect(() => {
         const loadDelegations = async () => {
             if (!authToken || !isAdminLike) return;
             try {
@@ -336,6 +348,7 @@ const WorkReportsComponent = () => {
         authToken,
         user,
         isAdminLike,
+        fixedServiceId,
         employeeId,
         serviceName,
         city,
@@ -348,10 +361,12 @@ const WorkReportsComponent = () => {
     const handleReset = (event) => {
         event.preventDefault();
         setEmployeeId('');
-        setServiceName('');
+        if (!fixedServiceId) setServiceName('');
         setPersonSearch('');
-        setCity('');
-        setDelegationId('');
+        if (!fixedServiceId) {
+            setCity('');
+            setDelegationId('');
+        }
         setReportTypeFilter('');
         setStartDate('');
         setEndDate('');
@@ -359,9 +374,15 @@ const WorkReportsComponent = () => {
 
     const buildParams = () => {
         const params = new URLSearchParams();
-        if (serviceName) params.append('serviceName', serviceName);
-        if (city) params.append('city', city);
-        if (delegationId) params.append('delegationId', delegationId);
+        if (fixedServiceId) {
+            params.append('serviceId', fixedServiceId);
+        } else if (serviceName) {
+            params.append('serviceName', serviceName);
+        }
+        if (!fixedServiceId && city) params.append('city', city);
+        if (!fixedServiceId && delegationId) {
+            params.append('delegationId', delegationId);
+        }
         if (reportTypeFilter) params.append('reportType', reportTypeFilter);
         if (personSearch) params.append('personSearch', personSearch);
 
@@ -408,9 +429,13 @@ const WorkReportsComponent = () => {
                         .map((id) => id.trim())
                         .filter(Boolean),
                 }))
-                .filter((service) => service.id)
+                .filter((service) =>
+                    fixedServiceId
+                        ? service.id === fixedServiceId
+                        : service.id
+                )
                 .sort((a, b) => compareText(a.name, b.name)),
-        [services]
+        [services, fixedServiceId]
     );
 
     const uniqueServiceNames = useMemo(
@@ -433,6 +458,26 @@ const WorkReportsComponent = () => {
             ) || null,
         [manualReport.serviceId, serviceOptions]
     );
+
+    useEffect(() => {
+        if (!fixedServiceId || !selectedManualService) return;
+        setManualReport((prev) => ({
+            ...prev,
+            serviceId: fixedServiceId,
+            location:
+                prev.location ||
+                selectedManualService.address ||
+                selectedManualService.city ||
+                '',
+        }));
+        setInspectionReport((current) => ({
+            ...current,
+            serviceDenomination:
+                current.serviceDenomination || selectedManualService.name || '',
+            address: current.address || selectedManualService.address || '',
+            city: current.city || selectedManualService.city || '',
+        }));
+    }, [fixedServiceId, selectedManualService]);
 
     const assignedEmployeesForSelectedService = useMemo(() => {
         if (!selectedManualService) return [];
@@ -829,9 +874,15 @@ const WorkReportsComponent = () => {
                 <aside className='shift-sidebar-filters'>
                     <div className='shift-header'>
                         <div>
-                            <h1 className='shift-title'>Partes de trabajo</h1>
+                            <h1 className='shift-title'>
+                                {embedded
+                                    ? 'Partes de trabajo del servicio'
+                                    : 'Partes de trabajo'}
+                            </h1>
                             <p className='shift-subtitle'>
-                                Filtra partes por empleado, zona, servicio y fechas.
+                                {fixedServiceName
+                                    ? fixedServiceName
+                                    : 'Filtra partes por empleado, zona, servicio y fechas.'}
                             </p>
                         </div>
                     </div>
@@ -865,44 +916,48 @@ const WorkReportsComponent = () => {
                         />
                     </div>
 
-                    <div className='shift-filter'>
-                        <label htmlFor='workServiceName'>
-                            Nombre del servicio
-                        </label>
-                        <select
-                            id='workServiceName'
-                            value={serviceName}
-                            onChange={(e) => setServiceName(e.target.value)}
-                        >
-                            <option value=''>Todos</option>
-                            {uniqueServiceNames.map((name) => (
-                                <option key={name} value={name}>
-                                    {name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    {!fixedServiceId && (
+                        <div className='shift-filter'>
+                            <label htmlFor='workServiceName'>
+                                Nombre del servicio
+                            </label>
+                            <select
+                                id='workServiceName'
+                                value={serviceName}
+                                onChange={(e) => setServiceName(e.target.value)}
+                            >
+                                <option value=''>Todos</option>
+                                {uniqueServiceNames.map((name) => (
+                                    <option key={name} value={name}>
+                                        {name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
 
-                    <div className='shift-filter'>
-                        <label htmlFor='workDelegationId'>Delegacion</label>
-                        <select
-                            id='workDelegationId'
-                            value={delegationId}
-                            onChange={(e) =>
-                                setDelegationId(e.target.value)
-                            }
-                        >
-                            <option value=''>Todas</option>
-                            {delegations.map((delegation) => (
-                                <option
-                                    key={delegation.id}
-                                    value={delegation.id}
-                                >
-                                    {delegation.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    {!fixedServiceId && (
+                        <div className='shift-filter'>
+                            <label htmlFor='workDelegationId'>Delegacion</label>
+                            <select
+                                id='workDelegationId'
+                                value={delegationId}
+                                onChange={(e) =>
+                                    setDelegationId(e.target.value)
+                                }
+                            >
+                                <option value=''>Todas</option>
+                                {delegations.map((delegation) => (
+                                    <option
+                                        key={delegation.id}
+                                        value={delegation.id}
+                                    >
+                                        {delegation.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
 
                     <div className='shift-filter'>
                         <label htmlFor='workReportType'>Tipo de parte</label>
@@ -919,21 +974,23 @@ const WorkReportsComponent = () => {
                         </select>
                     </div>
 
-                    <div className='shift-filter'>
-                        <label htmlFor='workCity'>Zona</label>
-                        <select
-                            id='workCity'
-                            value={city}
-                            onChange={(e) => setCity(e.target.value)}
-                        >
-                            <option value=''>Todas</option>
-                            {uniqueCities.map((item) => (
-                                <option key={item} value={item}>
-                                    {item}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    {!fixedServiceId && (
+                        <div className='shift-filter'>
+                            <label htmlFor='workCity'>Zona</label>
+                            <select
+                                id='workCity'
+                                value={city}
+                                onChange={(e) => setCity(e.target.value)}
+                            >
+                                <option value=''>Todas</option>
+                                {uniqueCities.map((item) => (
+                                    <option key={item} value={item}>
+                                        {item}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
 
                     <div className='shift-filter'>
                         <label htmlFor='workStartDate'>Desde</label>
@@ -1073,32 +1130,47 @@ const WorkReportsComponent = () => {
                             </button>
                         </div>
                         <div className='shift-form-grid'>
-                            <label className='shift-filter'>
-                                <span>Servicio</span>
-                                <select
-                                    value={manualReport.serviceId}
-                                    onChange={(event) =>
-                                        handleManualReportChange(
-                                            'serviceId',
-                                            event.target.value
-                                        )
-                                    }
-                                    required
-                                >
-                                    <option value=''>Selecciona</option>
-                                    {serviceOptions.map((service) => (
-                                        <option
-                                            key={service.id}
-                                            value={service.id}
-                                        >
-                                            {service.name}
-                                            {service.city
-                                                ? ` - ${service.city}`
-                                                : ''}
-                                        </option>
-                                    ))}
-                                </select>
-                            </label>
+                            {fixedServiceId ? (
+                                <label className='shift-filter'>
+                                    <span>Servicio</span>
+                                    <input
+                                        type='text'
+                                        value={
+                                            selectedManualService?.name ||
+                                            fixedServiceName ||
+                                            'Servicio'
+                                        }
+                                        disabled
+                                    />
+                                </label>
+                            ) : (
+                                <label className='shift-filter'>
+                                    <span>Servicio</span>
+                                    <select
+                                        value={manualReport.serviceId}
+                                        onChange={(event) =>
+                                            handleManualReportChange(
+                                                'serviceId',
+                                                event.target.value
+                                            )
+                                        }
+                                        required
+                                    >
+                                        <option value=''>Selecciona</option>
+                                        {serviceOptions.map((service) => (
+                                            <option
+                                                key={service.id}
+                                                value={service.id}
+                                            >
+                                                {service.name}
+                                                {service.city
+                                                    ? ` - ${service.city}`
+                                                    : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+                            )}
 
                             <label className='shift-filter'>
                                 <span>Trabajador asignado</span>
