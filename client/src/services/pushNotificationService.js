@@ -21,6 +21,10 @@ const assertOk = (body) => {
     return body.data;
 };
 
+export const isRunningAsInstalledApp = () =>
+    window.matchMedia?.('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
+
 export const detectPushEnvironment = () => {
     const userAgent = navigator.userAgent || '';
     const platform = navigator.platform || '';
@@ -28,24 +32,33 @@ export const detectPushEnvironment = () => {
         /iphone|ipad|ipod/i.test(userAgent) ||
         (platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const isAndroid = /android/i.test(userAgent);
-    const isStandalone =
-        window.matchMedia?.('(display-mode: standalone)').matches ||
-        window.navigator.standalone === true;
+    const isStandalone = isRunningAsInstalledApp();
     const isSecure =
         window.isSecureContext || window.location.hostname === 'localhost';
+    const supportsNotifications = 'Notification' in window;
+    const supportsServiceWorker = 'serviceWorker' in navigator;
+    const supportsPushManager = 'PushManager' in window;
+    const needsInstallation = isIos && !isStandalone;
     const supportsPush =
+        !needsInstallation &&
         isSecure &&
-        'serviceWorker' in navigator &&
-        'PushManager' in window &&
-        'Notification' in window;
+        supportsServiceWorker &&
+        supportsPushManager &&
+        supportsNotifications;
 
     let browserName = 'Navegador';
-    if (/CriOS|Chrome/i.test(userAgent)) browserName = 'Chrome';
-    if (/Firefox/i.test(userAgent)) browserName = 'Firefox';
-    if (/Safari/i.test(userAgent) && !/Chrome|CriOS/i.test(userAgent)) {
+    if (/EdgiOS/i.test(userAgent)) browserName = 'Edge iOS';
+    else if (/CriOS/i.test(userAgent)) browserName = 'Chrome iOS';
+    else if (/FxiOS/i.test(userAgent)) browserName = 'Firefox iOS';
+    else if (/Chrome/i.test(userAgent)) {
+        browserName = 'Chrome';
+    } else if (/Firefox/i.test(userAgent)) browserName = 'Firefox';
+    else if (/Safari/i.test(userAgent)) {
         browserName = 'Safari';
     }
-    if (/Edg/i.test(userAgent)) browserName = 'Edge';
+    if (/Edg/i.test(userAgent) && !/EdgiOS/i.test(userAgent)) {
+        browserName = 'Edge';
+    }
 
     return {
         browserName,
@@ -54,7 +67,12 @@ export const detectPushEnvironment = () => {
         isIos,
         isStandalone,
         isSecure,
+        supportsNotifications,
+        supportsServiceWorker,
+        supportsPushManager,
         supportsPush,
+        needsInstallation,
+        canRequestPermission: supportsPush,
         permission:
             'Notification' in window ? Notification.permission : 'unsupported',
         userAgent,
@@ -109,6 +127,11 @@ export const registerCurrentDeviceForPush = async ({
     vapidPublicKey,
 }) => {
     const env = detectPushEnvironment();
+    if (env.needsInstallation) {
+        throw new Error(
+            'Primero anade la aplicacion a la pantalla de inicio y abrela desde el nuevo icono.'
+        );
+    }
     if (!env.supportsPush) {
         throw new Error('Este dispositivo no permite avisos del navegador.');
     }

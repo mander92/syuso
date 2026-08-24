@@ -1,5 +1,11 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
+import {
+    FaCheckCircle,
+    FaHome,
+    FaPlusSquare,
+    FaShareSquare,
+} from 'react-icons/fa';
 
 import { AuthContext } from '../../context/AuthContext.jsx';
 import {
@@ -18,7 +24,36 @@ const statusLabels = {
     denied: 'Bloqueadas',
     missing: 'No configuradas',
     unsupported: 'No disponible',
-    iosInstall: 'Añadir al movil',
+    iosInstall: 'Anadir al movil',
+};
+
+const getIosInstallSteps = (browserName = '') => {
+    const isChrome = /chrome/i.test(browserName);
+
+    return [
+        {
+            icon: FaShareSquare,
+            title: isChrome ? 'Abre el menu Compartir' : 'Pulsa Compartir',
+            text: isChrome
+                ? 'Toca el icono de compartir del navegador.'
+                : 'Toca el boton Compartir de Safari.',
+        },
+        {
+            icon: FaPlusSquare,
+            title: 'Anadir a pantalla de inicio',
+            text: 'Busca esa opcion en la lista y seleccionala.',
+        },
+        {
+            icon: FaCheckCircle,
+            title: 'Pulsa Anadir',
+            text: 'Confirma para crear el icono de SYUSO en tu iPhone.',
+        },
+        {
+            icon: FaHome,
+            title: 'Abre desde el icono',
+            text: 'Entra desde el nuevo icono para continuar la activacion.',
+        },
+    ];
 };
 
 const getDeviceLabel = (subscription) => {
@@ -36,6 +71,7 @@ const PushNotificationsPanel = ({
     const [config, setConfig] = useState({ configured: false, vapidPublicKey: '' });
     const [subscriptions, setSubscriptions] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [showIosGuide, setShowIosGuide] = useState(required);
     const [dismissed, setDismissed] = useState(() => {
         if (!compact) return false;
         const raw = localStorage.getItem('syusoPushReminderDismissedAt');
@@ -51,12 +87,16 @@ const PushNotificationsPanel = ({
     );
 
     const status = useMemo(() => {
-        if (!environment.supportsPush) return 'unsupported';
-        if (environment.isIos && !environment.isStandalone) return 'iosInstall';
+        if (environment.needsInstallation) return 'iosInstall';
         if (environment.permission === 'denied') return 'denied';
         if (activeSubscriptions.length > 0) return 'active';
+        if (!environment.supportsPush) return 'unsupported';
         return 'missing';
     }, [activeSubscriptions.length, environment]);
+
+    const iosInstallSteps = getIosInstallSteps(environment.browserName);
+    const isInstalledIosPending =
+        environment.isIos && environment.isStandalone && status === 'missing';
 
     useEffect(() => {
         onReadyChange?.(status === 'active');
@@ -159,6 +199,19 @@ const PushNotificationsPanel = ({
         setDismissed(true);
     };
 
+    const handleRecheckInstalled = () => {
+        const nextEnvironment = detectPushEnvironment();
+        setEnvironment(nextEnvironment);
+        if (nextEnvironment.needsInstallation) {
+            toast.error(
+                'Abre la aplicacion desde el nuevo icono de tu pantalla de inicio para continuar.'
+            );
+            return;
+        }
+        setShowIosGuide(false);
+        toast.success('Aplicacion detectada. Ya puedes activar los avisos.');
+    };
+
     if (compact && !required && (dismissed || status === 'active')) return null;
 
     return (
@@ -183,10 +236,12 @@ const PushNotificationsPanel = ({
 
             {status === 'iosInstall' ? (
                 <div className='push-notifications__instructions'>
-                    <h3>Activa los avisos en tu iPhone</h3>
+                    <h3>Recibe avisos directamente en tu iPhone</h3>
                     <p>
-                        Para recibir avisos directamente en tu iPhone, añade esta
-                        aplicacion a la pantalla de inicio.
+                        Para recibir avisos de nuevas tareas, cambios de horario y
+                        mensajes importantes, primero tienes que anadir esta
+                        aplicacion a la pantalla de inicio. Despues podras activar
+                        las notificaciones.
                     </p>
                     {required ? (
                         <p className='push-notifications__warning'>
@@ -194,29 +249,83 @@ const PushNotificationsPanel = ({
                             seguir usando la app.
                         </p>
                     ) : null}
-                    <ol>
-                        <li>Pulsa el boton Compartir de Safari.</li>
-                        <li>Selecciona Añadir a pantalla de inicio.</li>
-                        <li>Confirma y abre la aplicacion desde el nuevo icono.</li>
-                    </ol>
-                    {!required ? (
+                    {showIosGuide ? (
+                        <div className='push-notifications__steps'>
+                            {iosInstallSteps.map((step) => {
+                                const Icon = step.icon;
+                                return (
+                                    <article
+                                        key={step.title}
+                                        className='push-notifications__step'
+                                    >
+                                        <span className='push-notifications__step-icon'>
+                                            <Icon aria-hidden='true' />
+                                        </span>
+                                        <div>
+                                            <h4>{step.title}</h4>
+                                            <p>{step.text}</p>
+                                        </div>
+                                    </article>
+                                );
+                            })}
+                            <p className='push-notifications__note'>
+                                Cuando abras la aplicacion desde el icono,
+                                continuaremos automaticamente con la activacion.
+                            </p>
+                        </div>
+                    ) : null}
+                    <div className='push-notifications__actions'>
                         <button
                             type='button'
-                            className='push-notifications__ghost'
-                            onClick={handleDismiss}
+                            className='push-notifications__button'
+                            onClick={() => setShowIosGuide(true)}
                         >
-                            Lo hare mas tarde
+                            Como anadir la aplicacion
                         </button>
-                    ) : null}
+                        {showIosGuide ? (
+                            <button
+                                type='button'
+                                className='push-notifications__ghost'
+                                onClick={handleRecheckInstalled}
+                            >
+                                Ya la he anadido
+                            </button>
+                        ) : null}
+                        {!required ? (
+                            <button
+                                type='button'
+                                className='push-notifications__ghost'
+                                onClick={handleDismiss}
+                            >
+                                Ahora no
+                            </button>
+                        ) : null}
+                    </div>
                 </div>
             ) : status === 'denied' ? (
                 <div className='push-notifications__instructions'>
-                    <h3>Notificaciones bloqueadas</h3>
+                    <h3>Las notificaciones estan bloqueadas</h3>
                     <p>
-                        Las notificaciones estan desactivadas para este
-                        dispositivo. Activalas desde los ajustes del navegador o
-                        del sistema y vuelve a intentarlo.
+                        Las notificaciones estan desactivadas para esta aplicacion.
+                        Para volver a recibir avisos tendras que activarlas desde
+                        los ajustes del dispositivo.
                     </p>
+                    {environment.isIos ? (
+                        <div className='push-notifications__steps'>
+                            <article className='push-notifications__step'>
+                                <span className='push-notifications__step-icon'>
+                                    <FaHome aria-hidden='true' />
+                                </span>
+                                <div>
+                                    <h4>Abre Ajustes en tu iPhone</h4>
+                                    <p>
+                                        Busca SYUSO en la lista de aplicaciones y
+                                        permite las notificaciones.
+                                    </p>
+                                </div>
+                            </article>
+                        </div>
+                    ) : null}
                     {required ? (
                         <p className='push-notifications__warning'>
                             Hasta que vuelvas a permitir los avisos en este
@@ -238,12 +347,34 @@ const PushNotificationsPanel = ({
                         </p>
                     ) : null}
                 </div>
+            ) : status === 'active' ? (
+                <div className='push-notifications__body'>
+                    <p className='push-notifications__success'>
+                        Notificaciones activadas. Ya recibiras avisos importantes
+                        directamente en este dispositivo.
+                    </p>
+                    <div className='push-notifications__actions'>
+                        <button
+                            type='button'
+                            className='push-notifications__ghost'
+                            onClick={handleTest}
+                            disabled={loading}
+                        >
+                            Enviar notificacion de prueba
+                        </button>
+                    </div>
+                </div>
             ) : (
                 <div className='push-notifications__body'>
+                    <h3>
+                        {isInstalledIosPending
+                            ? 'Activa las notificaciones'
+                            : 'Activa los avisos'}
+                    </h3>
                     <p>
-                        Activa las notificaciones para saber al instante cuando
-                        tengas una nueva tarea, un cambio de horario o un aviso
-                        importante.
+                        {isInstalledIosPending
+                            ? 'Ya has anadido correctamente la aplicacion. Solo queda un ultimo paso para poder recibir avisos directamente en tu iPhone.'
+                            : 'Activa las notificaciones para saber al instante cuando tengas una nueva tarea, un cambio de horario o un aviso importante.'}
                     </p>
                     {required ? (
                         <p className='push-notifications__warning'>
@@ -258,20 +389,8 @@ const PushNotificationsPanel = ({
                             onClick={handleActivate}
                             disabled={loading || !config.configured}
                         >
-                            {activeSubscriptions.length > 0
-                                ? 'Volver a registrar este dispositivo'
-                                : 'Activar notificaciones'}
+                            Activar notificaciones
                         </button>
-                        {activeSubscriptions.length > 0 ? (
-                            <button
-                                type='button'
-                                className='push-notifications__ghost'
-                                onClick={handleTest}
-                                disabled={loading}
-                            >
-                                Enviar notificacion de prueba
-                            </button>
-                        ) : null}
                         {compact && !required ? (
                             <button
                                 type='button'
