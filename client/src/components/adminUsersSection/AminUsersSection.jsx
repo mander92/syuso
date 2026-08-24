@@ -58,7 +58,7 @@ const dashboardPermissionGroups = [
     {
         title: 'Gestion',
         options: [
-            { id: 'users', label: 'Usuarios' },
+            { id: 'users', label: 'Permisos de usuarios' },
             { id: 'cleanup', label: 'Limpieza' },
             { id: 'cv', label: 'CV' },
         ],

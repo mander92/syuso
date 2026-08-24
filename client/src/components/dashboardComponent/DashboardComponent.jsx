@@ -251,7 +251,7 @@ const DashboardComponent = () => {
                 { id: 'vehicles', label: 'Vehiculos' },
                 { id: 'payrolls', label: 'Nominas' },
                 { id: 'billing', label: 'Facturacion' },
-                { id: 'users', label: 'Usuarios' },
+                { id: 'users', label: 'Permisos de usuarios' },
                 { id: 'profile', label: 'Mi perfil' },
             ];
             if (

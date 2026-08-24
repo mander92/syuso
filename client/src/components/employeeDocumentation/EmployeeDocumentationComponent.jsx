@@ -1493,6 +1493,7 @@ const EmployeeDocumentationComponent = ({
     };
 
     const openEmployeeDraftModal = () => {
+        setSearch('');
         setAdminMode('drafts');
         if (!selectedDraftId && drafts[0]) {
             selectDraft(drafts[0]);
@@ -1500,6 +1501,7 @@ const EmployeeDocumentationComponent = ({
     };
 
     const openNewEmployeeDraftModal = () => {
+        setSearch('');
         setSelectedDraftId('');
         setDraftFiles({});
         setDraftForm(emptyForm);
@@ -1507,6 +1509,7 @@ const EmployeeDocumentationComponent = ({
     };
 
     const openClientDraftModal = () => {
+        setSearch('');
         setAdminMode('clientDrafts');
         if (!selectedClientDraftId && clientDrafts[0]) {
             selectClientDraft(clientDrafts[0]);
@@ -1514,6 +1517,7 @@ const EmployeeDocumentationComponent = ({
     };
 
     const openNewClientDraftModal = () => {
+        setSearch('');
         setSelectedClientDraftId('');
         setClientDraftFiles({});
         setClientDraftForm(emptyClientForm);
@@ -1523,6 +1527,44 @@ const EmployeeDocumentationComponent = ({
     const closeDraftModal = () => {
         setAdminMode(fixedAdminMode || 'employees');
     };
+
+    const renderClientDraftActions = () => (
+        <div className='employee-documentation-actions employee-documentation-actions--draft'>
+            <button
+                type='button'
+                className='employee-documentation-btn employee-documentation-btn--ghost'
+                disabled={saving || clientDraftForm.linkedClientId}
+                onClick={handleCreateClientDraftLink}
+            >
+                Copiar enlace WhatsApp
+            </button>
+            <button
+                type='button'
+                className='employee-documentation-btn employee-documentation-btn--ghost'
+                disabled={
+                    !selectedClientDraftId || clientDraftForm.linkedClientId
+                }
+                onClick={handleCreateClientFromDraft}
+            >
+                Crear cliente
+            </button>
+            <button
+                type='submit'
+                className='employee-documentation-btn'
+                disabled={saving}
+            >
+                {saving ? 'Guardando...' : 'Guardar alta'}
+            </button>
+            <button
+                type='button'
+                className='employee-documentation-btn employee-documentation-btn--danger'
+                disabled={!selectedClientDraftId || saving}
+                onClick={handleDeleteClientDraft}
+            >
+                Borrar alta
+            </button>
+        </div>
+    );
 
     const renderEmployeeDraftActions = () => (
         <div className='employee-documentation-actions employee-documentation-actions--draft'>
@@ -1770,6 +1812,7 @@ const EmployeeDocumentationComponent = ({
                                 </button>
                             </header>
                         ) : null}
+                        {renderClientDraftActions()}
                         <div className='employee-documentation-grid'>
                             {[
                                 ['displayName', 'Nombre y apellidos / razon social'],
@@ -1879,42 +1922,6 @@ const EmployeeDocumentationComponent = ({
                             ))}
                         </div>
 
-                        <div className='employee-documentation-actions'>
-                            <button
-                                type='button'
-                                className='employee-documentation-btn employee-documentation-btn--ghost'
-                                disabled={saving || clientDraftForm.linkedClientId}
-                                onClick={handleCreateClientDraftLink}
-                            >
-                                Copiar enlace WhatsApp
-                            </button>
-                            <button
-                                type='button'
-                                className='employee-documentation-btn employee-documentation-btn--ghost'
-                                disabled={
-                                    !selectedClientDraftId ||
-                                    clientDraftForm.linkedClientId
-                                }
-                                onClick={handleCreateClientFromDraft}
-                            >
-                                Crear cliente
-                            </button>
-                            <button
-                                type='submit'
-                                className='employee-documentation-btn'
-                                disabled={saving}
-                            >
-                                {saving ? 'Guardando...' : 'Guardar alta'}
-                            </button>
-                            <button
-                                type='button'
-                                className='employee-documentation-btn employee-documentation-btn--danger'
-                                disabled={!selectedClientDraftId || saving}
-                                onClick={handleDeleteClientDraft}
-                            >
-                                Borrar alta
-                            </button>
-                        </div>
                     </form>
                 </div>
             ) : isAdminLike && adminMode === 'clients' ? (
