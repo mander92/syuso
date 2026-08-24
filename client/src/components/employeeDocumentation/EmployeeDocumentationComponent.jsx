@@ -1480,11 +1480,25 @@ const EmployeeDocumentationComponent = ({
         }
     };
 
+    const openNewEmployeeDraftModal = () => {
+        setSelectedDraftId('');
+        setDraftFiles({});
+        setDraftForm(emptyForm);
+        setAdminMode('drafts');
+    };
+
     const openClientDraftModal = () => {
         setAdminMode('clientDrafts');
         if (!selectedClientDraftId && clientDrafts[0]) {
             selectClientDraft(clientDrafts[0]);
         }
+    };
+
+    const openNewClientDraftModal = () => {
+        setSelectedClientDraftId('');
+        setClientDraftFiles({});
+        setClientDraftForm(emptyClientForm);
+        setAdminMode('clientDrafts');
     };
 
     const closeDraftModal = () => {
@@ -1586,7 +1600,7 @@ const EmployeeDocumentationComponent = ({
                             openEmployeeDraftModal();
                         }}
                     >
-                        Alta trabajadores
+                        Fichas trabajadores
                     </button>
                     <button
                         type='button'
@@ -1608,7 +1622,7 @@ const EmployeeDocumentationComponent = ({
                             openClientDraftModal();
                         }}
                     >
-                        Altas clientes
+                        Fichas clientes
                     </button>
                 </div>
             ) : null}
@@ -1722,7 +1736,7 @@ const EmployeeDocumentationComponent = ({
                         {isDraftModalOpen ? (
                             <header className='employee-documentation-draft-modal-header'>
                                 <div>
-                                    <h3>Alta clientes</h3>
+                                    <h3>Ficha de cliente</h3>
                                     <p>
                                         Gestiona altas pendientes, enlaces y
                                         creacion de clientes.
@@ -1907,22 +1921,20 @@ const EmployeeDocumentationComponent = ({
                             <button
                                 type='button'
                                 className='employee-documentation-btn'
-                                onClick={() => {
-                                    setSelectedClientId('');
-                                    setClientFiles({});
-                                    setClientForm(emptyClientForm);
-                                }}
+                                onClick={openNewClientDraftModal}
                             >
                                 Nuevo cliente
                             </button>
+                        </div>
+                        {clientDrafts.length > 0 ? (
                             <button
                                 type='button'
-                                className='employee-documentation-btn'
+                                className='employee-documentation-pending-link'
                                 onClick={openClientDraftModal}
                             >
-                                Alta clientes
+                                Ver {clientDrafts.length} fichas pendientes
                             </button>
-                        </div>
+                        ) : null}
                         <p className='employee-documentation-list-count'>
                             {filteredClients.length} clientes
                         </p>
@@ -2131,7 +2143,7 @@ const EmployeeDocumentationComponent = ({
                         {isDraftModalOpen ? (
                             <header className='employee-documentation-draft-modal-header'>
                                 <div>
-                                    <h3>Alta trabajadores</h3>
+                                    <h3>Ficha de trabajador</h3>
                                     <p>
                                         Gestiona altas pendientes, enlaces y
                                         creacion de trabajadores.
@@ -2307,7 +2319,6 @@ const EmployeeDocumentationComponent = ({
                             ))}
                         </div>
 
-                        {renderEmployeeDraftActions()}
                     </form>
                 </div>
             ) : (
@@ -2356,11 +2367,20 @@ const EmployeeDocumentationComponent = ({
                             <button
                                 type='button'
                                 className='employee-documentation-btn'
-                                onClick={openEmployeeDraftModal}
+                                onClick={openNewEmployeeDraftModal}
                             >
-                                Alta trabajadores
+                                Nuevo trabajador
                             </button>
                         </div>
+                        {drafts.length > 0 ? (
+                            <button
+                                type='button'
+                                className='employee-documentation-pending-link'
+                                onClick={openEmployeeDraftModal}
+                            >
+                                Ver {drafts.length} fichas pendientes
+                            </button>
+                        ) : null}
                         <p className='employee-documentation-list-count'>
                             {filteredItems.length} trabajadores
                         </p>
