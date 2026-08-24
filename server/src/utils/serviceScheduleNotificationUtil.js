@@ -1,5 +1,6 @@
 import getPool from '../db/getPool.js';
 import { getIO } from '../sockets/io.js';
+import { sendPushNotificationToUsersService } from '../services/push/sendPushNotificationService.js';
 
 const selectServiceScheduleRecipientUserIds = async (serviceId) => {
     try {
@@ -66,6 +67,26 @@ export const emitServiceScheduleChanged = (serviceId, options = {}) => {
         ];
 
         io.to([...new Set(rooms)]).emit('serviceSchedule:changed', payload);
+
+        const pushRecipientUserIds = [...recipientUserIds, ...optionUserIds]
+            .filter(Boolean)
+            .filter((userId) => userId !== options.changedBy);
+
+        if (pushRecipientUserIds.length) {
+            try {
+                await sendPushNotificationToUsersService(pushRecipientUserIds, {
+                    title: 'Cambio de horario',
+                    body: payload.message || 'Tu cuadrante ha sido actualizado.',
+                    url: '/account',
+                    tag: `schedule-${serviceId}`,
+                });
+            } catch (error) {
+                console.error('[push] schedule notification failed', {
+                    serviceId,
+                    message: error.message,
+                });
+            }
+        }
     })().catch((error) => {
         console.error('[schedule-notification] emit failed', {
             serviceId,

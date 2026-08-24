@@ -5,6 +5,7 @@ import { setIO } from './io.js';
 import ensureServiceChatAccessService from '../services/serviceChat/ensureServiceChatAccessService.js';
 import createServiceChatMessageService from '../services/serviceChat/createServiceChatMessageService.js';
 import ensureServiceChatNotPausedService from '../services/serviceChat/ensureServiceChatNotPausedService.js';
+import listServiceChatMembersService from '../services/serviceChat/listServiceChatMembersService.js';
 import updateServiceChatPausedService from '../services/serviceChat/updateServiceChatPausedService.js';
 import deleteServiceChatMessageService from '../services/serviceChat/deleteServiceChatMessageService.js';
 import deleteServiceChatMessagesByServiceService from '../services/serviceChat/deleteServiceChatMessagesByServiceService.js';
@@ -13,8 +14,10 @@ import ensureGeneralChatAccessService from '../services/generalChat/ensureGenera
 import ensureGeneralChatWriteAccessService from '../services/generalChat/ensureGeneralChatWriteAccessService.js';
 import createGeneralChatMessageService from '../services/generalChat/createGeneralChatMessageService.js';
 import deleteGeneralChatMessageService from '../services/generalChat/deleteGeneralChatMessageService.js';
+import listGeneralChatMembersService from '../services/generalChat/listGeneralChatMembersService.js';
 import updateGeneralChatReadService from '../services/generalChat/updateGeneralChatReadService.js';
 import selectUserByIdService from '../services/users/selectUserByIdService.js';
+import { sendPushNotificationToUsersService } from '../services/push/sendPushNotificationService.js';
 import generateErrorUtil from '../utils/generateErrorUtil.js';
 
 const initSocket = (httpServer) => {
@@ -88,6 +91,31 @@ const initSocket = (httpServer) => {
                 );
 
                 io.to(`service:${serviceId}`).emit('chat:message', newMessage);
+                void (async () => {
+                    const members = await listServiceChatMembersService(serviceId);
+                    const recipientUserIds = members
+                        .map((member) => member.id)
+                        .filter((userId) => userId && userId !== socket.user.id);
+                    if (!recipientUserIds.length) return;
+
+                    const senderName =
+                        `${newMessage.firstName || ''} ${
+                            newMessage.lastName || ''
+                        }`.trim() || 'SYUSO';
+                    await sendPushNotificationToUsersService(recipientUserIds, {
+                        title: `Nuevo mensaje - ${
+                            newMessage.serviceName || 'Servicio'
+                        }`,
+                        body: text || `${senderName} ha enviado una imagen.`,
+                        url: '/account',
+                        tag: `service-chat-${serviceId}`,
+                    });
+                })().catch((error) => {
+                    console.error('[push] service chat notification failed', {
+                        serviceId,
+                        message: error.message,
+                    });
+                });
                 callback?.({ ok: true, message: newMessage });
             } catch (error) {
                 callback?.({ ok: false, message: error.message });
@@ -172,6 +200,27 @@ const initSocket = (httpServer) => {
                 );
 
                 io.to(`generalChat:${chatId}`).emit('generalChat:message', newMessage);
+                void (async () => {
+                    const members = await listGeneralChatMembersService(chatId);
+                    const recipientUserIds = members
+                        .map((member) => member.id)
+                        .filter((userId) => userId && userId !== socket.user.id);
+                    if (!recipientUserIds.length) return;
+
+                    await sendPushNotificationToUsersService(recipientUserIds, {
+                        title: `Nuevo mensaje - ${
+                            newMessage.chatName || 'Chat'
+                        }`,
+                        body: text || 'Se ha enviado una imagen.',
+                        url: '/account',
+                        tag: `general-chat-${chatId}`,
+                    });
+                })().catch((error) => {
+                    console.error('[push] general chat notification failed', {
+                        chatId,
+                        message: error.message,
+                    });
+                });
                 callback?.({ ok: true, message: newMessage });
             } catch (error) {
                 callback?.({ ok: false, message: error.message });
