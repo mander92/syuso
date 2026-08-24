@@ -80,6 +80,15 @@ const getProfileDocumentationStatus = (item) => {
     return 'missing';
 };
 
+const getClientDocumentationStatus = (item) => {
+    const completedFiles = clientFileFields.filter(([field]) =>
+        Boolean(item?.[field])
+    ).length;
+    if (completedFiles === clientFileFields.length) return 'complete';
+    if (completedFiles > 0) return 'partial';
+    return 'missing';
+};
+
 const deliveryStatusLabels = {
     complete: 'Completa',
     signed: 'Firmada',
@@ -158,6 +167,7 @@ const getEmptyDraftEmploymentForm = () => ({
     employmentPercentage: '',
     contractType: '',
     startDate: getTodayDateInput(),
+    terminationDate: '',
     workCenter: '',
 });
 
@@ -167,6 +177,7 @@ const getEmptyCreateWorkerForm = () => ({
     employmentPercentage: '',
     contractType: '',
     startDate: getTodayDateInput(),
+    terminationDate: '',
     workCenter: '',
 });
 
@@ -224,6 +235,8 @@ const EmployeeDocumentationComponent = ({
     const [adminMode, setAdminMode] = useState(fixedAdminMode || 'employees');
     const [clientItems, setClientItems] = useState([]);
     const [selectedClientId, setSelectedClientId] = useState('');
+    const [clientDocumentationModalOpen, setClientDocumentationModalOpen] =
+        useState(false);
     const [clientForm, setClientForm] = useState(emptyClientForm);
     const [clientFiles, setClientFiles] = useState({});
     const [clientDrafts, setClientDrafts] = useState([]);
@@ -701,6 +714,11 @@ const EmployeeDocumentationComponent = ({
         setClientForm(normalizeClientDocumentation(client));
     };
 
+    const openClientDocumentationModal = (client) => {
+        selectClient(client);
+        setClientDocumentationModalOpen(true);
+    };
+
     const handleClientChange = (field, value) => {
         setClientForm((prev) => ({ ...prev, [field]: value }));
     };
@@ -1131,6 +1149,7 @@ const EmployeeDocumentationComponent = ({
                             createWorkerForm.employmentPercentage,
                         contractType: createWorkerForm.contractType,
                         startDate: createWorkerForm.startDate,
+                        terminationDate: createWorkerForm.terminationDate,
                         workCenter: createWorkerForm.workCenter,
                     },
                 });
@@ -1899,8 +1918,8 @@ const EmployeeDocumentationComponent = ({
                     </form>
                 </div>
             ) : isAdminLike && adminMode === 'clients' ? (
-                <div className='employee-documentation-layout'>
-                    <aside className='employee-documentation-list'>
+                <div className='employee-documentation-layout employee-documentation-layout--admin-browser'>
+                    <aside className='employee-documentation-list employee-documentation-list--worker-browser'>
                         <div className='employee-documentation-list-filters'>
                             <input
                                 type='search'
@@ -1938,41 +1957,110 @@ const EmployeeDocumentationComponent = ({
                         <p className='employee-documentation-list-count'>
                             {filteredClients.length} clientes
                         </p>
-                        {filteredClients.map((item) => {
-                            const label =
-                                item.displayName ||
-                                `${item.firstName || ''} ${item.lastName || ''}`.trim() ||
-                                item.userEmail ||
-                                'Cliente';
-                            return (
-                                <button
-                                    key={item.clientId}
-                                    type='button'
-                                    className={
-                                        item.clientId === selectedClientId
-                                            ? 'active'
-                                            : ''
-                                    }
-                                    onClick={() => selectClient(item)}
-                                >
-                                    <span>{label}</span>
-                                    <span className='employee-documentation-list-badges'>
-                                        <span className={getStatusClassName(item.status)}>
-                                            {statusLabels[item.status || 'pending']}
+                        <div className='employee-documentation-worker-grid'>
+                            {filteredClients.map((item) => {
+                                const label =
+                                    item.displayName ||
+                                    `${item.firstName || ''} ${item.lastName || ''}`.trim() ||
+                                    item.userEmail ||
+                                    'Cliente';
+                                return (
+                                    <button
+                                        key={item.clientId}
+                                        type='button'
+                                        className={`employee-documentation-worker-card ${
+                                            item.clientId === selectedClientId
+                                                ? 'active'
+                                                : ''
+                                        }`}
+                                        onClick={() =>
+                                            openClientDocumentationModal(item)
+                                        }
+                                    >
+                                        <span>{label}</span>
+                                        <span className='employee-documentation-list-badges'>
+                                            <span
+                                                className={getStatusClassName(
+                                                    item.status
+                                                )}
+                                            >
+                                                {
+                                                    statusLabels[
+                                                        item.status || 'pending'
+                                                    ]
+                                                }
+                                            </span>
+                                            <span className='employee-documentation-status'>
+                                                {item.active
+                                                    ? 'Activo'
+                                                    : 'Interno'}
+                                            </span>
                                         </span>
-                                        <span className='employee-documentation-status'>
-                                            {item.active ? 'Activo' : 'Interno'}
+                                        <span className='employee-documentation-card-checks'>
+                                            <span
+                                                className={getDeliveryStatusClassName(
+                                                    getClientDocumentationStatus(
+                                                        item
+                                                    )
+                                                )}
+                                            >
+                                                Documentacion
+                                            </span>
+                                            {clientFileFields.map(
+                                                ([field, label]) => (
+                                                    <span
+                                                        key={field}
+                                                        className={getDeliveryStatusClassName(
+                                                            item[field]
+                                                                ? 'complete'
+                                                                : 'missing'
+                                                        )}
+                                                    >
+                                                        {label}
+                                                    </span>
+                                                )
+                                            )}
                                         </span>
-                                    </span>
-                                </button>
-                            );
-                        })}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        {!filteredClients.length ? (
+                            <p className='employee-documentation-empty'>
+                                No hay clientes con ese filtro.
+                            </p>
+                        ) : null}
                     </aside>
 
-                    <form
-                        className='employee-documentation-form'
-                        onSubmit={handleSaveClient}
-                    >
+                    {clientDocumentationModalOpen ? (
+                        <div
+                            className='employee-documentation-modal'
+                            role='presentation'
+                            onClick={() => setClientDocumentationModalOpen(false)}
+                        >
+                            <form
+                                className='employee-documentation-form employee-documentation-form--modal'
+                                onSubmit={handleSaveClient}
+                                onClick={(event) => event.stopPropagation()}
+                            >
+                                <header className='employee-documentation-modal-header'>
+                                    <div>
+                                        <h3>Detalle del cliente</h3>
+                                        <p>
+                                            Gestiona la documentacion y datos del
+                                            cliente.
+                                        </p>
+                                    </div>
+                                    <button
+                                        type='button'
+                                        className='employee-documentation-btn employee-documentation-btn--ghost'
+                                        onClick={() =>
+                                            setClientDocumentationModalOpen(false)
+                                        }
+                                    >
+                                        Cerrar
+                                    </button>
+                                </header>
                         <div className='employee-documentation-grid'>
                             {[
                                 ['displayName', 'Nombre y apellidos / razon social'],
@@ -2081,6 +2169,15 @@ const EmployeeDocumentationComponent = ({
 
                         <div className='employee-documentation-actions'>
                             <button
+                                type='button'
+                                className='employee-documentation-btn employee-documentation-btn--ghost'
+                                onClick={() =>
+                                    setClientDocumentationModalOpen(false)
+                                }
+                            >
+                                Cancelar
+                            </button>
+                            <button
                                 type='submit'
                                 className='employee-documentation-btn'
                                 disabled={saving}
@@ -2088,7 +2185,9 @@ const EmployeeDocumentationComponent = ({
                                 {saving ? 'Guardando...' : 'Guardar cliente'}
                             </button>
                         </div>
-                    </form>
+                            </form>
+                        </div>
+                    ) : null}
                 </div>
             ) : isAdminLike && adminMode === 'drafts' ? (
                 <div className='employee-documentation-layout'>
@@ -3214,6 +3313,21 @@ const EmployeeDocumentationComponent = ({
                                     />
                                 </div>
                                 <div className='employee-documentation-field'>
+                                    <label>Fecha de baja opcional</label>
+                                    <input
+                                        type='date'
+                                        value={
+                                            createWorkerForm.terminationDate || ''
+                                        }
+                                        onChange={(event) =>
+                                            handleCreateWorkerFormChange(
+                                                'terminationDate',
+                                                event.target.value
+                                            )
+                                        }
+                                    />
+                                </div>
+                                <div className='employee-documentation-field'>
                                     <label>Centro de trabajo</label>
                                     <input
                                         value={createWorkerForm.workCenter}
@@ -3325,6 +3439,19 @@ const EmployeeDocumentationComponent = ({
                                         )
                                     }
                                     required
+                                />
+                            </div>
+                            <div className='employee-documentation-field'>
+                                <label>Fecha de baja opcional</label>
+                                <input
+                                    type='date'
+                                    value={draftEmploymentForm.terminationDate || ''}
+                                    onChange={(event) =>
+                                        handleDraftEmploymentChange(
+                                            'terminationDate',
+                                            event.target.value
+                                        )
+                                    }
                                 />
                             </div>
                             <div className='employee-documentation-field'>

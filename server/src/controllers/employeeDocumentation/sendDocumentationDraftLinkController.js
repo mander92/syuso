@@ -21,6 +21,7 @@ const sendDocumentationDraftLinkController = async (req, res, next) => {
             employmentPercentage: Joi.string().max(50).allow('', null),
             contractType: Joi.string().max(120).allow('', null),
             startDate: Joi.date().allow('', null),
+            terminationDate: Joi.date().allow('', null),
             workCenter: Joi.string().max(150).allow('', null),
         });
 

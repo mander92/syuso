@@ -145,6 +145,10 @@ export const sendEmployeeLifecycleEmail = async ({
                   ['Porcentaje de alta', employmentData.employmentPercentage],
                   ['Tipo de contrato', employmentData.contractType],
                   ['Fecha de alta', formatDate(employmentData.startDate)],
+                  [
+                      'Fecha de baja prevista',
+                      formatDate(employmentData.terminationDate),
+                  ],
                   ['Centro de trabajo', employmentData.workCenter],
               ];
     const employeeDetails = [
