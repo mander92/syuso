@@ -67,7 +67,8 @@ const operativeSectionIds = [
 ];
 
 const administrationSectionIds = [
-    'documentations',
+    'workers',
+    'clients',
     'warehouse',
     'vehicles',
     'payrolls',
@@ -221,7 +222,12 @@ const DashboardComponent = () => {
         if (!user || userRole === 'sudo') return null;
         const permissions = parseDashboardPermissions(user.dashboardPermissions);
         if (permissions === null) return null;
-        return new Set([...permissions, 'profile']);
+        const expandedPermissions = new Set([...permissions, 'profile']);
+        if (expandedPermissions.has('documentations')) {
+            expandedPermissions.add('workers');
+            expandedPermissions.add('clients');
+        }
+        return expandedPermissions;
     }, [user, userRole]);
 
     const sections = useMemo(() => {
@@ -239,7 +245,8 @@ const DashboardComponent = () => {
                 { id: 'chats', label: 'Chats' },
                 { id: 'alerts', label: 'Alertas' },
                 { id: 'workReports', label: 'Partes de trabajo' },
-                { id: 'documentations', label: 'Documentacion' },
+                { id: 'workers', label: 'Trabajadores' },
+                { id: 'clients', label: 'Clientes' },
                 { id: 'warehouse', label: 'Almacen' },
                 { id: 'vehicles', label: 'Vehiculos' },
                 { id: 'payrolls', label: 'Nominas' },
@@ -429,7 +436,7 @@ const DashboardComponent = () => {
         [alertNotifications]
     );
     const administrationBadgeTotal =
-        administrationSections.some((section) => section.id === 'documentations')
+        administrationSections.some((section) => section.id === 'workers')
             ? documentationUnread
             : 0;
     const communicationBadgeTotal =
@@ -445,7 +452,9 @@ const DashboardComponent = () => {
         if (sectionId === 'alerts') return alertUnreadTotal;
         if (sectionId === 'shiftSwaps') return shiftSwapUnread;
         if (sectionId === 'employeeRequests') return employeeRequestUnread;
-        if (sectionId === 'documentations') return documentationUnread;
+        if (sectionId === 'workers' || sectionId === 'documentations') {
+            return documentationUnread;
+        }
         return 0;
     };
 
@@ -682,9 +691,13 @@ const DashboardComponent = () => {
                     <AlertsPanel
                         notifications={alertNotifications}
                         onOpenSection={(section, notification) => {
+                            const targetSection =
+                                section === 'documentations' && isAdminLike
+                                    ? 'workers'
+                                    : section;
                             if (
-                                section &&
-                                sections.some((item) => item.id === section)
+                                targetSection &&
+                                sections.some((item) => item.id === targetSection)
                             ) {
                                 if (
                                     section === 'documentations' &&
@@ -697,7 +710,7 @@ const DashboardComponent = () => {
                                 if (section === 'chats' && notification?.chatId) {
                                     setChatFocusGeneralChatId(notification.chatId);
                                 }
-                                setActiveSection(section);
+                                setActiveSection(targetSection);
                             }
                         }}
                         onMarkRead={markNotificationRead}
@@ -746,6 +759,15 @@ const DashboardComponent = () => {
                 return <ShiftSwapsComponent />;
             case 'employeeRequests':
                 return <EmployeeRequestsComponent />;
+            case 'workers':
+                return (
+                    <EmployeeDocumentationComponent
+                        focusEmployeeId={documentationFocusEmployeeId}
+                        adminView='workers'
+                    />
+                );
+            case 'clients':
+                return <EmployeeDocumentationComponent adminView='clients' />;
             case 'documentations':
                 return (
                     <EmployeeDocumentationComponent

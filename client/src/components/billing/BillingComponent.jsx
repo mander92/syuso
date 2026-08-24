@@ -5,11 +5,13 @@ import { AuthContext } from '../../context/AuthContext.jsx';
 import {
     calculateBilling,
     deleteBillingRecord,
+    fetchBillingEmailSettings,
     fetchBilling,
     generateBillingInvoice,
     ignorePendingBilling,
     requestInvoice,
     sendInvoiceToClient,
+    updateBillingEmailSettings,
 } from '../../services/billingService.js';
 import useUser from '../../hooks/useUser.js';
 import { buildImageUrl } from '../../utils/imageUrl.js';
@@ -64,6 +66,7 @@ const statusLabels = {
 const BillingComponent = () => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
+    const isSudo = user?.role === 'sudo';
     const currentRange = getMonthRange(getCurrentMonth());
     const [services, setServices] = useState([]);
     const [records, setRecords] = useState([]);
@@ -200,13 +203,21 @@ const BillingComponent = () => {
     const loadBilling = async () => {
         setLoading(true);
         try {
-            const data = await fetchBilling(authToken, {
-                ...filters,
-                pendingMonth: serviceFilters.month,
-            });
+            const [data, emailSettings] = await Promise.all([
+                fetchBilling(authToken, {
+                    ...filters,
+                    pendingMonth: serviceFilters.month,
+                }),
+                fetchBillingEmailSettings(authToken),
+            ]);
             setServices(data.services || []);
             setRecords(data.records || []);
             setPendingServices(data.pendingServices || []);
+            setRequestForm((prev) => ({
+                ...prev,
+                emails: emailSettings?.emails || '',
+                ccEmails: emailSettings?.ccEmails || '',
+            }));
         } catch (error) {
             toast.error(error.message || 'No se pudo cargar facturacion');
         } finally {
@@ -419,6 +430,28 @@ const BillingComponent = () => {
             await loadBilling();
         } catch (error) {
             toast.error(error.message || 'No se pudo solicitar la factura');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleSaveBillingEmailSettings = async () => {
+        if (!isSudo) return;
+        setSaving(true);
+        try {
+            const data = await updateBillingEmailSettings({
+                authToken,
+                emails: requestForm.emails,
+                ccEmails: requestForm.ccEmails,
+            });
+            setRequestForm((prev) => ({
+                ...prev,
+                emails: data?.emails || '',
+                ccEmails: data?.ccEmails || '',
+            }));
+            toast.success('Correos de facturacion guardados');
+        } catch (error) {
+            toast.error(error.message || 'No se pudieron guardar los correos');
         } finally {
             setSaving(false);
         }
@@ -787,6 +820,7 @@ const BillingComponent = () => {
                                         emails: event.target.value,
                                     }))
                                 }
+                                disabled={!isSudo}
                                 placeholder='facturacion@cliente.es'
                                 required
                             />
@@ -802,9 +836,24 @@ const BillingComponent = () => {
                                         ccEmails: event.target.value,
                                     }))
                                 }
+                                disabled={!isSudo}
                                 placeholder='correo1@..., correo2@...'
                             />
                         </label>
+                        <div className='billing-field-wide billing-actions'>
+                            <button
+                                type='button'
+                                onClick={handleSaveBillingEmailSettings}
+                                disabled={saving || !isSudo}
+                                title={
+                                    isSudo
+                                        ? 'Guardar correos de facturacion'
+                                        : 'Solo sudo puede guardar estos correos'
+                                }
+                            >
+                                Guardar correos
+                            </button>
+                        </div>
                         <label className='billing-field-wide'>
                             Notas
                             <textarea

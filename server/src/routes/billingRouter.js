@@ -2,6 +2,7 @@ import express from 'express';
 
 import authUser from '../middleware/authUser.js';
 import isAdmin from '../middleware/isAdmin.js';
+import isSudo from '../middleware/isSudo.js';
 import listBillingRecordsController from '../controllers/billing/listBillingRecordsController.js';
 import calculateBillingController from '../controllers/billing/calculateBillingController.js';
 import requestInvoiceController from '../controllers/billing/requestInvoiceController.js';
@@ -9,9 +10,23 @@ import sendInvoiceToClientController from '../controllers/billing/sendInvoiceToC
 import deleteBillingRecordController from '../controllers/billing/deleteBillingRecordController.js';
 import ignorePendingBillingController from '../controllers/billing/ignorePendingBillingController.js';
 import generateBillingInvoiceController from '../controllers/billing/generateBillingInvoiceController.js';
+import getBillingEmailSettingsController from '../controllers/billing/getBillingEmailSettingsController.js';
+import updateBillingEmailSettingsController from '../controllers/billing/updateBillingEmailSettingsController.js';
 
 const router = express.Router();
 
+router.get(
+    '/billing/email-settings',
+    authUser,
+    isAdmin,
+    getBillingEmailSettingsController
+);
+router.put(
+    '/billing/email-settings',
+    authUser,
+    isSudo,
+    updateBillingEmailSettingsController
+);
 router.get('/billing', authUser, isAdmin, listBillingRecordsController);
 router.get('/billing/calculate', authUser, isAdmin, calculateBillingController);
 router.post('/billing/request-invoice', authUser, isAdmin, requestInvoiceController);

@@ -53,6 +53,29 @@ export const requestInvoice = async (authToken, payload) => {
     return body;
 };
 
+export const fetchBillingEmailSettings = async (authToken) => {
+    const res = await fetch(`${VITE_API_URL}/billing/email-settings`, {
+        headers: { Authorization: authToken },
+    });
+    return assertOk(await readJsonBody(res));
+};
+
+export const updateBillingEmailSettings = async ({
+    authToken,
+    emails,
+    ccEmails,
+}) => {
+    const res = await fetch(`${VITE_API_URL}/billing/email-settings`, {
+        method: 'PUT',
+        headers: {
+            Authorization: authToken,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ emails, ccEmails }),
+    });
+    return assertOk(await readJsonBody(res));
+};
+
 export const ignorePendingBilling = async (authToken, payload) => {
     const res = await fetch(`${VITE_API_URL}/billing/ignore-pending`, {
         method: 'POST',

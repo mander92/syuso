@@ -195,12 +195,21 @@ const normalizeClientDocumentation = (data) => ({
     status: data?.status || 'pending',
 });
 
-const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
+const EmployeeDocumentationComponent = ({
+    focusEmployeeId = '',
+    adminView = '',
+} = {}) => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
     const { alertNotifications, markNotificationRead } = useChatNotifications();
     const isAdminLike = user?.role === 'admin' || user?.role === 'sudo';
     const isSudo = user?.role === 'sudo';
+    const fixedAdminMode =
+        isAdminLike && adminView === 'clients'
+            ? 'clients'
+            : isAdminLike && adminView === 'workers'
+              ? 'employees'
+              : '';
     const [items, setItems] = useState([]);
     const [delegations, setDelegations] = useState([]);
     const [selectedUserId, setSelectedUserId] = useState('');
@@ -212,7 +221,7 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
     const [search, setSearch] = useState('');
     const [activeFilter, setActiveFilter] = useState('active');
     const [delegationFilter, setDelegationFilter] = useState('all');
-    const [adminMode, setAdminMode] = useState('employees');
+    const [adminMode, setAdminMode] = useState(fixedAdminMode || 'employees');
     const [clientItems, setClientItems] = useState([]);
     const [selectedClientId, setSelectedClientId] = useState('');
     const [clientForm, setClientForm] = useState(emptyClientForm);
@@ -498,6 +507,11 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
         load().catch((error) => alert(error.message));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [authToken, isAdminLike]);
+
+    useEffect(() => {
+        if (!fixedAdminMode) return;
+        setAdminMode(fixedAdminMode);
+    }, [fixedAdminMode]);
 
     useEffect(() => {
         if (!isAdminLike || !focusEmployeeId || !authToken) return;
@@ -1148,7 +1162,7 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
         if (!selectedDraftId) return;
         if (
             !window.confirm(
-                'Se borrara esta alta de trabajador y sus enlaces de formulario. Si ya creo un trabajador y no tiene actividad, tambien se liberara su correo. Continuar?'
+                'Se borrara solo esta ficha de alta y sus enlaces de formulario. El trabajador creado no se modificara. Continuar?'
             )
         ) {
             return;
@@ -1459,22 +1473,57 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
         }
     };
 
+    const openEmployeeDraftModal = () => {
+        setAdminMode('drafts');
+        if (!selectedDraftId && drafts[0]) {
+            selectDraft(drafts[0]);
+        }
+    };
+
+    const openClientDraftModal = () => {
+        setAdminMode('clientDrafts');
+        if (!selectedClientDraftId && clientDrafts[0]) {
+            selectClientDraft(clientDrafts[0]);
+        }
+    };
+
+    const closeDraftModal = () => {
+        setAdminMode(fixedAdminMode || 'employees');
+    };
+
     if (loading) {
         return <p>Cargando documentacion...</p>;
     }
 
+    const isSplitAdminView = Boolean(fixedAdminMode);
+    const isDraftModalOpen =
+        isSplitAdminView &&
+        (adminMode === 'drafts' || adminMode === 'clientDrafts');
+
     return (
-        <section className='employee-documentation'>
+        <section
+            className={`employee-documentation${
+                isDraftModalOpen ? ' employee-documentation--draft-modal' : ''
+            }`}
+        >
             <header className='employee-documentation-header'>
                 <div>
-                    <h2>Documentacion de trabajadores</h2>
+                    <h2>
+                        {fixedAdminMode === 'clients'
+                            ? 'Clientes'
+                            : fixedAdminMode === 'employees'
+                              ? 'Trabajadores'
+                              : 'Documentacion de trabajadores'}
+                    </h2>
                     <p>
-                        Gestiona la ficha documental y las imagenes de DNI/TIP.
+                        {fixedAdminMode === 'clients'
+                            ? 'Gestiona clientes, altas y documentacion contractual.'
+                            : 'Gestiona fichas, altas y documentacion.'}
                     </p>
                 </div>
             </header>
 
-            {isAdminLike ? (
+            {isAdminLike && !isSplitAdminView ? (
                 <div className='employee-documentation-tabs'>
                     <button
                         type='button'
@@ -1490,10 +1539,7 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                         type='button'
                         className={adminMode === 'drafts' ? 'active' : ''}
                         onClick={() => {
-                            setAdminMode('drafts');
-                            if (!selectedDraftId && drafts[0]) {
-                                selectDraft(drafts[0]);
-                            }
+                            openEmployeeDraftModal();
                         }}
                     >
                         Alta trabajadores
@@ -1515,10 +1561,7 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                         type='button'
                         className={adminMode === 'clientDrafts' ? 'active' : ''}
                         onClick={() => {
-                            setAdminMode('clientDrafts');
-                            if (!selectedClientDraftId && clientDrafts[0]) {
-                                selectClientDraft(clientDrafts[0]);
-                            }
+                            openClientDraftModal();
                         }}
                     >
                         Altas clientes
@@ -1565,6 +1608,16 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                         </div>
                     ) : null}
                 </div>
+            ) : null}
+
+            {isDraftModalOpen ? (
+                <button
+                    type='button'
+                    className='employee-documentation-draft-modal-close'
+                    onClick={closeDraftModal}
+                >
+                    Cerrar
+                </button>
             ) : null}
 
             {isAdminLike && adminMode === 'clientDrafts' ? (
@@ -1799,6 +1852,13 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                                 }}
                             >
                                 Nuevo cliente
+                            </button>
+                            <button
+                                type='button'
+                                className='employee-documentation-btn'
+                                onClick={openClientDraftModal}
+                            >
+                                Alta clientes
                             </button>
                         </div>
                         <p className='employee-documentation-list-count'>
@@ -2254,6 +2314,13 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                                     </option>
                                 ))}
                             </select>
+                            <button
+                                type='button'
+                                className='employee-documentation-btn'
+                                onClick={openEmployeeDraftModal}
+                            >
+                                Alta trabajadores
+                            </button>
                         </div>
                         <p className='employee-documentation-list-count'>
                             {filteredItems.length} trabajadores

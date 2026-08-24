@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS billingEmailSettings (
+    id TINYINT PRIMARY KEY NOT NULL,
+    emails TEXT,
+    ccEmails TEXT,
+    modifiedBy CHAR(36),
+    modifiedAt TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);

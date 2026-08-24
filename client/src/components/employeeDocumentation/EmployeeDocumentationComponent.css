@@ -82,7 +82,7 @@
 }
 
 .employee-documentation-list--worker-browser .employee-documentation-list-filters {
-    grid-template-columns: minmax(220px, 1fr) minmax(140px, 180px) minmax(180px, 240px);
+    grid-template-columns: minmax(220px, 1fr) minmax(140px, 180px) minmax(180px, 240px) auto;
 }
 
 .employee-documentation-worker-grid {
@@ -107,6 +107,47 @@
     border-radius: 0.55rem;
     font: inherit;
     padding: 0.5rem 0.65rem;
+}
+
+.employee-documentation-list-filters .employee-documentation-btn {
+    min-height: 2.45rem;
+    white-space: nowrap;
+}
+
+.employee-documentation--draft-modal::before {
+    background: rgba(15, 23, 42, 0.55);
+    content: '';
+    inset: 0;
+    position: fixed;
+    z-index: 1000;
+}
+
+.employee-documentation--draft-modal > .employee-documentation-layout {
+    background: #ffffff;
+    border-radius: 0.85rem;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
+    grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+    inset: 1.5rem;
+    margin: auto;
+    max-width: 1180px;
+    overflow: auto;
+    padding: 1rem;
+    position: fixed;
+    z-index: 1001;
+}
+
+.employee-documentation-draft-modal-close {
+    background: #e2e8f0;
+    border: 0;
+    border-radius: 999px;
+    color: #0f172a;
+    cursor: pointer;
+    font-weight: 900;
+    padding: 0.6rem 1rem;
+    position: fixed;
+    right: 2.25rem;
+    top: 2.25rem;
+    z-index: 1002;
 }
 
 .employee-documentation-list-count,
