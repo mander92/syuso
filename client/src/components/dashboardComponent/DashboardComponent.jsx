@@ -30,6 +30,7 @@ import PayrollsComponent from '../payrolls/PayrollsComponent.jsx';
 import BillingComponent from '../billing/BillingComponent.jsx';
 import AdminVehiclesSection from '../adminVehiclesSection/AdminVehiclesSection.jsx';
 import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
+import PushNotificationsPanel from '../pushNotifications/PushNotificationsPanel.jsx';
 
 const formatAlertDate = (value) => {
     if (!value) return '';
@@ -995,7 +996,10 @@ const DashboardComponent = () => {
                 </aside>
 
                 {/* CONTENIDO PRINCIPAL */}
-                <main className='dashboard-main'>{renderSectionContent()}</main>
+                <main className='dashboard-main'>
+                    {isEmployeeLike ? <PushNotificationsPanel compact /> : null}
+                    {renderSectionContent()}
+                </main>
             </div>
             {renderMobileDashboardNav()}
         </div>

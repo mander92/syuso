@@ -211,7 +211,7 @@
 
 .admin-users-table th:nth-child(5),
 .admin-users-table td:nth-child(5) {
-    width: 20%;
+    width: 18%;
 }
 
 .admin-users-table th:nth-child(6),
@@ -221,6 +221,11 @@
 
 .admin-users-table th:nth-child(7),
 .admin-users-table td:nth-child(7) {
+    width: 12%;
+}
+
+.admin-users-table th:nth-child(8),
+.admin-users-table td:nth-child(8) {
     width: 10%;
 }
 

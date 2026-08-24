@@ -23,6 +23,7 @@ import {
     updateDelegation,
     deleteDelegation,
 } from '../../services/delegationService.js';
+import { fetchPushAdminSummary } from '../../services/pushNotificationService.js';
 import './AdminUsersSection.css';
 
 const dashboardPermissionGroups = [
@@ -135,6 +136,7 @@ const AdminUsersSection = () => {
         });
 
     const [users, setUsers] = useState([]);
+    const [pushSummary, setPushSummary] = useState({});
     const [loading, setLoading] = useState(true);
     const [delegations, setDelegations] = useState([]);
     const [newDelegationName, setNewDelegationName] = useState('');
@@ -232,6 +234,9 @@ const AdminUsersSection = () => {
                 params.toString(),
                 authToken
             );
+            const pushData = await fetchPushAdminSummary(authToken).catch(
+                () => []
+            );
 
             const list = Array.isArray(data)
                 ? data
@@ -240,6 +245,11 @@ const AdminUsersSection = () => {
                   : [];
 
             setUsers(list);
+            setPushSummary(
+                Object.fromEntries(
+                    (pushData || []).map((item) => [item.userId, item])
+                )
+            );
         } catch (error) {
             console.error(error);
             alert(error.message || 'Error cargando usuarios');
@@ -1380,6 +1390,7 @@ const AdminUsersSection = () => {
                                     <th>DNI</th>
                                     <th>Delegacion / Trabajo</th>
                                     <th>Estado</th>
+                                    <th>Avisos</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
@@ -1426,6 +1437,7 @@ const AdminUsersSection = () => {
                                     const active = isUserActive(u.active);
                                     const isEditing =
                                         editingUser && editingUser.id === u.id;
+                                    const notificationSummary = pushSummary[u.id];
 
                                     return (
                                         <Fragment key={u.id}>
@@ -1467,6 +1479,26 @@ const AdminUsersSection = () => {
                                                                 : 'Inactivo'
                                                         }
                                                     />
+                                                </td>
+                                                <td data-label='Avisos'>
+                                                    {u.role === 'employee' ? (
+                                                        <span
+                                                            className={
+                                                                'admin-users-badge ' +
+                                                                ((notificationSummary?.activeDeviceCount ||
+                                                                    0) > 0
+                                                                    ? 'admin-users-badge--active'
+                                                                    : 'admin-users-badge--inactive')
+                                                            }
+                                                        >
+                                                            {(notificationSummary?.activeDeviceCount ||
+                                                                0) > 0
+                                                                ? `Activas (${notificationSummary.activeDeviceCount})`
+                                                                : 'Sin configurar'}
+                                                        </span>
+                                                    ) : (
+                                                        <span>-</span>
+                                                    )}
                                                 </td>
                                                 <td className='admin-users-mobile-toggle-cell'>
                                                     <button

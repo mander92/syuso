@@ -214,6 +214,8 @@
 
 /* CONTENIDO PRINCIPAL */
 .dashboard-main {
+    display: grid;
+    gap: 1rem;
     flex: 1;
     min-width: 0;
 }

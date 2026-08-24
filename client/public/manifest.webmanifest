@@ -1,0 +1,24 @@
+{
+    "name": "SYUSO Seguridad",
+    "short_name": "SYUSO",
+    "description": "Panel de servicios y avisos de SYUSO Seguridad",
+    "start_url": "/account",
+    "scope": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#001b3f",
+    "icons": [
+        {
+            "src": "/syusoLogo.jpg",
+            "sizes": "192x192",
+            "type": "image/jpeg",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/syusoLogo.jpg",
+            "sizes": "512x512",
+            "type": "image/jpeg",
+            "purpose": "any maskable"
+        }
+    ]
+}

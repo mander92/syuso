@@ -1,0 +1,171 @@
+.push-notifications {
+    background: #ffffff;
+    border: 1px solid #dbe3ef;
+    border-radius: 0.75rem;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    box-sizing: border-box;
+    display: grid;
+    gap: 1rem;
+    padding: 1.25rem;
+    width: 100%;
+}
+
+.push-notifications--compact {
+    border-color: #bfdbfe;
+    box-shadow: none;
+}
+
+.push-notifications__header {
+    align-items: flex-start;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.push-notifications__eyebrow {
+    color: #64748b;
+    font-size: 0.78rem;
+    font-weight: 800;
+    margin: 0 0 0.15rem;
+    text-transform: uppercase;
+}
+
+.push-notifications h2,
+.push-notifications h3 {
+    color: #0f172a;
+    margin: 0;
+}
+
+.push-notifications p,
+.push-notifications li {
+    color: #475569;
+    font-size: 0.92rem;
+    line-height: 1.45;
+}
+
+.push-notifications__status {
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 900;
+    padding: 0.25rem 0.65rem;
+    white-space: nowrap;
+}
+
+.push-notifications__status--active {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.push-notifications__status--missing,
+.push-notifications__status--iosInstall {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.push-notifications__status--denied,
+.push-notifications__status--unsupported {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.push-notifications__body,
+.push-notifications__instructions {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.push-notifications__instructions ol {
+    margin: 0;
+    padding-left: 1.2rem;
+}
+
+.push-notifications__actions,
+.push-notifications__device-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.push-notifications__button,
+.push-notifications__ghost,
+.push-notifications__device-actions button {
+    border: 0;
+    border-radius: 999px;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 800;
+    padding: 0.6rem 0.95rem;
+}
+
+.push-notifications__button {
+    background: #0f172a;
+    color: #ffffff;
+}
+
+.push-notifications__ghost,
+.push-notifications__device-actions button {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.push-notifications__button:disabled,
+.push-notifications__ghost:disabled,
+.push-notifications__device-actions button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.push-notifications__warning {
+    background: #fef3c7;
+    border-radius: 0.65rem;
+    color: #92400e !important;
+    margin: 0;
+    padding: 0.7rem;
+}
+
+.push-notifications__devices {
+    border-top: 1px solid #e2e8f0;
+    display: grid;
+    gap: 0.65rem;
+    padding-top: 1rem;
+}
+
+.push-notifications__device {
+    align-items: center;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.65rem;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: space-between;
+    padding: 0.75rem;
+}
+
+.push-notifications__device div:first-child {
+    display: grid;
+    gap: 0.15rem;
+}
+
+.push-notifications__device span {
+    color: #64748b;
+    font-size: 0.82rem;
+}
+
+@media (max-width: 640px) {
+    .push-notifications {
+        padding: 1rem;
+    }
+
+    .push-notifications__header,
+    .push-notifications__device {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .push-notifications__actions,
+    .push-notifications__button,
+    .push-notifications__ghost,
+    .push-notifications__device-actions,
+    .push-notifications__device-actions button {
+        width: 100%;
+    }
+}

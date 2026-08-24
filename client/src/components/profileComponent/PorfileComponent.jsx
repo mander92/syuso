@@ -9,6 +9,7 @@ import {
 } from '../../services/userService.js';
 import useUser from '../../hooks/useUser';
 import toast from 'react-hot-toast';
+import PushNotificationsPanel from '../pushNotifications/PushNotificationsPanel.jsx';
 import './ProfileComponent.css'; // 👈 importa los estilos
 
 const ProfileComponent = () => {
@@ -230,6 +231,8 @@ const ProfileComponent = () => {
 
                 {/* Tarjeta de contraseña + eliminar cuenta */}
                 <div className='profile-side'>
+                    <PushNotificationsPanel />
+
                     <form
                         className='profile-card'
                         onSubmit={handleEditPassword}

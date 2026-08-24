@@ -21,6 +21,9 @@ const {
     SERVER_URL,
     UPLOADS_DIR,
     BREVO_API_KEY,
+    VAPID_PUBLIC_KEY,
+    VAPID_PRIVATE_KEY,
+    VAPID_SUBJECT,
 } = process.env;
 
 export {
@@ -44,4 +47,7 @@ export {
     SERVER_URL,
     UPLOADS_DIR,
     BREVO_API_KEY,
+    VAPID_PUBLIC_KEY,
+    VAPID_PRIVATE_KEY,
+    VAPID_SUBJECT,
 };

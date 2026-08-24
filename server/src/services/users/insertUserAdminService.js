@@ -27,7 +27,7 @@ const insertAdminService = async (
     // ¿ya existe el email?
     const [user] = await pool.query(
         `
-            SELECT id, deletedAt FROM users WHERE email = ?
+            SELECT id, role, deletedAt FROM users WHERE email = ?
         `,
         [email]
     );
@@ -35,7 +35,29 @@ const insertAdminService = async (
     const existingUser = user[0];
 
     if (existingUser && !existingUser.deletedAt) {
-        generateErrorUtil('El email ya se encuentra registrado', 409);
+        const canReuseClientAsEmployee =
+            role === 'employee' && existingUser.role === 'client';
+
+        if (!canReuseClientAsEmployee) {
+            generateErrorUtil('El email ya se encuentra registrado', 409);
+        }
+
+        const [clientServices] = await pool.query(
+            `
+                SELECT COUNT(*) AS total
+                FROM services
+                WHERE clientId = ?
+                  AND deletedAt IS NULL
+            `,
+            [existingUser.id]
+        );
+
+        if (Number(clientServices[0]?.total || 0) > 0) {
+            generateErrorUtil(
+                'El email pertenece a un cliente con servicios asociados',
+                409
+            );
+        }
     }
 
     const recoverPasswordCode = randomstring.generate(10);
@@ -43,7 +65,7 @@ const insertAdminService = async (
 
     const userId = existingUser?.id || uuid();
 
-    if (existingUser?.deletedAt) {
+    if (existingUser) {
         await pool.query(
             `
                 UPDATE users

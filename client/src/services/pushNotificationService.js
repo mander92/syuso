@@ -1,0 +1,178 @@
+const { VITE_API_URL } = import.meta.env;
+
+const readJsonBody = async (res) => {
+    const text = await res.text();
+    if (!text) return {};
+    try {
+        return JSON.parse(text);
+    } catch {
+        throw new Error(
+            res.ok
+                ? 'La respuesta del servidor no es JSON valido'
+                : `Error del servidor (${res.status})`
+        );
+    }
+};
+
+const assertOk = (body) => {
+    if (body.status === 'error') {
+        throw new Error(body.message || 'Error de notificaciones');
+    }
+    return body.data;
+};
+
+export const detectPushEnvironment = () => {
+    const userAgent = navigator.userAgent || '';
+    const platform = navigator.platform || '';
+    const isIos =
+        /iphone|ipad|ipod/i.test(userAgent) ||
+        (platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isAndroid = /android/i.test(userAgent);
+    const isStandalone =
+        window.matchMedia?.('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true;
+    const isSecure =
+        window.isSecureContext || window.location.hostname === 'localhost';
+    const supportsPush =
+        isSecure &&
+        'serviceWorker' in navigator &&
+        'PushManager' in window &&
+        'Notification' in window;
+
+    let browserName = 'Navegador';
+    if (/CriOS|Chrome/i.test(userAgent)) browserName = 'Chrome';
+    if (/Firefox/i.test(userAgent)) browserName = 'Firefox';
+    if (/Safari/i.test(userAgent) && !/Chrome|CriOS/i.test(userAgent)) {
+        browserName = 'Safari';
+    }
+    if (/Edg/i.test(userAgent)) browserName = 'Edge';
+
+    return {
+        browserName,
+        deviceType: isIos ? 'ios' : isAndroid ? 'android' : 'desktop',
+        isAndroid,
+        isIos,
+        isStandalone,
+        isSecure,
+        supportsPush,
+        permission:
+            'Notification' in window ? Notification.permission : 'unsupported',
+        userAgent,
+    };
+};
+
+export const fetchPushConfig = async (authToken) => {
+    const res = await fetch(`${VITE_API_URL}/push/config`, {
+        headers: { Authorization: authToken },
+    });
+    return assertOk(await readJsonBody(res));
+};
+
+export const fetchPushSubscriptions = async (authToken) => {
+    const res = await fetch(`${VITE_API_URL}/push/subscriptions`, {
+        headers: { Authorization: authToken },
+    });
+    return assertOk(await readJsonBody(res));
+};
+
+export const fetchPushAdminSummary = async (authToken) => {
+    const res = await fetch(`${VITE_API_URL}/push/admin/users`, {
+        headers: { Authorization: authToken },
+    });
+    return assertOk(await readJsonBody(res));
+};
+
+const urlBase64ToUint8Array = (base64String) => {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
+};
+
+export const getPushServiceWorkerRegistration = async () =>
+    navigator.serviceWorker.register('/push-sw.js');
+
+export const getCurrentBrowserSubscription = async () => {
+    const registration = await getPushServiceWorkerRegistration();
+    return registration.pushManager.getSubscription();
+};
+
+export const registerCurrentDeviceForPush = async ({
+    authToken,
+    vapidPublicKey,
+}) => {
+    const env = detectPushEnvironment();
+    if (!env.supportsPush) {
+        throw new Error('Este dispositivo no permite avisos del navegador.');
+    }
+    if (!vapidPublicKey) {
+        throw new Error('Las notificaciones no estan configuradas en el servidor.');
+    }
+
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+        throw new Error('No se han permitido las notificaciones.');
+    }
+
+    const registration = await getPushServiceWorkerRegistration();
+    let subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+        subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+        });
+    }
+
+    const res = await fetch(`${VITE_API_URL}/push/subscriptions`, {
+        method: 'POST',
+        headers: {
+            Authorization: authToken,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            subscription: subscription.toJSON(),
+            device: {
+                deviceName:
+                    env.deviceType === 'ios'
+                        ? 'iPhone / iPad'
+                        : env.deviceType === 'android'
+                          ? 'Android'
+                          : 'Ordenador',
+                deviceType: env.deviceType,
+                browserName: env.browserName,
+                userAgent: env.userAgent,
+            },
+        }),
+    });
+    return assertOk(await readJsonBody(res));
+};
+
+export const disablePushSubscription = async ({ authToken, subscriptionId }) => {
+    const res = await fetch(
+        `${VITE_API_URL}/push/subscriptions/${subscriptionId}/disable`,
+        {
+            method: 'POST',
+            headers: { Authorization: authToken },
+        }
+    );
+    return assertOk(await readJsonBody(res));
+};
+
+export const deletePushSubscription = async ({ authToken, subscriptionId }) => {
+    const res = await fetch(
+        `${VITE_API_URL}/push/subscriptions/${subscriptionId}`,
+        {
+            method: 'DELETE',
+            headers: { Authorization: authToken },
+        }
+    );
+    return assertOk(await readJsonBody(res));
+};
+
+export const sendTestPushNotification = async (authToken) => {
+    const res = await fetch(`${VITE_API_URL}/push/test`, {
+        method: 'POST',
+        headers: { Authorization: authToken },
+    });
+    return assertOk(await readJsonBody(res));
+};
