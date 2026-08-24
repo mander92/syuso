@@ -866,18 +866,28 @@ const EmployeeDocumentationComponent = ({
             return;
         }
         try {
-            await createClientFromDocumentationDraft(
+            const created = await createClientFromDocumentationDraft(
                 authToken,
                 selectedClientDraftId
             );
-            setClientDraftForm(emptyClientForm);
-            setSelectedClientDraftId('');
             const [draftList, clientList] = await Promise.all([
                 fetchClientDocumentationDrafts(authToken),
                 fetchClientDocumentations(authToken),
             ]);
             setClientDrafts(draftList || []);
             setClientItems(clientList || []);
+            const convertedDraft = (draftList || []).find(
+                (item) => item.id === selectedClientDraftId
+            );
+            if (convertedDraft) {
+                selectClientDraft(convertedDraft);
+            } else {
+                setClientDraftForm({
+                    ...clientDraftForm,
+                    status: 'converted',
+                    linkedClientId: created?.linkedClientId,
+                });
+            }
             alert('Cliente creado y documentacion vinculada.');
         } catch (error) {
             alert(error.message || 'No se pudo crear el cliente');

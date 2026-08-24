@@ -57,13 +57,19 @@ const createClientFromDocumentationDraftController = async (req, res, next) => {
             'DELETE FROM clientDocumentationDraftTokens WHERE draftId = ?',
             [draftId]
         );
-        await pool.query('DELETE FROM clientDocumentationDrafts WHERE id = ?', [
-            draftId,
-        ]);
+        await pool.query(
+            `
+                UPDATE clientDocumentationDrafts
+                SET status = 'converted',
+                    linkedClientId = ?
+                WHERE id = ?
+            `,
+            [clientId, draftId]
+        );
 
         res.send({
             status: 'ok',
-            data: { deleted: true, linkedClientId: clientId },
+            data: { converted: true, linkedClientId: clientId },
         });
     } catch (error) {
         next(error);
