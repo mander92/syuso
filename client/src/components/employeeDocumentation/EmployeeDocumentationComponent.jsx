@@ -1491,6 +1491,50 @@ const EmployeeDocumentationComponent = ({
         setAdminMode(fixedAdminMode || 'employees');
     };
 
+    const renderEmployeeDraftActions = () => (
+        <div className='employee-documentation-actions employee-documentation-actions--draft'>
+            <button
+                type='button'
+                className='employee-documentation-btn employee-documentation-btn--ghost'
+                disabled={saving || draftForm.linkedUserId}
+                onClick={handleCreateDraftLink}
+            >
+                Copiar enlace WhatsApp
+            </button>
+            <button
+                type='button'
+                className='employee-documentation-btn'
+                disabled={saving || !draftLinkEmails.trim()}
+                onClick={handleOpenDraftEmploymentModal}
+            >
+                Enviar alta
+            </button>
+            <button
+                type='button'
+                className='employee-documentation-btn employee-documentation-btn--ghost'
+                disabled={!selectedDraftId || draftForm.linkedUserId}
+                onClick={handleOpenCreateWorkerModal}
+            >
+                Crear trabajador
+            </button>
+            <button
+                type='submit'
+                className='employee-documentation-btn'
+                disabled={saving}
+            >
+                {saving ? 'Guardando...' : 'Guardar alta'}
+            </button>
+            <button
+                type='button'
+                className='employee-documentation-btn employee-documentation-btn--danger'
+                disabled={!selectedDraftId || saving}
+                onClick={handleDeleteEmployeeDraft}
+            >
+                Borrar alta
+            </button>
+        </div>
+    );
+
     if (loading) {
         return <p>Cargando documentacion...</p>;
     }
@@ -1675,6 +1719,24 @@ const EmployeeDocumentationComponent = ({
                         className='employee-documentation-form'
                         onSubmit={handleSaveClientDraft}
                     >
+                        {isDraftModalOpen ? (
+                            <header className='employee-documentation-draft-modal-header'>
+                                <div>
+                                    <h3>Alta clientes</h3>
+                                    <p>
+                                        Gestiona altas pendientes, enlaces y
+                                        creacion de clientes.
+                                    </p>
+                                </div>
+                                <button
+                                    type='button'
+                                    className='employee-documentation-btn employee-documentation-btn--ghost'
+                                    onClick={closeDraftModal}
+                                >
+                                    Cerrar
+                                </button>
+                            </header>
+                        ) : null}
                         <div className='employee-documentation-grid'>
                             {[
                                 ['displayName', 'Nombre y apellidos / razon social'],
@@ -2066,6 +2128,26 @@ const EmployeeDocumentationComponent = ({
                         className='employee-documentation-form'
                         onSubmit={handleSaveDraft}
                     >
+                        {isDraftModalOpen ? (
+                            <header className='employee-documentation-draft-modal-header'>
+                                <div>
+                                    <h3>Alta trabajadores</h3>
+                                    <p>
+                                        Gestiona altas pendientes, enlaces y
+                                        creacion de trabajadores.
+                                    </p>
+                                </div>
+                                <button
+                                    type='button'
+                                    className='employee-documentation-btn employee-documentation-btn--ghost'
+                                    onClick={closeDraftModal}
+                                >
+                                    Cerrar
+                                </button>
+                            </header>
+                        ) : null}
+                        {renderEmployeeDraftActions()}
+
                         <div className='employee-documentation-grid'>
                             {[
                                 ['firstName', 'Nombre'],
@@ -2225,50 +2307,7 @@ const EmployeeDocumentationComponent = ({
                             ))}
                         </div>
 
-                        <div className='employee-documentation-actions'>
-                            <button
-                                type='button'
-                                className='employee-documentation-btn employee-documentation-btn--ghost'
-                                disabled={saving || draftForm.linkedUserId}
-                                onClick={handleCreateDraftLink}
-                            >
-                                Copiar enlace WhatsApp
-                            </button>
-                            <button
-                                type='button'
-                                className='employee-documentation-btn'
-                                disabled={
-                                    saving ||
-                                    !draftLinkEmails.trim()
-                                }
-                                onClick={handleOpenDraftEmploymentModal}
-                            >
-                                Enviar alta
-                            </button>
-                            <button
-                                type='button'
-                                className='employee-documentation-btn employee-documentation-btn--ghost'
-                                disabled={!selectedDraftId || draftForm.linkedUserId}
-                                onClick={handleOpenCreateWorkerModal}
-                            >
-                                Crear trabajador
-                            </button>
-                            <button
-                                type='submit'
-                                className='employee-documentation-btn'
-                                disabled={saving}
-                            >
-                                {saving ? 'Guardando...' : 'Guardar alta'}
-                            </button>
-                            <button
-                                type='button'
-                                className='employee-documentation-btn employee-documentation-btn--danger'
-                                disabled={!selectedDraftId || saving}
-                                onClick={handleDeleteEmployeeDraft}
-                            >
-                                Borrar alta
-                            </button>
-                        </div>
+                        {renderEmployeeDraftActions()}
                     </form>
                 </div>
             ) : (

@@ -150,6 +150,25 @@
     z-index: 1002;
 }
 
+.employee-documentation-draft-modal-header {
+    align-items: flex-start;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    padding-bottom: 0.85rem;
+}
+
+.employee-documentation-draft-modal-header h3 {
+    color: #0f172a;
+    margin: 0;
+}
+
+.employee-documentation-draft-modal-header p {
+    color: #64748b;
+    margin: 0.2rem 0 0;
+}
+
 .employee-documentation-list-count,
 .employee-documentation-empty {
     color: #64748b;
@@ -420,6 +439,24 @@
     flex-wrap: wrap;
 }
 
+.employee-documentation-actions--draft {
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    margin: -0.25rem -0.25rem 0;
+    padding: 0 0 0.85rem;
+    position: sticky;
+    top: 0;
+    z-index: 3;
+}
+
+.employee-documentation-actions--draft:last-child {
+    border-bottom: 0;
+    border-top: 1px solid #e5e7eb;
+    margin: 0 -0.25rem -0.25rem;
+    padding: 0.85rem 0 0;
+    position: static;
+}
+
 .employee-documentation-delivery-status--complete,
 .employee-documentation-delivery-status--signed {
     background: #dcfce7;
@@ -602,6 +639,58 @@
         grid-template-columns: 1fr;
     }
 
+    .employee-documentation--draft-modal > .employee-documentation-layout {
+        align-content: start;
+        border-radius: 0;
+        gap: 0.75rem;
+        grid-template-columns: 1fr;
+        inset: 0;
+        max-height: 100dvh;
+        max-width: none;
+        padding: 0.75rem;
+        width: 100%;
+    }
+
+    .employee-documentation--draft-modal .employee-documentation-list {
+        max-height: 32dvh;
+        min-height: 0;
+    }
+
+    .employee-documentation--draft-modal .employee-documentation-form {
+        max-height: none;
+        overflow: visible;
+        padding: 0.75rem;
+    }
+
+    .employee-documentation-draft-modal-close {
+        display: none;
+    }
+
+    .employee-documentation-draft-modal-header {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 0.65rem;
+    }
+
+    .employee-documentation-draft-modal-header .employee-documentation-btn {
+        align-self: flex-start;
+    }
+
+    .employee-documentation-actions--draft {
+        display: grid;
+        gap: 0.5rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin: 0;
+        padding: 0 0 0.65rem;
+    }
+
+    .employee-documentation-actions--draft .employee-documentation-btn {
+        min-height: 2.55rem;
+        padding: 0.55rem 0.65rem;
+        white-space: normal;
+        width: 100%;
+    }
+
     .employee-documentation-list--worker-browser .employee-documentation-list-filters,
     .employee-documentation-worker-grid {
         grid-template-columns: 1fr;
@@ -614,5 +703,15 @@
     .employee-documentation-modal-header {
         align-items: stretch;
         flex-direction: column;
+    }
+}
+
+@media (max-width: 480px) {
+    .employee-documentation--draft-modal > .employee-documentation-layout {
+        padding: 0.55rem;
+    }
+
+    .employee-documentation-actions--draft {
+        grid-template-columns: 1fr;
     }
 }
