@@ -15,6 +15,12 @@
     box-shadow: none;
 }
 
+.push-notifications--required {
+    border-color: #0f172a;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
+    max-width: 46rem;
+}
+
 .push-notifications__header {
     align-items: flex-start;
     display: flex;

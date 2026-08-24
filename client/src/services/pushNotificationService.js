@@ -89,6 +89,13 @@ const urlBase64ToUint8Array = (base64String) => {
     return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
 };
 
+const arrayBuffersEqual = (left, right) => {
+    if (!left || !right || left.byteLength !== right.byteLength) return false;
+    const leftView = new Uint8Array(left);
+    const rightView = new Uint8Array(right);
+    return leftView.every((value, index) => value === rightView[index]);
+};
+
 export const getPushServiceWorkerRegistration = async () =>
     navigator.serviceWorker.register('/push-sw.js');
 
@@ -115,11 +122,24 @@ export const registerCurrentDeviceForPush = async ({
     }
 
     const registration = await getPushServiceWorkerRegistration();
+    const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
     let subscription = await registration.pushManager.getSubscription();
+
+    if (
+        subscription?.options?.applicationServerKey &&
+        !arrayBuffersEqual(
+            subscription.options.applicationServerKey,
+            applicationServerKey
+        )
+    ) {
+        await subscription.unsubscribe();
+        subscription = null;
+    }
+
     if (!subscription) {
         subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+            applicationServerKey,
         });
     }
 

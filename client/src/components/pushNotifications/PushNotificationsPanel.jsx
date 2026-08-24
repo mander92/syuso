@@ -26,7 +26,11 @@ const getDeviceLabel = (subscription) => {
     return `${subscription.deviceName || 'Dispositivo'}${browser}`;
 };
 
-const PushNotificationsPanel = ({ compact = false }) => {
+const PushNotificationsPanel = ({
+    compact = false,
+    required = false,
+    onReadyChange,
+}) => {
     const { authToken } = useContext(AuthContext);
     const [environment, setEnvironment] = useState(detectPushEnvironment);
     const [config, setConfig] = useState({ configured: false, vapidPublicKey: '' });
@@ -53,6 +57,10 @@ const PushNotificationsPanel = ({ compact = false }) => {
         if (activeSubscriptions.length > 0) return 'active';
         return 'missing';
     }, [activeSubscriptions.length, environment]);
+
+    useEffect(() => {
+        onReadyChange?.(status === 'active');
+    }, [onReadyChange, status]);
 
     const loadPushState = async ({ silent = false } = {}) => {
         if (!authToken) return;
@@ -151,13 +159,13 @@ const PushNotificationsPanel = ({ compact = false }) => {
         setDismissed(true);
     };
 
-    if (compact && (dismissed || status === 'active')) return null;
+    if (compact && !required && (dismissed || status === 'active')) return null;
 
     return (
         <section
             className={`push-notifications ${
                 compact ? 'push-notifications--compact' : ''
-            }`}
+            } ${required ? 'push-notifications--required' : ''}`}
         >
             <div className='push-notifications__header'>
                 <div>
@@ -180,18 +188,26 @@ const PushNotificationsPanel = ({ compact = false }) => {
                         Para recibir avisos directamente en tu iPhone, añade esta
                         aplicacion a la pantalla de inicio.
                     </p>
+                    {required ? (
+                        <p className='push-notifications__warning'>
+                            Es obligatorio activar las notificaciones para poder
+                            seguir usando la app.
+                        </p>
+                    ) : null}
                     <ol>
                         <li>Pulsa el boton Compartir de Safari.</li>
                         <li>Selecciona Añadir a pantalla de inicio.</li>
                         <li>Confirma y abre la aplicacion desde el nuevo icono.</li>
                     </ol>
-                    <button
-                        type='button'
-                        className='push-notifications__ghost'
-                        onClick={handleDismiss}
-                    >
-                        Lo hare mas tarde
-                    </button>
+                    {!required ? (
+                        <button
+                            type='button'
+                            className='push-notifications__ghost'
+                            onClick={handleDismiss}
+                        >
+                            Lo hare mas tarde
+                        </button>
+                    ) : null}
                 </div>
             ) : status === 'denied' ? (
                 <div className='push-notifications__instructions'>
@@ -201,6 +217,12 @@ const PushNotificationsPanel = ({ compact = false }) => {
                         dispositivo. Activalas desde los ajustes del navegador o
                         del sistema y vuelve a intentarlo.
                     </p>
+                    {required ? (
+                        <p className='push-notifications__warning'>
+                            Hasta que vuelvas a permitir los avisos en este
+                            dispositivo no podras continuar usando la app.
+                        </p>
+                    ) : null}
                 </div>
             ) : status === 'unsupported' ? (
                 <div className='push-notifications__instructions'>
@@ -209,6 +231,12 @@ const PushNotificationsPanel = ({ compact = false }) => {
                         Este navegador no permite recibir avisos en segundo plano
                         o la web no esta abierta con una conexion segura.
                     </p>
+                    {required ? (
+                        <p className='push-notifications__warning'>
+                            Usa un navegador compatible y una conexion segura para
+                            poder entrar.
+                        </p>
+                    ) : null}
                 </div>
             ) : (
                 <div className='push-notifications__body'>
@@ -217,6 +245,12 @@ const PushNotificationsPanel = ({ compact = false }) => {
                         tengas una nueva tarea, un cambio de horario o un aviso
                         importante.
                     </p>
+                    {required ? (
+                        <p className='push-notifications__warning'>
+                            Para continuar tienes que aceptar el permiso de
+                            notificaciones en este dispositivo.
+                        </p>
+                    ) : null}
                     <div className='push-notifications__actions'>
                         <button
                             type='button'
@@ -238,7 +272,7 @@ const PushNotificationsPanel = ({ compact = false }) => {
                                 Enviar notificacion de prueba
                             </button>
                         ) : null}
-                        {compact ? (
+                        {compact && !required ? (
                             <button
                                 type='button'
                                 className='push-notifications__ghost'

@@ -214,6 +214,7 @@ const DashboardComponent = () => {
     const [isCommunicationOpen, setIsCommunicationOpen] = useState(true);
     const [isManagementOpen, setIsManagementOpen] = useState(true);
     const [activeMobileGroup, setActiveMobileGroup] = useState('');
+    const [pushReady, setPushReady] = useState(false);
     const hasSetDefault = useRef(false);
     const userRole = String(user?.role || '').trim().toLowerCase();
     const isAdminLike = userRole === 'admin' || userRole === 'sudo';
@@ -810,6 +811,7 @@ const DashboardComponent = () => {
     }
 
     const isWideDashboardView = isAdminLike;
+    const shouldBlockForPush = isEmployeeLike && !pushReady;
 
     return (
         <div
@@ -991,17 +993,34 @@ const DashboardComponent = () => {
                                 ) : null}
                             </div>
                         ) : null}
-                        {!isAdminLike ? topLevelSections.map(renderNavItem) : null}
+                        {!isAdminLike && !shouldBlockForPush
+                            ? topLevelSections.map(renderNavItem)
+                            : null}
                     </nav>
                 </aside>
 
                 {/* CONTENIDO PRINCIPAL */}
                 <main className='dashboard-main'>
-                    {isEmployeeLike ? <PushNotificationsPanel compact /> : null}
-                    {renderSectionContent()}
+                    {shouldBlockForPush ? (
+                        <PushNotificationsPanel
+                            compact
+                            required
+                            onReadyChange={setPushReady}
+                        />
+                    ) : (
+                        <>
+                            {isEmployeeLike ? (
+                                <PushNotificationsPanel
+                                    compact
+                                    onReadyChange={setPushReady}
+                                />
+                            ) : null}
+                            {renderSectionContent()}
+                        </>
+                    )}
                 </main>
             </div>
-            {renderMobileDashboardNav()}
+            {!shouldBlockForPush ? renderMobileDashboardNav() : null}
         </div>
     );
 };
