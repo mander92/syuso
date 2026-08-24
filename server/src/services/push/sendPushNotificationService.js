@@ -61,7 +61,15 @@ export const sendPushNotificationToUsersService = async (
         url: normalizeUrl(notification.url || '/account'),
         tag: notification.tag || 'syuso-notification',
         icon: notification.icon || '/syusoLogo.jpg',
+        timestamp: Date.now(),
     });
+    const pushOptions = {
+        TTL: notification.ttl ?? 60,
+        headers: {
+            Urgency: notification.urgency || 'high',
+            ...(notification.topic ? { Topic: notification.topic } : {}),
+        },
+    };
 
     const results = await Promise.all(
         subscriptions.map(async (row) => {
@@ -74,7 +82,11 @@ export const sendPushNotificationToUsersService = async (
             };
 
             try {
-                await webpush.sendNotification(pushSubscription, payload);
+                await webpush.sendNotification(
+                    pushSubscription,
+                    payload,
+                    pushOptions
+                );
                 await markPushSubscriptionUsedService(row.id);
                 return { id: row.id, userId: row.userId, status: 'sent' };
             } catch (error) {

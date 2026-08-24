@@ -811,7 +811,7 @@ const DashboardComponent = () => {
     }
 
     const isWideDashboardView = isAdminLike;
-    const shouldBlockForPush = isEmployeeLike && !pushReady;
+    const shouldBlockForPush = Boolean(user) && !pushReady;
 
     return (
         <div
@@ -845,7 +845,9 @@ const DashboardComponent = () => {
                     </div>
 
                     <nav className='dashboard-nav'>
-                        {isAdminLike && operativeSections.length > 0 ? (
+                        {isAdminLike &&
+                        !shouldBlockForPush &&
+                        operativeSections.length > 0 ? (
                             <div className='dashboard-navgroup'>
                                 <button
                                     type='button'
@@ -883,7 +885,9 @@ const DashboardComponent = () => {
                                 ) : null}
                             </div>
                         ) : null}
-                        {isAdminLike && administrationSections.length > 0 ? (
+                        {isAdminLike &&
+                        !shouldBlockForPush &&
+                        administrationSections.length > 0 ? (
                             <div className='dashboard-navgroup'>
                                 <button
                                     type='button'
@@ -921,7 +925,9 @@ const DashboardComponent = () => {
                                 ) : null}
                             </div>
                         ) : null}
-                        {isAdminLike && communicationSections.length > 0 ? (
+                        {isAdminLike &&
+                        !shouldBlockForPush &&
+                        communicationSections.length > 0 ? (
                             <div className='dashboard-navgroup'>
                                 <button
                                     type='button'
@@ -959,7 +965,9 @@ const DashboardComponent = () => {
                                 ) : null}
                             </div>
                         ) : null}
-                        {isAdminLike && managementSections.length > 0 ? (
+                        {isAdminLike &&
+                        !shouldBlockForPush &&
+                        managementSections.length > 0 ? (
                             <div className='dashboard-navgroup'>
                                 <button
                                     type='button'
@@ -1009,7 +1017,7 @@ const DashboardComponent = () => {
                         />
                     ) : (
                         <>
-                            {isEmployeeLike ? (
+                            {user ? (
                                 <PushNotificationsPanel
                                     compact
                                     onReadyChange={setPushReady}

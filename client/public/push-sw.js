@@ -12,6 +12,9 @@ self.addEventListener('push', (event) => {
         icon: payload.icon || '/syusoLogo.jpg',
         badge: '/syusoLogo.jpg',
         tag: payload.tag || 'syuso-notification',
+        renotify: true,
+        timestamp: payload.timestamp || Date.now(),
+        vibrate: [120, 80, 120],
         data: {
             url: payload.url || '/account',
         },
