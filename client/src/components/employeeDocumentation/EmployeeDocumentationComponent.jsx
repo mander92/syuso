@@ -7,6 +7,7 @@ import {
     fetchClientDocumentations,
     fetchClientDocumentationDrafts,
     fetchEmployeeDocumentationDrafts,
+    fetchEmployeeDocumentationEmailSettings,
     fetchEmployeeDocumentations,
     fetchEmployeeSignatureDocuments,
     fetchMyEmployeeDocumentation,
@@ -32,10 +33,12 @@ import {
     saveEmployeeDocumentationDraft,
     sendDocumentationDraftLink,
     sendEmployeeLifecycleEmail,
+    updateEmployeeDocumentationEmailSettings,
     uploadEmployeeSignatureDocument,
     validateEmployeeSignatureDocument,
 } from '../../services/employeeDocumentationService.js';
 import { fetchAdminUpdateUserServices } from '../../services/userService.js';
+import { fetchDelegations } from '../../services/delegationService.js';
 import './EmployeeDocumentationComponent.css';
 
 const fileFields = [
@@ -158,14 +161,19 @@ const getEmptyDraftEmploymentForm = () => ({
     workCenter: '',
 });
 
+const getEmptyCreateWorkerForm = () => ({
+    city: '',
+    sendHireEmail: false,
+    employmentPercentage: '',
+    contractType: '',
+    startDate: getTodayDateInput(),
+    workCenter: '',
+});
+
 const getEmptyTerminationForm = () => ({
     terminationDate: getTodayDateInput(),
     terminationReason: 'voluntary',
 });
-
-const DRAFT_LINK_EMAILS_STORAGE_KEY = 'syuso_documentation_draft_link_emails';
-const DRAFT_LINK_CC_EMAILS_STORAGE_KEY =
-    'syuso_documentation_draft_link_cc_emails';
 
 const normalizeDocumentation = (data) => ({
     ...emptyForm,
@@ -192,7 +200,9 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
     const { user } = useUser();
     const { alertNotifications, markNotificationRead } = useChatNotifications();
     const isAdminLike = user?.role === 'admin' || user?.role === 'sudo';
+    const isSudo = user?.role === 'sudo';
     const [items, setItems] = useState([]);
+    const [delegations, setDelegations] = useState([]);
     const [selectedUserId, setSelectedUserId] = useState('');
     const [documentationModalOpen, setDocumentationModalOpen] = useState(false);
     const [form, setForm] = useState(emptyForm);
@@ -221,20 +231,12 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
         status: 'draft',
     });
     const [draftFiles, setDraftFiles] = useState({});
-    const [draftLinkEmails, setDraftLinkEmails] = useState(() => {
-        try {
-            return localStorage.getItem(DRAFT_LINK_EMAILS_STORAGE_KEY) || '';
-        } catch {
-            return '';
-        }
-    });
-    const [draftLinkCcEmails, setDraftLinkCcEmails] = useState(() => {
-        try {
-            return localStorage.getItem(DRAFT_LINK_CC_EMAILS_STORAGE_KEY) || '';
-        } catch {
-            return '';
-        }
-    });
+    const [draftLinkEmails, setDraftLinkEmails] = useState('');
+    const [draftLinkCcEmails, setDraftLinkCcEmails] = useState('');
+    const [createWorkerModalOpen, setCreateWorkerModalOpen] = useState(false);
+    const [createWorkerForm, setCreateWorkerForm] = useState(
+        getEmptyCreateWorkerForm
+    );
     const [draftEmploymentModalOpen, setDraftEmploymentModalOpen] =
         useState(false);
     const [draftEmploymentAction, setDraftEmploymentAction] =
@@ -449,19 +451,31 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
         setLoading(true);
         try {
             if (isAdminLike) {
-                const data = await fetchEmployeeDocumentations(authToken);
-                const draftData = await fetchEmployeeDocumentationDrafts(authToken);
-                const clientData = await fetchClientDocumentations(authToken);
-                const clientDraftData =
-                    await fetchClientDocumentationDrafts(authToken);
-                const signatureData = await fetchEmployeeSignatureDocuments({
-                    authToken,
-                });
+                const [
+                    data,
+                    draftData,
+                    clientData,
+                    clientDraftData,
+                    signatureData,
+                    delegationData,
+                    emailSettings,
+                ] = await Promise.all([
+                    fetchEmployeeDocumentations(authToken),
+                    fetchEmployeeDocumentationDrafts(authToken),
+                    fetchClientDocumentations(authToken),
+                    fetchClientDocumentationDrafts(authToken),
+                    fetchEmployeeSignatureDocuments({ authToken }),
+                    fetchDelegations(authToken),
+                    fetchEmployeeDocumentationEmailSettings(authToken),
+                ]);
                 setItems(data || []);
                 setDrafts(draftData || []);
                 setClientItems(clientData || []);
                 setClientDrafts(clientDraftData || []);
                 setSignatureDocuments(signatureData || []);
+                setDelegations(delegationData || []);
+                setDraftLinkEmails(emailSettings?.emails || '');
+                setDraftLinkCcEmails(emailSettings?.ccEmails || '');
                 const firstId = data?.[0]?.userId || '';
                 setSelectedUserId((prev) => prev || firstId);
                 if (firstId && !selectedUserId) {
@@ -493,28 +507,6 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
         );
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [focusEmployeeId, isAdminLike, authToken]);
-
-    useEffect(() => {
-        try {
-            localStorage.setItem(
-                DRAFT_LINK_EMAILS_STORAGE_KEY,
-                draftLinkEmails
-            );
-        } catch {
-            // ignore storage errors
-        }
-    }, [draftLinkEmails]);
-
-    useEffect(() => {
-        try {
-            localStorage.setItem(
-                DRAFT_LINK_CC_EMAILS_STORAGE_KEY,
-                draftLinkCcEmails
-            );
-        } catch {
-            // ignore storage errors
-        }
-    }, [draftLinkCcEmails]);
 
     const selectEmployee = async (userId) => {
         setSelectedUserId(userId);
@@ -1057,31 +1049,98 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
         }
     };
 
-    const handleCreateWorkerFromDraft = async () => {
+    const handleOpenCreateWorkerModal = () => {
         if (!selectedDraftId) return;
-        if (
-            !window.confirm(
-                'Se creara un trabajador con esta ficha y se le enviaran credenciales por email. Continuar?'
-            )
-        ) {
+        setCreateWorkerForm({
+            ...getEmptyCreateWorkerForm(),
+            city:
+                draftForm.city ||
+                (delegations.length === 1 ? delegations[0].name : ''),
+        });
+        setCreateWorkerModalOpen(true);
+    };
+
+    const handleCreateWorkerFormChange = (field, value) => {
+        setCreateWorkerForm((prev) => ({
+            ...prev,
+            [field]: value,
+        }));
+    };
+
+    const handleSaveDraftEmailSettings = async () => {
+        if (!isSudo) return;
+        try {
+            setSaving(true);
+            const data = await updateEmployeeDocumentationEmailSettings({
+                authToken,
+                emails: draftLinkEmails,
+                ccEmails: draftLinkCcEmails,
+            });
+            setDraftLinkEmails(data?.emails || '');
+            setDraftLinkCcEmails(data?.ccEmails || '');
+            alert('Correos de alta guardados.');
+        } catch (error) {
+            alert(error.message || 'No se pudieron guardar los correos');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleCreateWorkerFromDraft = async (event) => {
+        event.preventDefault();
+        if (!selectedDraftId) return;
+        if (createWorkerForm.sendHireEmail && !draftLinkEmails.trim()) {
+            alert('Indica al menos un correo para enviar el alta');
             return;
         }
+
         try {
-            await createUserFromDocumentationDraft(
+            setSaving(true);
+            const created = await createUserFromDocumentationDraft(
                 authToken,
-                selectedDraftId
+                selectedDraftId,
+                {
+                    city: createWorkerForm.city,
+                }
             );
+            const linkedUserId = created?.linkedUserId;
+
+            if (createWorkerForm.sendHireEmail && linkedUserId) {
+                await sendEmployeeLifecycleEmail({
+                    authToken,
+                    userId: linkedUserId,
+                    payload: {
+                        action: 'hire',
+                        emails: draftLinkEmails,
+                        ccEmails: draftLinkCcEmails,
+                        employmentPercentage:
+                            createWorkerForm.employmentPercentage,
+                        contractType: createWorkerForm.contractType,
+                        startDate: createWorkerForm.startDate,
+                        workCenter: createWorkerForm.workCenter,
+                    },
+                });
+            }
+
             setDraftForm(emptyForm);
             setSelectedDraftId('');
+            setCreateWorkerModalOpen(false);
+            setCreateWorkerForm(getEmptyCreateWorkerForm());
             const [draftList, employeeList] = await Promise.all([
                 fetchEmployeeDocumentationDrafts(authToken),
                 fetchEmployeeDocumentations(authToken),
             ]);
             setDrafts(draftList || []);
             setItems(employeeList || []);
-            alert('Trabajador creado y documentacion vinculada.');
+            alert(
+                createWorkerForm.sendHireEmail
+                    ? 'Trabajador creado, documentacion vinculada y alta enviada.'
+                    : 'Trabajador creado y documentacion vinculada.'
+            );
         } catch (error) {
             alert(error.message || 'No se pudo crear el trabajador');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -1477,6 +1536,7 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                             onChange={(event) =>
                                 setDraftLinkEmails(event.target.value)
                             }
+                            disabled={!isSudo}
                             placeholder='correo1@empresa.com, correo2@empresa.com'
                         />
                     </div>
@@ -1488,9 +1548,22 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                             onChange={(event) =>
                                 setDraftLinkCcEmails(event.target.value)
                             }
+                            disabled={!isSudo}
                             placeholder='copia1@empresa.com, copia2@empresa.com'
                         />
                     </div>
+                    {isSudo ? (
+                        <div className='employee-documentation-actions'>
+                            <button
+                                type='button'
+                                className='employee-documentation-btn'
+                                onClick={handleSaveDraftEmailSettings}
+                                disabled={saving}
+                            >
+                                Guardar correos
+                            </button>
+                        </div>
+                    ) : null}
                 </div>
             ) : null}
 
@@ -2116,7 +2189,7 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                                 type='button'
                                 className='employee-documentation-btn employee-documentation-btn--ghost'
                                 disabled={!selectedDraftId || draftForm.linkedUserId}
-                                onClick={handleCreateWorkerFromDraft}
+                                onClick={handleOpenCreateWorkerModal}
                             >
                                 Crear trabajador
                             </button>
@@ -2894,6 +2967,157 @@ const EmployeeDocumentationComponent = ({ focusEmployeeId = '' } = {}) => {
                                 disabled={saving}
                             >
                                 {saving ? 'Guardando...' : 'Confirmar baja'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            ) : null}
+            {createWorkerModalOpen ? (
+                <div
+                    className='employee-signature-modal'
+                    role='presentation'
+                    onClick={() => setCreateWorkerModalOpen(false)}
+                >
+                    <form
+                        className='employee-signature-modal__panel'
+                        onSubmit={handleCreateWorkerFromDraft}
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <header>
+                            <div>
+                                <h3>Crear trabajador</h3>
+                                <p>
+                                    Selecciona la delegacion y decide si quieres
+                                    enviar el alta con la documentacion adjunta.
+                                </p>
+                            </div>
+                            <button
+                                type='button'
+                                className='employee-documentation-btn employee-documentation-btn--ghost'
+                                onClick={() => setCreateWorkerModalOpen(false)}
+                            >
+                                Cerrar
+                            </button>
+                        </header>
+
+                        <div className='employee-documentation-grid'>
+                            <div className='employee-documentation-field'>
+                                <label>Delegacion</label>
+                                <select
+                                    value={createWorkerForm.city}
+                                    onChange={(event) =>
+                                        handleCreateWorkerFormChange(
+                                            'city',
+                                            event.target.value
+                                        )
+                                    }
+                                    required
+                                >
+                                    <option value=''>
+                                        Seleccionar delegacion
+                                    </option>
+                                    {delegations.map((delegation) => (
+                                        <option
+                                            key={delegation.id}
+                                            value={delegation.name}
+                                        >
+                                            {delegation.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <label className='employee-documentation-check'>
+                                <input
+                                    type='checkbox'
+                                    checked={createWorkerForm.sendHireEmail}
+                                    onChange={(event) =>
+                                        handleCreateWorkerFormChange(
+                                            'sendHireEmail',
+                                            event.target.checked
+                                        )
+                                    }
+                                />
+                                Enviar alta al crear
+                            </label>
+                        </div>
+
+                        {createWorkerForm.sendHireEmail ? (
+                            <div className='employee-documentation-grid'>
+                                <div className='employee-documentation-field'>
+                                    <label>Porcentaje de alta</label>
+                                    <input
+                                        value={
+                                            createWorkerForm.employmentPercentage
+                                        }
+                                        onChange={(event) =>
+                                            handleCreateWorkerFormChange(
+                                                'employmentPercentage',
+                                                event.target.value
+                                            )
+                                        }
+                                        placeholder='100%, 50%, 20 h...'
+                                        required
+                                    />
+                                </div>
+                                <div className='employee-documentation-field'>
+                                    <label>Tipo de contrato</label>
+                                    <input
+                                        value={createWorkerForm.contractType}
+                                        onChange={(event) =>
+                                            handleCreateWorkerFormChange(
+                                                'contractType',
+                                                event.target.value
+                                            )
+                                        }
+                                        placeholder='Indefinido, temporal...'
+                                        required
+                                    />
+                                </div>
+                                <div className='employee-documentation-field'>
+                                    <label>Fecha de alta</label>
+                                    <input
+                                        type='date'
+                                        value={createWorkerForm.startDate}
+                                        onChange={(event) =>
+                                            handleCreateWorkerFormChange(
+                                                'startDate',
+                                                event.target.value
+                                            )
+                                        }
+                                        required
+                                    />
+                                </div>
+                                <div className='employee-documentation-field'>
+                                    <label>Centro de trabajo</label>
+                                    <input
+                                        value={createWorkerForm.workCenter}
+                                        onChange={(event) =>
+                                            handleCreateWorkerFormChange(
+                                                'workCenter',
+                                                event.target.value
+                                            )
+                                        }
+                                        placeholder='Servicio o centro'
+                                        required
+                                    />
+                                </div>
+                            </div>
+                        ) : null}
+
+                        <div className='employee-documentation-actions'>
+                            <button
+                                type='button'
+                                className='employee-documentation-btn employee-documentation-btn--ghost'
+                                onClick={() => setCreateWorkerModalOpen(false)}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type='submit'
+                                className='employee-documentation-btn'
+                                disabled={saving}
+                            >
+                                {saving ? 'Creando...' : 'Crear trabajador'}
                             </button>
                         </div>
                     </form>

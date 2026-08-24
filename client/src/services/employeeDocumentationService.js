@@ -413,6 +413,37 @@ export const sendEmployeeLifecycleEmail = async ({
     return assertOk(await readJsonBody(res));
 };
 
+export const fetchEmployeeDocumentationEmailSettings = async (authToken) => {
+    const res = await fetch(
+        `${VITE_API_URL}/employee-documentation-email-settings`,
+        {
+            headers: { Authorization: authToken },
+        }
+    );
+
+    return assertOk(await readJsonBody(res));
+};
+
+export const updateEmployeeDocumentationEmailSettings = async ({
+    authToken,
+    emails,
+    ccEmails,
+}) => {
+    const res = await fetch(
+        `${VITE_API_URL}/employee-documentation-email-settings`,
+        {
+            method: 'PUT',
+            headers: {
+                Authorization: authToken,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ emails, ccEmails }),
+        }
+    );
+
+    return assertOk(await readJsonBody(res));
+};
+
 export const fetchEmployeeDocumentationDrafts = async (authToken) => {
     const res = await fetch(`${VITE_API_URL}/employee-documentation-drafts`, {
         headers: { Authorization: authToken },
@@ -447,12 +478,20 @@ export const saveEmployeeDocumentationDraft = async ({
     return assertOk(await readJsonBody(res));
 };
 
-export const createUserFromDocumentationDraft = async (authToken, draftId) => {
+export const createUserFromDocumentationDraft = async (
+    authToken,
+    draftId,
+    data = {}
+) => {
     const res = await fetch(
         `${VITE_API_URL}/employee-documentation-drafts/${draftId}/create-user`,
         {
             method: 'POST',
-            headers: { Authorization: authToken },
+            headers: {
+                Authorization: authToken,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
         }
     );
     return assertOk(await readJsonBody(res));

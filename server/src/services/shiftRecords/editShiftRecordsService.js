@@ -7,10 +7,12 @@ const editShiftRecordsService = async (clockIn, clockOut, shiftRecordId) => {
         `
         UPDATE shiftRecords
         SET clockIn = STR_TO_DATE(?, '%Y-%m-%d %H:%i:%s'),
-            clockOut = STR_TO_DATE(?, '%Y-%m-%d %H:%i:%s')
+            clockOut = STR_TO_DATE(?, '%Y-%m-%d %H:%i:%s'),
+            realClockIn = STR_TO_DATE(?, '%Y-%m-%d %H:%i:%s'),
+            realClockOut = STR_TO_DATE(?, '%Y-%m-%d %H:%i:%s')
         WHERE id = ?
         `,
-        [clockIn, clockOut, shiftRecordId]
+        [clockIn, clockOut, clockIn, clockOut, shiftRecordId]
     );
 };
 

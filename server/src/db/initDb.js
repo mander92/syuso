@@ -682,6 +682,17 @@ const initDb = async () => {
 
         await pool.query(
             `
+            CREATE TABLE IF NOT EXISTS employeeDocumentationEmailSettings (
+            id TINYINT PRIMARY KEY NOT NULL,
+            emails TEXT,
+            ccEmails TEXT,
+            modifiedBy CHAR(36),
+            modifiedAt TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);
+            `
+        );
+
+        await pool.query(
+            `
             CREATE TABLE IF NOT EXISTS employeeSignatureDocuments (
             id CHAR(36) PRIMARY KEY NOT NULL,
             employeeId CHAR(36) NOT NULL,

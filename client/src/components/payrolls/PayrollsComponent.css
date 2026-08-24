@@ -164,9 +164,15 @@
     gap: 0.65rem;
 }
 
+.payrolls-list--admin {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+}
+
 .payrolls-match-group {
     display: grid;
     gap: 0.65rem;
+    min-width: 0;
 }
 
 .payrolls-match-actions {
@@ -320,6 +326,7 @@
 @media (max-width: 900px) {
     .payrolls-layout,
     .payrolls-grid,
+    .payrolls-list--admin,
     .payrolls-filters,
     .payrolls-import-grid,
     .payrolls-edit-grid {

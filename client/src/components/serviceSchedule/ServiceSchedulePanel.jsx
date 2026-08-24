@@ -1563,7 +1563,7 @@ const ServiceSchedulePanel = ({
                 </div>
             </div>
 
-            <div className='service-schedule-section'>
+            <div className='service-schedule-section service-schedule-section--import'>
                 <div className='service-schedule-section-header'>
                     <div>
                         <h3>Importar Excel</h3>

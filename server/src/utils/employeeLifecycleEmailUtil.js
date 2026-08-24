@@ -153,6 +153,7 @@ export const sendEmployeeLifecycleEmail = async ({
         ['Email', employee?.email],
         ['DNI', employee?.dni],
         ['TIP', employee?.tip],
+        ['Delegacion', employee?.city],
         ['Fecha de nacimiento', formatDate(employee?.birthDate)],
         ['Telefono', employee?.phone || employee?.userPhone],
         ['Direccion', employee?.address],

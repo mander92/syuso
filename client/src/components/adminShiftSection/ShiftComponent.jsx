@@ -82,6 +82,15 @@ const ShiftComponent = ({
         return new Date(year, month - 1, day, hour, minute, second);
     };
 
+    const toDateTimeLocalValue = (value) => {
+        const date = toMadridDate(value) || parseLocalDateTime(value);
+        if (!date) return '';
+        const pad = (number) => String(number).padStart(2, '0');
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+            date.getDate()
+        )}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    };
+
     useEffect(() => {
         const loadEmployees = async () => {
             if (!authToken || !isAdminLike) return;
@@ -506,10 +515,10 @@ const ShiftComponent = ({
                             : prev?.employeeName,
                 }));
                 setModalClockIn(
-                    data?.clockIn ? data.clockIn.slice(0, 16) : ''
+                    toDateTimeLocalValue(data?.realClockIn || data?.clockIn)
                 );
                 setModalClockOut(
-                    data?.clockOut ? data.clockOut.slice(0, 16) : ''
+                    toDateTimeLocalValue(data?.realClockOut || data?.clockOut)
                 );
             })
             .catch((error) => {

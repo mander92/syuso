@@ -645,6 +645,9 @@ const WorkReportsComponent = ({
     };
 
     const handleOpenDeleteModal = () => {
+        if (!window.confirm('¿Estas seguro de que quieres eliminar partes?')) {
+            return;
+        }
         setDeleteModalOpen(true);
     };
 

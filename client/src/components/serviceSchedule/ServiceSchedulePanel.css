@@ -46,6 +46,26 @@
     flex-wrap: wrap;
 }
 
+.service-schedule-panel > .service-schedule-header {
+    order: 0;
+}
+
+.service-schedule-panel > .service-schedule-section {
+    order: 4;
+}
+
+.service-schedule-panel > .service-schedule-section--wide {
+    order: 1;
+}
+
+.service-schedule-panel > .service-schedule-new {
+    order: 2;
+}
+
+.service-schedule-panel > .service-schedule-section--import {
+    order: 3;
+}
+
 .service-schedule-header h2 {
     margin: 0;
     font-size: 20px;

@@ -442,13 +442,7 @@ const ServiceDetail = () => {
 
     if (user && user.role !== 'admin' && user.role !== 'sudo') {
         return (
-            <div
-                className={`service-detail-page${
-                    ['schedule', 'shifts', 'workReports'].includes(activeTab)
-                        ? ' service-detail-page--wide'
-                        : ''
-                }`}
-            >
+            <div className='service-detail-page'>
                 <div className='service-detail-card'>
                     <h2>Acceso restringido</h2>
                     <p>Solo administradores pueden ver este detalle.</p>
@@ -461,13 +455,7 @@ const ServiceDetail = () => {
     }
 
     return (
-        <div
-            className={`service-detail-page${
-                ['schedule', 'shifts', 'workReports'].includes(activeTab)
-                    ? ' service-detail-page--wide'
-                    : ''
-            }`}
-        >
+        <div className='service-detail-page'>
             <div className='service-detail-header'>
                 <div>
                     <h1>Detalle del servicio</h1>

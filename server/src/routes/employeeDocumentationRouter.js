@@ -2,6 +2,7 @@ import express from 'express';
 
 import authUser from '../middleware/authUser.js';
 import isAdmin from '../middleware/isAdmin.js';
+import isSudo from '../middleware/isSudo.js';
 import listEmployeeDocumentationsController from '../controllers/employeeDocumentation/listEmployeeDocumentationsController.js';
 import listEmployeeDocumentationDraftsController from '../controllers/employeeDocumentation/listEmployeeDocumentationDraftsController.js';
 import getEmployeeDocumentationController from '../controllers/employeeDocumentation/getEmployeeDocumentationController.js';
@@ -21,6 +22,8 @@ import getEmployeeDocumentationDraftFileController from '../controllers/employee
 import createDocumentationDraftTokenController from '../controllers/employeeDocumentation/createDocumentationDraftTokenController.js';
 import sendDocumentationDraftLinkController from '../controllers/employeeDocumentation/sendDocumentationDraftLinkController.js';
 import sendEmployeeLifecycleEmailController from '../controllers/employeeDocumentation/sendEmployeeLifecycleEmailController.js';
+import getEmployeeDocumentationEmailSettingsController from '../controllers/employeeDocumentation/getEmployeeDocumentationEmailSettingsController.js';
+import updateEmployeeDocumentationEmailSettingsController from '../controllers/employeeDocumentation/updateEmployeeDocumentationEmailSettingsController.js';
 import deleteEmployeeDocumentationDraftController from '../controllers/employeeDocumentation/deleteEmployeeDocumentationDraftController.js';
 import clearEmployeeDocumentationDraftFileController from '../controllers/employeeDocumentation/clearEmployeeDocumentationDraftFileController.js';
 import getPublicDocumentationDraftController from '../controllers/employeeDocumentation/getPublicDocumentationDraftController.js';
@@ -39,6 +42,18 @@ import deleteClientDocumentationDraftController from '../controllers/clientDocum
 
 const router = express.Router();
 
+router.get(
+    '/employee-documentation-email-settings',
+    authUser,
+    isAdmin,
+    getEmployeeDocumentationEmailSettingsController
+);
+router.put(
+    '/employee-documentation-email-settings',
+    authUser,
+    isSudo,
+    updateEmployeeDocumentationEmailSettingsController
+);
 router.get(
     '/employee-documentations',
     authUser,

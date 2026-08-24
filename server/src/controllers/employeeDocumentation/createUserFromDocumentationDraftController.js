@@ -5,10 +5,12 @@ import insertAdminService from '../../services/users/insertUserAdminService.js';
 import getPool from '../../db/getPool.js';
 import selectEmployeeDocumentationDraftService from '../../services/employeeDocumentation/selectEmployeeDocumentationDraftService.js';
 import upsertEmployeeDocumentationService from '../../services/employeeDocumentation/upsertEmployeeDocumentationService.js';
+import selectDelegationsService from '../../services/delegations/selectDelegationsService.js';
 import { emitDocumentationChanged } from '../../utils/documentationNotificationUtil.js';
 
 const createUserFromDocumentationDraftController = async (req, res, next) => {
     try {
+        const city = String(req.body?.city || '').trim();
         const { draftId } = req.params;
         const draft = await selectEmployeeDocumentationDraftService(draftId);
         if (!draft) generateErrorUtil('Ficha pendiente no encontrada', 404);
@@ -25,6 +27,17 @@ const createUserFromDocumentationDraftController = async (req, res, next) => {
             );
         }
 
+        if (city) {
+            const delegations = await selectDelegationsService(
+                req.userLogged.id,
+                req.userLogged.role
+            );
+            const allowedNames = delegations.map((delegation) => delegation.name);
+            if (!allowedNames.includes(city)) {
+                generateErrorUtil('Delegacion no valida', 400);
+            }
+        }
+
         const password = randomstring.generate(10);
         const userId = await insertAdminService(
             'employee',
@@ -36,7 +49,7 @@ const createUserFromDocumentationDraftController = async (req, res, next) => {
             draft.tip,
             draft.phone,
             'Vigilante',
-            null,
+            city || null,
             [],
             null
         );

@@ -359,14 +359,14 @@ const PayrollsComponent = () => {
             groupedPayrolls
                 .filter((item) => item.isMonthHeader)
                 .forEach((group) => {
-                    next[group.month] = prev[group.month] ?? true;
-            });
+                    next[group.month] = prev[group.month] ?? false;
+                });
             payrollMatchGroups.forEach((matchGroup) => {
                 matchGroup.rows
                     .filter((item) => item.isMonthHeader)
                     .forEach((group) => {
                         next[`${matchGroup.key}-${group.month}`] =
-                            prev[`${matchGroup.key}-${group.month}`] ?? true;
+                            prev[`${matchGroup.key}-${group.month}`] ?? false;
                     });
             });
             return next;
@@ -728,7 +728,11 @@ const PayrollsComponent = () => {
                     ) : null}
                 </div>
                 {loading ? <p className='payrolls-muted'>Cargando...</p> : null}
-                <div className='payrolls-list'>
+                <div
+                    className={`payrolls-list${
+                        isAdminLike ? ' payrolls-list--admin' : ''
+                    }`}
+                >
                     {isAdminLike
                         ? payrollMatchGroups.map((group) => (
                               <div
