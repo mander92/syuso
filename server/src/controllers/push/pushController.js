@@ -7,9 +7,13 @@ import {
     disablePushSubscriptionService,
     listPushAdminSummaryService,
     listPushSubscriptionsByUserService,
+    selectPushSubscriptionByEndpointService,
     upsertPushSubscriptionService,
 } from '../../services/push/pushSubscriptionService.js';
-import { sendPushNotificationToUserService } from '../../services/push/sendPushNotificationService.js';
+import {
+    sendPushNotificationToSubscriptionService,
+    sendPushNotificationToUserService,
+} from '../../services/push/sendPushNotificationService.js';
 
 const subscriptionSchema = Joi.object({
     endpoint: Joi.string().uri().max(2000).required(),
@@ -32,6 +36,10 @@ const deviceSchema = Joi.object({
 const registerSchema = Joi.object({
     subscription: subscriptionSchema,
     device: deviceSchema,
+});
+
+const currentDeviceTestSchema = Joi.object({
+    endpoint: Joi.string().uri().max(2000).required(),
 });
 
 export const getPushConfigController = async (req, res, next) => {
@@ -128,6 +136,40 @@ export const sendTestPushController = async (req, res, next) => {
             url: '/account',
             tag: 'push-test',
         });
+        res.send({ status: 'ok', data: result });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const sendCurrentDeviceTestPushController = async (req, res, next) => {
+    try {
+        const { error, value } = currentDeviceTestSchema.validate(req.body || {}, {
+            abortEarly: true,
+            stripUnknown: true,
+        });
+        if (error) generateErrorUtil(error.message, 400);
+
+        const subscription = await selectPushSubscriptionByEndpointService({
+            userId: req.userLogged.id,
+            endpoint: value.endpoint,
+        });
+        if (!subscription || !subscription.enabled) {
+            generateErrorUtil(
+                'Este dispositivo no tiene una suscripcion push activa',
+                404
+            );
+        }
+
+        const result = await sendPushNotificationToSubscriptionService(
+            subscription,
+            {
+                title: 'Prueba',
+                body: 'Notificacion de prueba',
+                url: '/account',
+                tag: `push-test-${subscription.id}`,
+            }
+        );
         res.send({ status: 'ok', data: result });
     } catch (error) {
         next(error);

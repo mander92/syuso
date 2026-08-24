@@ -3,7 +3,7 @@ import { v4 as uuid } from 'uuid';
 
 import getPool from '../../db/getPool.js';
 
-const hashEndpoint = (endpoint) =>
+export const hashEndpoint = (endpoint) =>
     crypto.createHash('sha256').update(endpoint).digest('hex');
 
 export const normalizePushSubscriptionRow = (row) => ({
@@ -50,6 +50,26 @@ export const listActivePushSubscriptionsForUsersService = async (userIds) => {
     );
 
     return rows;
+};
+
+export const selectPushSubscriptionByEndpointService = async ({
+    userId,
+    endpoint,
+}) => {
+    const pool = await getPool();
+    const [rows] = await pool.query(
+        `
+            SELECT *
+            FROM pushSubscriptions
+            WHERE userId = ?
+              AND endpointHash = ?
+              AND deletedAt IS NULL
+            LIMIT 1
+        `,
+        [userId, hashEndpoint(endpoint)]
+    );
+
+    return rows[0] || null;
 };
 
 export const upsertPushSubscriptionService = async ({

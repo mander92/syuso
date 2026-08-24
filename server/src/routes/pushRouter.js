@@ -9,6 +9,7 @@ import {
     listMyPushSubscriptionsController,
     listPushAdminSummaryController,
     registerPushSubscriptionController,
+    sendCurrentDeviceTestPushController,
     sendTestPushController,
 } from '../controllers/push/pushController.js';
 
@@ -28,6 +29,7 @@ router.delete(
     deletePushSubscriptionController
 );
 router.post('/push/test', authUser, sendTestPushController);
+router.post('/push/test-current', authUser, sendCurrentDeviceTestPushController);
 router.get('/push/admin/users', authUser, isAdmin, listPushAdminSummaryController);
 
 export default router;

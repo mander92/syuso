@@ -3,7 +3,9 @@ self.addEventListener('push', (event) => {
     try {
         payload = event.data ? event.data.json() : {};
     } catch {
-        payload = {};
+        payload = {
+            body: event.data?.text() || '',
+        };
     }
 
     const title = payload.title || 'SYUSO Seguridad';

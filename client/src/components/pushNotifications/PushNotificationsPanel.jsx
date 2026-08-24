@@ -14,7 +14,9 @@ import {
     disablePushSubscription,
     fetchPushConfig,
     fetchPushSubscriptions,
+    getCurrentPushSubscriptionJson,
     registerCurrentDeviceForPush,
+    sendCurrentDeviceTestPushNotification,
     sendTestPushNotification,
 } from '../../services/pushNotificationService.js';
 import './PushNotificationsPanel.css';
@@ -69,6 +71,7 @@ const PushNotificationsPanel = ({
     const { authToken } = useContext(AuthContext);
     const [environment, setEnvironment] = useState(detectPushEnvironment);
     const [config, setConfig] = useState({ configured: false, vapidPublicKey: '' });
+    const [currentSubscription, setCurrentSubscription] = useState(null);
     const [subscriptions, setSubscriptions] = useState([]);
     const [loading, setLoading] = useState(false);
     const [showIosGuide, setShowIosGuide] = useState(required);
@@ -85,14 +88,19 @@ const PushNotificationsPanel = ({
         () => subscriptions.filter((item) => item.enabled),
         [subscriptions]
     );
+    const currentBackendSubscription = useMemo(() => {
+        const endpoint = currentSubscription?.endpoint;
+        if (!endpoint) return null;
+        return activeSubscriptions.find((item) => item.endpoint === endpoint) || null;
+    }, [activeSubscriptions, currentSubscription]);
 
     const status = useMemo(() => {
         if (environment.needsInstallation) return 'iosInstall';
         if (environment.permission === 'denied') return 'denied';
-        if (activeSubscriptions.length > 0) return 'active';
+        if (currentBackendSubscription) return 'active';
         if (!environment.supportsPush) return 'unsupported';
         return 'missing';
-    }, [activeSubscriptions.length, environment]);
+    }, [currentBackendSubscription, environment]);
 
     const iosInstallSteps = getIosInstallSteps(environment.browserName);
     const isInstalledIosPending =
@@ -106,13 +114,20 @@ const PushNotificationsPanel = ({
         if (!authToken) return;
         try {
             if (!silent) setLoading(true);
-            setEnvironment(detectPushEnvironment());
+            const nextEnvironment = detectPushEnvironment();
+            setEnvironment(nextEnvironment);
             const [nextConfig, nextSubscriptions] = await Promise.all([
                 fetchPushConfig(authToken),
                 fetchPushSubscriptions(authToken),
             ]);
             setConfig(nextConfig);
             setSubscriptions(nextSubscriptions || []);
+            if (nextEnvironment.supportsPush) {
+                const browserSubscription = await getCurrentPushSubscriptionJson();
+                setCurrentSubscription(browserSubscription);
+            } else {
+                setCurrentSubscription(null);
+            }
         } catch (error) {
             if (!silent) toast.error(error.message);
         } finally {
@@ -133,6 +148,7 @@ const PushNotificationsPanel = ({
             });
             setSubscriptions(data.subscriptions || []);
             setEnvironment(detectPushEnvironment());
+            setCurrentSubscription(await getCurrentPushSubscriptionJson());
             localStorage.removeItem('syusoPushReminderDismissedAt');
             toast.success('Notificaciones activadas');
         } catch (error) {
@@ -178,13 +194,24 @@ const PushNotificationsPanel = ({
     const handleTest = async () => {
         try {
             setLoading(true);
-            const result = await sendTestPushNotification(authToken);
+            const endpoint = currentSubscription?.endpoint;
+            const result = endpoint
+                ? await sendCurrentDeviceTestPushNotification({
+                      authToken,
+                      endpoint,
+                  })
+                : await sendTestPushNotification(authToken);
             if (result.skipped) {
                 toast.error('Faltan las claves de notificaciones en el servidor');
             } else if (result.sent > 0) {
                 toast.success('Notificacion de prueba enviada');
             } else {
-                toast.error('No hay dispositivos activos para enviar la prueba');
+                const detail = result.results?.[0];
+                toast.error(
+                    detail?.httpStatus
+                        ? `No se pudo enviar. HTTP ${detail.httpStatus}`
+                        : 'No hay dispositivos activos para enviar la prueba'
+                );
             }
             await loadPushState({ silent: true });
         } catch (error) {

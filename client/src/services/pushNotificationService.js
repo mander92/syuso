@@ -122,6 +122,11 @@ export const getCurrentBrowserSubscription = async () => {
     return registration.pushManager.getSubscription();
 };
 
+export const getCurrentPushSubscriptionJson = async () => {
+    const subscription = await getCurrentBrowserSubscription();
+    return subscription?.toJSON() || null;
+};
+
 export const registerCurrentDeviceForPush = async ({
     authToken,
     vapidPublicKey,
@@ -216,6 +221,21 @@ export const sendTestPushNotification = async (authToken) => {
     const res = await fetch(`${VITE_API_URL}/push/test`, {
         method: 'POST',
         headers: { Authorization: authToken },
+    });
+    return assertOk(await readJsonBody(res));
+};
+
+export const sendCurrentDeviceTestPushNotification = async ({
+    authToken,
+    endpoint,
+}) => {
+    const res = await fetch(`${VITE_API_URL}/push/test-current`, {
+        method: 'POST',
+        headers: {
+            Authorization: authToken,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ endpoint }),
     });
     return assertOk(await readJsonBody(res));
 };

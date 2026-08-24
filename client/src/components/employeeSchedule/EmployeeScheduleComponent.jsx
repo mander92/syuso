@@ -120,42 +120,55 @@ const EmployeeScheduleComponent = () => {
 
     return (
         <section className='employee-schedule'>
-            <header className='employee-schedule-header'>
-                <div>
-                    <h2>Mis Cuadrantes</h2>
-                    <p>Turnos programados por servicio y mes.</p>
-                </div>
-                <div className='employee-schedule-actions'>
-                    <label htmlFor='employee-schedule-month'>Mes</label>
-                    <input
-                        id='employee-schedule-month'
-                        type='month'
-                        value={month}
-                        onChange={(event) => setMonth(event.target.value)}
-                    />
-                </div>
-            </header>
+            <div className='employee-schedule-panel schedule-service-modal__panel'>
+                <header className='employee-schedule-panel__header schedule-service-modal__header'>
+                    <div>
+                        <h2>Mis Cuadrantes</h2>
+                        <p>Turnos programados por servicio y mes.</p>
+                    </div>
+                    <div className='schedule-service-modal__header-actions'>
+                        <label
+                            className='schedule-service-modal__month'
+                            htmlFor='employee-schedule-month'
+                        >
+                            <span>Mes</span>
+                            <input
+                                id='employee-schedule-month'
+                                type='month'
+                                value={month}
+                                onChange={(event) => setMonth(event.target.value)}
+                            />
+                        </label>
+                    </div>
+                </header>
 
-            {isLoading ? (
-                <p className='employee-schedule-empty'>Cargando turnos...</p>
-            ) : shifts.length ? (
-                <div className='employee-schedule-grid'>
-                    {renderShiftRequestSummary()}
-                    <ServiceScheduleGrid
-                        month={month}
-                        shifts={gridShifts}
-                        employees={serviceRows}
-                        absencesByEmployee={{}}
-                        onShiftUpdate={() => {}}
-                        readOnly
-                        showUnassigned={false}
-                        showTotals={false}
-                        stickyFirstColumn
-                    />
+                <div className='employee-schedule-panel__body schedule-service-modal__body'>
+                    {isLoading ? (
+                        <p className='employee-schedule-empty'>
+                            Cargando turnos...
+                        </p>
+                    ) : shifts.length ? (
+                        <>
+                            {renderShiftRequestSummary()}
+                            <ServiceScheduleGrid
+                                month={month}
+                                shifts={gridShifts}
+                                employees={serviceRows}
+                                absencesByEmployee={{}}
+                                onShiftUpdate={() => {}}
+                                readOnly
+                                showUnassigned={false}
+                                showTotals={false}
+                                stickyFirstColumn
+                            />
+                        </>
+                    ) : (
+                        <p className='employee-schedule-empty'>
+                            Sin turnos programados.
+                        </p>
+                    )}
                 </div>
-            ) : (
-                <p className='employee-schedule-empty'>Sin turnos programados.</p>
-            )}
+            </div>
         </section>
     );
 };
