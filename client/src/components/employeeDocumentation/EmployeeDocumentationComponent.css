@@ -231,18 +231,6 @@
     position: relative;
 }
 
-.employee-documentation-worker-id {
-    color: #64748b;
-    font-size: 0.68rem;
-    font-weight: 800;
-    grid-column: 1 / -1;
-    overflow-wrap: anywhere;
-}
-
-.employee-documentation-worker-card.active .employee-documentation-worker-id {
-    color: #cbd5e1;
-}
-
 .employee-documentation-worker-badge {
     align-items: center;
     background: #ef4444;
@@ -470,6 +458,29 @@
 .employee-documentation-btn--danger {
     background: #fee2e2;
     color: #991b1b;
+}
+
+.employee-documentation-id-row {
+    align-items: center;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.65rem;
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    padding: 0.65rem 0.75rem;
+}
+
+.employee-documentation-id-row span {
+    color: #64748b;
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+.employee-documentation-id-row code {
+    color: #0f172a;
+    font-size: 0.78rem;
+    overflow-wrap: anywhere;
 }
 
 .employee-documentation-actions {

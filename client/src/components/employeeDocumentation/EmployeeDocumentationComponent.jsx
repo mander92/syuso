@@ -852,6 +852,16 @@ const EmployeeDocumentationComponent = ({
         }
     };
 
+    const handleCopyEmployeeId = async () => {
+        if (!selectedUserId) return;
+        try {
+            await navigator.clipboard.writeText(selectedUserId);
+            alert('ID de trabajador copiado.');
+        } catch {
+            window.prompt('Copia el ID del trabajador:', selectedUserId);
+        }
+    };
+
     const handleCreateClientFromDraft = async () => {
         if (!selectedClientDraftId) return;
         if (!String(clientDraftForm.taxId || '').trim()) {
@@ -2530,9 +2540,6 @@ const EmployeeDocumentationComponent = ({
                                         <span>
                                             {item.firstName} {item.lastName}
                                         </span>
-                                        <small className='employee-documentation-worker-id'>
-                                            ID: {item.userId}
-                                        </small>
                                         <span className='employee-documentation-list-badges'>
                                             <span className='employee-documentation-status'>
                                                 {item.active
@@ -2623,6 +2630,19 @@ const EmployeeDocumentationComponent = ({
                                 Cerrar
                             </button>
                         </header>
+                    ) : null}
+                    {isAdminLike && selectedUserId ? (
+                        <div className='employee-documentation-id-row'>
+                            <span>ID trabajador</span>
+                            <code>{selectedUserId}</code>
+                            <button
+                                type='button'
+                                className='employee-documentation-btn employee-documentation-btn--ghost'
+                                onClick={handleCopyEmployeeId}
+                            >
+                                Copiar
+                            </button>
+                        </div>
                     ) : null}
                     <div className='employee-documentation-grid'>
                         <div className='employee-documentation-field'>
