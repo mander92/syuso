@@ -22,6 +22,7 @@ import {
     startShiftRecordsController,
     endShiftRecordsController,
     deleteShiftRecordController,
+    listShiftRecordAuditLogsController,
 } from '../controllers/shiftRecords/index.js';
 
 const router = express.Router();
@@ -34,6 +35,13 @@ router.post(
 );
 
 router.get('/shiftRecords', authUser, isAdmin, listShiftRecordsController);
+
+router.get(
+    '/shiftRecords/audit',
+    authUser,
+    isAdmin,
+    listShiftRecordAuditLogsController
+);
 
 router.get(
     '/workReports/zip',

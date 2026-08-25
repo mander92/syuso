@@ -79,6 +79,12 @@ const createWorkReportController = async (req, res, next) => {
             locationCoords: req.body.locationCoords,
             incidents: req.body.incidents || [],
             incidentFiles: req.files || {},
+            actor: {
+                userId: req.userLogged.id,
+                role: req.userLogged.role,
+                source: 'work_report',
+                req,
+            },
             reportData: {
                 folio: req.body.folio,
                 reportDate: req.body.reportDate || new Date().toISOString(),

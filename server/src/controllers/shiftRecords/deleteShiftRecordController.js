@@ -16,7 +16,11 @@ const deleteShiftRecordController = async (req, res, next) => {
             );
         }
 
-        await deleteShiftRecordService(shiftRecordId);
+        await deleteShiftRecordService(shiftRecordId, {
+            userId: req.userLogged.id,
+            role: req.userLogged.role,
+            req,
+        });
 
         res.send({
             status: 'ok',

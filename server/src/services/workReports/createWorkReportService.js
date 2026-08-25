@@ -13,6 +13,7 @@ import { formatDateTimeMadrid } from '../../utils/dateTimeMadrid.js';
 import { getMadridDateTimeParts } from '../../utils/scheduleTimeUtil.js';
 import selectScheduledShiftForClockInService from '../schedules/selectScheduledShiftForClockInService.js';
 import { ensureVehicleInspectionForShiftService } from '../vehicles/vehicleService.js';
+import createShiftRecordAuditLogService from '../shiftRecords/createShiftRecordAuditLogService.js';
 
 const ensureDir = async (dirPath) => {
     try {
@@ -709,12 +710,24 @@ const createWorkReportService = async ({
     reportData,
     inspectionFiles = {},
     skipVehicleInspection = false,
+    actor = {},
 }) => {
     const pool = await getPool();
 
     const [shiftRows] = await pool.query(
         `
-        SELECT id, serviceId, employeeId, clockOut, clockIn, realClockIn, realClockOut
+        SELECT
+            id,
+            serviceId,
+            employeeId,
+            clockOut,
+            clockIn,
+            realClockIn,
+            realClockOut,
+            latitudeIn,
+            longitudeIn,
+            latitudeOut,
+            longitudeOut
         FROM shiftRecords
         WHERE id = ?
         `,
@@ -826,6 +839,28 @@ const createWorkReportService = async ({
             shiftRecordId,
         ]
     );
+
+    await createShiftRecordAuditLogService({
+        shiftRecordId,
+        employeeId,
+        serviceId,
+        actorUserId: actor.userId || employeeId,
+        actorRole: actor.role || 'employee',
+        action: 'work_report_close',
+        source: actor.source || 'work_report',
+        reason: 'Cierre de turno mediante parte de trabajo',
+        oldValue: shift,
+        newValue: {
+            ...shift,
+            realClockIn: realClockInValue,
+            realClockOut: 'UTC_TIMESTAMP',
+            clockIn: normalizedIncidentStart,
+            clockOut: normalizedIncidentEnd,
+            latitudeOut,
+            longitudeOut,
+        },
+        req: actor.req,
+    });
 
     if (realClockInValue) {
         const { date: localDate, time: localTime } = getMadridDateTimeParts(

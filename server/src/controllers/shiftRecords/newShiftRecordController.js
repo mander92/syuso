@@ -29,7 +29,11 @@ const newShiftRecordController = async (req, res, next) => {
 
         await ensureServiceDelegationAccessService(serviceId, userId, role);
 
-        await insertShiftRecordService(serviceId, employeeId, clockIn, clockOut);
+        await insertShiftRecordService(serviceId, employeeId, clockIn, clockOut, {
+            userId,
+            role,
+            req,
+        });
 
         res.send({
             status: 'ok',

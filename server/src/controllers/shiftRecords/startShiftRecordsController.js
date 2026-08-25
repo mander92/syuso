@@ -17,7 +17,12 @@ const startShiftRecordsController = async (req, res, next) => {
             location,
             startDateTime,
             req.userLogged.id,
-            serviceId
+            serviceId,
+            {
+                userId: req.userLogged.id,
+                role: req.userLogged.role,
+                req,
+            }
         );
 
         res.send({

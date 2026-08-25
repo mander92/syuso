@@ -2,13 +2,15 @@ import { v4 as uuid } from 'uuid';
 
 import getPool from '../../db/getPool.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
+import createShiftRecordAuditLogService from './createShiftRecordAuditLogService.js';
 
 
 const insertShiftRecordService = async (
     serviceId,
     employeeId,
     clockIn,
-    clockOut
+    clockOut,
+    actor = {}
 ) => {
     const pool = await getPool();
 
@@ -56,6 +58,28 @@ const insertShiftRecordService = async (
         );
     }
 
+    await createShiftRecordAuditLogService({
+        shiftRecordId: id,
+        employeeId,
+        serviceId,
+        actorUserId: actor.userId,
+        actorRole: actor.role,
+        action: 'admin_create',
+        source: 'admin_panel',
+        reason: actor.reason || 'Creacion manual de fichaje',
+        newValue: {
+            id,
+            employeeId,
+            serviceId,
+            clockIn: clockIn || null,
+            clockOut: clockOut || null,
+            realClockIn: clockIn || null,
+            realClockOut: clockOut || null,
+        },
+        req: actor.req,
+    });
+
+    return id;
 };
 
 export default insertShiftRecordService;

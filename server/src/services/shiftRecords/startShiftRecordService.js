@@ -5,6 +5,7 @@ import selectEmployeeRulesService from '../schedules/selectEmployeeRulesService.
 import selectEmployeeAbsenceForDateService from '../schedules/selectEmployeeAbsenceForDateService.js';
 import selectScheduledShiftForClockInService from '../schedules/selectScheduledShiftForClockInService.js';
 import { getMadridDateTimeParts } from '../../utils/scheduleTimeUtil.js';
+import createShiftRecordAuditLogService from './createShiftRecordAuditLogService.js';
 
 const toSeconds = (value) => {
     const [hours, minutes, seconds = '0'] = String(value || '0:0:0').split(':');
@@ -43,7 +44,11 @@ const toBoolean = (value) =>
     String(value).toLowerCase() === 'true';
 
 const startShiftRecordService = async (
-    location, startDateTime, employeeId, serviceId
+    location,
+    startDateTime,
+    employeeId,
+    serviceId,
+    actor = {}
 ) => {
 
     const [latitudeIn, longitudeIn] = location;
@@ -258,6 +263,24 @@ const startShiftRecordService = async (
         }
         throw error;
     }
+
+    await createShiftRecordAuditLogService({
+        shiftRecordId: id,
+        employeeId,
+        serviceId,
+        actorUserId: actor.userId || employeeId,
+        actorRole: actor.role || 'employee',
+        action: 'clock_in',
+        source: 'employee_clock',
+        newValue: {
+            id,
+            clockIn: startDateTime,
+            realClockIn: 'UTC_TIMESTAMP',
+            latitudeIn,
+            longitudeIn,
+        },
+        req: actor.req,
+    });
 
     return {
         id,

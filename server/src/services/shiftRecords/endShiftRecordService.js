@@ -2,13 +2,15 @@ import getPool from '../../db/getPool.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import selectScheduledShiftForClockInService from '../schedules/selectScheduledShiftForClockInService.js';
 import { getMadridDateTimeParts } from '../../utils/scheduleTimeUtil.js';
+import createShiftRecordAuditLogService from './createShiftRecordAuditLogService.js';
 
 const endShiftRecordService = async (
     shiftRecordId,
     employeeId,
     location,
     endDateTime,
-    serviceId
+    serviceId,
+    actor = {}
 ) => {
     const pool = await getPool();
     if (!Array.isArray(location) || location.length < 2) {
@@ -20,7 +22,18 @@ const endShiftRecordService = async (
     // 1) Buscar el turno del empleado (si esta abierto, lo cerramos)
     const [rows] = await pool.query(
         `
-      SELECT id, serviceId, clockOut
+      SELECT
+        id,
+        serviceId,
+        employeeId,
+        clockIn,
+        realClockIn,
+        clockOut,
+        realClockOut,
+        latitudeIn,
+        longitudeIn,
+        latitudeOut,
+        longitudeOut
       FROM shiftRecords
       WHERE id = ? AND employeeId = ?
       LIMIT 1
@@ -108,6 +121,25 @@ const endShiftRecordService = async (
             );
         }
     }
+
+    await createShiftRecordAuditLogService({
+        shiftRecordId: shiftId,
+        employeeId,
+        serviceId: shift.serviceId || serviceId,
+        actorUserId: actor.userId || employeeId,
+        actorRole: actor.role || 'employee',
+        action: 'clock_out',
+        source: 'employee_clock',
+        oldValue: shift,
+        newValue: {
+            ...shift,
+            clockOut: endDateTime,
+            realClockOut: 'UTC_TIMESTAMP',
+            latitudeOut,
+            longitudeOut,
+        },
+        req: actor.req,
+    });
 
     return;
 

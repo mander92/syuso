@@ -12,7 +12,12 @@ const endShiftRecordsController = async (req, res, next) => {
             employeeId,
             location,
             endDateTime,
-            serviceId
+            serviceId,
+            {
+                userId: req.userLogged.id,
+                role: req.userLogged.role,
+                req,
+            }
         );
 
         res.send({

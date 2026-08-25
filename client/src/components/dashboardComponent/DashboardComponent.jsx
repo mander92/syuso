@@ -16,6 +16,7 @@ import ServicesComponent from '../adminServiceSection/ServiceComponent/ServiceCo
 import ScheduleComponent from '../adminScheduleSection/ScheduleComponent.jsx';
 import ShiftComponent from '../adminShiftSection/ShiftComponent.jsx';
 import WorkReportsComponent from '../adminWorkReportsSection/WorkReportsComponent.jsx';
+import ShiftRecordAuditComponent from '../shiftRecordAudit/ShiftRecordAuditComponent.jsx';
 import AdminCleanupSection from '../adminCleanupSection/AdminCleanupSection.jsx';
 import AdminCvSection from '../adminCvSection/AdminCvSection.jsx';
 import ShiftSwapsComponent from '../shiftSwaps/ShiftSwapsComponent.jsx';
@@ -62,6 +63,7 @@ const operativeSectionIds = [
     'contracts',
     'schedules',
     'shifts',
+    'shiftAudit',
     'shiftSwaps',
     'employeeRequests',
     'workReports',
@@ -242,6 +244,7 @@ const DashboardComponent = () => {
                 { id: 'contracts', label: 'Servicios' },
                 { id: 'schedules', label: 'Cuadrantes' },
                 { id: 'shifts', label: 'Turnos' },
+                { id: 'shiftAudit', label: 'Auditoria fichajes' },
                 { id: 'shiftSwaps', label: 'Cambios de turno' },
                 { id: 'employeeRequests', label: 'Peticiones' },
                 { id: 'chats', label: 'Chats' },
@@ -739,6 +742,8 @@ const DashboardComponent = () => {
 
             case 'shifts':
                 return <ShiftComponent />;
+            case 'shiftAudit':
+                return <ShiftRecordAuditComponent />;
             case 'schedules':
                 return <ScheduleComponent />;
 

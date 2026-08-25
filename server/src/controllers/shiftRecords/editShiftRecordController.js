@@ -30,7 +30,11 @@ const editShiftRecordController = async (req, res, next) => {
             );
         }
 
-        await editShiftRecordsService(clockIn, clockOut, shiftRecordId);
+        await editShiftRecordsService(clockIn, clockOut, shiftRecordId, {
+            userId: req.userLogged.id,
+            role: req.userLogged.role,
+            req,
+        });
 
         res.send({
             status: 'ok',

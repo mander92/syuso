@@ -6,6 +6,7 @@ import detailShiftRecordController from './detailShiftRecordController.js';
 import startShiftRecordsController from './startShiftRecordsController.js';
 import endShiftRecordsController from './endShiftRecordsController.js';
 import deleteShiftRecordController from './deleteShiftRecordController.js';
+import listShiftRecordAuditLogsController from './listShiftRecordAuditLogsController.js';
 
 export {
     newShiftRecordController,
@@ -16,4 +17,5 @@ export {
     startShiftRecordsController,
     endShiftRecordsController,
     deleteShiftRecordController,
+    listShiftRecordAuditLogsController,
 };

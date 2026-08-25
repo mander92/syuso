@@ -5,6 +5,7 @@ import getPool from '../../db/getPool.js';
 import ensureServiceDelegationAccessService from '../../services/delegations/ensureServiceDelegationAccessService.js';
 import createWorkReportService from '../../services/workReports/createWorkReportService.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
+import createShiftRecordAuditLogService from '../../services/shiftRecords/createShiftRecordAuditLogService.js';
 
 const schema = Joi.object({
     reportType: Joi.string().valid('work', 'inspection').default('work'),
@@ -114,6 +115,23 @@ const createAdminWorkReportController = async (req, res, next) => {
             [shiftRecordId, value.employeeId, value.serviceId]
         );
 
+        await createShiftRecordAuditLogService({
+            shiftRecordId,
+            employeeId: value.employeeId,
+            serviceId: value.serviceId,
+            actorUserId: userId,
+            actorRole: role,
+            action: 'admin_create',
+            source: 'admin_work_report',
+            reason: 'Creacion de parte desde administracion',
+            newValue: {
+                id: shiftRecordId,
+                employeeId: value.employeeId,
+                serviceId: value.serviceId,
+            },
+            req,
+        });
+
         const guardFullName =
             value.guardFullName ||
             `${employee.firstName || ''} ${employee.lastName || ''}`.trim() ||
@@ -145,6 +163,12 @@ const createAdminWorkReportController = async (req, res, next) => {
             incidentFiles: {},
             inspectionFiles: isInspection ? req.files || {} : {},
             skipVehicleInspection: true,
+            actor: {
+                userId,
+                role,
+                source: 'admin_work_report',
+                req,
+            },
             reportData: {
                 folio:
                     value.folio ||
