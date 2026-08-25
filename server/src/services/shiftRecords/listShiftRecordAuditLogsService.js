@@ -15,6 +15,7 @@ const parseJson = (value) => {
 };
 
 const actionLabels = {
+    baseline_import: 'Historico importado',
     clock_in: 'Entrada fichada',
     clock_out: 'Salida fichada',
     admin_create: 'Fichaje creado por admin',

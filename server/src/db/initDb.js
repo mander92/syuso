@@ -185,6 +185,7 @@ const initDb = async () => {
                 actorUserId CHAR(36) NULL,
                 actorRole VARCHAR(40) NULL,
                 action ENUM(
+                    'baseline_import',
                     'clock_in',
                     'clock_out',
                     'admin_create',

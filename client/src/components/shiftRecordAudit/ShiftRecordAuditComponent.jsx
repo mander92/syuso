@@ -7,6 +7,7 @@ import './ShiftRecordAuditComponent.css';
 
 const actionOptions = [
     { value: '', label: 'Todas' },
+    { value: 'baseline_import', label: 'Historico importado' },
     { value: 'clock_in', label: 'Entrada fichada' },
     { value: 'clock_out', label: 'Salida fichada' },
     { value: 'admin_create', label: 'Creacion admin' },
@@ -76,6 +77,9 @@ const ShiftRecordAuditComponent = () => {
             ).length,
             workerClockEvents: logs.filter((log) =>
                 ['clock_in', 'clock_out'].includes(log.action)
+            ).length,
+            baselineImports: logs.filter(
+                (log) => log.action === 'baseline_import'
             ).length,
         }),
         [logs]
@@ -201,6 +205,10 @@ const ShiftRecordAuditComponent = () => {
                     <span>Ajustes admin</span>
                     <strong>{auditSummary.adminChanges}</strong>
                 </article>
+                <article>
+                    <span>Historicos importados</span>
+                    <strong>{auditSummary.baselineImports}</strong>
+                </article>
             </div>
 
             <section className='shift-audit__legal'>
@@ -222,6 +230,11 @@ const ShiftRecordAuditComponent = () => {
                     Para expedientes sensibles, revisa que el informe exportado
                     incluya el periodo completo, los cambios manuales y una
                     explicacion documentada de cualquier correccion.
+                </p>
+                <p>
+                    Los registros historicos importados acreditan el dato que ya
+                    existia en la base de datos al activar la auditoria; no
+                    reconstruyen cambios anteriores que no se registraban.
                 </p>
             </section>
 
