@@ -2530,6 +2530,9 @@ const EmployeeDocumentationComponent = ({
                                         <span>
                                             {item.firstName} {item.lastName}
                                         </span>
+                                        <small className='employee-documentation-worker-id'>
+                                            ID: {item.userId}
+                                        </small>
                                         <span className='employee-documentation-list-badges'>
                                             <span className='employee-documentation-status'>
                                                 {item.active

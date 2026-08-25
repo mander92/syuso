@@ -231,6 +231,18 @@
     position: relative;
 }
 
+.employee-documentation-worker-id {
+    color: #64748b;
+    font-size: 0.68rem;
+    font-weight: 800;
+    grid-column: 1 / -1;
+    overflow-wrap: anywhere;
+}
+
+.employee-documentation-worker-card.active .employee-documentation-worker-id {
+    color: #cbd5e1;
+}
+
 .employee-documentation-worker-badge {
     align-items: center;
     background: #ef4444;

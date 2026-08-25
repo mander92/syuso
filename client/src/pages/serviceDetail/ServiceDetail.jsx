@@ -585,6 +585,15 @@ const ServiceDetail = () => {
                             >
                                 <div className='service-detail-summary-grid'>
                                     <div className='service-detail-summary-field'>
+                                        <label htmlFor='serviceId'>ID servicio</label>
+                                        <input
+                                            id='serviceId'
+                                            type='text'
+                                            value={serviceId}
+                                            disabled
+                                        />
+                                    </div>
+                                    <div className='service-detail-summary-field'>
                                         <label htmlFor='serviceName'>Nombre</label>
                                         <input
                                             id='serviceName'
@@ -942,6 +951,7 @@ const ServiceDetail = () => {
                                                 <p>{employee.email || 'Sin email'}</p>
                                                 <p>{employee.phone || 'Sin telefono'}</p>
                                                 <p>{employee.dni || 'Sin DNI'}</p>
+                                                <p>ID trabajador: {employee.id}</p>
                                             </div>
                                             {(user?.role === 'admin' || user?.role === 'sudo') && (
                                                 <button
