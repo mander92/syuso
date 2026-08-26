@@ -510,7 +510,7 @@
     align-items: center;
     justify-content: center;
     padding: 20px;
-    z-index: 2200;
+    z-index: 10020;
 }
 
 .service-schedule-modal {
@@ -583,7 +583,7 @@
 .shift-overlap-modal {
     position: fixed;
     inset: 0;
-    z-index: 3200;
+    z-index: 10030;
 }
 
 .shift-overlap-modal__backdrop {

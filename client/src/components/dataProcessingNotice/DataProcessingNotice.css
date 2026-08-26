@@ -1,0 +1,116 @@
+.data-processing {
+    box-sizing: border-box;
+    display: grid;
+    gap: 1rem;
+    margin: 0 auto;
+    max-width: 1100px;
+    padding: 1.5rem;
+    width: 100%;
+}
+
+.data-processing__header {
+    align-items: flex-start;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    padding: 1.25rem;
+}
+
+.data-processing__header h2,
+.data-processing__card h3,
+.data-processing__panel h3 {
+    color: #0f172a;
+    margin: 0;
+}
+
+.data-processing__header h2 {
+    font-size: 1.35rem;
+}
+
+.data-processing__header span {
+    background: #e2e8f0;
+    border-radius: 999px;
+    color: #0f172a;
+    font-size: 0.8rem;
+    font-weight: 800;
+    padding: 0.35rem 0.75rem;
+    white-space: nowrap;
+}
+
+.data-processing__eyebrow {
+    color: #64748b;
+    font-size: 0.78rem;
+    font-weight: 900;
+    letter-spacing: 0;
+    margin: 0 0 0.25rem;
+    text-transform: uppercase;
+}
+
+.data-processing__grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.data-processing__card,
+.data-processing__panel {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    display: grid;
+    gap: 0.65rem;
+    padding: 1rem;
+}
+
+.data-processing__card p,
+.data-processing__panel p,
+.data-processing__panel li {
+    color: #475569;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.data-processing__panel ul {
+    display: grid;
+    gap: 0.45rem;
+    margin: 0;
+    padding-left: 1.2rem;
+}
+
+.data-processing__sources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.data-processing__sources a {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 999px;
+    color: #1e3a8a;
+    font-size: 0.85rem;
+    font-weight: 800;
+    padding: 0.5rem 0.75rem;
+    text-decoration: none;
+}
+
+@media (max-width: 640px) {
+    .data-processing {
+        padding: 0.85rem;
+    }
+
+    .data-processing__header {
+        display: grid;
+    }
+
+    .data-processing__header span {
+        justify-self: start;
+        white-space: normal;
+    }
+}

@@ -30,6 +30,7 @@ import AdminWarehouseSection from '../adminWarehouseSection/AdminWarehouseSectio
 import PayrollsComponent from '../payrolls/PayrollsComponent.jsx';
 import BillingComponent from '../billing/BillingComponent.jsx';
 import AdminVehiclesSection from '../adminVehiclesSection/AdminVehiclesSection.jsx';
+import DataProcessingNotice from '../dataProcessingNotice/DataProcessingNotice.jsx';
 import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 import PushNotificationsPanel from '../pushNotifications/PushNotificationsPanel.jsx';
 
@@ -226,7 +227,11 @@ const DashboardComponent = () => {
         if (!user || userRole === 'sudo') return null;
         const permissions = parseDashboardPermissions(user.dashboardPermissions);
         if (permissions === null) return null;
-        const expandedPermissions = new Set([...permissions, 'profile']);
+        const expandedPermissions = new Set([
+            ...permissions,
+            'profile',
+            'dataProcessing',
+        ]);
         if (expandedPermissions.has('documentations')) {
             expandedPermissions.add('workers');
             expandedPermissions.add('clients');
@@ -257,6 +262,7 @@ const DashboardComponent = () => {
                 { id: 'payrolls', label: 'Nominas' },
                 { id: 'billing', label: 'Facturacion' },
                 { id: 'users', label: 'Permisos de usuarios' },
+                { id: 'dataProcessing', label: 'Tratamiento datos' },
                 { id: 'profile', label: 'Mi perfil' },
             ];
             if (
@@ -286,6 +292,7 @@ const DashboardComponent = () => {
                 { id: 'payrolls', label: 'Mis nominas' },
                 { id: 'chats', label: 'Chats' },
                 { id: 'alerts', label: 'Alertas' },
+                { id: 'dataProcessing', label: 'Tratamiento datos' },
                 { id: 'profile', label: 'Mi perfil' },
             ];
         } else if (!isClient) {
@@ -298,11 +305,13 @@ const DashboardComponent = () => {
                 { id: 'payrolls', label: 'Mis nominas' },
                 { id: 'chats', label: 'Chats' },
                 { id: 'alerts', label: 'Alertas' },
+                { id: 'dataProcessing', label: 'Tratamiento datos' },
                 { id: 'profile', label: 'Mi perfil' },
             ];
         } else {
             roleSections = [
                 { id: 'profile', label: 'Mi perfil' },
+                { id: 'dataProcessing', label: 'Tratamiento datos' },
                 { id: 'contracts', label: 'Mis contratos' },
                 { id: 'services', label: 'Servicios activos' },
             ];
@@ -534,7 +543,7 @@ const DashboardComponent = () => {
                 id: 'profile',
                 label: 'Perfil',
                 icon: FaUser,
-                ids: ['profile'],
+                ids: ['profile', 'dataProcessing'],
             }),
         ].filter((group) => group.sections.length);
 
@@ -727,6 +736,8 @@ const DashboardComponent = () => {
 
             case 'profile':
                 return <ProfileComponent />;
+            case 'dataProcessing':
+                return <DataProcessingNotice />;
 
             case 'contracts':
                 return <ContractsComponent />;
