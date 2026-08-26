@@ -1,0 +1,618 @@
+import path from 'path';
+import { v4 as uuid } from 'uuid';
+
+import getPool from '../../db/getPool.js';
+import createExcelUtil from '../../utils/createExcelUtil.js';
+import generateErrorUtil from '../../utils/generateErrorUtil.js';
+import selectAdminDelegationNamesService from '../delegations/selectAdminDelegationNamesService.js';
+
+const getMonthRange = (month) => {
+    const [year, monthNumber] = String(month || '').split('-').map(Number);
+    if (!year || !monthNumber) generateErrorUtil('Mes no valido', 400);
+    const start = new Date(Date.UTC(year, monthNumber - 1, 1));
+    const end = new Date(Date.UTC(year, monthNumber, 0));
+    return {
+        start: start.toISOString().slice(0, 10),
+        end: end.toISOString().slice(0, 10),
+    };
+};
+
+const toNumber = (value) => {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : 0;
+};
+
+const roundMoney = (value) => Number((toNumber(value)).toFixed(2));
+
+const getRateKey = (serviceId, employeeId = '') => `${serviceId}:${employeeId || ''}`;
+
+const normalizeRate = (rate) => ({
+    id: rate?.id || '',
+    serviceId: rate?.serviceId || '',
+    employeeId: rate?.employeeId || '',
+    payMode: rate?.payMode || 'hourly',
+    amountType: rate?.amountType || 'gross',
+    regularRate: toNumber(rate?.regularRate),
+    nightRate: toNumber(rate?.nightRate),
+    holidayRate: toNumber(rate?.holidayRate),
+    extraRate: toNumber(rate?.extraRate),
+    fixedAmount: toNumber(rate?.fixedAmount),
+    notes: rate?.notes || '',
+});
+
+const buildRateMap = (rates) => {
+    const map = new Map();
+    rates.forEach((rate) => {
+        map.set(getRateKey(rate.serviceId, rate.employeeId || ''), normalizeRate(rate));
+    });
+    return map;
+};
+
+const calculateLineAmount = ({ row, rate }) => {
+    if (!rate?.id) return 0;
+    if (rate.payMode === 'fixed') return roundMoney(rate.fixedAmount);
+
+    const totalHours = toNumber(row.totalHours);
+    const nightHours = toNumber(row.nightHours);
+    const holidayHours = toNumber(row.holidayHours);
+    const baseHours = Math.max(totalHours - nightHours - holidayHours, 0);
+
+    return roundMoney(
+        baseHours * rate.regularRate +
+            nightHours * (rate.nightRate || rate.regularRate) +
+            holidayHours * (rate.holidayRate || rate.regularRate)
+    );
+};
+
+const getViewerDelegations = async ({ viewerId, viewerRole }) => {
+    if (viewerRole !== 'admin') return [];
+    return selectAdminDelegationNamesService(viewerId);
+};
+
+const listSalaryOptions = async ({ viewerId, viewerRole }) => {
+    const pool = await getPool();
+    const values = [];
+    const delegationFilters = [];
+
+    if (viewerRole === 'admin') {
+        const delegations = await getViewerDelegations({ viewerId, viewerRole });
+        if (!delegations.length) {
+            return { employees: [], services: [] };
+        }
+        delegationFilters.push(`u.city IN (${delegations.map(() => '?').join(', ')})`);
+        values.push(...delegations);
+    }
+
+    const [employees] = await pool.query(
+        `
+        SELECT u.id, u.firstName, u.lastName, u.email, u.dni, u.city, u.active,
+               ed.bankAccount
+        FROM users u
+        LEFT JOIN employeeDocumentations ed ON ed.userId = u.id
+        WHERE u.role = 'employee'
+          AND u.deletedAt IS NULL
+          ${delegationFilters.length ? `AND ${delegationFilters.join(' AND ')}` : ''}
+        ORDER BY u.firstName, u.lastName
+        `,
+        values
+    );
+
+    const serviceValues = [];
+    let serviceFilter = '';
+    if (viewerRole === 'admin') {
+        const delegations = await getViewerDelegations({ viewerId, viewerRole });
+        serviceFilter = `AND s.province IN (${delegations.map(() => '?').join(', ')})`;
+        serviceValues.push(...delegations);
+    }
+
+    const [services] = await pool.query(
+        `
+        SELECT s.id, s.name, s.type, s.province, s.hourRuleType
+        FROM services s
+        WHERE s.deletedAt IS NULL
+          ${serviceFilter}
+        ORDER BY s.name, s.type
+        `,
+        serviceValues
+    );
+
+    return { employees, services };
+};
+
+const listSalaryRates = async ({ serviceId = '', employeeId = '' } = {}) => {
+    const pool = await getPool();
+    const filters = ['r.deletedAt IS NULL'];
+    const values = [];
+
+    if (serviceId) {
+        filters.push('r.serviceId = ?');
+        values.push(serviceId);
+    }
+    if (employeeId) {
+        filters.push('(r.employeeId = ? OR r.employeeId IS NULL)');
+        values.push(employeeId);
+    }
+
+    const [rows] = await pool.query(
+        `
+        SELECT r.*, s.name AS serviceName, s.type AS serviceType,
+               CONCAT_WS(' ', u.firstName, u.lastName) AS employeeName
+        FROM salaryServiceRates r
+        INNER JOIN services s ON s.id = r.serviceId
+        LEFT JOIN users u ON u.id = r.employeeId
+        WHERE ${filters.join(' AND ')}
+        ORDER BY s.name, employeeName
+        `,
+        values
+    );
+    return rows;
+};
+
+const listSalaryRatesForServices = async (serviceIds) => {
+    if (!serviceIds.length) return [];
+    const pool = await getPool();
+    const [rows] = await pool.query(
+        `
+        SELECT r.*, s.name AS serviceName, s.type AS serviceType,
+               CONCAT_WS(' ', u.firstName, u.lastName) AS employeeName
+        FROM salaryServiceRates r
+        INNER JOIN services s ON s.id = r.serviceId
+        LEFT JOIN users u ON u.id = r.employeeId
+        WHERE r.deletedAt IS NULL
+          AND r.serviceId IN (${serviceIds.map(() => '?').join(', ')})
+        ORDER BY s.name, employeeName
+        `,
+        serviceIds
+    );
+    return rows;
+};
+
+const upsertSalaryRate = async ({ userId, payload }) => {
+    const pool = await getPool();
+    const employeeId = payload.employeeId || null;
+    const [services] = await pool.query(
+        'SELECT id FROM services WHERE id = ? AND deletedAt IS NULL',
+        [payload.serviceId]
+    );
+    if (!services.length) generateErrorUtil('Servicio no encontrado', 404);
+
+    const [existing] = await pool.query(
+        `
+        SELECT id
+        FROM salaryServiceRates
+        WHERE serviceId = ?
+          AND employeeId <=> ?
+          AND deletedAt IS NULL
+        LIMIT 1
+        `,
+        [payload.serviceId, employeeId]
+    );
+
+    const values = [
+        payload.payMode || 'hourly',
+        payload.amountType || 'gross',
+        toNumber(payload.regularRate),
+        toNumber(payload.nightRate),
+        toNumber(payload.holidayRate),
+        toNumber(payload.extraRate),
+        toNumber(payload.fixedAmount),
+        payload.notes || null,
+    ];
+
+    if (existing.length) {
+        await pool.query(
+            `
+            UPDATE salaryServiceRates
+            SET payMode = ?, amountType = ?, regularRate = ?, nightRate = ?,
+                holidayRate = ?, extraRate = ?, fixedAmount = ?, notes = ?
+            WHERE id = ?
+            `,
+            [...values, existing[0].id]
+        );
+        return existing[0].id;
+    }
+
+    const id = uuid();
+    await pool.query(
+        `
+        INSERT INTO salaryServiceRates (
+            id, serviceId, employeeId, payMode, amountType, regularRate,
+            nightRate, holidayRate, extraRate, fixedAmount, notes, createdBy
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        [id, payload.serviceId, employeeId, ...values, userId]
+    );
+    return id;
+};
+
+const createSalaryAdjustment = async ({ userId, payload }) => {
+    const pool = await getPool();
+    const amount = payload.amount !== undefined && payload.amount !== null && payload.amount !== ''
+        ? toNumber(payload.amount)
+        : toNumber(payload.quantity) * toNumber(payload.unitRate);
+    const id = uuid();
+
+    await pool.query(
+        `
+        INSERT INTO salarySettlementAdjustments (
+            id, employeeId, serviceId, settlementMonth, concept, quantity,
+            unitRate, amount, amountType, notes, createdBy
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        [
+            id,
+            payload.employeeId,
+            payload.serviceId || null,
+            payload.settlementMonth,
+            payload.concept,
+            toNumber(payload.quantity) || 1,
+            toNumber(payload.unitRate),
+            roundMoney(amount),
+            payload.amountType || 'gross',
+            payload.notes || null,
+            userId,
+        ]
+    );
+    return id;
+};
+
+const deleteSalaryAdjustment = async (adjustmentId) => {
+    const pool = await getPool();
+    await pool.query(
+        'UPDATE salarySettlementAdjustments SET deletedAt = CURRENT_TIMESTAMP WHERE id = ?',
+        [adjustmentId]
+    );
+};
+
+const calculateSalarySettlements = async ({
+    viewerId,
+    viewerRole,
+    month,
+    employeeId = '',
+    generateExcel = false,
+}) => {
+    const pool = await getPool();
+    const { start, end } = getMonthRange(month);
+    const values = [start, end];
+    const filters = [
+        'ss.deletedAt IS NULL',
+        'ss.employeeId IS NOT NULL',
+        'ss.scheduleDate BETWEEN ? AND ?',
+    ];
+
+    if (employeeId) {
+        filters.push('ss.employeeId = ?');
+        values.push(employeeId);
+    }
+
+    if (viewerRole === 'admin') {
+        const delegations = await getViewerDelegations({ viewerId, viewerRole });
+        if (!delegations.length) {
+            return { month, employees: [], rates: [], adjustments: [] };
+        }
+        filters.push(
+            `(u.city IN (${delegations.map(() => '?').join(', ')}) OR s.province IN (${delegations.map(() => '?').join(', ')}))`
+        );
+        values.push(...delegations, ...delegations);
+    }
+
+    const [shiftRows] = await pool.query(
+        `
+        SELECT
+            ss.employeeId,
+            ss.serviceId,
+            u.firstName,
+            u.lastName,
+            u.dni,
+            u.city AS employeeDelegation,
+            ed.bankAccount,
+            s.name AS serviceName,
+            s.type AS serviceType,
+            s.province AS serviceDelegation,
+            s.hourRuleType,
+            COUNT(*) AS shiftCount,
+            COALESCE(SUM(CASE WHEN COALESCE(ss.realHours, 0) > 0 THEN ss.realHours ELSE ss.hours END), 0) AS totalHours,
+            COALESCE(SUM(ss.nightHours), 0) AS nightHours,
+            COALESCE(SUM(ss.holidayHours), 0) AS holidayHours
+        FROM serviceScheduleShifts ss
+        INNER JOIN users u ON u.id = ss.employeeId
+        INNER JOIN services s ON s.id = ss.serviceId
+        LEFT JOIN employeeDocumentations ed ON ed.userId = u.id
+        WHERE ${filters.join(' AND ')}
+        GROUP BY ss.employeeId, ss.serviceId, u.firstName, u.lastName, u.dni,
+                 u.city, ed.bankAccount, s.name, s.type, s.province, s.hourRuleType
+        ORDER BY u.firstName, u.lastName, s.name
+        `,
+        values
+    );
+
+    const employeeIds = [...new Set(shiftRows.map((row) => row.employeeId))];
+    const serviceIds = [...new Set(shiftRows.map((row) => row.serviceId))];
+
+    const rateRows = serviceIds.length
+        ? await pool
+              .query(
+                  `
+                  SELECT *
+                  FROM salaryServiceRates
+                  WHERE deletedAt IS NULL
+                    AND serviceId IN (${serviceIds.map(() => '?').join(', ')})
+                    AND (employeeId IS NULL ${
+                        employeeIds.length
+                            ? `OR employeeId IN (${employeeIds.map(() => '?').join(', ')})`
+                            : ''
+                    })
+                  `,
+                  [...serviceIds, ...employeeIds]
+              )
+              .then(([rows]) => rows)
+        : [];
+    const rateMap = buildRateMap(rateRows);
+
+    const adjustmentValues = [month];
+    let adjustmentFilter = 'a.settlementMonth = ? AND a.deletedAt IS NULL';
+    if (employeeId) {
+        adjustmentFilter += ' AND a.employeeId = ?';
+        adjustmentValues.push(employeeId);
+    }
+    if (viewerRole === 'admin') {
+        const delegations = await getViewerDelegations({ viewerId, viewerRole });
+        adjustmentFilter += ` AND u.city IN (${delegations.map(() => '?').join(', ')})`;
+        adjustmentValues.push(...delegations);
+    }
+
+    const [adjustments] = await pool.query(
+        `
+        SELECT a.*, s.name AS serviceName,
+               u.firstName, u.lastName, u.dni, u.city AS employeeDelegation,
+               ed.bankAccount
+        FROM salarySettlementAdjustments a
+        INNER JOIN users u ON u.id = a.employeeId
+        LEFT JOIN employeeDocumentations ed ON ed.userId = u.id
+        LEFT JOIN services s ON s.id = a.serviceId
+        WHERE ${adjustmentFilter}
+        ORDER BY a.createdAt DESC
+        `,
+        adjustmentValues
+    );
+
+    const employeeMap = new Map();
+    shiftRows.forEach((row) => {
+        const exactRate = rateMap.get(getRateKey(row.serviceId, row.employeeId));
+        const defaultRate = rateMap.get(getRateKey(row.serviceId, ''));
+        const rate = exactRate || defaultRate || normalizeRate(null);
+        const totalHours = toNumber(row.totalHours);
+        const nightHours = toNumber(row.nightHours);
+        const holidayHours = toNumber(row.holidayHours);
+        const baseHours = Math.max(totalHours - nightHours - holidayHours, 0);
+        const amount = calculateLineAmount({ row, rate });
+        const amountType = rate.amountType || 'gross';
+
+        if (!employeeMap.has(row.employeeId)) {
+            employeeMap.set(row.employeeId, {
+                employeeId: row.employeeId,
+                employeeName: `${row.firstName || ''} ${row.lastName || ''}`.trim(),
+                dni: row.dni || '',
+                delegation: row.employeeDelegation || '',
+                bankAccount: row.bankAccount || '',
+                totalHours: 0,
+                baseHours: 0,
+                nightHours: 0,
+                holidayHours: 0,
+                grossAmount: 0,
+                netAmount: 0,
+                missingRates: 0,
+                services: [],
+                adjustments: [],
+            });
+        }
+
+        const employee = employeeMap.get(row.employeeId);
+        employee.totalHours += totalHours;
+        employee.baseHours += baseHours;
+        employee.nightHours += nightHours;
+        employee.holidayHours += holidayHours;
+        if (!rate.id) employee.missingRates += 1;
+        if (amountType === 'net') employee.netAmount += amount;
+        else employee.grossAmount += amount;
+        employee.services.push({
+            serviceId: row.serviceId,
+            serviceName: row.serviceName || row.serviceType || '',
+            serviceDelegation: row.serviceDelegation || '',
+            hourRuleType: row.hourRuleType || 'standard',
+            shiftCount: Number(row.shiftCount) || 0,
+            totalHours,
+            baseHours,
+            nightHours,
+            holidayHours,
+            rate,
+            amount,
+            amountType,
+        });
+    });
+
+    adjustments.forEach((adjustment) => {
+        if (!employeeMap.has(adjustment.employeeId)) {
+            employeeMap.set(adjustment.employeeId, {
+                employeeId: adjustment.employeeId,
+                employeeName:
+                    `${adjustment.firstName || ''} ${adjustment.lastName || ''}`.trim(),
+                dni: adjustment.dni || '',
+                delegation: adjustment.employeeDelegation || '',
+                bankAccount: adjustment.bankAccount || '',
+                totalHours: 0,
+                baseHours: 0,
+                nightHours: 0,
+                holidayHours: 0,
+                grossAmount: 0,
+                netAmount: 0,
+                missingRates: 0,
+                services: [],
+                adjustments: [],
+            });
+        }
+        const employee = employeeMap.get(adjustment.employeeId);
+        const amount = toNumber(adjustment.amount);
+        if (adjustment.amountType === 'net') employee.netAmount += amount;
+        else employee.grossAmount += amount;
+        employee.adjustments.push({
+            ...adjustment,
+            quantity: toNumber(adjustment.quantity),
+            unitRate: toNumber(adjustment.unitRate),
+            amount,
+        });
+    });
+
+    const employees = [...employeeMap.values()].map((employee) => ({
+        ...employee,
+        totalHours: roundMoney(employee.totalHours),
+        baseHours: roundMoney(employee.baseHours),
+        nightHours: roundMoney(employee.nightHours),
+        holidayHours: roundMoney(employee.holidayHours),
+        grossAmount: roundMoney(employee.grossAmount),
+        netAmount: roundMoney(employee.netAmount),
+        totalAmount: roundMoney(employee.grossAmount + employee.netAmount),
+    }));
+
+    const options = await listSalaryOptions({ viewerId, viewerRole });
+    const visibleServiceIds = (options.services || []).map((service) => service.id);
+    const allRates = visibleServiceIds.length
+        ? await listSalaryRatesForServices(visibleServiceIds)
+        : [];
+
+    if (!generateExcel) {
+        return {
+            month,
+            employees,
+            workerOptions: options.employees,
+            serviceOptions: options.services,
+            rates: allRates,
+            adjustments,
+        };
+    }
+
+    const summaryRows = employees.map((employee) => ({
+        delegation: employee.delegation,
+        dni: employee.dni,
+        employeeName: employee.employeeName,
+        bankAccount: employee.bankAccount,
+        totalHours: employee.totalHours,
+        nightHours: employee.nightHours,
+        holidayHours: employee.holidayHours,
+        grossAmount: employee.grossAmount,
+        netAmount: employee.netAmount,
+        totalAmount: employee.totalAmount,
+        missingRates: employee.missingRates,
+    }));
+
+    const detailRows = employees.flatMap((employee) =>
+        employee.services.map((service) => ({
+            employeeName: employee.employeeName,
+            dni: employee.dni,
+            serviceName: service.serviceName,
+            serviceDelegation: service.serviceDelegation,
+            hourRuleType: service.hourRuleType,
+            totalHours: service.totalHours,
+            baseHours: service.baseHours,
+            nightHours: service.nightHours,
+            holidayHours: service.holidayHours,
+            amountType: service.amountType === 'net' ? 'Neto' : 'Bruto',
+            regularRate: service.rate.regularRate,
+            nightRate: service.rate.nightRate,
+            holidayRate: service.rate.holidayRate,
+            fixedAmount: service.rate.fixedAmount,
+            amount: service.amount,
+        }))
+    );
+
+    const adjustmentRows = adjustments.map((adjustment) => ({
+        employeeId: adjustment.employeeId,
+        serviceName: adjustment.serviceName || '',
+        concept: adjustment.concept,
+        quantity: toNumber(adjustment.quantity),
+        unitRate: toNumber(adjustment.unitRate),
+        amountType: adjustment.amountType === 'net' ? 'Neto' : 'Bruto',
+        amount: toNumber(adjustment.amount),
+        notes: adjustment.notes || '',
+    }));
+
+    const filePath = await createExcelUtil(
+        [
+            {
+                name: 'Resumen sueldos',
+                columns: [
+                    { header: 'Delegacion', key: 'delegation', width: 18 },
+                    { header: 'DNI', key: 'dni', width: 16 },
+                    { header: 'Trabajador', key: 'employeeName', width: 30 },
+                    { header: 'Cuenta bancaria', key: 'bankAccount', width: 28 },
+                    { header: 'Horas', key: 'totalHours', width: 12 },
+                    { header: 'Nocturnas', key: 'nightHours', width: 12 },
+                    { header: 'Festivas', key: 'holidayHours', width: 12 },
+                    { header: 'Bruto', key: 'grossAmount', width: 12 },
+                    { header: 'Neto', key: 'netAmount', width: 12 },
+                    { header: 'Total', key: 'totalAmount', width: 12 },
+                    { header: 'Servicios sin tarifa', key: 'missingRates', width: 18 },
+                ],
+                rows: summaryRows,
+            },
+            {
+                name: 'Detalle servicios',
+                columns: [
+                    { header: 'Trabajador', key: 'employeeName', width: 30 },
+                    { header: 'DNI', key: 'dni', width: 16 },
+                    { header: 'Servicio', key: 'serviceName', width: 32 },
+                    { header: 'Delegacion servicio', key: 'serviceDelegation', width: 20 },
+                    { header: 'Regla', key: 'hourRuleType', width: 12 },
+                    { header: 'Horas', key: 'totalHours', width: 12 },
+                    { header: 'Base', key: 'baseHours', width: 12 },
+                    { header: 'Nocturnas', key: 'nightHours', width: 12 },
+                    { header: 'Festivas', key: 'holidayHours', width: 12 },
+                    { header: 'Tipo', key: 'amountType', width: 10 },
+                    { header: 'Precio base', key: 'regularRate', width: 12 },
+                    { header: 'Precio nocturna', key: 'nightRate', width: 14 },
+                    { header: 'Precio festiva', key: 'holidayRate', width: 14 },
+                    { header: 'Fijo', key: 'fixedAmount', width: 12 },
+                    { header: 'Importe', key: 'amount', width: 12 },
+                ],
+                rows: detailRows,
+            },
+            {
+                name: 'Ajustes',
+                columns: [
+                    { header: 'Trabajador ID', key: 'employeeId', width: 38 },
+                    { header: 'Servicio', key: 'serviceName', width: 32 },
+                    { header: 'Concepto', key: 'concept', width: 28 },
+                    { header: 'Cantidad', key: 'quantity', width: 12 },
+                    { header: 'Precio unidad', key: 'unitRate', width: 14 },
+                    { header: 'Tipo', key: 'amountType', width: 10 },
+                    { header: 'Importe', key: 'amount', width: 12 },
+                    { header: 'Notas', key: 'notes', width: 40 },
+                ],
+                rows: adjustmentRows,
+            },
+        ],
+        null,
+        `sueldos-${month}.xlsx`
+    );
+
+    return {
+        month,
+        employees,
+        workerOptions: options.employees,
+        serviceOptions: options.services,
+        rates: allRates,
+        adjustments,
+        excelFilePath: `/uploads/documents/${path.basename(filePath)}`,
+    };
+};
+
+export {
+    calculateSalarySettlements,
+    createSalaryAdjustment,
+    deleteSalaryAdjustment,
+    listSalaryOptions,
+    listSalaryRates,
+    upsertSalaryRate,
+};

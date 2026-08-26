@@ -17,6 +17,7 @@ import employeeDocumentationRouter from './employeeDocumentationRouter.js';
 import warehouseRouter from './warehouseRouter.js';
 import payrollRouter from './payrollRouter.js';
 import billingRouter from './billingRouter.js';
+import salarySettlementRouter from './salarySettlementRouter.js';
 import vehicleRouter from './vehicleRouter.js';
 import pushRouter from './pushRouter.js';
 
@@ -39,6 +40,7 @@ router.use(employeeDocumentationRouter);
 router.use(warehouseRouter);
 router.use(payrollRouter);
 router.use(billingRouter);
+router.use(salarySettlementRouter);
 router.use(vehicleRouter);
 router.use(pushRouter);
 

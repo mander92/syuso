@@ -1,0 +1,234 @@
+.salary-settlements {
+    display: grid;
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.salary-settlements__header,
+.salary-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+    padding: 1rem;
+}
+
+.salary-settlements__header {
+    align-items: flex-start;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.salary-settlements__header h2,
+.salary-card h3,
+.salary-adjustments h4 {
+    color: #0f172a;
+    margin: 0;
+}
+
+.salary-settlements__header p,
+.salary-worker-head p,
+.salary-empty {
+    color: #64748b;
+    margin: 0.25rem 0 0;
+}
+
+.salary-settlements__header button,
+.salary-settlements__filters button,
+.salary-card button {
+    background: #0f172a;
+    border: 0;
+    border-radius: 999px;
+    color: #ffffff;
+    cursor: pointer;
+    font-weight: 800;
+    padding: 0.55rem 0.9rem;
+    white-space: nowrap;
+}
+
+.salary-settlements__filters,
+.salary-settlements__summary,
+.salary-settlements__forms {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.salary-settlements__filters {
+    align-items: end;
+    grid-template-columns: minmax(160px, 220px) minmax(220px, 1fr) auto;
+}
+
+.salary-settlements label {
+    color: #334155;
+    display: grid;
+    font-size: 0.82rem;
+    font-weight: 800;
+    gap: 0.35rem;
+}
+
+.salary-settlements input,
+.salary-settlements select {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    color: #0f172a;
+    font: inherit;
+    min-width: 0;
+    padding: 0.55rem 0.65rem;
+}
+
+.salary-settlements__summary {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.salary-settlements__summary article {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.9rem;
+}
+
+.salary-settlements__summary span,
+.salary-mini-summary span,
+.salary-service-row span {
+    color: #64748b;
+    font-size: 0.82rem;
+}
+
+.salary-settlements__summary strong {
+    color: #0f172a;
+    font-size: 1.15rem;
+}
+
+.salary-settlements__summary .is-warning {
+    background: #fff7ed;
+    border-color: #fed7aa;
+}
+
+.salary-settlements__forms {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.salary-card {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.salary-grid {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.salary-grid--compact {
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+}
+
+.salary-worker-head {
+    align-items: flex-start;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.salary-worker-head > strong {
+    color: #0f172a;
+    font-size: 1.25rem;
+    white-space: nowrap;
+}
+
+.salary-mini-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.salary-mini-summary span {
+    background: #e2e8f0;
+    border-radius: 999px;
+    color: #0f172a;
+    font-weight: 800;
+    padding: 0.25rem 0.55rem;
+}
+
+.salary-service-list,
+.salary-adjustments,
+.salary-rate-list {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.salary-service-row,
+.salary-adjustment-row,
+.salary-rate-row {
+    align-items: center;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 0.65rem;
+}
+
+.salary-service-row.is-missing {
+    background: #fff7ed;
+    border-color: #fed7aa;
+}
+
+.salary-service-row > div,
+.salary-rate-row > div,
+.salary-adjustment-row > span {
+    min-width: 0;
+}
+
+.salary-service-row > div:first-child,
+.salary-rate-row > div:first-child {
+    display: grid;
+    gap: 0.2rem;
+}
+
+.salary-service-row > div:last-child {
+    display: grid;
+    justify-items: end;
+}
+
+.salary-rate-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.salary-rate-row span {
+    color: #64748b;
+    font-size: 0.82rem;
+}
+
+.salary-adjustment-row {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.salary-adjustment-row button {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+@media (max-width: 720px) {
+    .salary-settlements {
+        padding: 0.75rem;
+    }
+
+    .salary-settlements__header,
+    .salary-worker-head {
+        display: grid;
+    }
+
+    .salary-settlements__filters,
+    .salary-service-row,
+    .salary-adjustment-row {
+        grid-template-columns: 1fr;
+    }
+
+    .salary-service-row > div:last-child {
+        justify-items: start;
+    }
+}

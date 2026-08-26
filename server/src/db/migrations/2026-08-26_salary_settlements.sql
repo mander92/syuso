@@ -1,0 +1,41 @@
+CREATE TABLE IF NOT EXISTS salaryServiceRates (
+    id CHAR(36) PRIMARY KEY NOT NULL,
+    serviceId CHAR(36) NOT NULL,
+    employeeId CHAR(36) NULL,
+    payMode ENUM('hourly','fixed') NOT NULL DEFAULT 'hourly',
+    amountType ENUM('gross','net') NOT NULL DEFAULT 'gross',
+    regularRate DECIMAL(10,2) NOT NULL DEFAULT 0,
+    nightRate DECIMAL(10,2) NOT NULL DEFAULT 0,
+    holidayRate DECIMAL(10,2) NOT NULL DEFAULT 0,
+    extraRate DECIMAL(10,2) NOT NULL DEFAULT 0,
+    fixedAmount DECIMAL(10,2) NOT NULL DEFAULT 0,
+    notes VARCHAR(500) NULL,
+    createdBy CHAR(36) NULL,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    modifiedAt TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+    deletedAt TIMESTAMP NULL,
+    INDEX idx_salary_rate_service_employee (serviceId, employeeId),
+    FOREIGN KEY (serviceId) REFERENCES services(id) ON DELETE CASCADE,
+    FOREIGN KEY (employeeId) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS salarySettlementAdjustments (
+    id CHAR(36) PRIMARY KEY NOT NULL,
+    employeeId CHAR(36) NOT NULL,
+    serviceId CHAR(36) NULL,
+    settlementMonth CHAR(7) NOT NULL,
+    concept VARCHAR(180) NOT NULL,
+    quantity DECIMAL(10,2) NOT NULL DEFAULT 1,
+    unitRate DECIMAL(10,2) NOT NULL DEFAULT 0,
+    amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+    amountType ENUM('gross','net') NOT NULL DEFAULT 'gross',
+    notes VARCHAR(500) NULL,
+    createdBy CHAR(36) NULL,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deletedAt TIMESTAMP NULL,
+    INDEX idx_salary_adjustment_employee_month (employeeId, settlementMonth),
+    FOREIGN KEY (employeeId) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (serviceId) REFERENCES services(id) ON DELETE SET NULL,
+    FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE SET NULL
+);

@@ -28,6 +28,7 @@ import EmployeeScheduleComponent from '../employeeSchedule/EmployeeScheduleCompo
 import EmployeeDocumentationComponent from '../employeeDocumentation/EmployeeDocumentationComponent.jsx';
 import AdminWarehouseSection from '../adminWarehouseSection/AdminWarehouseSection.jsx';
 import PayrollsComponent from '../payrolls/PayrollsComponent.jsx';
+import SalarySettlementsComponent from '../salarySettlements/SalarySettlementsComponent.jsx';
 import BillingComponent from '../billing/BillingComponent.jsx';
 import AdminVehiclesSection from '../adminVehiclesSection/AdminVehiclesSection.jsx';
 import DataProcessingNotice from '../dataProcessingNotice/DataProcessingNotice.jsx';
@@ -76,6 +77,7 @@ const administrationSectionIds = [
     'warehouse',
     'vehicles',
     'payrolls',
+    'salaries',
     'billing',
 ];
 const communicationSectionIds = ['chats', 'alerts'];
@@ -260,6 +262,7 @@ const DashboardComponent = () => {
                 { id: 'warehouse', label: 'Almacen' },
                 { id: 'vehicles', label: 'Vehiculos' },
                 { id: 'payrolls', label: 'Nominas' },
+                { id: 'salaries', label: 'Sueldos' },
                 { id: 'billing', label: 'Facturacion' },
                 { id: 'users', label: 'Permisos de usuarios' },
                 { id: 'dataProcessing', label: 'Tratamiento datos' },
@@ -798,6 +801,8 @@ const DashboardComponent = () => {
                 return <AdminVehiclesSection />;
             case 'payrolls':
                 return <PayrollsComponent />;
+            case 'salaries':
+                return <SalarySettlementsComponent />;
             case 'billing':
                 return <BillingComponent />;
 
