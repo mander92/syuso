@@ -2208,7 +2208,7 @@ const ServiceSchedulePanel = ({
                 </div>
             )}
             {selectedShift && (
-                <div className='service-schedule-modal-overlay'>
+                <div className='service-schedule-modal-overlay service-schedule-modal-overlay--shift-editor'>
                     <div className='service-schedule-modal'>
                         <div className='service-schedule-modal-header'>
                             <div>
