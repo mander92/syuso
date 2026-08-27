@@ -8,6 +8,8 @@ const schema = Joi.object({
         .pattern(/^20\d{2}-(0[1-9]|1[0-2])$/)
         .required(),
     employeeId: Joi.string().length(36).allow('', null),
+    serviceId: Joi.string().length(36).allow('', null),
+    delegation: Joi.string().max(120).allow('', null),
     generateExcel: Joi.boolean().truthy('true').falsy('false').default(false),
 });
 

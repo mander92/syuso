@@ -152,6 +152,43 @@
     white-space: pre-wrap;
 }
 
+.shift-audit-snapshot {
+    display: grid;
+    gap: 6px;
+    max-width: 300px;
+}
+
+.shift-audit-snapshot-row,
+.shift-audit-location {
+    display: grid;
+    gap: 2px;
+}
+
+.shift-audit-snapshot-row span,
+.shift-audit-location span {
+    color: #64748b;
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.shift-audit-snapshot-row strong {
+    color: #0f172a;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.shift-audit-location a {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 999px;
+    color: #1e3a8a;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 4px 8px;
+    text-decoration: none;
+    width: fit-content;
+}
+
 .shift-audit__table code {
     background: #f1f5f9;
     border-radius: 6px;

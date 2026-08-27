@@ -18,6 +18,8 @@ const formatMoney = (value) =>
         currency: 'EUR',
     }).format(Number(value) || 0);
 
+const formatHours = (value) => `${(Number(value) || 0).toFixed(2)} h`;
+
 const employeeName = (employee) =>
     employee.employeeName ||
     `${employee.firstName || ''} ${employee.lastName || ''}`.trim() ||
@@ -26,6 +28,19 @@ const employeeName = (employee) =>
 
 const serviceLabel = (service) =>
     service.name || service.type || service.serviceName || 'Servicio';
+
+const getDaysInMonth = (month) => {
+    const [year, monthNumber] = String(month || '').split('-').map(Number);
+    if (!year || !monthNumber) return [];
+    const days = new Date(year, monthNumber, 0).getDate();
+    return Array.from({ length: days }, (_, index) => {
+        const day = index + 1;
+        const date = `${year}-${String(monthNumber).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        return { day, date };
+    });
+};
+
+const getDayKey = (value) => String(value || '').slice(0, 10);
 
 const emptyRateForm = {
     serviceId: '',
@@ -40,31 +55,43 @@ const emptyRateForm = {
     notes: '',
 };
 
+const emptyAdjustmentForm = {
+    serviceId: '',
+    concept: '',
+    quantity: '1',
+    unitRate: '',
+    amount: '',
+    amountType: 'gross',
+    notes: '',
+};
+
+const getRateText = (rate) => {
+    if (rate.payMode === 'agreement') {
+        return `Convenio base ${formatMoney(rate.regularRate)} / h`;
+    }
+    if (rate.payMode === 'fixed') return `Fijo ${formatMoney(rate.fixedAmount)}`;
+    return `Base ${formatMoney(rate.regularRate)} / h`;
+};
+
 const SalarySettlementsComponent = () => {
     const { authToken } = useContext(AuthContext);
     const [filters, setFilters] = useState({
         month: getCurrentMonth(),
         employeeId: '',
+        delegation: '',
+        serviceId: '',
     });
     const [data, setData] = useState({
         employees: [],
         workerOptions: [],
         serviceOptions: [],
+        delegationOptions: [],
         rates: [],
         adjustments: [],
     });
     const [rateForm, setRateForm] = useState(emptyRateForm);
-    const [adjustmentForm, setAdjustmentForm] = useState({
-        employeeId: '',
-        serviceId: '',
-        settlementMonth: getCurrentMonth(),
-        concept: '',
-        quantity: '1',
-        unitRate: '',
-        amount: '',
-        amountType: 'gross',
-        notes: '',
-    });
+    const [openAdjustmentEmployeeId, setOpenAdjustmentEmployeeId] = useState('');
+    const [adjustmentForm, setAdjustmentForm] = useState(emptyAdjustmentForm);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
 
@@ -79,6 +106,25 @@ const SalarySettlementsComponent = () => {
                 ),
         [data.workerOptions]
     );
+
+    const serviceOptions = useMemo(
+        () =>
+            (data.serviceOptions || [])
+                .slice()
+                .sort((a, b) =>
+                    serviceLabel(a).localeCompare(serviceLabel(b), 'es', {
+                        sensitivity: 'base',
+                    })
+                ),
+        [data.serviceOptions]
+    );
+
+    const delegationOptions = useMemo(
+        () => (data.delegationOptions || []).map((item) => item.name).filter(Boolean),
+        [data.delegationOptions]
+    );
+
+    const monthDays = useMemo(() => getDaysInMonth(filters.month), [filters.month]);
 
     const loadData = async (generateExcel = false) => {
         if (!authToken) return;
@@ -106,7 +152,13 @@ const SalarySettlementsComponent = () => {
     useEffect(() => {
         loadData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [authToken, filters.month, filters.employeeId]);
+    }, [
+        authToken,
+        filters.month,
+        filters.employeeId,
+        filters.serviceId,
+        filters.delegation,
+    ]);
 
     const handleSaveRate = async (event) => {
         event.preventDefault();
@@ -116,7 +168,10 @@ const SalarySettlementsComponent = () => {
         }
         setSaving(true);
         try {
-            await saveSalaryRate(authToken, rateForm);
+            await saveSalaryRate(authToken, {
+                ...rateForm,
+                amountType: rateForm.payMode === 'agreement' ? 'gross' : rateForm.amountType,
+            });
             setRateForm(emptyRateForm);
             await loadData();
             toast.success('Tarifa guardada');
@@ -127,9 +182,9 @@ const SalarySettlementsComponent = () => {
         }
     };
 
-    const handleCreateAdjustment = async (event) => {
+    const handleCreateAdjustment = async (event, employeeId) => {
         event.preventDefault();
-        if (!adjustmentForm.employeeId || !adjustmentForm.concept) {
+        if (!employeeId || !adjustmentForm.concept) {
             toast.error('Completa trabajador y concepto');
             return;
         }
@@ -137,20 +192,13 @@ const SalarySettlementsComponent = () => {
         try {
             await createSalaryAdjustment(authToken, {
                 ...adjustmentForm,
+                employeeId,
                 settlementMonth: filters.month,
             });
-            setAdjustmentForm((prev) => ({
-                ...prev,
-                employeeId: '',
-                serviceId: '',
-                concept: '',
-                quantity: '1',
-                unitRate: '',
-                amount: '',
-                notes: '',
-            }));
+            setAdjustmentForm(emptyAdjustmentForm);
+            setOpenAdjustmentEmployeeId('');
             await loadData();
-            toast.success('Ajuste añadido');
+            toast.success('Ajuste anadido');
         } catch (error) {
             toast.error(error.message || 'No se pudo crear el ajuste');
         } finally {
@@ -170,6 +218,64 @@ const SalarySettlementsComponent = () => {
         } finally {
             setSaving(false);
         }
+    };
+
+    const handleOpenWorkerAdjustment = (employee) => {
+        setOpenAdjustmentEmployeeId((prev) =>
+            prev === employee.employeeId ? '' : employee.employeeId
+        );
+        setAdjustmentForm(emptyAdjustmentForm);
+    };
+
+    const handleEditWorkerRate = (employee, service) => {
+        const rate = service.rate || {};
+        setRateForm({
+            serviceId: service.serviceId || '',
+            employeeId: employee.employeeId || '',
+            payMode: rate.payMode || 'hourly',
+            amountType: rate.payMode === 'agreement' ? 'gross' : rate.amountType || 'gross',
+            regularRate: rate.regularRate ?? '',
+            nightRate: rate.nightRate ?? '',
+            holidayRate: rate.holidayRate ?? '',
+            extraRate: rate.extraRate ?? '',
+            fixedAmount: rate.fixedAmount ?? '',
+            notes: rate.notes || '',
+        });
+        document
+            .querySelector('.salary-settlements__forms')
+            ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    const renderWorkerCalendar = (employee) => {
+        const shiftsByDate = (employee.calendar || []).reduce((acc, shift) => {
+            const key = getDayKey(shift.date);
+            if (!acc[key]) acc[key] = [];
+            acc[key].push(shift);
+            return acc;
+        }, {});
+
+        return (
+            <div className='salary-calendar'>
+                {monthDays.map(({ day, date }) => {
+                    const shifts = shiftsByDate[date] || [];
+                    const isWeekend = [0, 6].includes(new Date(`${date}T12:00:00`).getDay());
+                    return (
+                        <div
+                            key={`${employee.employeeId}-${date}`}
+                            className={`salary-calendar__day${isWeekend ? ' is-weekend' : ''}`}
+                        >
+                            <span>{day}</span>
+                            {shifts.map((shift, index) => (
+                                <small key={`${shift.serviceId}-${date}-${index}`}>
+                                    {shift.startTime?.slice(0, 5)}-{shift.endTime?.slice(0, 5)}{' '}
+                                    {shift.serviceName}
+                                </small>
+                            ))}
+                        </div>
+                    );
+                })}
+            </div>
+        );
     };
 
     const totals = useMemo(
@@ -216,9 +322,52 @@ const SalarySettlementsComponent = () => {
                             setFilters((prev) => ({
                                 ...prev,
                                 month: event.target.value,
+                                employeeId: '',
+                                serviceId: '',
                             }))
                         }
                     />
+                </label>
+                <label>
+                    Delegacion
+                    <select
+                        value={filters.delegation}
+                        onChange={(event) =>
+                            setFilters((prev) => ({
+                                ...prev,
+                                delegation: event.target.value,
+                                employeeId: '',
+                                serviceId: '',
+                            }))
+                        }
+                    >
+                        <option value=''>Todas</option>
+                        {delegationOptions.map((delegation) => (
+                            <option key={delegation} value={delegation}>
+                                {delegation}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+                <label>
+                    Servicio
+                    <select
+                        value={filters.serviceId}
+                        onChange={(event) =>
+                            setFilters((prev) => ({
+                                ...prev,
+                                serviceId: event.target.value,
+                                employeeId: '',
+                            }))
+                        }
+                    >
+                        <option value=''>Todos</option>
+                        {serviceOptions.map((service) => (
+                            <option key={service.id} value={service.id}>
+                                {serviceLabel(service)}
+                            </option>
+                        ))}
+                    </select>
                 </label>
                 <label>
                     Trabajador
@@ -270,45 +419,45 @@ const SalarySettlementsComponent = () => {
             <div className='salary-settlements__forms'>
                 <form className='salary-card' onSubmit={handleSaveRate}>
                     <h3>Tarifa guardada</h3>
-                    <label>
-                        Servicio
-                        <select
-                            value={rateForm.serviceId}
-                            onChange={(event) =>
-                                setRateForm((prev) => ({
-                                    ...prev,
-                                    serviceId: event.target.value,
-                                }))
-                            }
-                        >
-                            <option value=''>Selecciona</option>
-                            {(data.serviceOptions || []).map((service) => (
-                                <option key={service.id} value={service.id}>
-                                    {serviceLabel(service)}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                    <label>
-                        Trabajador concreto
-                        <select
-                            value={rateForm.employeeId}
-                            onChange={(event) =>
-                                setRateForm((prev) => ({
-                                    ...prev,
-                                    employeeId: event.target.value,
-                                }))
-                            }
-                        >
-                            <option value=''>Todos en ese servicio</option>
-                            {employeeOptions.map((employee) => (
-                                <option key={employee.id} value={employee.id}>
-                                    {employeeName(employee)}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
                     <div className='salary-grid salary-grid--compact'>
+                        <label>
+                            Servicio
+                            <select
+                                value={rateForm.serviceId}
+                                onChange={(event) =>
+                                    setRateForm((prev) => ({
+                                        ...prev,
+                                        serviceId: event.target.value,
+                                    }))
+                                }
+                            >
+                                <option value=''>Selecciona</option>
+                                {serviceOptions.map((service) => (
+                                    <option key={service.id} value={service.id}>
+                                        {serviceLabel(service)}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                        <label>
+                            Trabajador concreto
+                            <select
+                                value={rateForm.employeeId}
+                                onChange={(event) =>
+                                    setRateForm((prev) => ({
+                                        ...prev,
+                                        employeeId: event.target.value,
+                                    }))
+                                }
+                            >
+                                <option value=''>Todos en ese servicio</option>
+                                {employeeOptions.map((employee) => (
+                                    <option key={employee.id} value={employee.id}>
+                                        {employeeName(employee)}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
                         <label>
                             Modo
                             <select
@@ -317,17 +466,23 @@ const SalarySettlementsComponent = () => {
                                     setRateForm((prev) => ({
                                         ...prev,
                                         payMode: event.target.value,
+                                        amountType:
+                                            event.target.value === 'agreement'
+                                                ? 'gross'
+                                                : prev.amountType,
                                     }))
                                 }
                             >
                                 <option value='hourly'>Por horas</option>
                                 <option value='fixed'>Fijo</option>
+                                <option value='agreement'>Convenio</option>
                             </select>
                         </label>
                         <label>
                             Tipo
                             <select
                                 value={rateForm.amountType}
+                                disabled={rateForm.payMode === 'agreement'}
                                 onChange={(event) =>
                                     setRateForm((prev) => ({
                                         ...prev,
@@ -359,6 +514,7 @@ const SalarySettlementsComponent = () => {
                                 type='number'
                                 step='0.01'
                                 value={rateForm.nightRate}
+                                placeholder={String(data.agreement?.nightRate || '')}
                                 onChange={(event) =>
                                     setRateForm((prev) => ({
                                         ...prev,
@@ -373,10 +529,25 @@ const SalarySettlementsComponent = () => {
                                 type='number'
                                 step='0.01'
                                 value={rateForm.holidayRate}
+                                placeholder={String(data.agreement?.holidayRate || '')}
                                 onChange={(event) =>
                                     setRateForm((prev) => ({
                                         ...prev,
                                         holidayRate: event.target.value,
+                                    }))
+                                }
+                            />
+                        </label>
+                        <label>
+                            Extra
+                            <input
+                                type='number'
+                                step='0.01'
+                                value={rateForm.extraRate}
+                                onChange={(event) =>
+                                    setRateForm((prev) => ({
+                                        ...prev,
+                                        extraRate: event.target.value,
                                     }))
                                 }
                             />
@@ -408,137 +579,16 @@ const SalarySettlementsComponent = () => {
                             }
                         />
                     </label>
+                    {rateForm.payMode === 'agreement' ? (
+                        <p className='salary-note'>
+                            Convenio Seguridad Privada: bruto, 162 h/mes,
+                            nocturnidad 22:00-06:00 y extras sobre 162 h. Si
+                            dejas nocturna o festiva a 0 se aplica el plus oficial
+                            del ano.
+                        </p>
+                    ) : null}
                     <button type='submit' disabled={saving}>
                         Guardar tarifa
-                    </button>
-                </form>
-
-                <form className='salary-card' onSubmit={handleCreateAdjustment}>
-                    <h3>Ajuste manual</h3>
-                    <label>
-                        Trabajador
-                        <select
-                            value={adjustmentForm.employeeId}
-                            onChange={(event) =>
-                                setAdjustmentForm((prev) => ({
-                                    ...prev,
-                                    employeeId: event.target.value,
-                                }))
-                            }
-                        >
-                            <option value=''>Selecciona</option>
-                            {employeeOptions.map((employee) => (
-                                <option key={employee.id} value={employee.id}>
-                                    {employeeName(employee)}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                    <label>
-                        Servicio opcional
-                        <select
-                            value={adjustmentForm.serviceId}
-                            onChange={(event) =>
-                                setAdjustmentForm((prev) => ({
-                                    ...prev,
-                                    serviceId: event.target.value,
-                                }))
-                            }
-                        >
-                            <option value=''>General</option>
-                            {(data.serviceOptions || []).map((service) => (
-                                <option key={service.id} value={service.id}>
-                                    {serviceLabel(service)}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                    <label>
-                        Concepto
-                        <input
-                            value={adjustmentForm.concept}
-                            placeholder='Gasolina, horas extra, plus...'
-                            onChange={(event) =>
-                                setAdjustmentForm((prev) => ({
-                                    ...prev,
-                                    concept: event.target.value,
-                                }))
-                            }
-                        />
-                    </label>
-                    <div className='salary-grid salary-grid--compact'>
-                        <label>
-                            Cantidad
-                            <input
-                                type='number'
-                                step='0.01'
-                                value={adjustmentForm.quantity}
-                                onChange={(event) =>
-                                    setAdjustmentForm((prev) => ({
-                                        ...prev,
-                                        quantity: event.target.value,
-                                    }))
-                                }
-                            />
-                        </label>
-                        <label>
-                            Precio unidad
-                            <input
-                                type='number'
-                                step='0.01'
-                                value={adjustmentForm.unitRate}
-                                onChange={(event) =>
-                                    setAdjustmentForm((prev) => ({
-                                        ...prev,
-                                        unitRate: event.target.value,
-                                    }))
-                                }
-                            />
-                        </label>
-                        <label>
-                            Importe directo
-                            <input
-                                type='number'
-                                step='0.01'
-                                value={adjustmentForm.amount}
-                                onChange={(event) =>
-                                    setAdjustmentForm((prev) => ({
-                                        ...prev,
-                                        amount: event.target.value,
-                                    }))
-                                }
-                            />
-                        </label>
-                        <label>
-                            Tipo
-                            <select
-                                value={adjustmentForm.amountType}
-                                onChange={(event) =>
-                                    setAdjustmentForm((prev) => ({
-                                        ...prev,
-                                        amountType: event.target.value,
-                                    }))
-                                }
-                            >
-                                <option value='gross'>Bruto</option>
-                                <option value='net'>Neto</option>
-                            </select>
-                        </label>
-                    </div>
-                    <label>
-                        Notas
-                        <input
-                            value={adjustmentForm.notes}
-                            onChange={(event) =>
-                                setAdjustmentForm((prev) => ({
-                                    ...prev,
-                                    notes: event.target.value,
-                                }))
-                            }
-                        />
-                    </label>
-                    <button type='submit' disabled={saving}>
-                        Añadir ajuste
                     </button>
                 </form>
             </div>
@@ -555,12 +605,13 @@ const SalarySettlementsComponent = () => {
                                         'Servicio'}
                                 </strong>
                                 <span>
-                                    {rate.employeeName || 'Todos los trabajadores'} ·{' '}
-                                    {rate.payMode === 'fixed'
-                                        ? `Fijo ${formatMoney(rate.fixedAmount)}`
-                                        : `Base ${formatMoney(rate.regularRate)} / h`}
-                                    {' · '}
-                                    {rate.amountType === 'net' ? 'Neto' : 'Bruto'}
+                                    {rate.employeeName || 'Todos los trabajadores'} -{' '}
+                                    {getRateText(rate)} -{' '}
+                                    {rate.payMode === 'agreement'
+                                        ? 'Bruto convenio'
+                                        : rate.amountType === 'net'
+                                          ? 'Neto'
+                                          : 'Bruto'}
                                 </span>
                             </div>
                             <button
@@ -570,7 +621,10 @@ const SalarySettlementsComponent = () => {
                                         serviceId: rate.serviceId || '',
                                         employeeId: rate.employeeId || '',
                                         payMode: rate.payMode || 'hourly',
-                                        amountType: rate.amountType || 'gross',
+                                        amountType:
+                                            rate.payMode === 'agreement'
+                                                ? 'gross'
+                                                : rate.amountType || 'gross',
                                         regularRate: rate.regularRate ?? '',
                                         nightRate: rate.nightRate ?? '',
                                         holidayRate: rate.holidayRate ?? '',
@@ -586,7 +640,7 @@ const SalarySettlementsComponent = () => {
                     ))}
                     {!data.rates?.length ? (
                         <p className='salary-empty'>
-                            Todavía no hay tarifas guardadas.
+                            Todavia no hay tarifas guardadas.
                         </p>
                     ) : null}
                 </div>
@@ -599,20 +653,31 @@ const SalarySettlementsComponent = () => {
                             <div>
                                 <h3>{employee.employeeName}</h3>
                                 <p>
-                                    {employee.delegation || 'Sin delegación'} ·{' '}
-                                    {employee.dni || 'Sin DNI'} ·{' '}
+                                    {employee.delegation || 'Sin delegacion'} -{' '}
+                                    {employee.dni || 'Sin DNI'} -{' '}
                                     {employee.bankAccount || 'Sin cuenta bancaria'}
                                 </p>
                             </div>
                             <strong>{formatMoney(employee.totalAmount)}</strong>
                         </div>
+                        <div className='salary-worker-actions'>
+                            <button
+                                type='button'
+                                onClick={() => handleOpenWorkerAdjustment(employee)}
+                            >
+                                Ajuste manual
+                            </button>
+                        </div>
                         <div className='salary-mini-summary'>
-                            <span>{employee.totalHours} h</span>
-                            <span>Noct. {employee.nightHours} h</span>
-                            <span>Fest. {employee.holidayHours} h</span>
+                            <span>{formatHours(employee.totalHours)}</span>
+                            <span>Base {formatHours(employee.baseHours)}</span>
+                            <span>Noct. {formatHours(employee.nightHours)}</span>
+                            <span>Fest. {formatHours(employee.holidayHours)}</span>
+                            <span>Extras {formatHours(employee.extraHours)}</span>
                             <span>Bruto {formatMoney(employee.grossAmount)}</span>
                             <span>Neto {formatMoney(employee.netAmount)}</span>
                         </div>
+                        {renderWorkerCalendar(employee)}
                         <div className='salary-service-list'>
                             {(employee.services || []).map((service) => (
                                 <div
@@ -625,23 +690,152 @@ const SalarySettlementsComponent = () => {
                                     <div>
                                         <strong>{service.serviceName}</strong>
                                         <span>
-                                            {service.totalHours} h ·{' '}
+                                            {formatHours(service.totalHours)} -{' '}
                                             {service.hourRuleType === 'convenio'
-                                                ? `Noct. ${service.nightHours} · Fest. ${service.holidayHours}`
+                                                ? `Noct. ${formatHours(service.nightHours)} - Fest. ${formatHours(service.holidayHours)} - Extra ${formatHours(service.extraHours)}`
                                                 : 'Normal'}
                                         </span>
                                     </div>
-                                    <div>
-                                        <span>
-                                            {service.amountType === 'net'
-                                                ? 'Neto'
-                                                : 'Bruto'}
-                                        </span>
-                                        <strong>{formatMoney(service.amount)}</strong>
+                                    <div className='salary-service-row__actions'>
+                                        <div>
+                                            <span>
+                                                {service.amountType === 'net'
+                                                    ? 'Neto'
+                                                    : 'Bruto'}
+                                            </span>
+                                            <strong>{formatMoney(service.amount)}</strong>
+                                        </div>
+                                        <button
+                                            type='button'
+                                            onClick={() =>
+                                                handleEditWorkerRate(employee, service)
+                                            }
+                                        >
+                                            Tarifa trabajador
+                                        </button>
                                     </div>
                                 </div>
                             ))}
                         </div>
+                        {openAdjustmentEmployeeId === employee.employeeId ? (
+                            <form
+                                className='salary-adjustment-form'
+                                onSubmit={(event) =>
+                                    handleCreateAdjustment(event, employee.employeeId)
+                                }
+                            >
+                                <h4>Ajuste manual</h4>
+                                <label>
+                                    Servicio opcional
+                                    <select
+                                        value={adjustmentForm.serviceId}
+                                        onChange={(event) =>
+                                            setAdjustmentForm((prev) => ({
+                                                ...prev,
+                                                serviceId: event.target.value,
+                                            }))
+                                        }
+                                    >
+                                        <option value=''>General</option>
+                                        {(employee.services || []).map((service) => (
+                                            <option
+                                                key={service.serviceId}
+                                                value={service.serviceId}
+                                            >
+                                                {service.serviceName}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+                                <label>
+                                    Concepto
+                                    <input
+                                        value={adjustmentForm.concept}
+                                        placeholder='Gasolina, plus, adelanto...'
+                                        onChange={(event) =>
+                                            setAdjustmentForm((prev) => ({
+                                                ...prev,
+                                                concept: event.target.value,
+                                            }))
+                                        }
+                                    />
+                                </label>
+                                <div className='salary-grid salary-grid--compact'>
+                                    <label>
+                                        Cantidad
+                                        <input
+                                            type='number'
+                                            step='0.01'
+                                            value={adjustmentForm.quantity}
+                                            onChange={(event) =>
+                                                setAdjustmentForm((prev) => ({
+                                                    ...prev,
+                                                    quantity: event.target.value,
+                                                }))
+                                            }
+                                        />
+                                    </label>
+                                    <label>
+                                        Precio unidad
+                                        <input
+                                            type='number'
+                                            step='0.01'
+                                            value={adjustmentForm.unitRate}
+                                            onChange={(event) =>
+                                                setAdjustmentForm((prev) => ({
+                                                    ...prev,
+                                                    unitRate: event.target.value,
+                                                }))
+                                            }
+                                        />
+                                    </label>
+                                    <label>
+                                        Importe directo
+                                        <input
+                                            type='number'
+                                            step='0.01'
+                                            value={adjustmentForm.amount}
+                                            onChange={(event) =>
+                                                setAdjustmentForm((prev) => ({
+                                                    ...prev,
+                                                    amount: event.target.value,
+                                                }))
+                                            }
+                                        />
+                                    </label>
+                                    <label>
+                                        Tipo
+                                        <select
+                                            value={adjustmentForm.amountType}
+                                            onChange={(event) =>
+                                                setAdjustmentForm((prev) => ({
+                                                    ...prev,
+                                                    amountType: event.target.value,
+                                                }))
+                                            }
+                                        >
+                                            <option value='gross'>Bruto</option>
+                                            <option value='net'>Neto</option>
+                                        </select>
+                                    </label>
+                                </div>
+                                <label>
+                                    Notas
+                                    <input
+                                        value={adjustmentForm.notes}
+                                        onChange={(event) =>
+                                            setAdjustmentForm((prev) => ({
+                                                ...prev,
+                                                notes: event.target.value,
+                                            }))
+                                        }
+                                    />
+                                </label>
+                                <button type='submit' disabled={saving}>
+                                    Anadir ajuste
+                                </button>
+                            </form>
+                        ) : null}
                         {employee.adjustments?.length ? (
                             <div className='salary-adjustments'>
                                 <h4>Ajustes</h4>

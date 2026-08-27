@@ -26,6 +26,41 @@ const roundMoney = (value) => Number((toNumber(value)).toFixed(2));
 
 const getRateKey = (serviceId, employeeId = '') => `${serviceId}:${employeeId || ''}`;
 
+const SECURITY_AGREEMENT = {
+    monthlyRegularHours: 162,
+    nightRates: {
+        2026: 1.26,
+        2027: 1.3,
+        2028: 1.35,
+        2029: 1.4,
+        2030: 1.46,
+    },
+    holidayRates: {
+        2026: 1.02,
+        2027: 1.06,
+        2028: 1.1,
+        2029: 1.14,
+        2030: 1.19,
+    },
+};
+
+const getAgreementYear = (month) => {
+    const year = Number(String(month || '').slice(0, 4));
+    if (year < 2026) return 2026;
+    if (year > 2030) return 2030;
+    return year || 2026;
+};
+
+const getAgreementDefaults = (month) => {
+    const year = getAgreementYear(month);
+    return {
+        year,
+        monthlyRegularHours: SECURITY_AGREEMENT.monthlyRegularHours,
+        nightRate: SECURITY_AGREEMENT.nightRates[year],
+        holidayRate: SECURITY_AGREEMENT.holidayRates[year],
+    };
+};
+
 const normalizeRate = (rate) => ({
     id: rate?.id || '',
     serviceId: rate?.serviceId || '',
@@ -48,14 +83,28 @@ const buildRateMap = (rates) => {
     return map;
 };
 
-const calculateLineAmount = ({ row, rate }) => {
+const calculateLineAmount = ({ row, rate, month }) => {
     if (!rate?.id) return 0;
     if (rate.payMode === 'fixed') return roundMoney(rate.fixedAmount);
 
-    const totalHours = toNumber(row.totalHours);
     const nightHours = toNumber(row.nightHours);
     const holidayHours = toNumber(row.holidayHours);
-    const baseHours = Math.max(totalHours - nightHours - holidayHours, 0);
+    const extraHours = toNumber(row.extraHours);
+    const baseHours = Math.max(toNumber(row.baseHours), 0);
+
+    if (rate.payMode === 'agreement') {
+        const defaults = getAgreementDefaults(month);
+        const nightRate = rate.nightRate || defaults.nightRate || rate.regularRate;
+        const holidayRate = rate.holidayRate || defaults.holidayRate || rate.regularRate;
+        const extraRate = rate.extraRate || rate.regularRate;
+
+        return roundMoney(
+            baseHours * rate.regularRate +
+                nightHours * nightRate +
+                holidayHours * holidayRate +
+                extraHours * extraRate
+        );
+    }
 
     return roundMoney(
         baseHours * rate.regularRate +
@@ -69,40 +118,134 @@ const getViewerDelegations = async ({ viewerId, viewerRole }) => {
     return selectAdminDelegationNamesService(viewerId);
 };
 
-const listSalaryOptions = async ({ viewerId, viewerRole }) => {
-    const pool = await getPool();
-    const values = [];
-    const delegationFilters = [];
+const buildSalaryFilters = async ({
+    viewerId,
+    viewerRole,
+    start,
+    end,
+    employeeId = '',
+    serviceId = '',
+    delegation = '',
+    tableAlias = 'ss',
+}) => {
+    const values = [start, end];
+    const filters = [
+        `${tableAlias}.deletedAt IS NULL`,
+        `${tableAlias}.employeeId IS NOT NULL`,
+        `${tableAlias}.scheduleDate BETWEEN ? AND ?`,
+    ];
+
+    if (employeeId) {
+        filters.push(`${tableAlias}.employeeId = ?`);
+        values.push(employeeId);
+    }
+
+    if (serviceId) {
+        filters.push(`${tableAlias}.serviceId = ?`);
+        values.push(serviceId);
+    }
+
+    if (delegation) {
+        filters.push('(u.city = ? OR s.province = ?)');
+        values.push(delegation, delegation);
+    }
 
     if (viewerRole === 'admin') {
         const delegations = await getViewerDelegations({ viewerId, viewerRole });
-        if (!delegations.length) {
-            return { employees: [], services: [] };
-        }
-        delegationFilters.push(`u.city IN (${delegations.map(() => '?').join(', ')})`);
-        values.push(...delegations);
+        if (!delegations.length) return null;
+        filters.push(
+            `(u.city IN (${delegations.map(() => '?').join(', ')}) OR s.province IN (${delegations.map(() => '?').join(', ')}))`
+        );
+        values.push(...delegations, ...delegations);
     }
+
+    return { filters, values };
+};
+
+const listSalaryOptions = async ({
+    viewerId,
+    viewerRole,
+    month,
+    employeeId = '',
+    serviceId = '',
+    delegation = '',
+}) => {
+    const pool = await getPool();
+    const { start, end } = getMonthRange(month);
+    const filterData = await buildSalaryFilters({
+        viewerId,
+        viewerRole,
+        start,
+        end,
+        employeeId: '',
+        serviceId,
+        delegation,
+    });
+    if (!filterData) return { employees: [], services: [], delegations: [] };
 
     const [employees] = await pool.query(
         `
-        SELECT u.id, u.firstName, u.lastName, u.email, u.dni, u.city, u.active,
+        SELECT DISTINCT u.id, u.firstName, u.lastName, u.email, u.dni, u.city, u.active,
                ed.bankAccount
-        FROM users u
+        FROM serviceScheduleShifts ss
+        INNER JOIN users u ON u.id = ss.employeeId
+        INNER JOIN services s ON s.id = ss.serviceId
         LEFT JOIN employeeDocumentations ed ON ed.userId = u.id
-        WHERE u.role = 'employee'
-          AND u.deletedAt IS NULL
-          ${delegationFilters.length ? `AND ${delegationFilters.join(' AND ')}` : ''}
+        WHERE ${filterData.filters.join(' AND ')}
         ORDER BY u.firstName, u.lastName
         `,
-        values
+        filterData.values
     );
 
-    const serviceValues = [];
+    const serviceFilterData = await buildSalaryFilters({
+        viewerId,
+        viewerRole,
+        start,
+        end,
+        employeeId,
+        serviceId: '',
+        delegation,
+    });
+    if (!serviceFilterData) return { employees: [], services: [], delegations: [] };
+
+    const [services] = await pool.query(
+        `
+        SELECT DISTINCT s.id, s.name, s.type, s.province, s.hourRuleType
+        FROM serviceScheduleShifts ss
+        INNER JOIN users u ON u.id = ss.employeeId
+        INNER JOIN services s ON s.id = ss.serviceId
+        WHERE ${serviceFilterData.filters.join(' AND ')}
+        ORDER BY s.name, s.type
+        `,
+        serviceFilterData.values
+    );
+
+    const [delegations] = await pool.query(
+        `
+        SELECT DISTINCT COALESCE(NULLIF(u.city, ''), NULLIF(s.province, '')) AS name
+        FROM serviceScheduleShifts ss
+        INNER JOIN users u ON u.id = ss.employeeId
+        INNER JOIN services s ON s.id = ss.serviceId
+        WHERE ${serviceFilterData.filters.join(' AND ')}
+        HAVING name IS NOT NULL
+        ORDER BY name
+        `,
+        serviceFilterData.values
+    );
+
+    return { employees, services, delegations };
+};
+
+const listVisibleServices = async ({ viewerId, viewerRole }) => {
+    const pool = await getPool();
+    const values = [];
     let serviceFilter = '';
+
     if (viewerRole === 'admin') {
         const delegations = await getViewerDelegations({ viewerId, viewerRole });
+        if (!delegations.length) return [];
         serviceFilter = `AND s.province IN (${delegations.map(() => '?').join(', ')})`;
-        serviceValues.push(...delegations);
+        values.push(...delegations);
     }
 
     const [services] = await pool.query(
@@ -113,10 +256,10 @@ const listSalaryOptions = async ({ viewerId, viewerRole }) => {
           ${serviceFilter}
         ORDER BY s.name, s.type
         `,
-        serviceValues
+        values
     );
 
-    return { employees, services };
+    return services;
 };
 
 const listSalaryRates = async ({ serviceId = '', employeeId = '' } = {}) => {
@@ -140,7 +283,7 @@ const listSalaryRates = async ({ serviceId = '', employeeId = '' } = {}) => {
         FROM salaryServiceRates r
         INNER JOIN services s ON s.id = r.serviceId
         LEFT JOIN users u ON u.id = r.employeeId
-        WHERE ${filters.join(' AND ')}
+        WHERE ${filterData.filters.join(' AND ')}
         ORDER BY s.name, employeeName
         `,
         values
@@ -170,6 +313,8 @@ const listSalaryRatesForServices = async (serviceIds) => {
 const upsertSalaryRate = async ({ userId, payload }) => {
     const pool = await getPool();
     const employeeId = payload.employeeId || null;
+    const payMode = payload.payMode || 'hourly';
+    const amountType = payMode === 'agreement' ? 'gross' : payload.amountType || 'gross';
     const [services] = await pool.query(
         'SELECT id FROM services WHERE id = ? AND deletedAt IS NULL',
         [payload.serviceId]
@@ -189,8 +334,8 @@ const upsertSalaryRate = async ({ userId, payload }) => {
     );
 
     const values = [
-        payload.payMode || 'hourly',
-        payload.amountType || 'gross',
+        payMode,
+        amountType,
         toNumber(payload.regularRate),
         toNumber(payload.nightRate),
         toNumber(payload.holidayRate),
@@ -271,31 +416,33 @@ const calculateSalarySettlements = async ({
     viewerRole,
     month,
     employeeId = '',
+    serviceId = '',
+    delegation = '',
     generateExcel = false,
 }) => {
     const pool = await getPool();
     const { start, end } = getMonthRange(month);
-    const values = [start, end];
-    const filters = [
-        'ss.deletedAt IS NULL',
-        'ss.employeeId IS NOT NULL',
-        'ss.scheduleDate BETWEEN ? AND ?',
-    ];
+    const filterData = await buildSalaryFilters({
+        viewerId,
+        viewerRole,
+        start,
+        end,
+        employeeId,
+        serviceId,
+        delegation,
+    });
 
-    if (employeeId) {
-        filters.push('ss.employeeId = ?');
-        values.push(employeeId);
-    }
-
-    if (viewerRole === 'admin') {
-        const delegations = await getViewerDelegations({ viewerId, viewerRole });
-        if (!delegations.length) {
-            return { month, employees: [], rates: [], adjustments: [] };
-        }
-        filters.push(
-            `(u.city IN (${delegations.map(() => '?').join(', ')}) OR s.province IN (${delegations.map(() => '?').join(', ')}))`
-        );
-        values.push(...delegations, ...delegations);
+    if (!filterData) {
+        return {
+            month,
+            employees: [],
+            workerOptions: [],
+            serviceOptions: [],
+            delegationOptions: [],
+            rates: [],
+            adjustments: [],
+            agreement: getAgreementDefaults(month),
+        };
     }
 
     const [shiftRows] = await pool.query(
@@ -320,12 +467,34 @@ const calculateSalarySettlements = async ({
         INNER JOIN users u ON u.id = ss.employeeId
         INNER JOIN services s ON s.id = ss.serviceId
         LEFT JOIN employeeDocumentations ed ON ed.userId = u.id
-        WHERE ${filters.join(' AND ')}
+        WHERE ${filterData.filters.join(' AND ')}
         GROUP BY ss.employeeId, ss.serviceId, u.firstName, u.lastName, u.dni,
                  u.city, ed.bankAccount, s.name, s.type, s.province, s.hourRuleType
         ORDER BY u.firstName, u.lastName, s.name
         `,
-        values
+        filterData.values
+    );
+
+    const [calendarRows] = await pool.query(
+        `
+        SELECT
+            ss.employeeId,
+            ss.serviceId,
+            ss.scheduleDate,
+            ss.startTime,
+            ss.endTime,
+            COALESCE(CASE WHEN COALESCE(ss.realHours, 0) > 0 THEN ss.realHours ELSE ss.hours END, 0) AS hours,
+            COALESCE(ss.nightHours, 0) AS nightHours,
+            COALESCE(ss.holidayHours, 0) AS holidayHours,
+            s.name AS serviceName,
+            s.type AS serviceType
+        FROM serviceScheduleShifts ss
+        INNER JOIN users u ON u.id = ss.employeeId
+        INNER JOIN services s ON s.id = ss.serviceId
+        WHERE ${filterData.filters.join(' AND ')}
+        ORDER BY ss.employeeId, ss.scheduleDate, ss.startTime
+        `,
+        filterData.values
     );
 
     const employeeIds = [...new Set(shiftRows.map((row) => row.employeeId))];
@@ -357,10 +526,18 @@ const calculateSalarySettlements = async ({
         adjustmentFilter += ' AND a.employeeId = ?';
         adjustmentValues.push(employeeId);
     }
+    if (serviceId) {
+        adjustmentFilter += ' AND (a.serviceId = ? OR a.serviceId IS NULL)';
+        adjustmentValues.push(serviceId);
+    }
+    if (delegation) {
+        adjustmentFilter += ' AND (u.city = ? OR s.province = ? OR a.serviceId IS NULL)';
+        adjustmentValues.push(delegation, delegation);
+    }
     if (viewerRole === 'admin') {
         const delegations = await getViewerDelegations({ viewerId, viewerRole });
-        adjustmentFilter += ` AND u.city IN (${delegations.map(() => '?').join(', ')})`;
-        adjustmentValues.push(...delegations);
+        adjustmentFilter += ` AND (u.city IN (${delegations.map(() => '?').join(', ')}) OR s.province IN (${delegations.map(() => '?').join(', ')}))`;
+        adjustmentValues.push(...delegations, ...delegations);
     }
 
     const [adjustments] = await pool.query(
@@ -378,6 +555,26 @@ const calculateSalarySettlements = async ({
         adjustmentValues
     );
 
+    const agreementDefaults = getAgreementDefaults(month);
+    const employeeMonthHours = shiftRows.reduce((acc, row) => {
+        acc.set(row.employeeId, toNumber(acc.get(row.employeeId)) + toNumber(row.totalHours));
+        return acc;
+    }, new Map());
+    const employeeCalendar = calendarRows.reduce((acc, row) => {
+        if (!acc.has(row.employeeId)) acc.set(row.employeeId, []);
+        acc.get(row.employeeId).push({
+            date: row.scheduleDate,
+            serviceId: row.serviceId,
+            serviceName: row.serviceName || row.serviceType || '',
+            startTime: row.startTime,
+            endTime: row.endTime,
+            hours: toNumber(row.hours),
+            nightHours: toNumber(row.nightHours),
+            holidayHours: toNumber(row.holidayHours),
+        });
+        return acc;
+    }, new Map());
+
     const employeeMap = new Map();
     shiftRows.forEach((row) => {
         const exactRate = rateMap.get(getRateKey(row.serviceId, row.employeeId));
@@ -386,9 +583,23 @@ const calculateSalarySettlements = async ({
         const totalHours = toNumber(row.totalHours);
         const nightHours = toNumber(row.nightHours);
         const holidayHours = toNumber(row.holidayHours);
-        const baseHours = Math.max(totalHours - nightHours - holidayHours, 0);
-        const amount = calculateLineAmount({ row, rate });
-        const amountType = rate.amountType || 'gross';
+        const rawBaseHours = Math.max(totalHours - nightHours - holidayHours, 0);
+        const employeeTotalHours = toNumber(employeeMonthHours.get(row.employeeId));
+        const employeeExtraHours = Math.max(
+            employeeTotalHours - agreementDefaults.monthlyRegularHours,
+            0
+        );
+        const extraHours =
+            rate.payMode === 'agreement' && employeeTotalHours > 0
+                ? roundMoney((employeeExtraHours * totalHours) / employeeTotalHours)
+                : 0;
+        const baseHours =
+            rate.payMode === 'agreement'
+                ? Math.max(rawBaseHours - extraHours, 0)
+                : rawBaseHours;
+        const enrichedRow = { ...row, baseHours, extraHours };
+        const amount = calculateLineAmount({ row: enrichedRow, rate, month });
+        const amountType = rate.payMode === 'agreement' ? 'gross' : rate.amountType || 'gross';
 
         if (!employeeMap.has(row.employeeId)) {
             employeeMap.set(row.employeeId, {
@@ -401,11 +612,13 @@ const calculateSalarySettlements = async ({
                 baseHours: 0,
                 nightHours: 0,
                 holidayHours: 0,
+                extraHours: 0,
                 grossAmount: 0,
                 netAmount: 0,
                 missingRates: 0,
                 services: [],
                 adjustments: [],
+                calendar: employeeCalendar.get(row.employeeId) || [],
             });
         }
 
@@ -414,6 +627,7 @@ const calculateSalarySettlements = async ({
         employee.baseHours += baseHours;
         employee.nightHours += nightHours;
         employee.holidayHours += holidayHours;
+        employee.extraHours += extraHours;
         if (!rate.id) employee.missingRates += 1;
         if (amountType === 'net') employee.netAmount += amount;
         else employee.grossAmount += amount;
@@ -427,6 +641,7 @@ const calculateSalarySettlements = async ({
             baseHours,
             nightHours,
             holidayHours,
+            extraHours,
             rate,
             amount,
             amountType,
@@ -446,11 +661,13 @@ const calculateSalarySettlements = async ({
                 baseHours: 0,
                 nightHours: 0,
                 holidayHours: 0,
+                extraHours: 0,
                 grossAmount: 0,
                 netAmount: 0,
                 missingRates: 0,
                 services: [],
                 adjustments: [],
+                calendar: employeeCalendar.get(adjustment.employeeId) || [],
             });
         }
         const employee = employeeMap.get(adjustment.employeeId);
@@ -471,13 +688,22 @@ const calculateSalarySettlements = async ({
         baseHours: roundMoney(employee.baseHours),
         nightHours: roundMoney(employee.nightHours),
         holidayHours: roundMoney(employee.holidayHours),
+        extraHours: roundMoney(employee.extraHours),
         grossAmount: roundMoney(employee.grossAmount),
         netAmount: roundMoney(employee.netAmount),
         totalAmount: roundMoney(employee.grossAmount + employee.netAmount),
     }));
 
-    const options = await listSalaryOptions({ viewerId, viewerRole });
-    const visibleServiceIds = (options.services || []).map((service) => service.id);
+    const options = await listSalaryOptions({
+        viewerId,
+        viewerRole,
+        month,
+        employeeId,
+        serviceId,
+        delegation,
+    });
+    const visibleServices = await listVisibleServices({ viewerId, viewerRole });
+    const visibleServiceIds = visibleServices.map((service) => service.id);
     const allRates = visibleServiceIds.length
         ? await listSalaryRatesForServices(visibleServiceIds)
         : [];
@@ -488,8 +714,10 @@ const calculateSalarySettlements = async ({
             employees,
             workerOptions: options.employees,
             serviceOptions: options.services,
+            delegationOptions: options.delegations,
             rates: allRates,
             adjustments,
+            agreement: agreementDefaults,
         };
     }
 
@@ -499,8 +727,10 @@ const calculateSalarySettlements = async ({
         employeeName: employee.employeeName,
         bankAccount: employee.bankAccount,
         totalHours: employee.totalHours,
+        baseHours: employee.baseHours,
         nightHours: employee.nightHours,
         holidayHours: employee.holidayHours,
+        extraHours: employee.extraHours,
         grossAmount: employee.grossAmount,
         netAmount: employee.netAmount,
         totalAmount: employee.totalAmount,
@@ -518,10 +748,24 @@ const calculateSalarySettlements = async ({
             baseHours: service.baseHours,
             nightHours: service.nightHours,
             holidayHours: service.holidayHours,
+            extraHours: service.extraHours,
             amountType: service.amountType === 'net' ? 'Neto' : 'Bruto',
+            payMode:
+                service.rate.payMode === 'agreement'
+                    ? 'Convenio'
+                    : service.rate.payMode === 'fixed'
+                      ? 'Fijo'
+                      : 'Por horas',
             regularRate: service.rate.regularRate,
-            nightRate: service.rate.nightRate,
-            holidayRate: service.rate.holidayRate,
+            nightRate:
+                service.rate.payMode === 'agreement' && !service.rate.nightRate
+                    ? agreementDefaults.nightRate
+                    : service.rate.nightRate,
+            holidayRate:
+                service.rate.payMode === 'agreement' && !service.rate.holidayRate
+                    ? agreementDefaults.holidayRate
+                    : service.rate.holidayRate,
+            extraRate: service.rate.extraRate,
             fixedAmount: service.rate.fixedAmount,
             amount: service.amount,
         }))
@@ -548,8 +792,10 @@ const calculateSalarySettlements = async ({
                     { header: 'Trabajador', key: 'employeeName', width: 30 },
                     { header: 'Cuenta bancaria', key: 'bankAccount', width: 28 },
                     { header: 'Horas', key: 'totalHours', width: 12 },
+                    { header: 'Base', key: 'baseHours', width: 12 },
                     { header: 'Nocturnas', key: 'nightHours', width: 12 },
                     { header: 'Festivas', key: 'holidayHours', width: 12 },
+                    { header: 'Extras', key: 'extraHours', width: 12 },
                     { header: 'Bruto', key: 'grossAmount', width: 12 },
                     { header: 'Neto', key: 'netAmount', width: 12 },
                     { header: 'Total', key: 'totalAmount', width: 12 },
@@ -569,10 +815,13 @@ const calculateSalarySettlements = async ({
                     { header: 'Base', key: 'baseHours', width: 12 },
                     { header: 'Nocturnas', key: 'nightHours', width: 12 },
                     { header: 'Festivas', key: 'holidayHours', width: 12 },
+                    { header: 'Extras', key: 'extraHours', width: 12 },
+                    { header: 'Modo', key: 'payMode', width: 12 },
                     { header: 'Tipo', key: 'amountType', width: 10 },
                     { header: 'Precio base', key: 'regularRate', width: 12 },
                     { header: 'Precio nocturna', key: 'nightRate', width: 14 },
                     { header: 'Precio festiva', key: 'holidayRate', width: 14 },
+                    { header: 'Precio extra', key: 'extraRate', width: 12 },
                     { header: 'Fijo', key: 'fixedAmount', width: 12 },
                     { header: 'Importe', key: 'amount', width: 12 },
                 ],
@@ -602,8 +851,10 @@ const calculateSalarySettlements = async ({
         employees,
         workerOptions: options.employees,
         serviceOptions: options.services,
+        delegationOptions: options.delegations,
         rates: allRates,
         adjustments,
+        agreement: agreementDefaults,
         excelFilePath: `/uploads/documents/${path.basename(filePath)}`,
     };
 };

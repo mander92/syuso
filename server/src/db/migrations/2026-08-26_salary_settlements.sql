@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS salaryServiceRates (
     id CHAR(36) PRIMARY KEY NOT NULL,
     serviceId CHAR(36) NOT NULL,
     employeeId CHAR(36) NULL,
-    payMode ENUM('hourly','fixed') NOT NULL DEFAULT 'hourly',
+    payMode ENUM('hourly','fixed','agreement') NOT NULL DEFAULT 'hourly',
     amountType ENUM('gross','net') NOT NULL DEFAULT 'gross',
     regularRate DECIMAL(10,2) NOT NULL DEFAULT 0,
     nightRate DECIMAL(10,2) NOT NULL DEFAULT 0,

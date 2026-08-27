@@ -21,6 +21,7 @@ const formatDate = (value) => {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return '-';
     return date.toLocaleString('es-ES', {
+        timeZone: 'Europe/Madrid',
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -29,21 +30,87 @@ const formatDate = (value) => {
     });
 };
 
-const formatSnapshot = (value) => {
-    if (!value) return '-';
-    const entries = [
-        ['Entrada', value.clockIn],
-        ['Salida', value.clockOut],
-        ['Entrada real', value.realClockIn],
-        ['Salida real', value.realClockOut],
-        ['Lat. entrada', value.latitudeIn],
-        ['Lng. entrada', value.longitudeIn],
-        ['Lat. salida', value.latitudeOut],
-        ['Lng. salida', value.longitudeOut],
-    ].filter(([, item]) => item !== undefined && item !== null && item !== '');
+const dateFieldLabels = {
+    clockIn: 'Entrada',
+    clockOut: 'Salida',
+    realClockIn: 'Entrada real',
+    realClockOut: 'Salida real',
+    createdAt: 'Creado',
+    modifiedAt: 'Modificado',
+    deletedAt: 'Borrado',
+};
 
-    if (!entries.length) return '-';
-    return entries.map(([label, item]) => `${label}: ${item}`).join('\n');
+const formatSpainDateTime = (value) => {
+    if (!value) return '';
+    const raw = String(value);
+    const hasUtcSuffix = /z$/i.test(raw);
+    const normalized = raw
+        .replace(' ', 'T')
+        .replace(/(\.\d{3})\d+/, '$1');
+    const date = new Date(hasUtcSuffix ? normalized : normalized);
+
+    if (Number.isNaN(date.getTime())) return raw;
+
+    return date.toLocaleString('es-ES', {
+        timeZone: hasUtcSuffix ? 'Europe/Madrid' : undefined,
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+};
+
+const getCoordinateNumber = (value) => {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : null;
+};
+
+const buildMapUrl = (lat, lng) =>
+    `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=18/${lat}/${lng}`;
+
+const renderLocation = (label, latValue, lngValue) => {
+    const lat = getCoordinateNumber(latValue);
+    const lng = getCoordinateNumber(lngValue);
+
+    if (lat === null || lng === null) return null;
+
+    return (
+        <div className='shift-audit-location' key={label}>
+            <span>
+                {label}: {lat.toFixed(6)}, {lng.toFixed(6)}
+            </span>
+            <a href={buildMapUrl(lat, lng)} target='_blank' rel='noreferrer'>
+                Ver mapa
+            </a>
+        </div>
+    );
+};
+
+const renderSnapshot = (value) => {
+    if (!value) return '-';
+    const rows = Object.entries(dateFieldLabels)
+        .filter(([key]) => value[key] !== undefined && value[key] !== null && value[key] !== '')
+        .map(([key, label]) => (
+            <div className='shift-audit-snapshot-row' key={key}>
+                <span>{label}</span>
+                <strong>{formatSpainDateTime(value[key])}</strong>
+            </div>
+        ));
+
+    const locations = [
+        renderLocation('Entrada', value.latitudeIn, value.longitudeIn),
+        renderLocation('Salida', value.latitudeOut, value.longitudeOut),
+    ].filter(Boolean);
+
+    if (!rows.length && !locations.length) return '-';
+
+    return (
+        <div className='shift-audit-snapshot'>
+            {rows}
+            {locations}
+        </div>
+    );
 };
 
 const buildQuery = (filters, generateExcel = false) => {
@@ -216,24 +283,24 @@ const ShiftRecordAuditComponent = () => {
                 <p>
                     Este registro documenta el horario concreto de inicio y fin
                     de jornada, los ajustes posteriores y el usuario que realiza
-                    cada actuacion. Debe conservarse durante cuatro anos y estar
-                    disponible para trabajadores, representantes e Inspeccion de
+                    cada actuación. Debe conservarse durante cuatro años y estar
+                    disponible para trabajadores, representantes e Inspección de
                     Trabajo.
                 </p>
                 <p>
-                    Base de tratamiento: obligacion legal de registro de jornada.
-                    No requiere consentimiento del trabajador, pero si informar
+                    Base de tratamiento: obligación legal de registro de jornada.
+                    No requiere consentimiento del trabajador, pero sí informar
                     de la existencia del sistema, finalidad, datos tratados,
-                    conservacion, accesos y derechos.
+                    conservación, accesos y derechos.
                 </p>
                 <p>
                     Para expedientes sensibles, revisa que el informe exportado
                     incluya el periodo completo, los cambios manuales y una
-                    explicacion documentada de cualquier correccion.
+                    explicación documentada de cualquier corrección.
                 </p>
                 <p>
-                    Los registros historicos importados acreditan el dato que ya
-                    existia en la base de datos al activar la auditoria; no
+                    Los registros históricos importados acreditan el dato que ya
+                    existía en la base de datos al activar la auditoría; no
                     reconstruyen cambios anteriores que no se registraban.
                 </p>
             </section>
@@ -279,10 +346,10 @@ const ShiftRecordAuditComponent = () => {
                                     </code>
                                 </td>
                                 <td>
-                                    <pre>{formatSnapshot(log.oldValue)}</pre>
+                                    {renderSnapshot(log.oldValue)}
                                 </td>
                                 <td>
-                                    <pre>{formatSnapshot(log.newValue)}</pre>
+                                    {renderSnapshot(log.newValue)}
                                 </td>
                             </tr>
                         ))}

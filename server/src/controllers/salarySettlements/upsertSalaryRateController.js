@@ -9,7 +9,7 @@ import {
 const schema = Joi.object({
     serviceId: Joi.string().length(36).required(),
     employeeId: Joi.string().length(36).allow('', null),
-    payMode: Joi.string().valid('hourly', 'fixed').default('hourly'),
+    payMode: Joi.string().valid('hourly', 'fixed', 'agreement').default('hourly'),
     amountType: Joi.string().valid('gross', 'net').default('gross'),
     regularRate: Joi.number().min(0).allow('', null),
     nightRate: Joi.number().min(0).allow('', null),
