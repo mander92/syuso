@@ -16,6 +16,20 @@ const schema = Joi.object({
     holidayRate: Joi.number().min(0).allow('', null),
     extraRate: Joi.number().min(0).allow('', null),
     fixedAmount: Joi.number().min(0).allow('', null),
+    tierRules: Joi.array()
+        .items(
+            Joi.object({
+                fromHour: Joi.number().min(0).required(),
+                toHour: Joi.number().min(0).allow('', null),
+                amountType: Joi.string().valid('gross', 'net').default('gross'),
+                regularRate: Joi.number().min(0).allow('', null),
+                nightRate: Joi.number().min(0).allow('', null),
+                holidayRate: Joi.number().min(0).allow('', null),
+                extraRate: Joi.number().min(0).allow('', null),
+                notes: Joi.string().max(180).allow('', null),
+            })
+        )
+        .default([]),
     notes: Joi.string().max(500).allow('', null),
 });
 

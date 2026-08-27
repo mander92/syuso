@@ -89,8 +89,37 @@ const normalizeRate = (rate) => ({
     holidayRate: toNumber(rate?.holidayRate),
     extraRate: toNumber(rate?.extraRate),
     fixedAmount: toNumber(rate?.fixedAmount),
+    tierRules: normalizeTierRules(rate?.tierRules),
     notes: rate?.notes || '',
 });
+
+const parseJsonField = (value, fallback) => {
+    if (!value) return fallback;
+    if (Array.isArray(value) || typeof value === 'object') return value;
+    try {
+        return JSON.parse(value);
+    } catch {
+        return fallback;
+    }
+};
+
+const normalizeTierRules = (value) =>
+    parseJsonField(value, [])
+        .map((rule) => ({
+            fromHour: toNumber(rule?.fromHour),
+            toHour:
+                rule?.toHour === undefined || rule?.toHour === null || rule?.toHour === ''
+                    ? null
+                    : toNumber(rule.toHour),
+            amountType: rule?.amountType === 'net' ? 'net' : 'gross',
+            regularRate: toNumber(rule?.regularRate),
+            nightRate: toNumber(rule?.nightRate),
+            holidayRate: toNumber(rule?.holidayRate),
+            extraRate: toNumber(rule?.extraRate),
+            notes: rule?.notes || '',
+        }))
+        .filter((rule) => rule.toHour === null || rule.toHour > rule.fromHour)
+        .sort((a, b) => a.fromHour - b.fromHour);
 
 const buildRateMap = (rates) => {
     const map = new Map();
@@ -98,6 +127,27 @@ const buildRateMap = (rates) => {
         map.set(getRateKey(rate.serviceId, rate.employeeId || ''), normalizeRate(rate));
     });
     return map;
+};
+
+const scaleRowHours = (row, payableHours) => {
+    const totalHours = toNumber(row.totalHours);
+    const factor = totalHours > 0 ? Math.max(toNumber(payableHours), 0) / totalHours : 0;
+    return {
+        ...row,
+        totalHours: roundMoney(payableHours),
+        baseHours: roundMoney(toNumber(row.baseHours) * factor),
+        nightHours: roundMoney(toNumber(row.nightHours) * factor),
+        holidayHours: roundMoney(toNumber(row.holidayHours) * factor),
+        extraHours: roundMoney(toNumber(row.extraHours) * factor),
+    };
+};
+
+const sliceRowHours = (row, fromHour, toHour) => {
+    const totalHours = toNumber(row.totalHours);
+    const start = Math.max(toNumber(fromHour), 0);
+    const end = toHour === null ? totalHours : Math.min(toNumber(toHour), totalHours);
+    const slicedHours = Math.max(end - start, 0);
+    return scaleRowHours(row, slicedHours);
 };
 
 const calculateLineAmount = ({ row, rate, month }) => {
@@ -128,6 +178,53 @@ const calculateLineAmount = ({ row, rate, month }) => {
             nightHours * (rate.nightRate || rate.regularRate) +
             holidayHours * (rate.holidayRate || rate.regularRate)
     );
+};
+
+const calculateLinePayment = ({ row, rate, month }) => {
+    if (!rate?.tierRules?.length || rate.payMode === 'fixed') {
+        return {
+            amount: calculateLineAmount({ row, rate, month }),
+            amountType: rate.payMode === 'agreement' ? 'gross' : rate.amountType || 'gross',
+            tierBreakdown: [],
+        };
+    }
+
+    const tierBreakdown = [];
+    const totals = rate.tierRules.reduce(
+        (acc, rule) => {
+            const tierRow = sliceRowHours(row, rule.fromHour, rule.toHour);
+            if (toNumber(tierRow.totalHours) <= 0) return acc;
+            const tierRate = {
+                ...rate,
+                amountType: rule.amountType,
+                regularRate: rule.regularRate || rate.regularRate,
+                nightRate: rule.nightRate || rate.nightRate,
+                holidayRate: rule.holidayRate || rate.holidayRate,
+                extraRate: rule.extraRate || rate.extraRate,
+                tierRules: [],
+            };
+            const amount = calculateLineAmount({ row: tierRow, rate: tierRate, month });
+            if (tierRate.amountType === 'net') acc.net += amount;
+            else acc.gross += amount;
+            tierBreakdown.push({
+                fromHour: rule.fromHour,
+                toHour: rule.toHour,
+                hours: tierRow.totalHours,
+                amount,
+                amountType: tierRate.amountType,
+            });
+            return acc;
+        },
+        { gross: 0, net: 0 }
+    );
+
+    return {
+        amount: roundMoney(totals.gross + totals.net),
+        amountType: totals.net > 0 && totals.gross === 0 ? 'net' : 'gross',
+        grossAmount: roundMoney(totals.gross),
+        netAmount: roundMoney(totals.net),
+        tierBreakdown,
+    };
 };
 
 const getViewerDelegations = async ({ viewerId, viewerRole }) => {
@@ -300,12 +397,15 @@ const listSalaryRates = async ({ serviceId = '', employeeId = '' } = {}) => {
         FROM salaryServiceRates r
         INNER JOIN services s ON s.id = r.serviceId
         LEFT JOIN users u ON u.id = r.employeeId
-        WHERE ${filterData.filters.join(' AND ')}
+        WHERE ${filters.join(' AND ')}
         ORDER BY s.name, employeeName
         `,
         values
     );
-    return rows;
+    return rows.map((row) => ({
+        ...row,
+        tierRules: normalizeTierRules(row.tierRules),
+    }));
 };
 
 const listSalaryRatesForServices = async (serviceIds) => {
@@ -324,7 +424,10 @@ const listSalaryRatesForServices = async (serviceIds) => {
         `,
         serviceIds
     );
-    return rows;
+    return rows.map((row) => ({
+        ...row,
+        tierRules: normalizeTierRules(row.tierRules),
+    }));
 };
 
 const upsertSalaryRate = async ({ userId, payload }) => {
@@ -358,6 +461,7 @@ const upsertSalaryRate = async ({ userId, payload }) => {
         toNumber(payload.holidayRate),
         toNumber(payload.extraRate),
         toNumber(payload.fixedAmount),
+        JSON.stringify(normalizeTierRules(payload.tierRules)),
         payload.notes || null,
     ];
 
@@ -366,7 +470,7 @@ const upsertSalaryRate = async ({ userId, payload }) => {
             `
             UPDATE salaryServiceRates
             SET payMode = ?, amountType = ?, regularRate = ?, nightRate = ?,
-                holidayRate = ?, extraRate = ?, fixedAmount = ?, notes = ?
+                holidayRate = ?, extraRate = ?, fixedAmount = ?, tierRules = ?, notes = ?
             WHERE id = ?
             `,
             [...values, existing[0].id]
@@ -379,11 +483,61 @@ const upsertSalaryRate = async ({ userId, payload }) => {
         `
         INSERT INTO salaryServiceRates (
             id, serviceId, employeeId, payMode, amountType, regularRate,
-            nightRate, holidayRate, extraRate, fixedAmount, notes, createdBy
+            nightRate, holidayRate, extraRate, fixedAmount, tierRules, notes, createdBy
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [id, payload.serviceId, employeeId, ...values, userId]
+    );
+    return id;
+};
+
+const upsertSalaryPaidServiceHours = async ({ userId, payload }) => {
+    const pool = await getPool();
+    const hours = toNumber(payload.hours);
+
+    const [existing] = await pool.query(
+        `
+        SELECT id
+        FROM salaryPaidServiceHours
+        WHERE employeeId = ?
+          AND serviceId = ?
+          AND settlementMonth = ?
+          AND deletedAt IS NULL
+        LIMIT 1
+        `,
+        [payload.employeeId, payload.serviceId, payload.settlementMonth]
+    );
+
+    if (existing.length) {
+        await pool.query(
+            `
+            UPDATE salaryPaidServiceHours
+            SET hours = ?, notes = ?, modifiedAt = CURRENT_TIMESTAMP
+            WHERE id = ?
+            `,
+            [hours, payload.notes || null, existing[0].id]
+        );
+        return existing[0].id;
+    }
+
+    const id = uuid();
+    await pool.query(
+        `
+        INSERT INTO salaryPaidServiceHours (
+            id, employeeId, serviceId, settlementMonth, hours, notes, createdBy
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        `,
+        [
+            id,
+            payload.employeeId,
+            payload.serviceId,
+            payload.settlementMonth,
+            hours,
+            payload.notes || null,
+            userId,
+        ]
     );
     return id;
 };
@@ -686,6 +840,28 @@ const calculateSalarySettlements = async ({
         paymentValues
     );
 
+    const paidHourValues = [month];
+    const paidHourFilters = ['sph.settlementMonth = ?', 'sph.deletedAt IS NULL'];
+    if (employeeIds.length) {
+        paidHourFilters.push(`sph.employeeId IN (${employeeIds.map(() => '?').join(', ')})`);
+        paidHourValues.push(...employeeIds);
+    } else {
+        paidHourFilters.push('1 = 0');
+    }
+    if (serviceId) {
+        paidHourFilters.push('sph.serviceId = ?');
+        paidHourValues.push(serviceId);
+    }
+
+    const [paidHourRows] = await pool.query(
+        `
+        SELECT sph.*
+        FROM salaryPaidServiceHours sph
+        WHERE ${paidHourFilters.join(' AND ')}
+        `,
+        paidHourValues
+    );
+
     const agreementDefaults = getAgreementDefaults(month);
     const employeeMonthHours = shiftRows.reduce((acc, row) => {
         acc.set(row.employeeId, toNumber(acc.get(row.employeeId)) + toNumber(row.totalHours));
@@ -713,6 +889,13 @@ const calculateSalarySettlements = async ({
         });
         return acc;
     }, new Map());
+    const paidHourMap = paidHourRows.reduce((acc, row) => {
+        acc.set(`${row.employeeId}:${row.serviceId}`, {
+            ...row,
+            hours: toNumber(row.hours),
+        });
+        return acc;
+    }, new Map());
 
     const employeeMap = new Map();
     const ensureEmployee = (row) => {
@@ -726,6 +909,8 @@ const calculateSalarySettlements = async ({
                 delegation: row.employeeDelegation || '',
                 bankAccount: row.bankAccount || '',
                 totalHours: 0,
+                paidHours: 0,
+                payableHours: 0,
                 baseHours: 0,
                 nightHours: 0,
                 holidayHours: 0,
@@ -750,6 +935,9 @@ const calculateSalarySettlements = async ({
         const totalHours = toNumber(row.totalHours);
         const nightHours = toNumber(row.nightHours);
         const holidayHours = toNumber(row.holidayHours);
+        const paidRecord = paidHourMap.get(`${row.employeeId}:${row.serviceId}`);
+        const paidHours = Math.min(toNumber(paidRecord?.hours), totalHours);
+        const payableHours = Math.max(totalHours - paidHours, 0);
         const rawBaseHours = Math.max(totalHours - nightHours - holidayHours, 0);
         const employeeTotalHours = toNumber(employeeMonthHours.get(row.employeeId));
         const employeeExtraHours = Math.max(
@@ -764,18 +952,25 @@ const calculateSalarySettlements = async ({
             rate.payMode === 'agreement'
                 ? Math.max(rawBaseHours - extraHours, 0)
                 : rawBaseHours;
-        const enrichedRow = { ...row, baseHours, extraHours };
-        const amount = calculateLineAmount({ row: enrichedRow, rate, month });
-        const amountType = rate.payMode === 'agreement' ? 'gross' : rate.amountType || 'gross';
+        const fullRow = { ...row, baseHours, extraHours, totalHours };
+        const enrichedRow = scaleRowHours(fullRow, payableHours);
+        const payment = calculateLinePayment({ row: enrichedRow, rate, month });
+        const amount = payment.amount;
+        const amountType = payment.amountType;
 
         const employee = ensureEmployee(row);
         employee.totalHours += totalHours;
-        employee.baseHours += baseHours;
-        employee.nightHours += nightHours;
-        employee.holidayHours += holidayHours;
-        employee.extraHours += extraHours;
+        employee.paidHours += paidHours;
+        employee.payableHours += payableHours;
+        employee.baseHours += enrichedRow.baseHours;
+        employee.nightHours += enrichedRow.nightHours;
+        employee.holidayHours += enrichedRow.holidayHours;
+        employee.extraHours += enrichedRow.extraHours;
         if (!rate.id) employee.missingRates += 1;
-        if (amountType === 'net') employee.netAmount += amount;
+        if (payment.grossAmount !== undefined || payment.netAmount !== undefined) {
+            employee.grossAmount += toNumber(payment.grossAmount);
+            employee.netAmount += toNumber(payment.netAmount);
+        } else if (amountType === 'net') employee.netAmount += amount;
         else employee.grossAmount += amount;
         employee.services.push({
             serviceId: row.serviceId,
@@ -784,13 +979,17 @@ const calculateSalarySettlements = async ({
             hourRuleType: row.hourRuleType || 'standard',
             shiftCount: Number(row.shiftCount) || 0,
             totalHours,
-            baseHours,
-            nightHours,
-            holidayHours,
-            extraHours,
+            paidHours,
+            payableHours,
+            paidHoursNotes: paidRecord?.notes || '',
+            baseHours: enrichedRow.baseHours,
+            nightHours: enrichedRow.nightHours,
+            holidayHours: enrichedRow.holidayHours,
+            extraHours: enrichedRow.extraHours,
             rate,
             amount,
             amountType,
+            tierBreakdown: payment.tierBreakdown,
         });
     });
 
@@ -850,6 +1049,8 @@ const calculateSalarySettlements = async ({
     const employees = [...employeeMap.values()].map((employee) => ({
         ...employee,
         totalHours: roundMoney(employee.totalHours),
+        paidHours: roundMoney(employee.paidHours),
+        payableHours: roundMoney(employee.payableHours),
         baseHours: roundMoney(employee.baseHours),
         nightHours: roundMoney(employee.nightHours),
         holidayHours: roundMoney(employee.holidayHours),
@@ -892,6 +1093,8 @@ const calculateSalarySettlements = async ({
         employeeName: employee.employeeName,
         bankAccount: employee.bankAccount,
         totalHours: employee.totalHours,
+        paidHours: employee.paidHours,
+        payableHours: employee.payableHours,
         baseHours: employee.baseHours,
         nightHours: employee.nightHours,
         holidayHours: employee.holidayHours,
@@ -922,6 +1125,8 @@ const calculateSalarySettlements = async ({
             serviceDelegation: service.serviceDelegation,
             hourRuleType: service.hourRuleType,
             totalHours: service.totalHours,
+            paidHours: service.paidHours,
+            payableHours: service.payableHours,
             baseHours: service.baseHours,
             nightHours: service.nightHours,
             holidayHours: service.holidayHours,
@@ -944,6 +1149,15 @@ const calculateSalarySettlements = async ({
                     : service.rate.holidayRate,
             extraRate: service.rate.extraRate,
             fixedAmount: service.rate.fixedAmount,
+            tierRules: service.rate.tierRules?.length
+                ? service.rate.tierRules
+                      .map(
+                          (rule) =>
+                              `Desde ${rule.fromHour}h hasta ${rule.toHour || 'final'}h: ${rule.amountType === 'net' ? 'neto' : 'bruto'} ${rule.regularRate}/h`
+                      )
+                      .join(' | ')
+                : '',
+            paidHoursNotes: service.paidHoursNotes || '',
             amount: service.amount,
         }))
     );
@@ -969,6 +1183,8 @@ const calculateSalarySettlements = async ({
                     { header: 'Trabajador', key: 'employeeName', width: 30 },
                     { header: 'Cuenta bancaria', key: 'bankAccount', width: 28 },
                     { header: 'Horas', key: 'totalHours', width: 12 },
+                    { header: 'Horas ya pagadas', key: 'paidHours', width: 18 },
+                    { header: 'Horas a pagar', key: 'payableHours', width: 16 },
                     { header: 'Base', key: 'baseHours', width: 12 },
                     { header: 'Nocturnas', key: 'nightHours', width: 12 },
                     { header: 'Festivas', key: 'holidayHours', width: 12 },
@@ -993,6 +1209,8 @@ const calculateSalarySettlements = async ({
                     { header: 'Delegacion servicio', key: 'serviceDelegation', width: 20 },
                     { header: 'Regla', key: 'hourRuleType', width: 12 },
                     { header: 'Horas', key: 'totalHours', width: 12 },
+                    { header: 'Horas ya pagadas', key: 'paidHours', width: 18 },
+                    { header: 'Horas a pagar', key: 'payableHours', width: 16 },
                     { header: 'Base', key: 'baseHours', width: 12 },
                     { header: 'Nocturnas', key: 'nightHours', width: 12 },
                     { header: 'Festivas', key: 'holidayHours', width: 12 },
@@ -1004,6 +1222,8 @@ const calculateSalarySettlements = async ({
                     { header: 'Precio festiva', key: 'holidayRate', width: 14 },
                     { header: 'Precio extra', key: 'extraRate', width: 12 },
                     { header: 'Fijo', key: 'fixedAmount', width: 12 },
+                    { header: 'Tramos', key: 'tierRules', width: 46 },
+                    { header: 'Notas horas pagadas', key: 'paidHoursNotes', width: 36 },
                     { header: 'Importe', key: 'amount', width: 12 },
                 ],
                 rows: detailRows,
@@ -1047,5 +1267,6 @@ export {
     listSalaryOptions,
     listSalaryRates,
     upsertSalaryAbsencePayment,
+    upsertSalaryPaidServiceHours,
     upsertSalaryRate,
 };

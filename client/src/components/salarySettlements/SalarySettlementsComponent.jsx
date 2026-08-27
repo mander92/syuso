@@ -7,6 +7,7 @@ import {
     deleteSalaryAdjustment,
     fetchSalarySettlements,
     saveSalaryAbsencePayment,
+    saveSalaryPaidServiceHours,
     saveSalaryRate,
 } from '../../services/salarySettlementService.js';
 import SalaryRateModal, { emptyRateForm } from './SalaryRateModal.jsx';
@@ -62,6 +63,11 @@ const emptyAbsencePaymentForm = {
     notes: '',
 };
 
+const emptyPaidHoursForm = {
+    hours: '',
+    notes: '',
+};
+
 const absenceTypeLabel = (type) =>
     type === 'vacation' ? 'Vacaciones' : type === 'sick' ? 'Baja' : 'Ausencia';
 
@@ -97,6 +103,8 @@ const SalarySettlementsComponent = () => {
     const [absencePaymentForm, setAbsencePaymentForm] = useState(
         emptyAbsencePaymentForm
     );
+    const [openPaidHoursKey, setOpenPaidHoursKey] = useState('');
+    const [paidHoursForm, setPaidHoursForm] = useState(emptyPaidHoursForm);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
 
@@ -277,6 +285,7 @@ const SalarySettlementsComponent = () => {
             holidayRate: rate.holidayRate ?? '',
             extraRate: rate.extraRate ?? '',
             fixedAmount: rate.fixedAmount ?? '',
+            tierRules: rate.tierRules || [],
             notes: rate.notes || '',
         });
         setIsRateModalOpen(true);
@@ -287,8 +296,39 @@ const SalarySettlementsComponent = () => {
             ...emptyRateForm,
             ...rate,
             amountType: rate.payMode === 'agreement' ? 'gross' : rate.amountType || 'gross',
+            tierRules: rate.tierRules || [],
         });
         setIsRateModalOpen(true);
+    };
+
+    const handleOpenPaidHours = (employee, service) => {
+        const key = `${employee.employeeId}:${service.serviceId}`;
+        setOpenPaidHoursKey((prev) => (prev === key ? '' : key));
+        setPaidHoursForm({
+            hours: service.paidHours ?? '',
+            notes: service.paidHoursNotes || '',
+        });
+    };
+
+    const handleSavePaidHours = async (event, employee, service) => {
+        event.preventDefault();
+        setSaving(true);
+        try {
+            await saveSalaryPaidServiceHours(authToken, {
+                ...paidHoursForm,
+                employeeId: employee.employeeId,
+                serviceId: service.serviceId,
+                settlementMonth: filters.month,
+            });
+            setOpenPaidHoursKey('');
+            setPaidHoursForm(emptyPaidHoursForm);
+            await loadData();
+            toast.success('Horas pagadas actualizadas');
+        } catch (error) {
+            toast.error(error.message || 'No se pudieron guardar las horas pagadas');
+        } finally {
+            setSaving(false);
+        }
     };
 
     const renderServiceCalendar = (employee, service) => {
@@ -509,6 +549,7 @@ const SalarySettlementsComponent = () => {
                                         holidayRate: rate.holidayRate ?? '',
                                         extraRate: rate.extraRate ?? '',
                                         fixedAmount: rate.fixedAmount ?? '',
+                                        tierRules: rate.tierRules || [],
                                         notes: rate.notes || '',
                                     })
                                 }
@@ -549,6 +590,8 @@ const SalarySettlementsComponent = () => {
                         </div>
                         <div className='salary-mini-summary'>
                             <span>{formatHours(employee.totalHours)}</span>
+                            <span>Pagadas {formatHours(employee.paidHours)}</span>
+                            <span>A pagar {formatHours(employee.payableHours)}</span>
                             <span>Base {formatHours(employee.baseHours)}</span>
                             <span>Noct. {formatHours(employee.nightHours)}</span>
                             <span>Fest. {formatHours(employee.holidayHours)}</span>
@@ -557,44 +600,104 @@ const SalarySettlementsComponent = () => {
                             <span>Neto {formatMoney(employee.netAmount)}</span>
                         </div>
                         <div className='salary-service-list'>
-                            {(employee.services || []).map((service) => (
-                                <div
-                                    key={`${employee.employeeId}-${service.serviceId}`}
-                                    className={
-                                        'salary-service-row' +
-                                        (!service.rate?.id ? ' is-missing' : '')
-                                    }
-                                >
-                                    <div>
-                                        <strong>{service.serviceName}</strong>
-                                        <span>
-                                            {formatHours(service.totalHours)} -{' '}
-                                            {service.hourRuleType === 'convenio'
-                                                ? `Noct. ${formatHours(service.nightHours)} - Fest. ${formatHours(service.holidayHours)} - Extra ${formatHours(service.extraHours)}`
-                                                : 'Normal'}
-                                        </span>
-                                    </div>
-                                    {renderServiceCalendar(employee, service)}
-                                    <div className='salary-service-row__actions'>
+                            {(employee.services || []).map((service) => {
+                                const paidHoursKey = `${employee.employeeId}:${service.serviceId}`;
+                                return (
+                                    <div
+                                        key={paidHoursKey}
+                                        className={
+                                            'salary-service-row' +
+                                            (!service.rate?.id ? ' is-missing' : '')
+                                        }
+                                    >
                                         <div>
+                                            <strong>{service.serviceName}</strong>
                                             <span>
-                                                {service.amountType === 'net'
-                                                    ? 'Neto'
-                                                    : 'Bruto'}
+                                                Total {formatHours(service.totalHours)} - A
+                                                pagar {formatHours(service.payableHours)} - Ya
+                                                pagadas {formatHours(service.paidHours)}
                                             </span>
-                                            <strong>{formatMoney(service.amount)}</strong>
+                                            <span>
+                                                {service.hourRuleType === 'convenio'
+                                                    ? `Noct. ${formatHours(service.nightHours)} - Fest. ${formatHours(service.holidayHours)} - Extra ${formatHours(service.extraHours)}`
+                                                    : 'Normal'}
+                                            </span>
                                         </div>
-                                        <button
-                                            type='button'
-                                            onClick={() =>
-                                                handleEditWorkerRate(employee, service)
-                                            }
-                                        >
-                                            Tarifa trabajador
-                                        </button>
+                                        {renderServiceCalendar(employee, service)}
+                                        <div className='salary-service-row__actions'>
+                                            <div>
+                                                <span>
+                                                    {service.amountType === 'net'
+                                                        ? 'Neto'
+                                                        : 'Bruto'}
+                                                </span>
+                                                <strong>{formatMoney(service.amount)}</strong>
+                                            </div>
+                                            <button
+                                                type='button'
+                                                onClick={() =>
+                                                    handleEditWorkerRate(employee, service)
+                                                }
+                                            >
+                                                Tarifa trabajador
+                                            </button>
+                                            <button
+                                                type='button'
+                                                onClick={() =>
+                                                    handleOpenPaidHours(employee, service)
+                                                }
+                                            >
+                                                Horas pagadas
+                                            </button>
+                                        </div>
+                                        {openPaidHoursKey === paidHoursKey ? (
+                                            <form
+                                                className='salary-paid-hours-form'
+                                                onSubmit={(event) =>
+                                                    handleSavePaidHours(
+                                                        event,
+                                                        employee,
+                                                        service
+                                                    )
+                                                }
+                                            >
+                                                <label>
+                                                    Horas ya pagadas
+                                                    <input
+                                                        type='number'
+                                                        step='0.01'
+                                                        min='0'
+                                                        max={service.totalHours}
+                                                        value={paidHoursForm.hours}
+                                                        onChange={(event) =>
+                                                            setPaidHoursForm((prev) => ({
+                                                                ...prev,
+                                                                hours: event.target.value,
+                                                            }))
+                                                        }
+                                                    />
+                                                </label>
+                                                <label>
+                                                    Notas
+                                                    <input
+                                                        value={paidHoursForm.notes}
+                                                        placeholder='Ej. abonadas en anticipo anterior'
+                                                        onChange={(event) =>
+                                                            setPaidHoursForm((prev) => ({
+                                                                ...prev,
+                                                                notes: event.target.value,
+                                                            }))
+                                                        }
+                                                    />
+                                                </label>
+                                                <button type='submit' disabled={saving}>
+                                                    Guardar horas
+                                                </button>
+                                            </form>
+                                        ) : null}
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                         <div className='salary-absence-list'>
                             <h4>Vacaciones y bajas</h4>

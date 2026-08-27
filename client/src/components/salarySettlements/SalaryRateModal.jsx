@@ -10,6 +10,7 @@ const emptyRateForm = {
     holidayRate: '',
     extraRate: '',
     fixedAmount: '',
+    tierRules: [],
     notes: '',
 };
 
@@ -47,6 +48,39 @@ const SalaryRateModal = ({
                 field === 'payMode' && value === 'agreement'
                     ? 'gross'
                     : rateForm.amountType,
+        });
+    };
+    const tierRules = Array.isArray(rateForm.tierRules) ? rateForm.tierRules : [];
+    const updateTierRule = (index, field, value) => {
+        onChange?.({
+            ...rateForm,
+            tierRules: tierRules.map((rule, ruleIndex) =>
+                ruleIndex === index ? { ...rule, [field]: value } : rule
+            ),
+        });
+    };
+    const addTierRule = () => {
+        onChange?.({
+            ...rateForm,
+            tierRules: [
+                ...tierRules,
+                {
+                    fromHour: '',
+                    toHour: '',
+                    amountType: rateForm.amountType || 'gross',
+                    regularRate: '',
+                    nightRate: '',
+                    holidayRate: '',
+                    extraRate: '',
+                    notes: '',
+                },
+            ],
+        });
+    };
+    const removeTierRule = (index) => {
+        onChange?.({
+            ...rateForm,
+            tierRules: tierRules.filter((_, ruleIndex) => ruleIndex !== index),
         });
     };
 
@@ -201,6 +235,156 @@ const SalaryRateModal = ({
                         nocturnidad 22:00-06:00 y extras sobre 162 h. Si dejas
                         nocturna o festiva a 0 se aplica el plus oficial del ano.
                     </p>
+                ) : null}
+
+                {rateForm.payMode !== 'fixed' ? (
+                    <section className='salary-rate-modal__tiers'>
+                        <div>
+                            <h4>Tramos por horas</h4>
+                            <button type='button' onClick={addTierRule}>
+                                Anadir tramo
+                            </button>
+                        </div>
+                        {tierRules.map((rule, index) => (
+                            <div
+                                className='salary-rate-modal__tier'
+                                key={`tier-${index}`}
+                            >
+                                <label>
+                                    Desde hora
+                                    <input
+                                        type='number'
+                                        step='0.01'
+                                        value={rule.fromHour ?? ''}
+                                        onChange={(event) =>
+                                            updateTierRule(
+                                                index,
+                                                'fromHour',
+                                                event.target.value
+                                            )
+                                        }
+                                    />
+                                </label>
+                                <label>
+                                    Hasta hora
+                                    <input
+                                        type='number'
+                                        step='0.01'
+                                        value={rule.toHour ?? ''}
+                                        placeholder='Sin limite'
+                                        onChange={(event) =>
+                                            updateTierRule(
+                                                index,
+                                                'toHour',
+                                                event.target.value
+                                            )
+                                        }
+                                    />
+                                </label>
+                                <label>
+                                    Tipo
+                                    <select
+                                        value={rule.amountType || 'gross'}
+                                        onChange={(event) =>
+                                            updateTierRule(
+                                                index,
+                                                'amountType',
+                                                event.target.value
+                                            )
+                                        }
+                                    >
+                                        <option value='gross'>Bruto</option>
+                                        <option value='net'>Neto</option>
+                                    </select>
+                                </label>
+                                <label>
+                                    Base
+                                    <input
+                                        type='number'
+                                        step='0.01'
+                                        value={rule.regularRate ?? ''}
+                                        onChange={(event) =>
+                                            updateTierRule(
+                                                index,
+                                                'regularRate',
+                                                event.target.value
+                                            )
+                                        }
+                                    />
+                                </label>
+                                <label>
+                                    Nocturna
+                                    <input
+                                        type='number'
+                                        step='0.01'
+                                        value={rule.nightRate ?? ''}
+                                        onChange={(event) =>
+                                            updateTierRule(
+                                                index,
+                                                'nightRate',
+                                                event.target.value
+                                            )
+                                        }
+                                    />
+                                </label>
+                                <label>
+                                    Festiva
+                                    <input
+                                        type='number'
+                                        step='0.01'
+                                        value={rule.holidayRate ?? ''}
+                                        onChange={(event) =>
+                                            updateTierRule(
+                                                index,
+                                                'holidayRate',
+                                                event.target.value
+                                            )
+                                        }
+                                    />
+                                </label>
+                                <label>
+                                    Extra
+                                    <input
+                                        type='number'
+                                        step='0.01'
+                                        value={rule.extraRate ?? ''}
+                                        onChange={(event) =>
+                                            updateTierRule(
+                                                index,
+                                                'extraRate',
+                                                event.target.value
+                                            )
+                                        }
+                                    />
+                                </label>
+                                <label>
+                                    Notas
+                                    <input
+                                        value={rule.notes || ''}
+                                        onChange={(event) =>
+                                            updateTierRule(
+                                                index,
+                                                'notes',
+                                                event.target.value
+                                            )
+                                        }
+                                    />
+                                </label>
+                                <button
+                                    type='button'
+                                    className='salary-rate-modal__remove'
+                                    onClick={() => removeTierRule(index)}
+                                >
+                                    Quitar
+                                </button>
+                            </div>
+                        ))}
+                        <p>
+                            Ejemplo: de 0 a 100 h a un precio, y desde 100 h sin
+                            limite a otro. Si no anades tramos se usa la tarifa
+                            normal.
+                        </p>
+                    </section>
                 ) : null}
 
                 <div className='salary-rate-modal__actions'>
