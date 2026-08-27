@@ -1,9 +1,13 @@
+import { useContext, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useState, useContext } from 'react';
 import toast from 'react-hot-toast';
 
-import { fetchNewContractAdmin } from '../../services/serviceService.js';
+import SalaryRateModal, {
+    emptyRateForm,
+} from '../../components/salarySettlements/SalaryRateModal.jsx';
 import { AuthContext } from '../../context/AuthContext.jsx';
+import { saveSalaryRate } from '../../services/salarySettlementService.js';
+import { fetchNewContractAdmin } from '../../services/serviceService.js';
 
 const CreateContract = () => {
     const { authToken } = useContext(AuthContext);
@@ -22,19 +26,21 @@ const CreateContract = () => {
     const [province, setProvince] = useState('');
     const [autonomousCommunity, setAutonomousCommunity] = useState('');
     const [hourRuleType, setHourRuleType] = useState('standard');
+    const [configureRate, setConfigureRate] = useState(false);
+    const [isRateModalOpen, setIsRateModalOpen] = useState(false);
+    const [rateForm, setRateForm] = useState({
+        ...emptyRateForm,
+        payMode: 'agreement',
+        amountType: 'gross',
+    });
 
-    const formatDate = (dateTime) => {
-        if (dateTime) {
-            const formattedDate = dateTime.replace('T', ' ');
-            return formattedDate;
-        }
-        return '';
-    };
+    const formatDate = (dateTime) => dateTime?.replace('T', ' ') || '';
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         const formattedStartDateTime = formatDate(startDateTime);
         const formattedEndDateTime = formatDate(endDateTime) || null;
+
         try {
             const res = await fetchNewContractAdmin(
                 authToken,
@@ -56,6 +62,19 @@ const CreateContract = () => {
                 hourRuleType
             );
 
+            const createdServiceId = res?.data?.id;
+            if (configureRate && createdServiceId) {
+                await saveSalaryRate(authToken, {
+                    ...rateForm,
+                    serviceId: createdServiceId,
+                    employeeId: '',
+                    amountType:
+                        rateForm.payMode === 'agreement'
+                            ? 'gross'
+                            : rateForm.amountType,
+                });
+            }
+
             toast.success(res.message);
         } catch (error) {
             toast.error(error.message);
@@ -68,13 +87,11 @@ const CreateContract = () => {
                 <fieldset>
                     <label htmlFor='name'>Nombre</label>
                     <input
-                        type='tex'
+                        type='text'
                         id='name'
                         name='name'
                         value={name}
-                        onChange={(e) => {
-                            setName(e.target.value);
-                        }}
+                        onChange={(e) => setName(e.target.value)}
                     />
                     <label htmlFor='type'>Tipo de servicio</label>
                     <input
@@ -127,85 +144,93 @@ const CreateContract = () => {
                         id='startDateTime'
                         name='startDateTime'
                         value={startDateTime}
-                        onChange={(e) => {
-                            setStartDateTime(e.target.value);
-                        }}
+                        onChange={(e) => setStartDateTime(e.target.value)}
                     />
                     <label htmlFor='endDateTime'>Fecha de fin</label>
                     <input
                         type='datetime-local'
-                        id='startDateTime'
-                        name='startDateTime'
+                        id='endDateTime'
+                        name='endDateTime'
                         value={endDateTime}
                         onChange={(e) => setEndDateTime(e.target.value)}
                     />
-                    <label htmlFor='NumberOfPeople'>Número de personas</label>
+                    <label htmlFor='NumberOfPeople'>Numero de personas</label>
                     <input
                         type='number'
                         min={1}
-                        defaultValue={1}
                         id='NumberOfPeople'
                         name='NumberOfPeople'
                         value={numberOfPeople}
-                        onChange={(e) => {
-                            setNumberOfPeople(e.target.value);
-                        }}
+                        onChange={(e) => setNumberOfPeople(e.target.value)}
                     />
-                    <label htmlFor='comments'>comentarios</label>
+                    <label htmlFor='comments'>Comentarios</label>
                     <input
                         type='text'
                         id='comments'
                         name='comments'
                         value={comments}
-                        onChange={(e) => {
-                            setComments(e.target.value);
-                        }}
+                        onChange={(e) => setComments(e.target.value)}
                     />
-                    <label htmlFor='Address'>Dirección</label>
+                    <label htmlFor='Address'>Direccion</label>
                     <input
                         type='text'
-                        id='Addres'
-                        name='Addres'
+                        id='Address'
+                        name='Address'
                         value={address}
-                        onChange={(e) => {
-                            setAddress(e.target.value);
-                        }}
+                        onChange={(e) => setAddress(e.target.value)}
                     />
-                    <label htmlFor='city'>city</label>
+                    <label htmlFor='city'>Ciudad</label>
                     <input
                         type='text'
                         id='city'
                         name='city'
                         value={city}
-                        onChange={(e) => {
-                            setCity(e.target.value);
-                        }}
+                        onChange={(e) => setCity(e.target.value)}
                     />
-                    <label htmlFor='PostCode'>Código Postal</label>
+                    <label htmlFor='PostCode'>Codigo Postal</label>
                     <input
                         type='number'
                         id='PostCode'
                         name='PostCode'
                         value={postCode}
-                        onChange={(e) => {
-                            setPostCode(e.target.value);
-                        }}
+                        onChange={(e) => setPostCode(e.target.value)}
                     />
-                    <label htmlFor='Client' style={{ display: 'none' }}>
-                        Cliente (Elígelo en el Buscador)
+                    <label htmlFor='configureRate'>
+                        <input
+                            id='configureRate'
+                            type='checkbox'
+                            checked={configureRate}
+                            onChange={(e) => setConfigureRate(e.target.checked)}
+                        />
+                        Configurar tarifa general del servicio
                     </label>
-                    <input
-                        style={{ display: 'none' }}
-                        type='text'
-                        id='Client'
-                        name='CLient'
-                        value=''
-                        readOnly
-                    />
+                    {configureRate ? (
+                        <button
+                            type='button'
+                            onClick={() => setIsRateModalOpen(true)}
+                        >
+                            Editar tarifa
+                        </button>
+                    ) : null}
                     <button>Enviar</button>
                 </fieldset>
             </form>
+            <SalaryRateModal
+                open={isRateModalOpen}
+                title='Tarifa general del servicio'
+                form={rateForm}
+                onChange={setRateForm}
+                onClose={() => setIsRateModalOpen(false)}
+                onSubmit={(event) => {
+                    event.preventDefault();
+                    setIsRateModalOpen(false);
+                }}
+                serviceOptions={[{ id: '', name: 'Servicio nuevo' }]}
+                hideEmployee
+                lockService
+            />
         </>
     );
 };
+
 export default CreateContract;

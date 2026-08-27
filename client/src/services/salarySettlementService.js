@@ -64,6 +64,18 @@ export const createSalaryAdjustment = async (authToken, payload) => {
     return assertOk(await readJsonBody(res));
 };
 
+export const saveSalaryAbsencePayment = async (authToken, payload) => {
+    const res = await fetch(`${VITE_API_URL}/salary-settlements/absence-payments`, {
+        method: 'PUT',
+        headers: {
+            Authorization: authToken,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+    });
+    return assertOk(await readJsonBody(res));
+};
+
 export const deleteSalaryAdjustment = async (authToken, adjustmentId) => {
     const res = await fetch(
         `${VITE_API_URL}/salary-settlements/adjustments/${adjustmentId}`,

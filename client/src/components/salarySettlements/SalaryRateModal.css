@@ -1,0 +1,125 @@
+.salary-rate-modal {
+    align-items: center;
+    display: flex;
+    inset: 0;
+    justify-content: center;
+    padding: 1rem;
+    position: fixed;
+    z-index: 9000;
+}
+
+.salary-rate-modal__backdrop {
+    background: rgba(15, 23, 42, 0.55);
+    border: 0;
+    inset: 0;
+    position: fixed;
+}
+
+.salary-rate-modal__panel {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
+    display: grid;
+    gap: 0.85rem;
+    max-height: calc(100vh - 2rem);
+    max-width: 860px;
+    overflow-y: auto;
+    padding: 1rem;
+    position: relative;
+    width: min(860px, 100%);
+    z-index: 1;
+}
+
+.salary-rate-modal__header {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.salary-rate-modal__header h3,
+.salary-rate-modal__note {
+    margin: 0;
+}
+
+.salary-rate-modal__grid {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.salary-rate-modal label {
+    color: #334155;
+    display: grid;
+    font-size: 0.82rem;
+    font-weight: 800;
+    gap: 0.35rem;
+}
+
+.salary-rate-modal input,
+.salary-rate-modal select {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    color: #0f172a;
+    font: inherit;
+    min-width: 0;
+    padding: 0.55rem 0.65rem;
+}
+
+.salary-rate-modal select:disabled {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.salary-rate-modal__note {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    color: #1e3a8a;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 0.7rem;
+}
+
+.salary-rate-modal__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.salary-rate-modal button {
+    background: #0f172a;
+    border: 0;
+    border-radius: 999px;
+    color: #ffffff;
+    cursor: pointer;
+    font-weight: 800;
+    padding: 0.55rem 0.9rem;
+    white-space: nowrap;
+}
+
+.salary-rate-modal__actions button:first-child,
+.salary-rate-modal__header button {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+@media (max-width: 720px) {
+    .salary-rate-modal {
+        align-items: stretch;
+        padding: 0.6rem;
+    }
+
+    .salary-rate-modal__panel {
+        max-height: calc(100vh - 1.2rem);
+        width: 100%;
+    }
+
+    .salary-rate-modal__header,
+    .salary-rate-modal__actions {
+        align-items: stretch;
+        display: grid;
+    }
+}

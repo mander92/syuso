@@ -113,7 +113,7 @@ const insertServiceAdmin = async (
 
     const [data] = await pool.query(
         `
-        SELECT s.status, s.name,
+        SELECT s.id, s.status, s.name,
         s.type, s.province, s.autonomousCommunity, s.hourRuleType, s.hours, s.hourlyRate, s.startDateTime, a.address, a.postCode, a.city, s.comments, u.email, u.firstName, u.lastName, u.phone
         FROM addresses a
         INNER JOIN services s

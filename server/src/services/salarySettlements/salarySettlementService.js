@@ -61,6 +61,23 @@ const getAgreementDefaults = (month) => {
     };
 };
 
+const getDateKey = (value) => {
+    if (!value) return '';
+    if (value instanceof Date) return value.toISOString().slice(0, 10);
+    return String(value).slice(0, 10);
+};
+
+const countOverlapDays = (startDate, endDate, rangeStart, rangeEnd) => {
+    const startKey = getDateKey(startDate) > rangeStart ? getDateKey(startDate) : rangeStart;
+    const endKey = getDateKey(endDate) < rangeEnd ? getDateKey(endDate) : rangeEnd;
+    const start = new Date(`${startKey}T00:00:00Z`);
+    const end = new Date(`${endKey}T00:00:00Z`);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
+        return 0;
+    }
+    return Math.floor((end - start) / 86400000) + 1;
+};
+
 const normalizeRate = (rate) => ({
     id: rate?.id || '',
     serviceId: rate?.serviceId || '',
@@ -403,6 +420,62 @@ const createSalaryAdjustment = async ({ userId, payload }) => {
     return id;
 };
 
+const upsertSalaryAbsencePayment = async ({ userId, payload }) => {
+    const pool = await getPool();
+    const absenceType = payload.absenceType;
+    const amountType = payload.amountType || 'gross';
+    const days = toNumber(payload.days);
+    const amount = roundMoney(payload.amount);
+
+    const [existing] = await pool.query(
+        `
+        SELECT id
+        FROM salaryAbsencePayments
+        WHERE employeeId = ?
+          AND settlementMonth = ?
+          AND absenceType = ?
+          AND deletedAt IS NULL
+        LIMIT 1
+        `,
+        [payload.employeeId, payload.settlementMonth, absenceType]
+    );
+
+    if (existing.length) {
+        await pool.query(
+            `
+            UPDATE salaryAbsencePayments
+            SET days = ?, amount = ?, amountType = ?, notes = ?
+            WHERE id = ?
+            `,
+            [days, amount, amountType, payload.notes || null, existing[0].id]
+        );
+        return existing[0].id;
+    }
+
+    const id = uuid();
+    await pool.query(
+        `
+        INSERT INTO salaryAbsencePayments (
+            id, employeeId, settlementMonth, absenceType, days, amount,
+            amountType, notes, createdBy
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        [
+            id,
+            payload.employeeId,
+            payload.settlementMonth,
+            absenceType,
+            days,
+            amount,
+            amountType,
+            payload.notes || null,
+            userId,
+        ]
+    );
+    return id;
+};
+
 const deleteSalaryAdjustment = async (adjustmentId) => {
     const pool = await getPool();
     await pool.query(
@@ -497,7 +570,47 @@ const calculateSalarySettlements = async ({
         filterData.values
     );
 
+    const absenceValues = [end, start];
+    const absenceFilters = [
+        'ea.startDate <= ?',
+        'ea.endDate >= ?',
+    ];
+    if (employeeId) {
+        absenceFilters.push('ea.employeeId = ?');
+        absenceValues.push(employeeId);
+    }
+    if (delegation) {
+        absenceFilters.push('u.city = ?');
+        absenceValues.push(delegation);
+    }
+    if (viewerRole === 'admin') {
+        const delegations = await getViewerDelegations({ viewerId, viewerRole });
+        if (delegations.length) {
+            absenceFilters.push(`u.city IN (${delegations.map(() => '?').join(', ')})`);
+            absenceValues.push(...delegations);
+        }
+    }
+
+    const [absenceRows] = serviceId
+        ? [[]]
+        : await pool.query(
+              `
+              SELECT ea.id, ea.employeeId, ea.startDate, ea.endDate, ea.type, ea.notes,
+                     u.firstName, u.lastName, u.dni, u.city AS employeeDelegation,
+                     ed.bankAccount
+              FROM employeeAbsences ea
+              INNER JOIN users u ON u.id = ea.employeeId
+              LEFT JOIN employeeDocumentations ed ON ed.userId = u.id
+              WHERE ${absenceFilters.join(' AND ')}
+              ORDER BY u.firstName, u.lastName, ea.startDate
+              `,
+              absenceValues
+          );
+
     const employeeIds = [...new Set(shiftRows.map((row) => row.employeeId))];
+    absenceRows.forEach((row) => {
+        if (!employeeIds.includes(row.employeeId)) employeeIds.push(row.employeeId);
+    });
     const serviceIds = [...new Set(shiftRows.map((row) => row.serviceId))];
 
     const rateRows = serviceIds.length
@@ -555,6 +668,24 @@ const calculateSalarySettlements = async ({
         adjustmentValues
     );
 
+    const paymentValues = [month];
+    const paymentFilters = ['sap.settlementMonth = ?', 'sap.deletedAt IS NULL'];
+    if (employeeIds.length) {
+        paymentFilters.push(`sap.employeeId IN (${employeeIds.map(() => '?').join(', ')})`);
+        paymentValues.push(...employeeIds);
+    } else {
+        paymentFilters.push('1 = 0');
+    }
+
+    const [absencePayments] = await pool.query(
+        `
+        SELECT sap.*
+        FROM salaryAbsencePayments sap
+        WHERE ${paymentFilters.join(' AND ')}
+        `,
+        paymentValues
+    );
+
     const agreementDefaults = getAgreementDefaults(month);
     const employeeMonthHours = shiftRows.reduce((acc, row) => {
         acc.set(row.employeeId, toNumber(acc.get(row.employeeId)) + toNumber(row.totalHours));
@@ -574,8 +705,44 @@ const calculateSalarySettlements = async ({
         });
         return acc;
     }, new Map());
+    const absencePaymentMap = absencePayments.reduce((acc, row) => {
+        acc.set(`${row.employeeId}:${row.absenceType}`, {
+            ...row,
+            days: toNumber(row.days),
+            amount: toNumber(row.amount),
+        });
+        return acc;
+    }, new Map());
 
     const employeeMap = new Map();
+    const ensureEmployee = (row) => {
+        if (!employeeMap.has(row.employeeId)) {
+            employeeMap.set(row.employeeId, {
+                employeeId: row.employeeId,
+                employeeName:
+                    row.employeeName ||
+                    `${row.firstName || ''} ${row.lastName || ''}`.trim(),
+                dni: row.dni || '',
+                delegation: row.employeeDelegation || '',
+                bankAccount: row.bankAccount || '',
+                totalHours: 0,
+                baseHours: 0,
+                nightHours: 0,
+                holidayHours: 0,
+                extraHours: 0,
+                grossAmount: 0,
+                netAmount: 0,
+                missingRates: 0,
+                services: [],
+                adjustments: [],
+                absences: [],
+                absencePayments: [],
+                calendar: employeeCalendar.get(row.employeeId) || [],
+            });
+        }
+        return employeeMap.get(row.employeeId);
+    };
+
     shiftRows.forEach((row) => {
         const exactRate = rateMap.get(getRateKey(row.serviceId, row.employeeId));
         const defaultRate = rateMap.get(getRateKey(row.serviceId, ''));
@@ -601,28 +768,7 @@ const calculateSalarySettlements = async ({
         const amount = calculateLineAmount({ row: enrichedRow, rate, month });
         const amountType = rate.payMode === 'agreement' ? 'gross' : rate.amountType || 'gross';
 
-        if (!employeeMap.has(row.employeeId)) {
-            employeeMap.set(row.employeeId, {
-                employeeId: row.employeeId,
-                employeeName: `${row.firstName || ''} ${row.lastName || ''}`.trim(),
-                dni: row.dni || '',
-                delegation: row.employeeDelegation || '',
-                bankAccount: row.bankAccount || '',
-                totalHours: 0,
-                baseHours: 0,
-                nightHours: 0,
-                holidayHours: 0,
-                extraHours: 0,
-                grossAmount: 0,
-                netAmount: 0,
-                missingRates: 0,
-                services: [],
-                adjustments: [],
-                calendar: employeeCalendar.get(row.employeeId) || [],
-            });
-        }
-
-        const employee = employeeMap.get(row.employeeId);
+        const employee = ensureEmployee(row);
         employee.totalHours += totalHours;
         employee.baseHours += baseHours;
         employee.nightHours += nightHours;
@@ -648,29 +794,48 @@ const calculateSalarySettlements = async ({
         });
     });
 
+    absenceRows.forEach((absence) => {
+        const employee = ensureEmployee(absence);
+        employee.absences.push({
+            id: absence.id,
+            type: absence.type,
+            startDate: getDateKey(absence.startDate),
+            endDate: getDateKey(absence.endDate),
+            days: countOverlapDays(absence.startDate, absence.endDate, start, end),
+            notes: absence.notes || '',
+        });
+    });
+
+    employeeMap.forEach((employee) => {
+        ['vacation', 'sick'].forEach((type) => {
+            const detectedDays = employee.absences
+                .filter((absence) => absence.type === type)
+                .reduce((sum, absence) => sum + absence.days, 0);
+            const savedPayment = absencePaymentMap.get(`${employee.employeeId}:${type}`);
+            const payment = {
+                id: savedPayment?.id || '',
+                absenceType: type,
+                detectedDays: roundMoney(detectedDays),
+                days:
+                    savedPayment?.days !== undefined
+                        ? roundMoney(savedPayment.days)
+                        : roundMoney(detectedDays),
+                amount: savedPayment ? roundMoney(savedPayment.amount) : 0,
+                amountType: savedPayment?.amountType || 'gross',
+                notes: savedPayment?.notes || '',
+            };
+            employee.absencePayments.push(payment);
+            if (payment.amountType === 'net') employee.netAmount += payment.amount;
+            else employee.grossAmount += payment.amount;
+        });
+    });
+
     adjustments.forEach((adjustment) => {
-        if (!employeeMap.has(adjustment.employeeId)) {
-            employeeMap.set(adjustment.employeeId, {
-                employeeId: adjustment.employeeId,
-                employeeName:
-                    `${adjustment.firstName || ''} ${adjustment.lastName || ''}`.trim(),
-                dni: adjustment.dni || '',
-                delegation: adjustment.employeeDelegation || '',
-                bankAccount: adjustment.bankAccount || '',
-                totalHours: 0,
-                baseHours: 0,
-                nightHours: 0,
-                holidayHours: 0,
-                extraHours: 0,
-                grossAmount: 0,
-                netAmount: 0,
-                missingRates: 0,
-                services: [],
-                adjustments: [],
-                calendar: employeeCalendar.get(adjustment.employeeId) || [],
-            });
-        }
-        const employee = employeeMap.get(adjustment.employeeId);
+        const employee = ensureEmployee({
+            ...adjustment,
+            employeeName:
+                `${adjustment.firstName || ''} ${adjustment.lastName || ''}`.trim(),
+        });
         const amount = toNumber(adjustment.amount);
         if (adjustment.amountType === 'net') employee.netAmount += amount;
         else employee.grossAmount += amount;
@@ -735,6 +900,18 @@ const calculateSalarySettlements = async ({
         netAmount: employee.netAmount,
         totalAmount: employee.totalAmount,
         missingRates: employee.missingRates,
+        vacationDays:
+            employee.absencePayments.find((item) => item.absenceType === 'vacation')
+                ?.days || 0,
+        vacationAmount:
+            employee.absencePayments.find((item) => item.absenceType === 'vacation')
+                ?.amount || 0,
+        sickDays:
+            employee.absencePayments.find((item) => item.absenceType === 'sick')
+                ?.days || 0,
+        sickAmount:
+            employee.absencePayments.find((item) => item.absenceType === 'sick')
+                ?.amount || 0,
     }));
 
     const detailRows = employees.flatMap((employee) =>
@@ -799,6 +976,10 @@ const calculateSalarySettlements = async ({
                     { header: 'Bruto', key: 'grossAmount', width: 12 },
                     { header: 'Neto', key: 'netAmount', width: 12 },
                     { header: 'Total', key: 'totalAmount', width: 12 },
+                    { header: 'Dias vacaciones', key: 'vacationDays', width: 16 },
+                    { header: 'Importe vacaciones', key: 'vacationAmount', width: 18 },
+                    { header: 'Dias baja', key: 'sickDays', width: 12 },
+                    { header: 'Importe baja', key: 'sickAmount', width: 14 },
                     { header: 'Servicios sin tarifa', key: 'missingRates', width: 18 },
                 ],
                 rows: summaryRows,
@@ -865,5 +1046,6 @@ export {
     deleteSalaryAdjustment,
     listSalaryOptions,
     listSalaryRates,
+    upsertSalaryAbsencePayment,
     upsertSalaryRate,
 };

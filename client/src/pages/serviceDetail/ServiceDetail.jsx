@@ -18,6 +18,10 @@ import ServiceSchedulePanel from '../../components/serviceSchedule/ServiceSchedu
 import ShiftComponent from '../../components/adminShiftSection/ShiftComponent.jsx';
 import WorkReportsComponent from '../../components/adminWorkReportsSection/WorkReportsComponent.jsx';
 import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
+import SalaryRateModal, {
+    emptyRateForm,
+} from '../../components/salarySettlements/SalaryRateModal.jsx';
+import { saveSalaryRate } from '../../services/salarySettlementService.js';
 import './ServiceDetail.css';
 
 const formatDateTimeInput = (value) => {
@@ -75,6 +79,9 @@ const ServiceDetail = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [isSavingSummary, setIsSavingSummary] = useState(false);
     const [isSavingEmails, setIsSavingEmails] = useState(false);
+    const [isSavingRate, setIsSavingRate] = useState(false);
+    const [isRateModalOpen, setIsRateModalOpen] = useState(false);
+    const [rateForm, setRateForm] = useState(emptyRateForm);
     const [isCompleting, setIsCompleting] = useState(false);
     const [isReactivating, setIsReactivating] = useState(false);
     const [activeTab, setActiveTab] = useState('summary');
@@ -430,6 +437,39 @@ const ServiceDetail = () => {
         }
     };
 
+    const openServiceRateModal = () => {
+        setRateForm({
+            ...emptyRateForm,
+            serviceId,
+            employeeId: '',
+            payMode: 'agreement',
+            amountType: 'gross',
+        });
+        setIsRateModalOpen(true);
+    };
+
+    const handleSaveServiceRate = async (event) => {
+        event.preventDefault();
+        try {
+            setIsSavingRate(true);
+            await saveSalaryRate(authToken, {
+                ...rateForm,
+                serviceId,
+                employeeId: '',
+                amountType:
+                    rateForm.payMode === 'agreement'
+                        ? 'gross'
+                        : rateForm.amountType,
+            });
+            setIsRateModalOpen(false);
+            toast.success('Tarifa guardada');
+        } catch (error) {
+            toast.error(error.message || 'No se pudo guardar la tarifa');
+        } finally {
+            setIsSavingRate(false);
+        }
+    };
+
 
     useEffect(() => {
         if (activeTab === 'chat') {
@@ -578,6 +618,15 @@ const ServiceDetail = () => {
                         <section className='service-detail-card service-detail-section'>
                             <div className='service-detail-section-header'>
                                 <h2>Resumen</h2>
+                                {user?.role === 'sudo' ? (
+                                    <button
+                                        type='button'
+                                        className='service-detail-btn'
+                                        onClick={openServiceRateModal}
+                                    >
+                                        Anadir tarifa
+                                    </button>
+                                ) : null}
                             </div>
                             <form
                                 className='service-detail-summary-form'
@@ -1131,6 +1180,23 @@ const ServiceDetail = () => {
                     </div>
                 </div>
             )}
+            <SalaryRateModal
+                open={isRateModalOpen}
+                title='Tarifa general del servicio'
+                form={rateForm}
+                onChange={setRateForm}
+                onClose={() => setIsRateModalOpen(false)}
+                onSubmit={handleSaveServiceRate}
+                serviceOptions={[
+                    {
+                        id: serviceId,
+                        name: detail?.name || detail?.type || 'Servicio',
+                    },
+                ]}
+                saving={isSavingRate}
+                lockService
+                hideEmployee
+            />
         </div>
     );
 };

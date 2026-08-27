@@ -6,8 +6,10 @@ import {
     createSalaryAdjustment,
     deleteSalaryAdjustment,
     fetchSalarySettlements,
+    saveSalaryAbsencePayment,
     saveSalaryRate,
 } from '../../services/salarySettlementService.js';
+import SalaryRateModal, { emptyRateForm } from './SalaryRateModal.jsx';
 import './SalarySettlementsComponent.css';
 
 const getCurrentMonth = () => new Date().toISOString().slice(0, 7);
@@ -42,19 +44,6 @@ const getDaysInMonth = (month) => {
 
 const getDayKey = (value) => String(value || '').slice(0, 10);
 
-const emptyRateForm = {
-    serviceId: '',
-    employeeId: '',
-    payMode: 'hourly',
-    amountType: 'gross',
-    regularRate: '',
-    nightRate: '',
-    holidayRate: '',
-    extraRate: '',
-    fixedAmount: '',
-    notes: '',
-};
-
 const emptyAdjustmentForm = {
     serviceId: '',
     concept: '',
@@ -64,6 +53,17 @@ const emptyAdjustmentForm = {
     amountType: 'gross',
     notes: '',
 };
+
+const emptyAbsencePaymentForm = {
+    absenceType: 'vacation',
+    days: '',
+    amount: '',
+    amountType: 'gross',
+    notes: '',
+};
+
+const absenceTypeLabel = (type) =>
+    type === 'vacation' ? 'Vacaciones' : type === 'sick' ? 'Baja' : 'Ausencia';
 
 const getRateText = (rate) => {
     if (rate.payMode === 'agreement') {
@@ -90,8 +90,13 @@ const SalarySettlementsComponent = () => {
         adjustments: [],
     });
     const [rateForm, setRateForm] = useState(emptyRateForm);
+    const [isRateModalOpen, setIsRateModalOpen] = useState(false);
     const [openAdjustmentEmployeeId, setOpenAdjustmentEmployeeId] = useState('');
     const [adjustmentForm, setAdjustmentForm] = useState(emptyAdjustmentForm);
+    const [openAbsencePaymentKey, setOpenAbsencePaymentKey] = useState('');
+    const [absencePaymentForm, setAbsencePaymentForm] = useState(
+        emptyAbsencePaymentForm
+    );
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
 
@@ -173,6 +178,7 @@ const SalarySettlementsComponent = () => {
                 amountType: rateForm.payMode === 'agreement' ? 'gross' : rateForm.amountType,
             });
             setRateForm(emptyRateForm);
+            setIsRateModalOpen(false);
             await loadData();
             toast.success('Tarifa guardada');
         } catch (error) {
@@ -220,6 +226,38 @@ const SalarySettlementsComponent = () => {
         }
     };
 
+    const handleOpenAbsencePayment = (employee, payment) => {
+        const key = `${employee.employeeId}:${payment.absenceType}`;
+        setOpenAbsencePaymentKey((prev) => (prev === key ? '' : key));
+        setAbsencePaymentForm({
+            absenceType: payment.absenceType,
+            days: payment.days ?? payment.detectedDays ?? '',
+            amount: payment.amount ?? '',
+            amountType: payment.amountType || 'gross',
+            notes: payment.notes || '',
+        });
+    };
+
+    const handleSaveAbsencePayment = async (event, employee) => {
+        event.preventDefault();
+        setSaving(true);
+        try {
+            await saveSalaryAbsencePayment(authToken, {
+                ...absencePaymentForm,
+                employeeId: employee.employeeId,
+                settlementMonth: filters.month,
+            });
+            setOpenAbsencePaymentKey('');
+            setAbsencePaymentForm(emptyAbsencePaymentForm);
+            await loadData();
+            toast.success('Ausencia actualizada');
+        } catch (error) {
+            toast.error(error.message || 'No se pudo guardar la ausencia');
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const handleOpenWorkerAdjustment = (employee) => {
         setOpenAdjustmentEmployeeId((prev) =>
             prev === employee.employeeId ? '' : employee.employeeId
@@ -241,13 +279,22 @@ const SalarySettlementsComponent = () => {
             fixedAmount: rate.fixedAmount ?? '',
             notes: rate.notes || '',
         });
-        document
-            .querySelector('.salary-settlements__forms')
-            ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setIsRateModalOpen(true);
     };
 
-    const renderWorkerCalendar = (employee) => {
-        const shiftsByDate = (employee.calendar || []).reduce((acc, shift) => {
+    const handleOpenRateModal = (rate = emptyRateForm) => {
+        setRateForm({
+            ...emptyRateForm,
+            ...rate,
+            amountType: rate.payMode === 'agreement' ? 'gross' : rate.amountType || 'gross',
+        });
+        setIsRateModalOpen(true);
+    };
+
+    const renderServiceCalendar = (employee, service) => {
+        const shiftsByDate = (employee.calendar || [])
+            .filter((shift) => shift.serviceId === service.serviceId)
+            .reduce((acc, shift) => {
             const key = getDayKey(shift.date);
             if (!acc[key]) acc[key] = [];
             acc[key].push(shift);
@@ -255,20 +302,19 @@ const SalarySettlementsComponent = () => {
         }, {});
 
         return (
-            <div className='salary-calendar'>
+            <div className='salary-service-calendar'>
                 {monthDays.map(({ day, date }) => {
                     const shifts = shiftsByDate[date] || [];
                     const isWeekend = [0, 6].includes(new Date(`${date}T12:00:00`).getDay());
                     return (
                         <div
-                            key={`${employee.employeeId}-${date}`}
-                            className={`salary-calendar__day${isWeekend ? ' is-weekend' : ''}`}
+                            key={`${employee.employeeId}-${service.serviceId}-${date}`}
+                            className={`salary-service-calendar__day${isWeekend ? ' is-weekend' : ''}`}
                         >
                             <span>{day}</span>
                             {shifts.map((shift, index) => (
                                 <small key={`${shift.serviceId}-${date}-${index}`}>
-                                    {shift.startTime?.slice(0, 5)}-{shift.endTime?.slice(0, 5)}{' '}
-                                    {shift.serviceName}
+                                    {shift.startTime?.slice(0, 5)}-{shift.endTime?.slice(0, 5)}
                                 </small>
                             ))}
                         </div>
@@ -417,180 +463,13 @@ const SalarySettlementsComponent = () => {
             </div>
 
             <div className='salary-settlements__forms'>
-                <form className='salary-card' onSubmit={handleSaveRate}>
-                    <h3>Tarifa guardada</h3>
-                    <div className='salary-grid salary-grid--compact'>
-                        <label>
-                            Servicio
-                            <select
-                                value={rateForm.serviceId}
-                                onChange={(event) =>
-                                    setRateForm((prev) => ({
-                                        ...prev,
-                                        serviceId: event.target.value,
-                                    }))
-                                }
-                            >
-                                <option value=''>Selecciona</option>
-                                {serviceOptions.map((service) => (
-                                    <option key={service.id} value={service.id}>
-                                        {serviceLabel(service)}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-                        <label>
-                            Trabajador concreto
-                            <select
-                                value={rateForm.employeeId}
-                                onChange={(event) =>
-                                    setRateForm((prev) => ({
-                                        ...prev,
-                                        employeeId: event.target.value,
-                                    }))
-                                }
-                            >
-                                <option value=''>Todos en ese servicio</option>
-                                {employeeOptions.map((employee) => (
-                                    <option key={employee.id} value={employee.id}>
-                                        {employeeName(employee)}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-                        <label>
-                            Modo
-                            <select
-                                value={rateForm.payMode}
-                                onChange={(event) =>
-                                    setRateForm((prev) => ({
-                                        ...prev,
-                                        payMode: event.target.value,
-                                        amountType:
-                                            event.target.value === 'agreement'
-                                                ? 'gross'
-                                                : prev.amountType,
-                                    }))
-                                }
-                            >
-                                <option value='hourly'>Por horas</option>
-                                <option value='fixed'>Fijo</option>
-                                <option value='agreement'>Convenio</option>
-                            </select>
-                        </label>
-                        <label>
-                            Tipo
-                            <select
-                                value={rateForm.amountType}
-                                disabled={rateForm.payMode === 'agreement'}
-                                onChange={(event) =>
-                                    setRateForm((prev) => ({
-                                        ...prev,
-                                        amountType: event.target.value,
-                                    }))
-                                }
-                            >
-                                <option value='gross'>Bruto</option>
-                                <option value='net'>Neto</option>
-                            </select>
-                        </label>
-                        <label>
-                            Hora base
-                            <input
-                                type='number'
-                                step='0.01'
-                                value={rateForm.regularRate}
-                                onChange={(event) =>
-                                    setRateForm((prev) => ({
-                                        ...prev,
-                                        regularRate: event.target.value,
-                                    }))
-                                }
-                            />
-                        </label>
-                        <label>
-                            Nocturna
-                            <input
-                                type='number'
-                                step='0.01'
-                                value={rateForm.nightRate}
-                                placeholder={String(data.agreement?.nightRate || '')}
-                                onChange={(event) =>
-                                    setRateForm((prev) => ({
-                                        ...prev,
-                                        nightRate: event.target.value,
-                                    }))
-                                }
-                            />
-                        </label>
-                        <label>
-                            Festiva
-                            <input
-                                type='number'
-                                step='0.01'
-                                value={rateForm.holidayRate}
-                                placeholder={String(data.agreement?.holidayRate || '')}
-                                onChange={(event) =>
-                                    setRateForm((prev) => ({
-                                        ...prev,
-                                        holidayRate: event.target.value,
-                                    }))
-                                }
-                            />
-                        </label>
-                        <label>
-                            Extra
-                            <input
-                                type='number'
-                                step='0.01'
-                                value={rateForm.extraRate}
-                                onChange={(event) =>
-                                    setRateForm((prev) => ({
-                                        ...prev,
-                                        extraRate: event.target.value,
-                                    }))
-                                }
-                            />
-                        </label>
-                        <label>
-                            Fijo
-                            <input
-                                type='number'
-                                step='0.01'
-                                value={rateForm.fixedAmount}
-                                onChange={(event) =>
-                                    setRateForm((prev) => ({
-                                        ...prev,
-                                        fixedAmount: event.target.value,
-                                    }))
-                                }
-                            />
-                        </label>
-                    </div>
-                    <label>
-                        Notas
-                        <input
-                            value={rateForm.notes}
-                            onChange={(event) =>
-                                setRateForm((prev) => ({
-                                    ...prev,
-                                    notes: event.target.value,
-                                }))
-                            }
-                        />
-                    </label>
-                    {rateForm.payMode === 'agreement' ? (
-                        <p className='salary-note'>
-                            Convenio Seguridad Privada: bruto, 162 h/mes,
-                            nocturnidad 22:00-06:00 y extras sobre 162 h. Si
-                            dejas nocturna o festiva a 0 se aplica el plus oficial
-                            del ano.
-                        </p>
-                    ) : null}
-                    <button type='submit' disabled={saving}>
-                        Guardar tarifa
-                    </button>
-                </form>
+                <button
+                    type='button'
+                    className='salary-rate-open'
+                    onClick={() => handleOpenRateModal()}
+                >
+                    Anadir tarifa
+                </button>
             </div>
 
             <section className='salary-card'>
@@ -617,7 +496,7 @@ const SalarySettlementsComponent = () => {
                             <button
                                 type='button'
                                 onClick={() =>
-                                    setRateForm({
+                                    handleOpenRateModal({
                                         serviceId: rate.serviceId || '',
                                         employeeId: rate.employeeId || '',
                                         payMode: rate.payMode || 'hourly',
@@ -677,7 +556,6 @@ const SalarySettlementsComponent = () => {
                             <span>Bruto {formatMoney(employee.grossAmount)}</span>
                             <span>Neto {formatMoney(employee.netAmount)}</span>
                         </div>
-                        {renderWorkerCalendar(employee)}
                         <div className='salary-service-list'>
                             {(employee.services || []).map((service) => (
                                 <div
@@ -696,6 +574,7 @@ const SalarySettlementsComponent = () => {
                                                 : 'Normal'}
                                         </span>
                                     </div>
+                                    {renderServiceCalendar(employee, service)}
                                     <div className='salary-service-row__actions'>
                                         <div>
                                             <span>
@@ -716,6 +595,138 @@ const SalarySettlementsComponent = () => {
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                        <div className='salary-absence-list'>
+                            <h4>Vacaciones y bajas</h4>
+                            {(employee.absencePayments || []).map((payment) => {
+                                const key = `${employee.employeeId}:${payment.absenceType}`;
+                                return (
+                                    <div
+                                        key={key}
+                                        className='salary-absence-row'
+                                    >
+                                        <div>
+                                            <strong>
+                                                {absenceTypeLabel(payment.absenceType)}
+                                            </strong>
+                                            <span>
+                                                Detectados {formatHours(payment.detectedDays).replace(' h', ' dias')} - Pagados {formatHours(payment.days).replace(' h', ' dias')}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span>
+                                                {payment.amountType === 'net'
+                                                    ? 'Neto'
+                                                    : 'Bruto'}
+                                            </span>
+                                            <strong>{formatMoney(payment.amount)}</strong>
+                                        </div>
+                                        <button
+                                            type='button'
+                                            onClick={() =>
+                                                handleOpenAbsencePayment(
+                                                    employee,
+                                                    payment
+                                                )
+                                            }
+                                        >
+                                            Editar
+                                        </button>
+                                        {openAbsencePaymentKey === key ? (
+                                            <form
+                                                className='salary-absence-form'
+                                                onSubmit={(event) =>
+                                                    handleSaveAbsencePayment(
+                                                        event,
+                                                        employee
+                                                    )
+                                                }
+                                            >
+                                                <label>
+                                                    Dias
+                                                    <input
+                                                        type='number'
+                                                        step='0.01'
+                                                        value={absencePaymentForm.days}
+                                                        onChange={(event) =>
+                                                            setAbsencePaymentForm(
+                                                                (prev) => ({
+                                                                    ...prev,
+                                                                    days: event.target.value,
+                                                                })
+                                                            )
+                                                        }
+                                                    />
+                                                </label>
+                                                <label>
+                                                    Importe
+                                                    <input
+                                                        type='number'
+                                                        step='0.01'
+                                                        value={absencePaymentForm.amount}
+                                                        onChange={(event) =>
+                                                            setAbsencePaymentForm(
+                                                                (prev) => ({
+                                                                    ...prev,
+                                                                    amount: event.target.value,
+                                                                })
+                                                            )
+                                                        }
+                                                    />
+                                                </label>
+                                                <label>
+                                                    Tipo
+                                                    <select
+                                                        value={
+                                                            absencePaymentForm.amountType
+                                                        }
+                                                        onChange={(event) =>
+                                                            setAbsencePaymentForm(
+                                                                (prev) => ({
+                                                                    ...prev,
+                                                                    amountType:
+                                                                        event.target.value,
+                                                                })
+                                                            )
+                                                        }
+                                                    >
+                                                        <option value='gross'>Bruto</option>
+                                                        <option value='net'>Neto</option>
+                                                    </select>
+                                                </label>
+                                                <label>
+                                                    Notas
+                                                    <input
+                                                        value={absencePaymentForm.notes}
+                                                        onChange={(event) =>
+                                                            setAbsencePaymentForm(
+                                                                (prev) => ({
+                                                                    ...prev,
+                                                                    notes: event.target.value,
+                                                                })
+                                                            )
+                                                        }
+                                                    />
+                                                </label>
+                                                <button type='submit' disabled={saving}>
+                                                    Guardar ausencia
+                                                </button>
+                                            </form>
+                                        ) : null}
+                                    </div>
+                                );
+                            })}
+                            {employee.absences?.length ? (
+                                <div className='salary-absence-detected'>
+                                    {employee.absences.map((absence) => (
+                                        <span key={absence.id}>
+                                            {absenceTypeLabel(absence.type)}:{' '}
+                                            {absence.days} dias ({absence.startDate} -{' '}
+                                            {absence.endDate})
+                                        </span>
+                                    ))}
+                                </div>
+                            ) : null}
                         </div>
                         {openAdjustmentEmployeeId === employee.employeeId ? (
                             <form
@@ -872,6 +883,18 @@ const SalarySettlementsComponent = () => {
                     </p>
                 ) : null}
             </div>
+            <SalaryRateModal
+                open={isRateModalOpen}
+                title='Tarifa guardada'
+                form={rateForm}
+                onChange={setRateForm}
+                onClose={() => setIsRateModalOpen(false)}
+                onSubmit={handleSaveRate}
+                serviceOptions={serviceOptions}
+                employeeOptions={employeeOptions}
+                agreement={data.agreement}
+                saving={saving}
+            />
         </section>
     );
 };

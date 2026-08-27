@@ -6,6 +6,7 @@ import listSalarySettlementsController from '../controllers/salarySettlements/li
 import upsertSalaryRateController from '../controllers/salarySettlements/upsertSalaryRateController.js';
 import createSalaryAdjustmentController from '../controllers/salarySettlements/createSalaryAdjustmentController.js';
 import deleteSalaryAdjustmentController from '../controllers/salarySettlements/deleteSalaryAdjustmentController.js';
+import upsertSalaryAbsencePaymentController from '../controllers/salarySettlements/upsertSalaryAbsencePaymentController.js';
 
 const router = express.Router();
 
@@ -22,6 +23,12 @@ router.delete(
     authUser,
     isAdmin,
     deleteSalaryAdjustmentController
+);
+router.put(
+    '/salary-settlements/absence-payments',
+    authUser,
+    isAdmin,
+    upsertSalaryAbsencePaymentController
 );
 
 export default router;

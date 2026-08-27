@@ -116,6 +116,10 @@
     grid-template-columns: 1fr;
 }
 
+.salary-rate-open {
+    justify-self: start;
+}
+
 .salary-card {
     display: grid;
     gap: 0.85rem;
@@ -165,14 +169,16 @@
 
 .salary-service-list,
 .salary-adjustments,
-.salary-rate-list {
+.salary-rate-list,
+.salary-absence-list {
     display: grid;
     gap: 0.5rem;
 }
 
 .salary-service-row,
 .salary-adjustment-row,
-.salary-rate-row {
+.salary-rate-row,
+.salary-absence-row {
     align-items: center;
     background: #f8fafc;
     border: 1px solid #e2e8f0;
@@ -186,6 +192,10 @@
 .salary-service-row.is-missing {
     background: #fff7ed;
     border-color: #fed7aa;
+}
+
+.salary-service-row {
+    grid-template-columns: minmax(110px, 150px) minmax(0, 1fr) auto;
 }
 
 .salary-service-row > div,
@@ -234,6 +244,59 @@
     grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
+.salary-absence-list h4 {
+    color: #0f172a;
+    margin: 0.25rem 0 0;
+}
+
+.salary-absence-row {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.salary-absence-row > div:first-child {
+    display: grid;
+    gap: 0.2rem;
+}
+
+.salary-absence-row > div:nth-child(2) {
+    display: grid;
+    justify-items: end;
+}
+
+.salary-absence-row span,
+.salary-absence-detected {
+    color: #64748b;
+    font-size: 0.82rem;
+}
+
+.salary-absence-row button {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.salary-absence-form {
+    border-top: 1px solid #e2e8f0;
+    display: grid;
+    gap: 0.65rem;
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    padding-top: 0.65rem;
+}
+
+.salary-absence-detected {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.salary-absence-detected span {
+    background: #eef2ff;
+    border-radius: 999px;
+    color: #3730a3;
+    font-weight: 800;
+    padding: 0.25rem 0.55rem;
+}
+
 .salary-adjustment-row button {
     background: #fee2e2;
     color: #991b1b;
@@ -263,47 +326,49 @@
     padding: 0.7rem;
 }
 
-.salary-calendar {
+.salary-service-calendar {
     display: grid;
-    gap: 0.35rem;
-    grid-template-columns: repeat(31, minmax(74px, 1fr));
-    overflow-x: auto;
-    padding-bottom: 0.25rem;
+    gap: 0.2rem;
+    grid-template-columns: repeat(31, minmax(0, 1fr));
+    min-width: 0;
+    overflow: hidden;
 }
 
-.salary-calendar__day {
+.salary-service-calendar__day {
     align-content: start;
     background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 8px;
+    border-radius: 6px;
     display: grid;
-    gap: 0.25rem;
-    min-height: 72px;
-    min-width: 74px;
-    padding: 0.4rem;
+    gap: 0.16rem;
+    min-height: 46px;
+    min-width: 0;
+    padding: 0.25rem 0.18rem;
 }
 
-.salary-calendar__day.is-weekend {
+.salary-service-calendar__day.is-weekend {
     background: #fff7ed;
     border-color: #fed7aa;
 }
 
-.salary-calendar__day span {
+.salary-service-calendar__day span {
     color: #0f172a;
-    font-size: 0.78rem;
+    font-size: clamp(0.55rem, 0.68vw, 0.72rem);
     font-weight: 900;
+    line-height: 1;
 }
 
-.salary-calendar__day small {
+.salary-service-calendar__day small {
     background: #dbeafe;
-    border-radius: 6px;
+    border-radius: 5px;
     color: #1e3a8a;
-    font-size: 0.68rem;
+    font-size: clamp(0.46rem, 0.58vw, 0.62rem);
     font-weight: 800;
-    line-height: 1.15;
+    line-height: 1.05;
     overflow: hidden;
-    padding: 0.2rem 0.25rem;
+    padding: 0.16rem 0.12rem;
     text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 @media (max-width: 720px) {
@@ -317,9 +382,14 @@
     }
 
     .salary-settlements__filters,
-    .salary-service-row,
-    .salary-adjustment-row {
+    .salary-adjustment-row,
+    .salary-absence-row {
         grid-template-columns: 1fr;
+    }
+
+    .salary-service-row {
+        grid-template-columns: minmax(96px, 120px) minmax(0, 1fr) minmax(100px, auto);
+        overflow-x: auto;
     }
 
     .salary-service-row > div:last-child,
@@ -328,11 +398,30 @@
     }
 
     .salary-service-row__actions {
-        align-items: stretch;
-        display: grid;
+        align-items: end;
+        display: flex;
+        min-width: 100px;
     }
 
-    .salary-calendar {
-        grid-template-columns: repeat(31, minmax(68px, 68px));
+    .salary-absence-row > div:nth-child(2) {
+        justify-items: start;
+    }
+
+    .salary-service-calendar {
+        grid-template-columns: repeat(31, minmax(42px, 42px));
+        min-width: calc(31 * 42px + 30 * 0.2rem);
+        overflow: visible;
+    }
+
+    .salary-service-calendar__day {
+        min-height: 54px;
+    }
+
+    .salary-service-calendar__day span {
+        font-size: 0.68rem;
+    }
+
+    .salary-service-calendar__day small {
+        font-size: 0.58rem;
     }
 }
