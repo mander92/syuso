@@ -107,7 +107,7 @@ const simulateServiceScheduleService = async (serviceId, monthParam) => {
     if (!shifts.length) {
         const [monthTemplates] = await pool.query(
             `
-            SELECT weekday, startTime, endTime, slots, shiftTypeId
+            SELECT weekday, startTime, endTime, slots, shiftTypeId, employeeId
             FROM serviceScheduleTemplates
             WHERE serviceId = ? AND month = ?
             `,
@@ -119,7 +119,7 @@ const simulateServiceScheduleService = async (serviceId, monthParam) => {
         if (!templates.length) {
             const [defaultTemplates] = await pool.query(
                 `
-                SELECT weekday, startTime, endTime, slots, shiftTypeId
+                SELECT weekday, startTime, endTime, slots, shiftTypeId, employeeId
                 FROM serviceScheduleTemplates
                 WHERE serviceId = ? AND month = ''
                 `,
@@ -151,7 +151,7 @@ const simulateServiceScheduleService = async (serviceId, monthParam) => {
                         generated.push({
                             id: uuid(),
                             serviceId,
-                            employeeId: null,
+                            employeeId: template.employeeId || null,
                             shiftTypeId: template.shiftTypeId || null,
                             scheduleDate,
                             startTime: template.startTime,
@@ -314,7 +314,7 @@ const simulateServiceScheduleService = async (serviceId, monthParam) => {
     const assignedDatesByEmployee = new Map();
     const simulatedShifts = shifts.map((shift) => ({
         ...shift,
-        employeeId: null,
+        employeeId: shift.employeeId || null,
     }));
 
     simulatedShifts.forEach((shift) => {
@@ -533,6 +533,29 @@ const simulateServiceScheduleService = async (serviceId, monthParam) => {
         }
         unassignedShiftIds.delete(shift.id);
     };
+
+    simulatedShifts.forEach((shift) => {
+        if (!shift.employeeId || !employeeIds.includes(shift.employeeId)) return;
+        const dateKey = toDateKey(shift.scheduleDate);
+        const weekendGroupIndex = weekendGroups.findIndex((group) =>
+            isWeekendGroupDate(dateKey, group)
+        );
+        if (
+            canAssignShift(
+                shift.employeeId,
+                shift,
+                weekendGroupIndex >= 0 ? weekendGroupIndex : null
+            )
+        ) {
+            assignShift(
+                shift,
+                shift.employeeId,
+                weekendGroupIndex >= 0 ? weekendGroupIndex : null
+            );
+        } else {
+            shift.employeeId = null;
+        }
+    });
 
     bundleAssignments.forEach((bundle) => {
         if (bundle.shifts.some((shift) => !unassignedShiftIds.has(shift.id))) {

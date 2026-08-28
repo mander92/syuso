@@ -287,6 +287,7 @@ const initDb = async () => {
                 serviceId CHAR(36) NOT NULL,
                 month CHAR(7) NOT NULL,
                 shiftTypeId CHAR(36),
+                employeeId CHAR(36),
                 weekday TINYINT UNSIGNED NOT NULL,
                 startTime TIME NOT NULL,
                 endTime TIME NOT NULL,
@@ -295,6 +296,7 @@ const initDb = async () => {
                 createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (serviceId) REFERENCES services(id) ON DELETE CASCADE,
                 FOREIGN KEY (shiftTypeId) REFERENCES serviceShiftTypes(id) ON DELETE SET NULL,
+                FOREIGN KEY (employeeId) REFERENCES users(id) ON DELETE SET NULL,
                 FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE SET NULL
             )
             `

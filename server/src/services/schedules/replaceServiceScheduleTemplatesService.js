@@ -26,6 +26,7 @@ const replaceServiceScheduleTemplatesService = async (
         serviceId,
         '',
         item.shiftTypeId || null,
+        item.employeeId || null,
         item.weekday,
         item.startTime,
         item.endTime,
@@ -36,18 +37,19 @@ const replaceServiceScheduleTemplatesService = async (
     await pool.query(
         `
         INSERT INTO serviceScheduleTemplates
-            (id, serviceId, month, shiftTypeId, weekday, startTime, endTime, slots, createdBy)
+            (id, serviceId, month, shiftTypeId, employeeId, weekday, startTime, endTime, slots, createdBy)
         VALUES ?
         `,
         [values]
     );
 
     return values.map(
-        ([id, , templateMonth, shiftTypeId, weekday, startTime, endTime, slots]) => ({
+        ([id, , templateMonth, shiftTypeId, employeeId, weekday, startTime, endTime, slots]) => ({
             id,
             serviceId,
             month: templateMonth,
             shiftTypeId,
+            employeeId,
             weekday,
             startTime,
             endTime,

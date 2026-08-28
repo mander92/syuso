@@ -5,7 +5,7 @@ const listServiceScheduleTemplatesService = async (serviceId, month) => {
 
     const [monthRows] = await pool.query(
         `
-        SELECT id, serviceId, month, shiftTypeId, weekday, startTime, endTime, slots
+        SELECT id, serviceId, month, shiftTypeId, employeeId, weekday, startTime, endTime, slots
         FROM serviceScheduleTemplates
         WHERE serviceId = ? AND month = ?
         ORDER BY weekday, startTime
@@ -17,7 +17,7 @@ const listServiceScheduleTemplatesService = async (serviceId, month) => {
 
     const [defaultRows] = await pool.query(
         `
-        SELECT id, serviceId, month, shiftTypeId, weekday, startTime, endTime, slots
+        SELECT id, serviceId, month, shiftTypeId, employeeId, weekday, startTime, endTime, slots
         FROM serviceScheduleTemplates
         WHERE serviceId = ? AND month = ''
         ORDER BY weekday, startTime

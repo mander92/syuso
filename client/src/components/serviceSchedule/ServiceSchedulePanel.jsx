@@ -665,6 +665,7 @@ const ServiceSchedulePanel = ({
                 endTime: '08:00',
                 slots: 1,
                 shiftTypeId: defaultShiftTypeId,
+                employeeId: '',
             },
         ]);
     };
@@ -1529,6 +1530,23 @@ const ServiceSchedulePanel = ({
                                 >
                                     <option value=''>Sin tipo</option>
                                     {shiftTypeOptions.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                <select
+                                    value={row.employeeId || ''}
+                                    onChange={(event) =>
+                                        handleTemplateChange(
+                                            index,
+                                            'employeeId',
+                                            event.target.value
+                                        )
+                                    }
+                                >
+                                    <option value=''>Trabajador automatico</option>
+                                    {employeeOptions.map((option) => (
                                         <option key={option.value} value={option.value}>
                                             {option.label}
                                         </option>

@@ -26,7 +26,7 @@ const applyServiceScheduleTemplateService = async (
 
     const [monthTemplates] = await pool.query(
         `
-        SELECT weekday, startTime, endTime, slots, shiftTypeId
+        SELECT weekday, startTime, endTime, slots, shiftTypeId, employeeId
         FROM serviceScheduleTemplates
         WHERE serviceId = ? AND month = ?
         `,
@@ -38,7 +38,7 @@ const applyServiceScheduleTemplateService = async (
     if (!templates.length) {
         const [defaultTemplates] = await pool.query(
             `
-            SELECT weekday, startTime, endTime, slots, shiftTypeId
+                SELECT weekday, startTime, endTime, slots, shiftTypeId, employeeId
             FROM serviceScheduleTemplates
             WHERE serviceId = ? AND month = ''
             `,
@@ -103,7 +103,7 @@ const applyServiceScheduleTemplateService = async (
                 shiftsToCreate.push({
                     id: uuid(),
                     serviceId,
-                    employeeId: null,
+                    employeeId: template.employeeId || null,
                     shiftTypeId: template.shiftTypeId || null,
                     scheduleDate,
                     startTime: template.startTime,
