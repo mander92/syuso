@@ -31,6 +31,7 @@ import {
     applyServiceScheduleSimulation,
     createServiceScheduleShift,
     deleteServiceScheduleShift,
+    notifyServiceSchedule,
     updateServiceScheduleShift,
 } from '../../services/serviceService.js';
 import { fetchAdminShiftSwapRequests } from '../../services/shiftSwapService.js';
@@ -201,6 +202,7 @@ const ScheduleComponent = () => {
     const [isGeneratingSchedule, setIsGeneratingSchedule] = useState(false);
     const [isApplyingGeneratedSchedule, setIsApplyingGeneratedSchedule] =
         useState(false);
+    const [isNotifyingSchedule, setIsNotifyingSchedule] = useState(false);
     const [generatedSchedulePreview, setGeneratedSchedulePreview] =
         useState(null);
     const [selectedGeneratedShift, setSelectedGeneratedShift] = useState(null);
@@ -666,6 +668,29 @@ const ScheduleComponent = () => {
             toast.error(error.message || 'No se pudo aplicar el cuadrante');
         } finally {
             setIsApplyingGeneratedSchedule(false);
+        }
+    };
+
+    const handleNotifyServiceSchedule = async () => {
+        if (!serviceScheduleViewModal?.id) return;
+        if (
+            !window.confirm(
+                'Enviar notificacion push a los trabajadores de este cuadrante?'
+            )
+        ) {
+            return;
+        }
+
+        try {
+            setIsNotifyingSchedule(true);
+            await notifyServiceSchedule(authToken, serviceScheduleViewModal.id, {
+                month: serviceScheduleViewModal.month,
+            });
+            toast.success('Notificacion enviada');
+        } catch (error) {
+            toast.error(error.message || 'No se pudo enviar la notificacion');
+        } finally {
+            setIsNotifyingSchedule(false);
         }
     };
 
@@ -2868,6 +2893,16 @@ const ScheduleComponent = () => {
                                     {isGeneratingSchedule
                                         ? 'Generando...'
                                         : 'Generar cuadrante'}
+                                </button>
+                                <button
+                                    type='button'
+                                    className='schedule-service-modal__notify'
+                                    onClick={handleNotifyServiceSchedule}
+                                    disabled={isNotifyingSchedule}
+                                >
+                                    {isNotifyingSchedule
+                                        ? 'Enviando...'
+                                        : 'Notificar cuadrante'}
                                 </button>
                                 {generatedSchedulePreview && (
                                     <button

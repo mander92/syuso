@@ -971,6 +971,28 @@ export const deleteServiceScheduleShift = async (
     return body;
 };
 
+export const notifyServiceSchedule = async (authToken, serviceId, payload = {}) => {
+    const res = await fetch(
+        `${VITE_API_URL}/services/${serviceId}/schedule/notify`,
+        {
+            method: 'POST',
+            headers: {
+                Authorization: authToken,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        }
+    );
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new ApiError(body, 'No se pudo notificar el cuadrante');
+    }
+
+    return body.data;
+};
+
 export const fetchEmployeeScheduleShifts = async (
     authToken,
     month,

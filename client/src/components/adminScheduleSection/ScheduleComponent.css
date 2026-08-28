@@ -498,9 +498,19 @@
 }
 
 .schedule-service-modal__settings:disabled,
-.schedule-service-modal__apply:disabled {
+.schedule-service-modal__apply:disabled,
+.schedule-service-modal__notify:disabled {
     cursor: not-allowed;
     opacity: 0.65;
+}
+
+.schedule-service-modal__notify {
+    border: none;
+    background: #2563eb;
+    color: #ffffff;
+    border-radius: 999px;
+    padding: 6px 14px;
+    cursor: pointer;
 }
 
 .schedule-service-modal__apply {
@@ -684,6 +694,7 @@
 
     .schedule-service-modal__settings,
     .schedule-service-modal__apply,
+    .schedule-service-modal__notify,
     .schedule-service-modal__close {
         font-size: 0.82rem;
         padding: 6px 12px;

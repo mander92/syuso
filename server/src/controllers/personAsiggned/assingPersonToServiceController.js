@@ -1,6 +1,7 @@
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import newAssingPersonToServiceService from '../../services/personAssigned/newAssingPersonToServiceService.js';
 import ensureServiceDelegationAccessService from '../../services/delegations/ensureServiceDelegationAccessService.js';
+import { sendPushNotificationToUserService } from '../../services/push/sendPushNotificationService.js';
 
 const assingPersonToServiceController = async (req, res, next) => {
     try {
@@ -21,6 +22,19 @@ const assingPersonToServiceController = async (req, res, next) => {
             employeeId,
             serviceId
         );
+
+        void sendPushNotificationToUserService(employeeId, {
+            title: 'Servicio asignado',
+            body: 'Se te ha asignado un nuevo servicio. Revisa los detalles en la app.',
+            url: '/account',
+            tag: `service-assigned-${serviceId}`,
+        }).catch((error) => {
+            console.error('[push] service assignment notification failed', {
+                serviceId,
+                employeeId,
+                message: error.message,
+            });
+        });
 
         res.send({
             status: 'ok',

@@ -5,6 +5,7 @@ import {
     getPayrollById,
     updatePayroll,
 } from '../../services/payrolls/payrollService.js';
+import { sendPushNotificationToUserService } from '../../services/push/sendPushNotificationService.js';
 
 const schema = Joi.object({
     employeeId: Joi.string().length(36).allow('', null),
@@ -43,6 +44,21 @@ const updatePayrollController = async (req, res, next) => {
 
         await updatePayroll(payrollId, value);
         const data = await getPayrollById(payrollId);
+        const wasPublished = payroll.status === 'published';
+        const isPublished = data.status === 'published';
+        if (!wasPublished && isPublished && data.employeeId) {
+            void sendPushNotificationToUserService(data.employeeId, {
+                title: 'Nomina disponible',
+                body: `Ya puedes consultar tu nomina${data.payrollMonth ? ` de ${data.payrollMonth}` : ''}.`,
+                url: '/account',
+                tag: `payroll-${data.id}`,
+            }).catch((error) => {
+                console.error('[push] payroll notification failed', {
+                    payrollId: data.id,
+                    message: error.message,
+                });
+            });
+        }
 
         res.send({ status: 'ok', data });
     } catch (error) {

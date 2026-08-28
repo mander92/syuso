@@ -24,6 +24,7 @@ import {
     fetchHolidays,
     createHoliday,
     deleteHoliday,
+    notifyServiceSchedule,
 } from '../../services/serviceService.js';
 import {
     createEmployeeAbsence,
@@ -176,6 +177,7 @@ const ServiceSchedulePanel = ({
     const [isSimulationActive, setIsSimulationActive] = useState(false);
     const [isSimulating, setIsSimulating] = useState(false);
     const [isApplyingSimulation, setIsApplyingSimulation] = useState(false);
+    const [isNotifyingSchedule, setIsNotifyingSchedule] = useState(false);
     const [scheduleImportFile, setScheduleImportFile] = useState(null);
     const [scheduleImportPreview, setScheduleImportPreview] = useState(null);
     const [showImportGridPreview, setShowImportGridPreview] = useState(true);
@@ -1120,6 +1122,27 @@ const ServiceSchedulePanel = ({
         }
     };
 
+    const handleNotifySchedule = async () => {
+        if (!authToken || !serviceId) return;
+        if (
+            !window.confirm(
+                'Enviar notificacion push a los trabajadores de este cuadrante?'
+            )
+        ) {
+            return;
+        }
+
+        try {
+            setIsNotifyingSchedule(true);
+            await notifyServiceSchedule(authToken, serviceId, { month });
+            toast.success('Notificacion enviada');
+        } catch (error) {
+            toast.error(error.message || 'No se pudo enviar la notificacion');
+        } finally {
+            setIsNotifyingSchedule(false);
+        }
+    };
+
     const handleCancelSimulation = async () => {
         setIsSimulationActive(false);
         await loadShifts();
@@ -1350,6 +1373,16 @@ const ServiceSchedulePanel = ({
                         value={month}
                         onChange={(event) => setMonth(event.target.value)}
                     />
+                    <button
+                        type='button'
+                        className='service-schedule-btn service-schedule-btn--notify'
+                        onClick={handleNotifySchedule}
+                        disabled={isNotifyingSchedule}
+                    >
+                        {isNotifyingSchedule
+                            ? 'Enviando...'
+                            : 'Notificar cuadrante'}
+                    </button>
                 </div>
             </header>
 
@@ -2018,6 +2051,16 @@ const ServiceSchedulePanel = ({
                                     {isSimulating
                                         ? 'Generando...'
                                         : 'Generar cuadrante'}
+                                </button>
+                                <button
+                                    type='button'
+                                    className='schedule-service-modal__notify'
+                                    onClick={handleNotifySchedule}
+                                    disabled={isNotifyingSchedule}
+                                >
+                                    {isNotifyingSchedule
+                                        ? 'Enviando...'
+                                        : 'Notificar cuadrante'}
                                 </button>
                                 {isSimulationActive && (
                                     <button

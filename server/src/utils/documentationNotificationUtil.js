@@ -1,4 +1,5 @@
 import { getIO } from '../sockets/io.js';
+import { sendPushNotificationToUsersService } from '../services/push/sendPushNotificationService.js';
 
 export const emitDocumentationChanged = (options = {}) => {
     const io = getIO();
@@ -28,4 +29,19 @@ export const emitDocumentationChanged = (options = {}) => {
     ];
 
     io.to([...new Set(rooms)]).emit('documentation:changed', payload);
+
+    const pushUserIds = [...new Set((options.userIds || []).filter(Boolean))];
+    if (!pushUserIds.length || options.push === false) return;
+
+    void sendPushNotificationToUsersService(pushUserIds, {
+        title: payload.title,
+        body: payload.message,
+        url: '/account',
+        tag: `documentation-${payload.subjectType}-${payload.subjectId || 'new'}`,
+    }).catch((error) => {
+        console.error('[push] documentation notification failed', {
+            subjectId: payload.subjectId,
+            message: error.message,
+        });
+    });
 };

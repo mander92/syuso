@@ -2,27 +2,40 @@ import getPool from '../db/getPool.js';
 import { getIO } from '../sockets/io.js';
 import { sendPushNotificationToUsersService } from '../services/push/sendPushNotificationService.js';
 
-const selectServiceScheduleRecipientUserIds = async (serviceId) => {
+export const selectServiceScheduleRecipientUserIds = async (
+    serviceId,
+    { month = '' } = {}
+) => {
     try {
         const pool = await getPool();
-        const [rows] = await pool.query(
-            `
-            SELECT DISTINCT userId
-            FROM (
+        const values = month ? [serviceId, month] : [serviceId, serviceId];
+        const assignedSource = month
+            ? ''
+            : `
                 SELECT employeeId AS userId
                 FROM personsAssigned
                 WHERE serviceId = ?
                   AND employeeId IS NOT NULL
                 UNION
+            `;
+        const scheduleMonthFilter = month
+            ? 'AND DATE_FORMAT(scheduleDate, "%Y-%m") = ?'
+            : '';
+        const [rows] = await pool.query(
+            `
+            SELECT DISTINCT userId
+            FROM (
+                ${assignedSource}
                 SELECT employeeId AS userId
                 FROM serviceScheduleShifts
                 WHERE serviceId = ?
                   AND employeeId IS NOT NULL
                   AND deletedAt IS NULL
+                  ${scheduleMonthFilter}
             ) recipients
             WHERE userId IS NOT NULL
             `,
-            [serviceId, serviceId]
+            values
         );
 
         return rows.map((row) => row.userId).filter(Boolean);
@@ -52,11 +65,15 @@ export const emitServiceScheduleChanged = (serviceId, options = {}) => {
         changedBy: options.changedBy || null,
         reason: options.reason || 'schedule',
         message: options.message || 'Cuadrante actualizado',
+        month: options.month || null,
+        notify: Boolean(options.push),
     };
 
     void (async () => {
         const recipientUserIds =
-            await selectServiceScheduleRecipientUserIds(serviceId);
+            await selectServiceScheduleRecipientUserIds(serviceId, {
+                month: options.month || '',
+            });
         const optionUserIds = options.userIds || options.recipientUserIds || [];
         const rooms = [
             `service:${serviceId}`,
@@ -67,6 +84,8 @@ export const emitServiceScheduleChanged = (serviceId, options = {}) => {
         ];
 
         io.to([...new Set(rooms)]).emit('serviceSchedule:changed', payload);
+
+        if (!options.push) return;
 
         const pushRecipientUserIds = [...recipientUserIds, ...optionUserIds]
             .filter(Boolean)

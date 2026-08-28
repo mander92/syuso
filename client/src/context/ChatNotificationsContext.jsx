@@ -707,6 +707,7 @@ export const ChatNotificationsProvider = ({ children }) => {
 
         const handleServiceScheduleChanged = (event) => {
             if (!event?.serviceId) return;
+            if (!event.notify) return;
 
             const serviceName =
                 serviceNameMap.get(event.serviceId) || 'Servicio';
