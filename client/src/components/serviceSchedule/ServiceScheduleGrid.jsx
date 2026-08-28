@@ -114,6 +114,7 @@ const ServiceScheduleGrid = ({
     readOnly = false,
     showUnassigned = true,
     showAllEmployees = false,
+    showProvidedEmployees = false,
     showAgreementHours = false,
     showTotals = true,
     stickyFirstColumn = false,
@@ -192,13 +193,15 @@ const ServiceScheduleGrid = ({
 
         const base = [...employeeRowsById.values()].filter(
             (employee) =>
-                showAllEmployees || employeesWithShifts.has(employee.id)
+                showAllEmployees ||
+                showProvidedEmployees ||
+                employeesWithShifts.has(employee.id)
         );
 
         return showUnassigned && hasUnassignedShifts
             ? [{ id: null, label: 'Sin asignar' }, ...base]
             : base;
-    }, [employees, shifts, showAllEmployees, showUnassigned]);
+    }, [employees, shifts, showAllEmployees, showProvidedEmployees, showUnassigned]);
 
     const rowTotals = useMemo(() => {
         const totals = new Map();

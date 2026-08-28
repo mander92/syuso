@@ -1,6 +1,7 @@
 import updateServiceScheduleShiftService from '../../services/schedules/updateServiceScheduleShiftService.js';
 import ensureServiceDelegationAccessService from '../../services/delegations/ensureServiceDelegationAccessService.js';
 import { emitServiceScheduleChanged } from '../../utils/serviceScheduleNotificationUtil.js';
+import { sendPushNotificationToUserService } from '../../services/push/sendPushNotificationService.js';
 
 const updateServiceScheduleShiftController = async (req, res, next) => {
     try {
@@ -18,6 +19,21 @@ const updateServiceScheduleShiftController = async (req, res, next) => {
             reason: 'shift_updated',
             userIds: [data.previousEmployeeId, data.employeeId],
         });
+
+        if (data.autoAssignedToService && data.employeeId) {
+            void sendPushNotificationToUserService(data.employeeId, {
+                title: 'Servicio asignado',
+                body: 'Se te ha asignado un nuevo servicio desde el cuadrante.',
+                url: '/account',
+                tag: `service-assigned-${serviceId}`,
+            }).catch((error) => {
+                console.error('[push] schedule assignment notification failed', {
+                    serviceId,
+                    employeeId: data.employeeId,
+                    message: error.message,
+                });
+            });
+        }
 
         res.send({
             status: 'ok',

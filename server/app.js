@@ -8,6 +8,7 @@ import { PORT, UPLOADS_DIR } from './env.js';
 
 import routes from './src/routes/index.js';
 import initSocket from './src/sockets/initSocket.js';
+import startMissedShiftNotificationJob from './src/jobs/missedShiftNotificationJob.js';
 
 import {
     notFoundErrorController,
@@ -43,6 +44,7 @@ app.use(errorController);
 
 const httpServer = http.createServer(app);
 initSocket(httpServer);
+startMissedShiftNotificationJob();
 
 httpServer.listen(PORT, () => {
     console.log(`Server running on port http://localhost:${PORT}`);

@@ -16,6 +16,7 @@ import {
     fetchAllServicesServices,
     fetchServiceScheduleShifts,
     fetchServiceScheduleTemplates,
+    fetchServiceScheduleEmployeeOrder,
     downloadServiceSchedulePdf,
     downloadServiceScheduleExcel,
     downloadServiceScheduleZip,
@@ -32,6 +33,7 @@ import {
     createServiceScheduleShift,
     deleteServiceScheduleShift,
     notifyServiceSchedule,
+    saveServiceScheduleEmployeeOrder,
     updateServiceScheduleShift,
 } from '../../services/serviceService.js';
 import { fetchAdminShiftSwapRequests } from '../../services/shiftSwapService.js';
@@ -163,6 +165,7 @@ const ScheduleComponent = () => {
         useState(false);
     const [scheduleCards, setScheduleCards] = useState([]);
     const [scheduleShiftMap, setScheduleShiftMap] = useState({});
+    const [serviceEmployeeOrderMap, setServiceEmployeeOrderMap] = useState({});
     const [scheduleRefreshVersion, setScheduleRefreshVersion] = useState(0);
     const [expandedScheduleDelegations, setExpandedScheduleDelegations] =
         useState({});
@@ -825,6 +828,7 @@ const ScheduleComponent = () => {
             shiftTypeId: copiedScheduleShift?.shiftTypeId || '',
             shiftTypeName: copiedScheduleShift?.shiftTypeName || '',
             shiftTypeColor: copiedScheduleShift?.shiftTypeColor || '',
+            employeeSearch: getEmployeeSearchValue(employeeId || ''),
             notes: copiedScheduleShift?.notes || '',
         });
     };
@@ -1008,15 +1012,24 @@ const ScheduleComponent = () => {
 
     const handleSaveGeneratedShift = async () => {
         if (!selectedGeneratedShift) return;
+        const typedEmployeeId = resolveEmployeeSearchValue(
+            selectedGeneratedShift.employeeSearch
+        );
+        if (selectedGeneratedShift.employeeSearch && !typedEmployeeId) {
+            toast.error('Selecciona un trabajador de la lista');
+            return;
+        }
+        const resolvedEmployeeId =
+            typedEmployeeId || selectedGeneratedShift.employeeId || '';
         if (selectedGeneratedShift.entryType !== 'shift') {
-            if (!selectedGeneratedShift.employeeId) {
+            if (!resolvedEmployeeId) {
                 toast.error('Selecciona un empleado para crear la ausencia');
                 return;
             }
             try {
                 const absence = await createEmployeeAbsence(
                     authToken,
-                    selectedGeneratedShift.employeeId,
+                    resolvedEmployeeId,
                     {
                         startDate: selectedGeneratedShift.scheduleDate,
                         endDate: selectedGeneratedShift.scheduleDate,
@@ -1046,7 +1059,7 @@ const ScheduleComponent = () => {
                 startTime: selectedGeneratedShift.startTime,
                 endTime: selectedGeneratedShift.endTime,
                 hours: selectedGeneratedShift.hours,
-                employeeId: selectedGeneratedShift.employeeId || null,
+                employeeId: resolvedEmployeeId || null,
                 shiftTypeId: selectedGeneratedShift.shiftTypeId || null,
             };
 
@@ -1095,7 +1108,7 @@ const ScheduleComponent = () => {
                 startTime: selectedGeneratedShift.startTime,
                 endTime: selectedGeneratedShift.endTime,
                 hours: selectedGeneratedShift.hours,
-                employeeId: selectedGeneratedShift.employeeId || null,
+                employeeId: resolvedEmployeeId || null,
                 shiftTypeId: selectedGeneratedShift.shiftTypeId || null,
             });
             setSelectedGeneratedShift(null);
@@ -1107,7 +1120,7 @@ const ScheduleComponent = () => {
             startTime: selectedGeneratedShift.startTime,
             endTime: selectedGeneratedShift.endTime,
             hours: selectedGeneratedShift.hours,
-            employeeId: selectedGeneratedShift.employeeId || null,
+            employeeId: resolvedEmployeeId || null,
         });
         toast.success('Turno actualizado en previsualizacion');
         setSelectedGeneratedShift(null);
@@ -1415,6 +1428,45 @@ const ScheduleComponent = () => {
         return employees.filter((employee) => employee.id === scheduleEmployeeFilter);
     }, [employees, scheduleEmployeeFilter]);
 
+    const allEmployeeOptions = useMemo(
+        () =>
+            employees
+                .map((employee) => {
+                    const name = `${employee.firstName || ''} ${
+                        employee.lastName || ''
+                    }`.trim();
+                    return {
+                        value: employee.id,
+                        label:
+                            [name, employee.email, employee.dni]
+                                .filter(Boolean)
+                                .join(' - ') || employee.id,
+                    };
+                })
+                .sort((a, b) =>
+                    a.label.localeCompare(b.label, 'es', {
+                        sensitivity: 'base',
+                    })
+                ),
+        [employees]
+    );
+
+    const getEmployeeSearchValue = (employeeId) =>
+        allEmployeeOptions.find((option) => option.value === employeeId)?.label ||
+        '';
+
+    const resolveEmployeeSearchValue = (value) => {
+        const text = String(value || '').trim();
+        if (!text) return '';
+        return (
+            allEmployeeOptions.find(
+                (option) =>
+                    option.label.toLowerCase() === text.toLowerCase() ||
+                    option.value === text
+            )?.value || ''
+        );
+    };
+
     const getMonthRange = () => {
         if (!scheduleMonth) return null;
         const [year, monthValue] = scheduleMonth.split('-').map(Number);
@@ -1606,6 +1658,35 @@ const ScheduleComponent = () => {
         employeeAbsencesMap,
     ]);
 
+    useEffect(() => {
+        const loadServiceEmployeeOrder = async () => {
+            if (!authToken || !isAdminLike || !serviceScheduleViewModal?.id) return;
+            if (serviceEmployeeOrderMap[serviceScheduleViewModal.id]) return;
+
+            try {
+                const order = await fetchServiceScheduleEmployeeOrder(
+                    authToken,
+                    serviceScheduleViewModal.id
+                );
+                setServiceEmployeeOrderMap((prev) => ({
+                    ...prev,
+                    [serviceScheduleViewModal.id]: Array.isArray(order) ? order : [],
+                }));
+            } catch (error) {
+                toast.error(
+                    error.message || 'No se pudo cargar el orden de trabajadores'
+                );
+            }
+        };
+
+        loadServiceEmployeeOrder();
+    }, [
+        authToken,
+        isAdminLike,
+        serviceScheduleViewModal?.id,
+        serviceEmployeeOrderMap,
+    ]);
+
 
     const serviceScheduleModalEmployees = useMemo(() => {
         if (!serviceScheduleViewModal) return [];
@@ -1643,8 +1724,66 @@ const ScheduleComponent = () => {
             });
         });
 
-        return [...employeeMap.values()];
-    }, [employees, scheduleShiftMap, serviceScheduleViewModal]);
+        const currentOrder =
+            serviceEmployeeOrderMap[serviceScheduleViewModal.id] || [];
+        const positionByEmployee = new Map(
+            currentOrder.map((employeeId, index) => [employeeId, index])
+        );
+
+        return [...employeeMap.values()].sort((a, b) => {
+            const aPosition = positionByEmployee.has(a.id)
+                ? positionByEmployee.get(a.id)
+                : Number.MAX_SAFE_INTEGER;
+            const bPosition = positionByEmployee.has(b.id)
+                ? positionByEmployee.get(b.id)
+                : Number.MAX_SAFE_INTEGER;
+            if (aPosition !== bPosition) return aPosition - bPosition;
+            return String(a.firstName || '').localeCompare(String(b.firstName || ''));
+        });
+    }, [
+        employees,
+        scheduleShiftMap,
+        serviceScheduleViewModal,
+        serviceEmployeeOrderMap,
+    ]);
+
+    const handleServiceScheduleMoveEmployee = async (employeeId, direction) => {
+        if (!authToken || !serviceScheduleViewModal?.id || !employeeId) return;
+
+        const serviceId = serviceScheduleViewModal.id;
+        const currentIds = serviceScheduleModalEmployees
+            .map((employee) => employee.id)
+            .filter(Boolean);
+        const currentIndex = currentIds.indexOf(employeeId);
+        if (currentIndex === -1) return;
+
+        const nextIndex =
+            direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+        if (nextIndex < 0 || nextIndex >= currentIds.length) return;
+
+        const nextIds = [...currentIds];
+        const [moved] = nextIds.splice(currentIndex, 1);
+        nextIds.splice(nextIndex, 0, moved);
+
+        const previousOrder = serviceEmployeeOrderMap[serviceId] || [];
+        setServiceEmployeeOrderMap((prev) => ({
+            ...prev,
+            [serviceId]: nextIds,
+        }));
+
+        try {
+            await saveServiceScheduleEmployeeOrder(authToken, serviceId, nextIds);
+            toast.success('Orden de trabajadores guardado');
+        } catch (error) {
+            setServiceEmployeeOrderMap((prev) => ({
+                ...prev,
+                [serviceId]: previousOrder,
+            }));
+            toast.error(
+                error.message || 'No se pudo guardar el orden de trabajadores'
+            );
+        }
+    };
 
     const personalScheduleRows = useMemo(() => {
         const shiftRows = Object.values(scheduleShiftMap).flat();
@@ -3089,12 +3228,16 @@ const ScheduleComponent = () => {
                                         setSelectedGeneratedShift({
                                             ...shift,
                                             entryType: 'shift',
+                                            employeeSearch: getEmployeeSearchValue(
+                                                shift.employeeId || ''
+                                            ),
                                         })
                                     }
                                     onCreateShift={openNewScheduleViewShift}
                                     onCopyShift={handleCopyScheduleViewShift}
                                     onPasteShift={handlePasteScheduleViewShift}
                                     onDeleteShift={handleScheduleViewShiftDelete}
+                                    onMoveEmployee={handleServiceScheduleMoveEmployee}
                                     onCopyAbsence={handleCopyScheduleViewAbsence}
                                     onPasteAbsence={handlePasteScheduleViewShift}
                                     onDeleteAbsence={handleDeleteScheduleViewAbsence}
@@ -3119,6 +3262,7 @@ const ScheduleComponent = () => {
                                         ] || []
                                     ).some((shift) => !shift.employeeId)}
                                     showAllEmployees={false}
+                                    showProvidedEmployees
                                     showAgreementHours={
                                         serviceScheduleViewModal.hourRuleType ===
                                         'convenio'
@@ -3136,6 +3280,7 @@ const ScheduleComponent = () => {
                                     onHolidayDrop={handleHolidayDrop}
                                     onHolidayClick={handleHolidayClick}
                                     onCreateShift={openNewScheduleViewShift}
+                                    onMoveEmployee={handleServiceScheduleMoveEmployee}
                                     onPasteShift={handlePasteScheduleViewShift}
                                     onPasteAbsence={handlePasteScheduleViewShift}
                                     copiedShift={
@@ -3154,7 +3299,8 @@ const ScheduleComponent = () => {
                                     )}
                                     readOnly={false}
                                     showUnassigned={false}
-                                    showAllEmployees
+                                    showAllEmployees={false}
+                                    showProvidedEmployees
                                     showAgreementHours={
                                         serviceScheduleViewModal.hourRuleType ===
                                         'convenio'
@@ -3291,24 +3437,38 @@ const ScheduleComponent = () => {
                             )}
                             <label>
                                 Trabajador
-                                <select
-                                    value={selectedGeneratedShift.employeeId || ''}
-                                    onChange={(event) =>
-                                        handleGeneratedShiftFieldChange(
-                                            'employeeId',
-                                            event.target.value
+                                <input
+                                    type='search'
+                                    list='admin-schedule-employee-options'
+                                    value={
+                                        selectedGeneratedShift.employeeSearch ??
+                                        getEmployeeSearchValue(
+                                            selectedGeneratedShift.employeeId
                                         )
                                     }
-                                >
-                                    <option value=''>Sin asignar</option>
-                                    {employees.map((employee) => (
-                                        <option key={employee.id} value={employee.id}>
-                                            {`${employee.firstName || ''} ${
-                                                employee.lastName || ''
-                                            }`.trim() || employee.email}
-                                        </option>
+                                    placeholder='Buscar trabajador'
+                                    onChange={(event) => {
+                                        const employeeSearch = event.target.value;
+                                        handleGeneratedShiftFieldChange(
+                                            'employeeSearch',
+                                            employeeSearch
+                                        );
+                                        handleGeneratedShiftFieldChange(
+                                            'employeeId',
+                                            resolveEmployeeSearchValue(
+                                                employeeSearch
+                                            )
+                                        );
+                                    }}
+                                />
+                                <datalist id='admin-schedule-employee-options'>
+                                    {allEmployeeOptions.map((option) => (
+                                        <option
+                                            key={option.value}
+                                            value={option.label}
+                                        />
                                     ))}
-                                </select>
+                                </datalist>
                             </label>
                             {(selectedGeneratedShift.entryType || 'shift') !==
                                 'shift' && (

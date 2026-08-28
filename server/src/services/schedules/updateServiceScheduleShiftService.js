@@ -6,6 +6,7 @@ import {
     monthFromDate,
     saveServiceScheduleSnapshot,
 } from './serviceScheduleSnapshotService.js';
+import ensurePersonAssignedToServiceService from '../personAssigned/ensurePersonAssignedToServiceService.js';
 
 const updateServiceScheduleShiftService = async (
     shiftId,
@@ -61,6 +62,12 @@ const updateServiceScheduleShiftService = async (
         { ...options, excludeShiftIds: new Set([shiftId]) }
     );
 
+    const assignment = await ensurePersonAssignedToServiceService(
+        pool,
+        resolvedEmployeeId,
+        current.serviceId
+    );
+
     await pool.query(
         `
         UPDATE serviceScheduleShifts
@@ -113,6 +120,7 @@ const updateServiceScheduleShiftService = async (
         regularHours: breakdown.regularHours,
         previousEmployeeId: current.employeeId,
         employeeId: resolvedEmployeeId,
+        autoAssignedToService: assignment.assigned,
         status: resolvedStatus,
         shiftTypeId: resolvedShiftTypeId,
     };

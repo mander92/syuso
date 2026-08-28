@@ -19,7 +19,7 @@ const initDb = async () => {
 
         await pool.query(
             `
-            DROP TABLE IF EXISTS vehicleInspections, vehicleFuelLogs, serviceVehicles, vehicles, serviceNfcTagLogs, workReportIncidentPhotos, workReportPhotos, workReportIncidents, workReportDrafts, workReports, warehouseMovements, salaryPaidServiceHours, salaryAbsencePayments, salarySettlementAdjustments, salaryServiceRates, payrolls, payrollImports, employeeRequests, shiftSwapRequests, generalChatMessages, generalChatReads, generalChatMembers, generalChats, serviceChatMessages, serviceChatReads, serviceScheduleSnapshots, serviceScheduleShifts, serviceScheduleTemplates, serviceShiftTypes, holidays, employeeAbsences, employeeRules, personsAssigned, serviceNfcTags, shiftRecordAuditLogs, shiftRecords, adminDelegations, delegations, services, clientDocumentationDraftTokens, clientDocumentationDrafts, clientDocumentations, employeeDocumentationDraftTokens, employeeDocumentationDrafts, employeeSignatureDocuments, employeeDocumentations, typeOfServices, pushSubscriptions, users, addresses, consulting_requests, job_applications
+            DROP TABLE IF EXISTS vehicleInspections, vehicleFuelLogs, serviceVehicles, vehicles, serviceNfcTagLogs, workReportIncidentPhotos, workReportPhotos, workReportIncidents, workReportDrafts, workReports, warehouseMovements, salaryPaidServiceHours, salaryAbsencePayments, salarySettlementAdjustments, salaryServiceRates, payrolls, payrollImports, employeeRequests, shiftSwapRequests, generalChatMessages, generalChatReads, generalChatMembers, generalChats, serviceChatMessages, serviceChatReads, serviceScheduleShiftAlerts, serviceScheduleSnapshots, serviceScheduleShifts, serviceScheduleTemplates, serviceShiftTypes, holidays, employeeAbsences, employeeRules, personsAssigned, serviceNfcTags, shiftRecordAuditLogs, shiftRecords, adminDelegations, delegations, services, clientDocumentationDraftTokens, clientDocumentationDrafts, clientDocumentations, employeeDocumentationDraftTokens, employeeDocumentationDrafts, employeeSignatureDocuments, employeeDocumentations, typeOfServices, pushSubscriptions, users, addresses, consulting_requests, job_applications
             `
         );
 
@@ -351,6 +351,28 @@ const initDb = async () => {
         );
 
         console.log('serviceScheduleShifts creada');
+
+        await pool.query(
+            `
+            CREATE TABLE IF NOT EXISTS serviceScheduleShiftAlerts (
+                id CHAR(36) PRIMARY KEY NOT NULL,
+                scheduleShiftId CHAR(36) NOT NULL,
+                employeeId CHAR(36) NOT NULL,
+                serviceId CHAR(36) NOT NULL,
+                alertType ENUM('missed_clock_in') NOT NULL DEFAULT 'missed_clock_in',
+                sentAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY uniq_service_schedule_shift_alert (scheduleShiftId, alertType),
+                INDEX idx_service_schedule_shift_alert_employee (employeeId, sentAt),
+                INDEX idx_service_schedule_shift_alert_service (serviceId, sentAt),
+                FOREIGN KEY (scheduleShiftId) REFERENCES serviceScheduleShifts(id) ON DELETE CASCADE,
+                FOREIGN KEY (employeeId) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (serviceId) REFERENCES services(id) ON DELETE CASCADE
+            )
+            `
+        );
+
+        console.log('serviceScheduleShiftAlerts creada');
 
         await pool.query(
             `

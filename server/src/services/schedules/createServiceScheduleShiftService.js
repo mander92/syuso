@@ -6,6 +6,7 @@ import {
     monthFromDate,
     saveServiceScheduleSnapshot,
 } from './serviceScheduleSnapshotService.js';
+import ensurePersonAssignedToServiceService from '../personAssigned/ensurePersonAssignedToServiceService.js';
 
 const createServiceScheduleShiftService = async (
     serviceId,
@@ -43,6 +44,12 @@ const createServiceScheduleShiftService = async (
             },
         ],
         options
+    );
+
+    const assignment = await ensurePersonAssignedToServiceService(
+        pool,
+        employeeId,
+        serviceId
     );
 
     await pool.query(
@@ -93,6 +100,7 @@ const createServiceScheduleShiftService = async (
         holidayHours: breakdown.holidayHours,
         regularHours: breakdown.regularHours,
         status: 'scheduled',
+        autoAssignedToService: assignment.assigned,
     };
 };
 
