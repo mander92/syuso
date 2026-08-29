@@ -584,6 +584,73 @@
     font-size: 0.9rem;
 }
 
+.service-schedule-employee-suggestions {
+    border: 1px solid #dbe3ef;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    grid-column: 1 / -1;
+    padding: 10px;
+}
+
+.service-schedule-employee-suggestions__title {
+    align-items: center;
+    color: #475569;
+    display: flex;
+    font-size: 0.82rem;
+    font-weight: 800;
+    justify-content: space-between;
+}
+
+.service-schedule-employee-suggestions__title small,
+.service-schedule-employee-suggestions > small {
+    color: #64748b;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.service-schedule-employee-suggestions__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.service-schedule-employee-suggestions__chip {
+    align-items: flex-start;
+    background: #eef4ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    color: #0f172a;
+    cursor: pointer;
+    display: inline-flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 150px;
+    padding: 7px 9px;
+    text-align: left;
+}
+
+.service-schedule-employee-suggestions__chip strong {
+    font-size: 0.84rem;
+    line-height: 1.15;
+}
+
+.service-schedule-employee-suggestions__chip small {
+    color: #475569;
+    font-size: 0.72rem;
+}
+
+.service-schedule-employee-suggestions__chip.is-selected {
+    background: #0f172a;
+    border-color: #0f172a;
+    color: #ffffff;
+}
+
+.service-schedule-employee-suggestions__chip.is-selected small {
+    color: #dbeafe;
+}
+
 .service-schedule-modal-actions {
     display: flex;
     flex-wrap: wrap;

@@ -55,6 +55,7 @@ const dashboardPermissionGroups = [
         options: [
             { id: 'chats', label: 'Chats' },
             { id: 'alerts', label: 'Alertas' },
+            { id: 'acknowledgements', label: 'Acuses' },
         ],
     },
     {
@@ -88,6 +89,7 @@ const defaultDashboardPermissionsByRole = {
         'employeeRequests',
         'chats',
         'alerts',
+        'acknowledgements',
         'workReports',
         'workers',
         'clients',
@@ -107,6 +109,7 @@ const defaultDashboardPermissionsByRole = {
         'payrolls',
         'chats',
         'alerts',
+        'acknowledgements',
     ],
     client: ['contracts', 'services'],
 };

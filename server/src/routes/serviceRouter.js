@@ -35,6 +35,7 @@ import listServiceScheduleTemplatesController from '../controllers/schedules/lis
 import replaceServiceScheduleTemplatesController from '../controllers/schedules/replaceServiceScheduleTemplatesController.js';
 import applyServiceScheduleTemplateController from '../controllers/schedules/applyServiceScheduleTemplateController.js';
 import listServiceScheduleShiftsController from '../controllers/schedules/listServiceScheduleShiftsController.js';
+import listAvailableScheduleEmployeesController from '../controllers/schedules/listAvailableScheduleEmployeesController.js';
 import createServiceScheduleShiftController from '../controllers/schedules/createServiceScheduleShiftController.js';
 import updateServiceScheduleShiftController from '../controllers/schedules/updateServiceScheduleShiftController.js';
 import deleteServiceScheduleShiftController from '../controllers/schedules/deleteServiceScheduleShiftController.js';
@@ -151,6 +152,14 @@ router.get(
     authUser,
     serviceExists,
     listServiceScheduleShiftsController
+);
+
+router.get(
+    '/services/:serviceId/schedule/available-employees',
+    authUser,
+    isAdmin,
+    serviceExists,
+    listAvailableScheduleEmployeesController
 );
 
 router.post(

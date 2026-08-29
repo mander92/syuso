@@ -5,6 +5,7 @@ import {
     applyServiceScheduleTemplate,
     createServiceScheduleShift,
     deleteServiceScheduleShift,
+    fetchAvailableScheduleEmployees,
     fetchServiceShiftTypes,
     fetchServiceScheduleShifts,
     fetchServiceScheduleTemplates,
@@ -172,6 +173,9 @@ const ServiceSchedulePanel = ({
     const [newShiftType, setNewShiftType] = useState({ name: '', color: '#38bdf8' });
     const [absencesByEmployee, setAbsencesByEmployee] = useState({});
     const [selectedShift, setSelectedShift] = useState(null);
+    const [availableShiftEmployees, setAvailableShiftEmployees] = useState([]);
+    const [availableShiftEmployeesLoading, setAvailableShiftEmployeesLoading] =
+        useState(false);
     const [isSavingShift, setIsSavingShift] = useState(false);
     const [isGridOpen, setIsGridOpen] = useState(Boolean(initialGridOpen));
     const [isSimulationActive, setIsSimulationActive] = useState(false);
@@ -331,6 +335,72 @@ const ServiceSchedulePanel = ({
                     option.value === text
             )?.value || ''
         );
+    };
+
+    useEffect(() => {
+        const loadAvailableShiftEmployees = async () => {
+            const shift = selectedShift;
+            if (
+                !authToken ||
+                !serviceId ||
+                !shift ||
+                (shift.entryType || 'shift') !== 'shift' ||
+                !shift.scheduleDate ||
+                !shift.startTime ||
+                !shift.endTime
+            ) {
+                setAvailableShiftEmployees([]);
+                return;
+            }
+
+            try {
+                setAvailableShiftEmployeesLoading(true);
+                const data = await fetchAvailableScheduleEmployees(
+                    authToken,
+                    serviceId,
+                    {
+                        scheduleDate: String(shift.scheduleDate).slice(0, 10),
+                        startTime: shift.startTime,
+                        endTime: shift.endTime,
+                        excludeShiftId: isPersistedShiftId(shift.id)
+                            ? shift.id
+                            : '',
+                    }
+                );
+                setAvailableShiftEmployees(Array.isArray(data) ? data : []);
+            } catch {
+                setAvailableShiftEmployees([]);
+            } finally {
+                setAvailableShiftEmployeesLoading(false);
+            }
+        };
+
+        loadAvailableShiftEmployees();
+    }, [
+        authToken,
+        selectedShift?.id,
+        selectedShift?.entryType,
+        selectedShift?.scheduleDate,
+        selectedShift?.startTime,
+        selectedShift?.endTime,
+        serviceId,
+    ]);
+
+    const selectShiftEmployeeSuggestion = (employee) => {
+        const label = getEmployeeSearchValue(employee.id);
+        setSelectedShift((prev) => ({
+            ...prev,
+            employeeId: employee.id,
+            employeeSearch:
+                label ||
+                [
+                    `${employee.firstName || ''} ${employee.lastName || ''}`.trim(),
+                    employee.email,
+                    employee.dni,
+                ]
+                    .filter(Boolean)
+                    .join(' - '),
+        }));
     };
 
     const importPreviewEmployees = useMemo(() => {
@@ -2463,6 +2533,60 @@ const ServiceSchedulePanel = ({
                                     ))}
                                 </datalist>
                             </label>
+                            {(selectedShift.entryType || 'shift') === 'shift' && (
+                                <div className='service-schedule-employee-suggestions'>
+                                    <div className='service-schedule-employee-suggestions__title'>
+                                        <span>Libres en ese horario</span>
+                                        {availableShiftEmployeesLoading && (
+                                            <small>Buscando...</small>
+                                        )}
+                                    </div>
+                                    {availableShiftEmployees.length ? (
+                                        <div className='service-schedule-employee-suggestions__list'>
+                                            {availableShiftEmployees.map(
+                                                (employee) => {
+                                                    const name =
+                                                        `${employee.firstName || ''} ${
+                                                            employee.lastName || ''
+                                                        }`.trim() ||
+                                                        employee.email ||
+                                                        'Trabajador';
+                                                    return (
+                                                        <button
+                                                            key={employee.id}
+                                                            type='button'
+                                                            className={
+                                                                'service-schedule-employee-suggestions__chip' +
+                                                                (employee.id ===
+                                                                selectedShift.employeeId
+                                                                    ? ' is-selected'
+                                                                    : '')
+                                                            }
+                                                            onClick={() =>
+                                                                selectShiftEmployeeSuggestion(
+                                                                    employee
+                                                                )
+                                                            }
+                                                        >
+                                                            <strong>{name}</strong>
+                                                            <small>
+                                                                {employee.assignedToService
+                                                                    ? 'Asignado'
+                                                                    : 'Misma delegacion'}
+                                                            </small>
+                                                        </button>
+                                                    );
+                                                }
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <small>
+                                            No hay sugerencias libres de la misma
+                                            delegacion para ese horario.
+                                        </small>
+                                    )}
+                                </div>
+                            )}
                             {(selectedShift.entryType || 'shift') === 'shift' ? (
                                 <label>
                                     Tipo de turno

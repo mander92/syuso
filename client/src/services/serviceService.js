@@ -648,6 +648,36 @@ export const fetchServiceScheduleShifts = async (
     return body.data;
 };
 
+export const fetchAvailableScheduleEmployees = async (
+    authToken,
+    serviceId,
+    { scheduleDate, startTime, endTime, excludeShiftId = '' }
+) => {
+    const params = new URLSearchParams({
+        scheduleDate,
+        startTime,
+        endTime,
+    });
+    if (excludeShiftId) params.append('excludeShiftId', excludeShiftId);
+
+    const res = await fetch(
+        `${VITE_API_URL}/services/${serviceId}/schedule/available-employees?${params.toString()}`,
+        {
+            headers: {
+                Authorization: authToken,
+            },
+        }
+    );
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};
+
 export const fetchServiceScheduleEmployeeOrder = async (
     authToken,
     serviceId
