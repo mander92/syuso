@@ -1,7 +1,6 @@
 import getPool from '../../db/getPool.js';
 import {
     listActiveScheduleRows,
-    listDeletedScheduleRows,
     listScheduleSnapshotRows,
 } from './serviceScheduleSnapshotService.js';
 
@@ -14,7 +13,7 @@ const listServiceScheduleShiftsService = async (serviceId, month) => {
     const snapshotRows = await listScheduleSnapshotRows(pool, serviceId, month);
     if (snapshotRows.length) return snapshotRows;
 
-    return listDeletedScheduleRows(pool, serviceId, month);
+    return [];
 };
 
 export default listServiceScheduleShiftsService;

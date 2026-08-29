@@ -32,6 +32,7 @@ import {
     applyServiceScheduleSimulation,
     createServiceScheduleShift,
     deleteServiceScheduleShift,
+    deleteServiceScheduleMonth,
     notifyServiceSchedule,
     saveServiceScheduleEmployeeOrder,
     updateServiceScheduleShift,
@@ -132,6 +133,7 @@ const ScheduleComponent = () => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
     const isAdminLike = user?.role === 'admin' || user?.role === 'sudo';
+    const isSudo = user?.role === 'sudo';
     const compareText = (a, b) =>
         String(a || '').localeCompare(String(b || ''), 'es', {
             sensitivity: 'base',
@@ -206,6 +208,8 @@ const ScheduleComponent = () => {
     const [isApplyingGeneratedSchedule, setIsApplyingGeneratedSchedule] =
         useState(false);
     const [isNotifyingSchedule, setIsNotifyingSchedule] = useState(false);
+    const [isDeletingScheduleMonth, setIsDeletingScheduleMonth] =
+        useState(false);
     const [generatedSchedulePreview, setGeneratedSchedulePreview] =
         useState(null);
     const [selectedGeneratedShift, setSelectedGeneratedShift] = useState(null);
@@ -807,6 +811,47 @@ const ScheduleComponent = () => {
             toast.success('Turno eliminado');
         } catch (error) {
             toast.error(error.message || 'No se pudo eliminar el turno');
+        }
+    };
+
+    const handleDeleteScheduleMonth = async () => {
+        if (!serviceScheduleViewModal?.id || !serviceScheduleViewModal.month) return;
+        const serviceId = serviceScheduleViewModal.id;
+        const month = serviceScheduleViewModal.month;
+        const serviceName =
+            serviceScheduleViewModal.name ||
+            serviceScheduleViewModal.type ||
+            'este servicio';
+
+        if (
+            !window.confirm(
+                `Vas a borrar todos los turnos del cuadrante de ${serviceName} en ${month}. Esta accion solo afecta a este mes. Quieres continuar?`
+            )
+        ) {
+            return;
+        }
+
+        try {
+            setIsDeletingScheduleMonth(true);
+            const data = await deleteServiceScheduleMonth(
+                authToken,
+                serviceId,
+                month
+            );
+            setScheduleShiftMap((prev) => ({
+                ...prev,
+                [serviceId]: [],
+            }));
+            setGeneratedSchedulePreview(null);
+            setSelectedGeneratedShift(null);
+            setScheduleRefreshVersion((prev) => prev + 1);
+            toast.success(
+                `Cuadrante borrado (${data?.deletedCount || 0} turno/s)`
+            );
+        } catch (error) {
+            toast.error(error.message || 'No se pudo borrar el cuadrante');
+        } finally {
+            setIsDeletingScheduleMonth(false);
         }
     };
 
@@ -3043,6 +3088,18 @@ const ScheduleComponent = () => {
                                         ? 'Enviando...'
                                         : 'Notificar cuadrante'}
                                 </button>
+                                {isSudo && (
+                                    <button
+                                        type='button'
+                                        className='schedule-service-modal__delete'
+                                        onClick={handleDeleteScheduleMonth}
+                                        disabled={isDeletingScheduleMonth}
+                                    >
+                                        {isDeletingScheduleMonth
+                                            ? 'Borrando...'
+                                            : 'Borrar mes'}
+                                    </button>
+                                )}
                                 {generatedSchedulePreview && (
                                     <button
                                         type='button'

@@ -38,6 +38,7 @@ import listServiceScheduleShiftsController from '../controllers/schedules/listSe
 import createServiceScheduleShiftController from '../controllers/schedules/createServiceScheduleShiftController.js';
 import updateServiceScheduleShiftController from '../controllers/schedules/updateServiceScheduleShiftController.js';
 import deleteServiceScheduleShiftController from '../controllers/schedules/deleteServiceScheduleShiftController.js';
+import deleteServiceScheduleMonthController from '../controllers/schedules/deleteServiceScheduleMonthController.js';
 import listEmployeeScheduleShiftsController from '../controllers/schedules/listEmployeeScheduleShiftsController.js';
 import downloadServiceSchedulePdfController from '../controllers/schedules/downloadServiceSchedulePdfController.js';
 import downloadServiceScheduleZipController from '../controllers/schedules/downloadServiceScheduleZipController.js';
@@ -57,6 +58,7 @@ import importServiceScheduleExcelController from '../controllers/schedules/impor
 import listServiceScheduleEmployeeOrderController from '../controllers/schedules/listServiceScheduleEmployeeOrderController.js';
 import replaceServiceScheduleEmployeeOrderController from '../controllers/schedules/replaceServiceScheduleEmployeeOrderController.js';
 import notifyServiceScheduleController from '../controllers/schedules/notifyServiceScheduleController.js';
+import isSudo from '../middleware/isSudo.js';
 import resolveGoogleMapsLocationController from '../controllers/services/resolveGoogleMapsLocationController.js';
 
 const router = express.Router();
@@ -275,6 +277,14 @@ router.patch(
     isAdmin,
     serviceExists,
     updateServiceScheduleShiftController
+);
+
+router.delete(
+    '/services/:serviceId/schedule/month',
+    authUser,
+    isSudo,
+    serviceExists,
+    deleteServiceScheduleMonthController
 );
 
 router.delete(
