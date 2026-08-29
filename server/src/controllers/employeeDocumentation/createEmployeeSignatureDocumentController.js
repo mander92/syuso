@@ -6,6 +6,7 @@ import selectEmployeeDocumentationService from '../../services/employeeDocumenta
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import { saveEmployeeSignatureDocumentFile } from '../../utils/employeeDocumentationFileUtil.js';
 import { emitDocumentationChanged } from '../../utils/documentationNotificationUtil.js';
+import { createAcknowledgementService } from '../../services/acknowledgements/acknowledgementService.js';
 
 const documentTypeLabels = {
     epi: 'EPIS',
@@ -115,6 +116,19 @@ const createEmployeeSignatureDocumentController = async (req, res, next) => {
                       routeLabel: 'Alertas > Documentacion > Pendiente de firma',
                   }
         );
+
+        if (!signaturePath) {
+            await createAcknowledgementService({
+                subjectType: 'document',
+                subjectId: data.id,
+                title: 'Documento pendiente de firma',
+                message: `${fullName}: ${data.title}`,
+                url: '/account',
+                recipientUserIds: [value.employeeId],
+                createdBy: req.userLogged.id,
+                push: false,
+            });
+        }
 
         res.send({ status: 'ok', data });
     } catch (error) {

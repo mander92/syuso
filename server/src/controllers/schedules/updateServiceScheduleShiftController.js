@@ -1,6 +1,7 @@
 import updateServiceScheduleShiftService from '../../services/schedules/updateServiceScheduleShiftService.js';
 import ensureServiceDelegationAccessService from '../../services/delegations/ensureServiceDelegationAccessService.js';
 import { emitServiceScheduleChanged } from '../../utils/serviceScheduleNotificationUtil.js';
+import { createAcknowledgementService } from '../../services/acknowledgements/acknowledgementService.js';
 import { sendPushNotificationToUserService } from '../../services/push/sendPushNotificationService.js';
 
 const updateServiceScheduleShiftController = async (req, res, next) => {
@@ -21,6 +22,16 @@ const updateServiceScheduleShiftController = async (req, res, next) => {
         });
 
         if (data.autoAssignedToService && data.employeeId) {
+            await createAcknowledgementService({
+                subjectType: 'service_assignment',
+                subjectId: serviceId,
+                title: 'Servicio asignado',
+                message: 'Se te ha asignado un nuevo servicio desde el cuadrante.',
+                url: '/account',
+                recipientUserIds: [data.employeeId],
+                createdBy: userId,
+                push: false,
+            });
             void sendPushNotificationToUserService(data.employeeId, {
                 title: 'Servicio asignado',
                 body: 'Se te ha asignado un nuevo servicio desde el cuadrante.',

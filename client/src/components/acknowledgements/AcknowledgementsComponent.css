@@ -1,0 +1,215 @@
+.acknowledgements {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+}
+
+.acknowledgements__header,
+.acknowledgements__panel {
+    background: #ffffff;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+.acknowledgements__header {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem;
+}
+
+.acknowledgements__header p,
+.acknowledgements__header h2,
+.acknowledgements__panel h3,
+.acknowledgement-card h4,
+.acknowledgement-card p {
+    margin: 0;
+}
+
+.acknowledgements__header p {
+    color: #50617a;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.acknowledgements__header h2 {
+    color: #0b1530;
+    font-size: 1.45rem;
+}
+
+.acknowledgements__header span {
+    background: #e8eef7;
+    border-radius: 999px;
+    color: #0b1530;
+    font-weight: 800;
+    padding: 0.45rem 0.8rem;
+}
+
+.acknowledgements__grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 1000px) {
+    .acknowledgements__grid {
+        grid-template-columns: minmax(0, 1fr) minmax(320px, 0.65fr);
+    }
+}
+
+.acknowledgements__panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    padding: 1rem;
+    min-width: 0;
+}
+
+.acknowledgements__panel h3 {
+    color: #0b1530;
+    font-size: 1.05rem;
+}
+
+.acknowledgements__cards {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.acknowledgement-card {
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    display: grid;
+    gap: 0.65rem;
+    padding: 0.85rem;
+}
+
+.acknowledgement-card span {
+    color: #50617a;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.acknowledgement-card h4 {
+    color: #0b1530;
+    font-size: 1rem;
+}
+
+.acknowledgement-card p {
+    color: #25344d;
+    font-size: 0.92rem;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+.acknowledgement-card small,
+.acknowledgements__table small {
+    color: #50617a;
+    display: block;
+    font-size: 0.76rem;
+}
+
+.acknowledgement-card__actions,
+.acknowledgements__audit-header,
+.acknowledgements__audit-header div {
+    align-items: center;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.acknowledgement-card__actions,
+.acknowledgements__audit-header {
+    justify-content: space-between;
+}
+
+.acknowledgements button {
+    background: #0b1530;
+    border: none;
+    border-radius: 999px;
+    color: #ffffff;
+    cursor: pointer;
+    font-weight: 800;
+    padding: 0.55rem 0.9rem;
+}
+
+.acknowledgements__form label {
+    color: #25344d;
+    display: grid;
+    font-size: 0.85rem;
+    font-weight: 800;
+    gap: 0.35rem;
+}
+
+.acknowledgements input,
+.acknowledgements textarea,
+.acknowledgements select {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    box-sizing: border-box;
+    font: inherit;
+    padding: 0.55rem 0.7rem;
+    width: 100%;
+}
+
+.acknowledgements__recipients {
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    display: grid;
+    gap: 0.45rem;
+    max-height: 260px;
+    overflow: auto;
+    padding: 0.5rem;
+}
+
+.acknowledgements__recipients label {
+    align-items: center;
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+}
+
+.acknowledgements__recipients input {
+    width: auto;
+}
+
+.acknowledgements__table-wrap {
+    overflow-x: auto;
+}
+
+.acknowledgements__table {
+    border-collapse: collapse;
+    min-width: 900px;
+    width: 100%;
+}
+
+.acknowledgements__table th,
+.acknowledgements__table td {
+    border-bottom: 1px solid #e2e8f0;
+    color: #0b1530;
+    font-size: 0.85rem;
+    padding: 0.65rem;
+    text-align: left;
+    vertical-align: top;
+}
+
+.acknowledgements__table th {
+    background: #f3f6fa;
+    font-weight: 900;
+}
+
+@media (max-width: 720px) {
+    .acknowledgements__header,
+    .acknowledgements__audit-header,
+    .acknowledgement-card__actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .acknowledgements__audit-header div {
+        align-items: stretch;
+        flex-direction: column;
+        width: 100%;
+    }
+}

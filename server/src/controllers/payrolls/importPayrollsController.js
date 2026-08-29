@@ -12,6 +12,7 @@ import {
     listPayrollEmployees,
     updatePayrollImportStats,
 } from '../../services/payrolls/payrollService.js';
+import { createAcknowledgementService } from '../../services/acknowledgements/acknowledgementService.js';
 import { sendPushNotificationToUserService } from '../../services/push/sendPushNotificationService.js';
 
 const schema = Joi.object({
@@ -102,6 +103,16 @@ const processPreparedPayrollFiles = async ({
         });
 
         if (status === 'published' && match.employee?.id) {
+            await createAcknowledgementService({
+                subjectType: 'payroll',
+                subjectId: id,
+                title: 'Nomina disponible',
+                message: `Ya puedes consultar tu nomina de ${payrollMonth}.`,
+                url: '/account',
+                recipientUserIds: [match.employee.id],
+                createdBy: uploadedBy,
+                push: false,
+            });
             void sendPushNotificationToUserService(match.employee.id, {
                 title: 'Nomina disponible',
                 body: `Ya puedes consultar tu nomina de ${payrollMonth}.`,

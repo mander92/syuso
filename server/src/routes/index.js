@@ -20,6 +20,7 @@ import billingRouter from './billingRouter.js';
 import salarySettlementRouter from './salarySettlementRouter.js';
 import vehicleRouter from './vehicleRouter.js';
 import pushRouter from './pushRouter.js';
+import acknowledgementRouter from './acknowledgementRouter.js';
 
 const router = express.Router();
 
@@ -43,5 +44,6 @@ router.use(billingRouter);
 router.use(salarySettlementRouter);
 router.use(vehicleRouter);
 router.use(pushRouter);
+router.use(acknowledgementRouter);
 
 export default router;

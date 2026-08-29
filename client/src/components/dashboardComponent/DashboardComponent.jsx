@@ -34,6 +34,7 @@ import AdminVehiclesSection from '../adminVehiclesSection/AdminVehiclesSection.j
 import DataProcessingNotice from '../dataProcessingNotice/DataProcessingNotice.jsx';
 import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 import PushNotificationsPanel from '../pushNotifications/PushNotificationsPanel.jsx';
+import AcknowledgementsComponent from '../acknowledgements/AcknowledgementsComponent.jsx';
 
 const formatAlertDate = (value) => {
     if (!value) return '';
@@ -80,7 +81,7 @@ const administrationSectionIds = [
     'salaries',
     'billing',
 ];
-const communicationSectionIds = ['chats', 'alerts'];
+const communicationSectionIds = ['chats', 'alerts', 'acknowledgements'];
 
 const getDashboardRoleLabel = ({
     userRole,
@@ -238,6 +239,12 @@ const DashboardComponent = () => {
             expandedPermissions.add('workers');
             expandedPermissions.add('clients');
         }
+        if (
+            expandedPermissions.has('alerts') ||
+            expandedPermissions.has('chats')
+        ) {
+            expandedPermissions.add('acknowledgements');
+        }
         return expandedPermissions;
     }, [user, userRole]);
 
@@ -256,6 +263,7 @@ const DashboardComponent = () => {
                 { id: 'employeeRequests', label: 'Peticiones' },
                 { id: 'chats', label: 'Chats' },
                 { id: 'alerts', label: 'Alertas' },
+                { id: 'acknowledgements', label: 'Acuses' },
                 { id: 'workReports', label: 'Partes de trabajo' },
                 { id: 'workers', label: 'Trabajadores' },
                 { id: 'clients', label: 'Clientes' },
@@ -295,6 +303,7 @@ const DashboardComponent = () => {
                 { id: 'payrolls', label: 'Mis nominas' },
                 { id: 'chats', label: 'Chats' },
                 { id: 'alerts', label: 'Alertas' },
+                { id: 'acknowledgements', label: 'Acuses' },
                 { id: 'dataProcessing', label: 'Tratamiento datos' },
                 { id: 'profile', label: 'Mi perfil' },
             ];
@@ -308,6 +317,7 @@ const DashboardComponent = () => {
                 { id: 'payrolls', label: 'Mis nominas' },
                 { id: 'chats', label: 'Chats' },
                 { id: 'alerts', label: 'Alertas' },
+                { id: 'acknowledgements', label: 'Acuses' },
                 { id: 'dataProcessing', label: 'Tratamiento datos' },
                 { id: 'profile', label: 'Mi perfil' },
             ];
@@ -805,6 +815,8 @@ const DashboardComponent = () => {
                 return <SalarySettlementsComponent />;
             case 'billing':
                 return <BillingComponent />;
+            case 'acknowledgements':
+                return <AcknowledgementsComponent />;
 
             default:
                 return null;

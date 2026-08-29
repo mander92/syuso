@@ -2,7 +2,11 @@ import Joi from 'joi';
 
 import ensureServiceDelegationAccessService from '../../services/delegations/ensureServiceDelegationAccessService.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
-import { emitServiceScheduleChanged } from '../../utils/serviceScheduleNotificationUtil.js';
+import { createAcknowledgementService } from '../../services/acknowledgements/acknowledgementService.js';
+import {
+    emitServiceScheduleChanged,
+    selectServiceScheduleRecipientUserIds,
+} from '../../utils/serviceScheduleNotificationUtil.js';
 
 const schema = Joi.object({
     month: Joi.string()
@@ -23,12 +27,28 @@ const notifyServiceScheduleController = async (req, res, next) => {
 
         await ensureServiceDelegationAccessService(serviceId, userId, role);
 
+        const message =
+            value.message ||
+            'Hay cambios en tu cuadrante. Revisa los turnos actualizados.';
+        const recipientUserIds = await selectServiceScheduleRecipientUserIds(
+            serviceId,
+            { month: value.month || '' }
+        );
+        await createAcknowledgementService({
+            subjectType: 'schedule',
+            subjectId: serviceId,
+            title: 'Cuadrante enviado',
+            message,
+            url: '/account',
+            recipientUserIds,
+            createdBy: userId,
+            push: false,
+        });
+
         emitServiceScheduleChanged(serviceId, {
             changedBy: userId,
             reason: 'schedule_manual_push',
-            message:
-                value.message ||
-                'Hay cambios en tu cuadrante. Revisa los turnos actualizados.',
+            message,
             month: value.month || '',
             push: true,
         });

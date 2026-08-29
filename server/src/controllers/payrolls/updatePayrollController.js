@@ -5,6 +5,7 @@ import {
     getPayrollById,
     updatePayroll,
 } from '../../services/payrolls/payrollService.js';
+import { createAcknowledgementService } from '../../services/acknowledgements/acknowledgementService.js';
 import { sendPushNotificationToUserService } from '../../services/push/sendPushNotificationService.js';
 
 const schema = Joi.object({
@@ -47,6 +48,16 @@ const updatePayrollController = async (req, res, next) => {
         const wasPublished = payroll.status === 'published';
         const isPublished = data.status === 'published';
         if (!wasPublished && isPublished && data.employeeId) {
+            await createAcknowledgementService({
+                subjectType: 'payroll',
+                subjectId: data.id,
+                title: 'Nomina disponible',
+                message: `Ya puedes consultar tu nomina${data.payrollMonth ? ` de ${data.payrollMonth}` : ''}.`,
+                url: '/account',
+                recipientUserIds: [data.employeeId],
+                createdBy: req.userLogged.id,
+                push: false,
+            });
             void sendPushNotificationToUserService(data.employeeId, {
                 title: 'Nomina disponible',
                 body: `Ya puedes consultar tu nomina${data.payrollMonth ? ` de ${data.payrollMonth}` : ''}.`,

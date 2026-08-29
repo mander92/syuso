@@ -1,6 +1,7 @@
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import newAssingPersonToServiceService from '../../services/personAssigned/newAssingPersonToServiceService.js';
 import ensureServiceDelegationAccessService from '../../services/delegations/ensureServiceDelegationAccessService.js';
+import { createAcknowledgementService } from '../../services/acknowledgements/acknowledgementService.js';
 import { sendPushNotificationToUserService } from '../../services/push/sendPushNotificationService.js';
 
 const assingPersonToServiceController = async (req, res, next) => {
@@ -22,6 +23,17 @@ const assingPersonToServiceController = async (req, res, next) => {
             employeeId,
             serviceId
         );
+        await createAcknowledgementService({
+            subjectType: 'service_assignment',
+            subjectId: serviceId,
+            title: 'Servicio asignado',
+            message:
+                'Se te ha asignado un nuevo servicio. Revisa los detalles en la app.',
+            url: '/account',
+            recipientUserIds: [employeeId],
+            createdBy: userId,
+            push: false,
+        });
 
         void sendPushNotificationToUserService(employeeId, {
             title: 'Servicio asignado',
