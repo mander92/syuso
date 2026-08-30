@@ -16,7 +16,7 @@ const saveClientDocumentationController = async (req, res, next) => {
             displayName: Joi.string().max(150).allow('', null),
             taxId: Joi.string().max(20).allow('', null),
             phone: Joi.string().max(30).allow('', null),
-            email: Joi.string().email().max(150).allow('', null),
+            email: Joi.string().max(150).allow('', null),
             contactPerson: Joi.string().max(150).allow('', null),
             authorizations: Joi.string().allow('', null),
             paymentMethod: Joi.string().max(100).allow('', null),

@@ -1874,7 +1874,10 @@ const EmployeeDocumentationComponent = ({
                                 >
                                     <label>{label}</label>
                                     <input
-                                        type={field === 'email' ? 'email' : 'text'}
+                                        type='text'
+                                        inputMode={
+                                            field === 'email' ? 'email' : 'text'
+                                        }
                                         value={clientDraftForm[field] || ''}
                                         onChange={(event) =>
                                             handleClientDraftChange(
@@ -2150,7 +2153,10 @@ const EmployeeDocumentationComponent = ({
                                 >
                                     <label>{label}</label>
                                     <input
-                                        type={field === 'email' ? 'email' : 'text'}
+                                        type='text'
+                                        inputMode={
+                                            field === 'email' ? 'email' : 'text'
+                                        }
                                         value={clientForm[field] || ''}
                                         onChange={(event) =>
                                             handleClientChange(

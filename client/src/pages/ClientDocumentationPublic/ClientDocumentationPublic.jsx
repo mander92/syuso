@@ -100,7 +100,8 @@ const ClientDocumentationPublic = () => {
                         <div key={field} className='employee-documentation-field'>
                             <label>{label}</label>
                             <input
-                                type={field === 'email' ? 'email' : 'text'}
+                                type='text'
+                                inputMode={field === 'email' ? 'email' : 'text'}
                                 value={form[field] || ''}
                                 onChange={(event) =>
                                     handleChange(field, event.target.value)
