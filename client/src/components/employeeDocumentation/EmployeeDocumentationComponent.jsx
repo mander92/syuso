@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AuthContext } from '../../context/AuthContext.jsx';
 import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 import useUser from '../../hooks/useUser.js';
@@ -212,11 +212,18 @@ const normalizeClientDocumentation = (data) => ({
 
 const EmployeeDocumentationComponent = ({
     focusEmployeeId = '',
+    focusDraftId = '',
+    focusClientId = '',
+    focusClientDraftId = '',
     adminView = '',
 } = {}) => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
-    const { alertNotifications, markNotificationRead } = useChatNotifications();
+    const {
+        alertNotifications,
+        markNotificationRead,
+        clearNotificationsBySection,
+    } = useChatNotifications();
     const isAdminLike = user?.role === 'admin' || user?.role === 'sudo';
     const isSudo = user?.role === 'sudo';
     const fixedAdminMode =
@@ -252,6 +259,12 @@ const EmployeeDocumentationComponent = ({
         status: 'draft',
     });
     const [clientDraftFiles, setClientDraftFiles] = useState({});
+    const handledFocusRefs = useRef({
+        employeeId: '',
+        draftId: '',
+        clientId: '',
+        clientDraftId: '',
+    });
     const [drafts, setDrafts] = useState([]);
     const [selectedDraftId, setSelectedDraftId] = useState('');
     const [draftForm, setDraftForm] = useState({
@@ -451,6 +464,48 @@ const EmployeeDocumentationComponent = ({
         });
     };
 
+    const markEmployeeDraftNotificationsRead = (draftId) => {
+        if (!draftId) return;
+        alertNotifications.forEach((notification) => {
+            if (
+                !notification.read &&
+                notification.section === 'documentations' &&
+                notification.subjectType === 'employeeDraft' &&
+                String(notification.subjectId) === String(draftId)
+            ) {
+                markNotificationRead(notification.id);
+            }
+        });
+    };
+
+    const markClientDocumentationNotificationsRead = (clientId) => {
+        if (!clientId) return;
+        alertNotifications.forEach((notification) => {
+            if (
+                !notification.read &&
+                notification.section === 'clients' &&
+                notification.subjectType === 'client' &&
+                String(notification.subjectId) === String(clientId)
+            ) {
+                markNotificationRead(notification.id);
+            }
+        });
+    };
+
+    const markClientDraftNotificationsRead = (draftId) => {
+        if (!draftId) return;
+        alertNotifications.forEach((notification) => {
+            if (
+                !notification.read &&
+                notification.section === 'clients' &&
+                notification.subjectType === 'clientDraft' &&
+                String(notification.subjectId) === String(draftId)
+            ) {
+                markNotificationRead(notification.id);
+            }
+        });
+    };
+
     const getSignatureTypeDeliveryStatusForEmployee = (type, employeeId) => {
         const documentsForEmployee = signatureDocuments.filter(
             (document) => !employeeId || document.employeeId === employeeId
@@ -542,11 +597,17 @@ const EmployeeDocumentationComponent = ({
         setAdminMode(fixedAdminMode);
         if (fixedAdminMode === 'clients') {
             setActiveFilter('all');
+            clearNotificationsBySection('clients');
         }
-    }, [fixedAdminMode]);
+        if (fixedAdminMode === 'employees') {
+            clearNotificationsBySection('documentations');
+        }
+    }, [clearNotificationsBySection, fixedAdminMode]);
 
     useEffect(() => {
         if (!isAdminLike || !focusEmployeeId || !authToken) return;
+        if (handledFocusRefs.current.employeeId === focusEmployeeId) return;
+        handledFocusRefs.current.employeeId = focusEmployeeId;
         setAdminMode('employees');
         openEmployeeDocumentationModal(focusEmployeeId).catch((error) =>
             alert(error.message)
@@ -576,6 +637,7 @@ const EmployeeDocumentationComponent = ({
             birthDate: toDateInput(draft?.birthDate),
             status: draft?.status || 'draft',
         });
+        markEmployeeDraftNotificationsRead(draft?.id);
     };
 
     const handleChange = (field, value) => {
@@ -731,6 +793,7 @@ const EmployeeDocumentationComponent = ({
         setSelectedClientId(client?.clientId || '');
         setClientFiles({});
         setClientForm(normalizeClientDocumentation(client));
+        markClientDocumentationNotificationsRead(client?.clientId);
     };
 
     const openClientDocumentationModal = (client) => {
@@ -757,11 +820,51 @@ const EmployeeDocumentationComponent = ({
             ...draft,
             status: draft?.status || 'draft',
         });
+        markClientDraftNotificationsRead(draft?.id);
     };
 
     const handleClientDraftChange = (field, value) => {
         setClientDraftForm((prev) => ({ ...prev, [field]: value }));
     };
+
+    useEffect(() => {
+        if (!isAdminLike || !focusDraftId) return;
+        if (handledFocusRefs.current.draftId === focusDraftId) return;
+        const draft = drafts.find((item) => item.id === focusDraftId);
+        if (!draft) return;
+        handledFocusRefs.current.draftId = focusDraftId;
+        setAdminMode('drafts');
+        setSearch('');
+        selectDraft(draft);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [drafts, focusDraftId, isAdminLike]);
+
+    useEffect(() => {
+        if (!isAdminLike || !focusClientId) return;
+        if (handledFocusRefs.current.clientId === focusClientId) return;
+        const client = clientItems.find(
+            (item) => item.clientId === focusClientId
+        );
+        if (!client) return;
+        handledFocusRefs.current.clientId = focusClientId;
+        setAdminMode('clients');
+        setActiveFilter('all');
+        setSearch('');
+        openClientDocumentationModal(client);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [clientItems, focusClientId, isAdminLike]);
+
+    useEffect(() => {
+        if (!isAdminLike || !focusClientDraftId) return;
+        if (handledFocusRefs.current.clientDraftId === focusClientDraftId) return;
+        const draft = clientDrafts.find((item) => item.id === focusClientDraftId);
+        if (!draft) return;
+        handledFocusRefs.current.clientDraftId = focusClientDraftId;
+        setAdminMode('clientDrafts');
+        setSearch('');
+        selectClientDraft(draft);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [clientDrafts, focusClientDraftId, isAdminLike]);
 
     const handleSaveClient = async (event) => {
         event.preventDefault();

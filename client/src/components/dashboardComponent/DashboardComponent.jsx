@@ -205,6 +205,7 @@ const DashboardComponent = () => {
         alertUnreadTotal,
         markNotificationRead,
         removeNotification,
+        clearNotificationsBySection,
         clearReadNotifications,
         markAllNotificationsRead,
         resetShiftSwapUnread,
@@ -213,6 +214,12 @@ const DashboardComponent = () => {
         useChatNotifications();
     const [activeSection, setActiveSection] = useState('profile');
     const [documentationFocusEmployeeId, setDocumentationFocusEmployeeId] =
+        useState('');
+    const [documentationFocusDraftId, setDocumentationFocusDraftId] =
+        useState('');
+    const [clientDocumentationFocusClientId, setClientDocumentationFocusClientId] =
+        useState('');
+    const [clientDocumentationFocusDraftId, setClientDocumentationFocusDraftId] =
         useState('');
     const [chatFocusGeneralChatId, setChatFocusGeneralChatId] = useState('');
     const [isOperativeOpen, setIsOperativeOpen] = useState(true);
@@ -458,6 +465,12 @@ const DashboardComponent = () => {
         () =>
             alertNotifications.reduce((sum, item) => {
                 if (item.read || item.section !== 'documentations') return sum;
+                if (
+                    item.subjectType === 'client' ||
+                    item.subjectType === 'clientDraft'
+                ) {
+                    return sum;
+                }
                 return sum + 1;
             }, 0),
         [alertNotifications]
@@ -465,8 +478,16 @@ const DashboardComponent = () => {
     const clientDocumentationUnread = useMemo(
         () =>
             alertNotifications.reduce((sum, item) => {
-                if (item.read || item.section !== 'clients') return sum;
-                return sum + 1;
+                if (item.read) return sum;
+                if (item.section === 'clients') return sum + 1;
+                if (
+                    item.section === 'documentations' &&
+                    (item.subjectType === 'client' ||
+                        item.subjectType === 'clientDraft')
+                ) {
+                    return sum + 1;
+                }
+                return sum;
             }, 0),
         [alertNotifications]
     );
@@ -502,6 +523,16 @@ const DashboardComponent = () => {
             (sum, section) => sum + getSectionBadge(section.id),
             0
         );
+
+    const openDashboardSection = (sectionId) => {
+        if (sectionId === 'workers' || sectionId === 'documentations') {
+            clearNotificationsBySection('documentations');
+        }
+        if (sectionId === 'clients') {
+            clearNotificationsBySection('clients');
+        }
+        setActiveSection(sectionId);
+    };
 
     const mobileGroups = useMemo(() => {
         if (!sections.length) return [];
@@ -629,7 +660,7 @@ const DashboardComponent = () => {
                     ? ' dashboard-navitem--active'
                     : '')
             }
-            onClick={() => setActiveSection(section.id)}
+            onClick={() => openDashboardSection(section.id)}
         >
             <span className='dashboard-navitem-label'>
                 {section.label}
@@ -667,7 +698,9 @@ const DashboardComponent = () => {
                                             ? ' dashboard-mobile-sheet-item--active'
                                             : '')
                                     }
-                                    onClick={() => setActiveSection(section.id)}
+                                    onClick={() =>
+                                        openDashboardSection(section.id)
+                                    }
                                 >
                                     <span>{section.label}</span>
                                     {getSectionBadge(section.id) > 0 ? (
@@ -730,8 +763,13 @@ const DashboardComponent = () => {
                     <AlertsPanel
                         notifications={alertNotifications}
                         onOpenSection={(section, notification) => {
+                            const isClientDocumentation =
+                                notification?.subjectType === 'client' ||
+                                notification?.subjectType === 'clientDraft';
                             const targetSection =
-                                section === 'documentations' && isAdminLike
+                                isClientDocumentation && isAdminLike
+                                    ? 'clients'
+                                    : section === 'documentations' && isAdminLike
                                     ? 'workers'
                                     : section;
                             if (
@@ -739,17 +777,46 @@ const DashboardComponent = () => {
                                 sections.some((item) => item.id === targetSection)
                             ) {
                                 if (
+                                    section === 'clients' ||
+                                    isClientDocumentation
+                                ) {
+                                    if (notification?.subjectType === 'client') {
+                                        setClientDocumentationFocusClientId(
+                                            notification.subjectId || ''
+                                        );
+                                        setClientDocumentationFocusDraftId('');
+                                    } else if (
+                                        notification?.subjectType ===
+                                        'clientDraft'
+                                    ) {
+                                        setClientDocumentationFocusDraftId(
+                                            notification.subjectId || ''
+                                        );
+                                        setClientDocumentationFocusClientId('');
+                                    }
+                                }
+                                if (
                                     section === 'documentations' &&
+                                    !isClientDocumentation &&
                                     notification?.employeeId
                                 ) {
                                     setDocumentationFocusEmployeeId(
                                         notification.employeeId
                                     );
+                                    setDocumentationFocusDraftId('');
+                                } else if (
+                                    section === 'documentations' &&
+                                    notification?.subjectType === 'employeeDraft'
+                                ) {
+                                    setDocumentationFocusDraftId(
+                                        notification.subjectId || ''
+                                    );
+                                    setDocumentationFocusEmployeeId('');
                                 }
                                 if (section === 'chats' && notification?.chatId) {
                                     setChatFocusGeneralChatId(notification.chatId);
                                 }
-                                setActiveSection(targetSection);
+                                openDashboardSection(targetSection);
                             }
                         }}
                         onMarkRead={markNotificationRead}
@@ -806,15 +873,23 @@ const DashboardComponent = () => {
                 return (
                     <EmployeeDocumentationComponent
                         focusEmployeeId={documentationFocusEmployeeId}
+                        focusDraftId={documentationFocusDraftId}
                         adminView='workers'
                     />
                 );
             case 'clients':
-                return <EmployeeDocumentationComponent adminView='clients' />;
+                return (
+                    <EmployeeDocumentationComponent
+                        focusClientId={clientDocumentationFocusClientId}
+                        focusClientDraftId={clientDocumentationFocusDraftId}
+                        adminView='clients'
+                    />
+                );
             case 'documentations':
                 return (
                     <EmployeeDocumentationComponent
                         focusEmployeeId={documentationFocusEmployeeId}
+                        focusDraftId={documentationFocusDraftId}
                     />
                 );
             case 'warehouse':

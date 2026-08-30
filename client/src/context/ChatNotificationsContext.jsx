@@ -183,6 +183,7 @@ export const ChatNotificationsProvider = ({ children }) => {
             employeeRequests: 'Mi cuenta > Peticiones',
             chats: 'Mi cuenta > Chats',
             documentations: 'Mi cuenta > Documentacion',
+            clients: 'Mi cuenta > Clientes',
             vehicles: 'Mi cuenta > Vehiculos',
             acknowledgements: 'Comunica. > Acuses',
         };
@@ -957,9 +958,21 @@ export const ChatNotificationsProvider = ({ children }) => {
     const clearNotificationsBySection = useCallback((section) => {
         if (!section) return;
         setAlertNotifications((prev) =>
-            prev.map((item) =>
-                item.section === section ? { ...item, read: true } : item
-            )
+            prev.map((item) => {
+                const isClientDocumentation =
+                    item.subjectType === 'client' ||
+                    item.subjectType === 'clientDraft';
+                const shouldClear =
+                    (section === 'documentations' &&
+                        item.section === 'documentations' &&
+                        !isClientDocumentation) ||
+                    (section === 'clients' &&
+                        (item.section === 'clients' || isClientDocumentation)) ||
+                    (section !== 'documentations' &&
+                        section !== 'clients' &&
+                        item.section === section);
+                return shouldClear ? { ...item, read: true } : item;
+            })
         );
     }, []);
 
