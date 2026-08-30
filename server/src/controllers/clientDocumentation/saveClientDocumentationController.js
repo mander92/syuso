@@ -20,6 +20,7 @@ const saveClientDocumentationController = async (req, res, next) => {
             contactPerson: Joi.string().max(150).allow('', null),
             authorizations: Joi.string().allow('', null),
             paymentMethod: Joi.string().max(100).allow('', null),
+            active: Joi.boolean().truthy(1, '1').falsy(0, '0').default(true),
             status: Joi.string()
                 .valid('pending', 'reviewed', 'rejected')
                 .default('pending'),
@@ -44,6 +45,7 @@ const saveClientDocumentationController = async (req, res, next) => {
                 taxId: value.taxId,
                 phone: value.phone,
                 email: value.email,
+                active: value.active,
             }));
 
         const existing = await selectClientDocumentationService(clientId);

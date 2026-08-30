@@ -462,10 +462,21 @@ const DashboardComponent = () => {
             }, 0),
         [alertNotifications]
     );
+    const clientDocumentationUnread = useMemo(
+        () =>
+            alertNotifications.reduce((sum, item) => {
+                if (item.read || item.section !== 'clients') return sum;
+                return sum + 1;
+            }, 0),
+        [alertNotifications]
+    );
     const administrationBadgeTotal =
-        administrationSections.some((section) => section.id === 'workers')
+        (administrationSections.some((section) => section.id === 'workers')
             ? documentationUnread
-            : 0;
+            : 0) +
+        (administrationSections.some((section) => section.id === 'clients')
+            ? clientDocumentationUnread
+            : 0);
     const communicationBadgeTotal =
         (communicationSections.some((section) => section.id === 'chats')
             ? unreadTotal
@@ -482,6 +493,7 @@ const DashboardComponent = () => {
         if (sectionId === 'workers' || sectionId === 'documentations') {
             return documentationUnread;
         }
+        if (sectionId === 'clients') return clientDocumentationUnread;
         return 0;
     };
 

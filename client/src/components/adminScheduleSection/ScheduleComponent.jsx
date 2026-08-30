@@ -130,15 +130,34 @@ const isPersistedShiftId = (id) =>
         String(id || '')
     );
 
+const compareText = (a, b) =>
+    String(a || '').localeCompare(String(b || ''), 'es', {
+        sensitivity: 'base',
+    });
+
+const normalizeDelegationLabel = (...values) => {
+    const found = values.find((value) => {
+        if (Array.isArray(value)) {
+            return value.some((item) => String(item || '').trim());
+        }
+        return String(value || '').trim();
+    });
+
+    if (Array.isArray(found)) {
+        return found
+            .map((item) => String(item || '').trim())
+            .filter(Boolean)
+            .join(', ');
+    }
+
+    return String(found || '').trim() || 'Sin delegacion';
+};
+
 const ScheduleComponent = () => {
     const { authToken } = useContext(AuthContext);
     const { user } = useUser();
     const isAdminLike = user?.role === 'admin' || user?.role === 'sudo';
     const isSudo = user?.role === 'sudo';
-    const compareText = (a, b) =>
-        String(a || '').localeCompare(String(b || ''), 'es', {
-            sensitivity: 'base',
-        });
     const normalizeText = (value) =>
         String(value || '')
             .normalize('NFD')
@@ -388,8 +407,10 @@ const ScheduleComponent = () => {
                                 scheduleMonth
                             );
 
-                            const serviceDelegation =
-                                service.province || service.city || '';
+                            const serviceDelegation = normalizeDelegationLabel(
+                                service.province,
+                                service.city
+                            );
                             const filteredShifts = (shifts || [])
                                 .filter((shift) => {
                                     if (
@@ -460,8 +481,10 @@ const ScheduleComponent = () => {
                                 name: service.name,
                                 type: service.type,
                                 address: service.address,
-                                delegation:
-                                    service.province || 'Sin delegacion',
+                                delegation: normalizeDelegationLabel(
+                                    service.province,
+                                    service.city
+                                ),
                                 scheduleImage: service.scheduleImage || '',
                                 scheduleView: service.scheduleView || 'grid',
                                 assignedEmployeeIds:
@@ -547,7 +570,7 @@ const ScheduleComponent = () => {
     const scheduleCardsByDelegation = useMemo(() => {
         const groups = new Map();
         scheduleCards.forEach((card) => {
-            const delegation = card.delegation || 'Sin delegacion';
+            const delegation = normalizeDelegationLabel(card.delegation);
             if (!groups.has(delegation)) groups.set(delegation, []);
             groups.get(delegation).push(card);
         });
@@ -1923,11 +1946,11 @@ const ScheduleComponent = () => {
                 id: employeeId,
                 firstName: firstShift.firstName || 'Empleado',
                 lastName: firstShift.lastName || 'inactivo',
-                delegations:
-                    firstShift.serviceDelegation ||
-                    firstShift.serviceProvince ||
-                    firstShift.serviceCity ||
-                    'Sin delegacion',
+                delegations: normalizeDelegationLabel(
+                    firstShift.serviceDelegation,
+                    firstShift.serviceProvince,
+                    firstShift.serviceCity
+                ),
                 inactiveFromShift: true,
             });
         });
@@ -1950,8 +1973,13 @@ const ScheduleComponent = () => {
                 return {
                     id: employee.id,
                     name: `${employee.firstName} ${employee.lastName}`,
-                    delegation:
-                        employee.delegations || employee.city || 'Sin delegacion',
+                    delegation: normalizeDelegationLabel(
+                        employee.delegations,
+                        employee.city,
+                        shifts[0]?.serviceDelegation,
+                        shifts[0]?.serviceProvince,
+                        shifts[0]?.serviceCity
+                    ),
                     shifts,
                     totalHours,
                     totalNightHours,
@@ -1964,7 +1992,7 @@ const ScheduleComponent = () => {
     const personalRowsByDelegation = useMemo(() => {
         const groups = new Map();
         personalScheduleRows.forEach((row) => {
-            const delegation = row.delegation || 'Sin delegacion';
+            const delegation = normalizeDelegationLabel(row.delegation);
             if (!groups.has(delegation)) groups.set(delegation, []);
             groups.get(delegation).push(row);
         });

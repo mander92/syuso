@@ -108,9 +108,11 @@ const getDeliveryStatusClassName = (status) =>
     `employee-documentation-status employee-documentation-delivery-status employee-documentation-delivery-status--${status}`;
 
 const statusLabels = {
+    draft: 'Borrador',
     pending: 'Pendiente',
     submitted: 'Enviada',
     reviewed: 'Revisada',
+    converted: 'Convertida',
     rejected: 'Rechazada',
 };
 
@@ -147,6 +149,7 @@ const emptyClientForm = {
     contactPerson: '',
     authorizations: '',
     paymentMethod: '',
+    active: 1,
     status: 'pending',
     reviewNotes: '',
 };
@@ -203,6 +206,7 @@ const normalizeClientDocumentation = (data) => ({
     taxId: data?.taxId || data?.userTaxId || '',
     phone: data?.phone || data?.userPhone || '',
     email: data?.email || data?.userEmail || '',
+    active: data?.active === 0 || data?.active === '0' ? 0 : 1,
     status: data?.status || 'pending',
 });
 
@@ -230,7 +234,9 @@ const EmployeeDocumentationComponent = ({
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [search, setSearch] = useState('');
-    const [activeFilter, setActiveFilter] = useState('active');
+    const [activeFilter, setActiveFilter] = useState(
+        fixedAdminMode === 'clients' ? 'all' : 'active'
+    );
     const [delegationFilter, setDelegationFilter] = useState('all');
     const [adminMode, setAdminMode] = useState(fixedAdminMode || 'employees');
     const [clientItems, setClientItems] = useState([]);
@@ -373,6 +379,16 @@ const EmployeeDocumentationComponent = ({
             );
         });
     }, [clientDrafts, search]);
+
+    const pendingClientDraftsCount = useMemo(
+        () =>
+            clientDrafts.filter(
+                (item) =>
+                    !item.linkedClientId &&
+                    !['converted', 'rejected'].includes(item.status)
+            ).length,
+        [clientDrafts]
+    );
 
     const visibleSignatureDocuments = useMemo(() => {
         const targetEmployeeId = isAdminLike ? selectedUserId : user?.id;
@@ -524,6 +540,9 @@ const EmployeeDocumentationComponent = ({
     useEffect(() => {
         if (!fixedAdminMode) return;
         setAdminMode(fixedAdminMode);
+        if (fixedAdminMode === 'clients') {
+            setActiveFilter('all');
+        }
     }, [fixedAdminMode]);
 
     useEffect(() => {
@@ -721,6 +740,13 @@ const EmployeeDocumentationComponent = ({
 
     const handleClientChange = (field, value) => {
         setClientForm((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const handleToggleClientActive = () => {
+        setClientForm((prev) => ({
+            ...prev,
+            active: prev.active === 0 || prev.active === '0' ? 1 : 0,
+        }));
     };
 
     const selectClientDraft = (draft) => {
@@ -1978,7 +2004,10 @@ const EmployeeDocumentationComponent = ({
                                 className='employee-documentation-pending-link'
                                 onClick={openClientDraftModal}
                             >
-                                Ver {clientDrafts.length} fichas pendientes
+                                Ver {clientDrafts.length} fichas de alta
+                                {pendingClientDraftsCount
+                                    ? ` (${pendingClientDraftsCount} pendientes)`
+                                    : ''}
                             </button>
                         ) : null}
                         <p className='employee-documentation-list-count'>
@@ -2088,6 +2117,24 @@ const EmployeeDocumentationComponent = ({
                                         Cerrar
                                     </button>
                                 </header>
+                        <div className='employee-documentation-actions employee-documentation-actions--draft'>
+                            <span className='employee-documentation-status'>
+                                {clientForm.active === 0 ||
+                                clientForm.active === '0'
+                                    ? 'Interno/inactivo'
+                                    : 'Activo'}
+                            </span>
+                            <button
+                                type='button'
+                                className='employee-documentation-btn employee-documentation-btn--ghost'
+                                onClick={handleToggleClientActive}
+                            >
+                                {clientForm.active === 0 ||
+                                clientForm.active === '0'
+                                    ? 'Activar cliente'
+                                    : 'Desactivar cliente'}
+                            </button>
+                        </div>
                         <div className='employee-documentation-grid'>
                             {[
                                 ['displayName', 'Nombre y apellidos / razon social'],

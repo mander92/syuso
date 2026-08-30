@@ -11,6 +11,7 @@ import {
     fetchMyAcknowledgements,
     markAcknowledgementSeen,
 } from '../../services/acknowledgementService.js';
+import { getChatSocket } from '../../services/chatSocket.js';
 import './AcknowledgementsComponent.css';
 
 const subjectLabels = {
@@ -102,6 +103,26 @@ const AcknowledgementsComponent = () => {
     useEffect(() => {
         loadAudit().catch((error) => toast.error(error.message));
     }, [loadAudit]);
+
+    useEffect(() => {
+        if (!authToken) return undefined;
+
+        const socket = getChatSocket(authToken);
+        if (!socket) return undefined;
+
+        const handleAcknowledgementCreated = () => {
+            loadMine().catch((error) => toast.error(error.message));
+            if (isAdminLike) {
+                loadAudit().catch((error) => toast.error(error.message));
+            }
+        };
+
+        socket.on('acknowledgement:created', handleAcknowledgementCreated);
+
+        return () => {
+            socket.off('acknowledgement:created', handleAcknowledgementCreated);
+        };
+    }, [authToken, isAdminLike, loadAudit, loadMine]);
 
     const pendingMine = myAcknowledgements.filter((item) => !item.acceptedAt);
 

@@ -184,6 +184,7 @@ export const ChatNotificationsProvider = ({ children }) => {
             chats: 'Mi cuenta > Chats',
             documentations: 'Mi cuenta > Documentacion',
             vehicles: 'Mi cuenta > Vehiculos',
+            acknowledgements: 'Comunica. > Acuses',
         };
         return labels[section] || 'Mi cuenta';
     };
@@ -733,17 +734,21 @@ export const ChatNotificationsProvider = ({ children }) => {
 
         const handleDocumentationChanged = (event) => {
             if (!event?.notificationId) return;
+            const isClientDocumentation =
+                event.subjectType === 'client' ||
+                event.subjectType === 'clientDraft';
+            const section = isClientDocumentation ? 'clients' : 'documentations';
 
             addAlertNotification({
                 id: event.notificationId,
                 type: 'documentation',
-                section: 'documentations',
+                section,
                 title: event.title || 'Documentacion',
                 message:
                     event.message ||
                     'Hay una actualizacion en documentacion.',
                 routeLabel:
-                    event.routeLabel || buildAlertRoute('documentations'),
+                    event.routeLabel || buildAlertRoute(section),
                 employeeId: event.employeeId || null,
                 subjectId: event.subjectId || null,
                 subjectType: event.subjectType || 'documentation',
@@ -774,12 +779,34 @@ export const ChatNotificationsProvider = ({ children }) => {
             });
         };
 
+        const handleAcknowledgementCreated = (event) => {
+            if (!event?.notificationId) return;
+
+            addAlertNotification({
+                id: event.notificationId,
+                type: 'acknowledgement',
+                section: 'acknowledgements',
+                title: event.title || 'Acuse pendiente',
+                message:
+                    event.message ||
+                    'Tienes una comunicacion pendiente de acuse.',
+                routeLabel:
+                    event.routeLabel || buildAlertRoute('acknowledgements'),
+                subjectId: event.acknowledgementId || event.id || null,
+                subjectType: event.subjectType || 'acknowledgement',
+            });
+            toast(event.title || 'Acuse pendiente', {
+                id: event.notificationId,
+            });
+        };
+
         socket.on('connect', handleConnect);
         socket.on('chat:message', handleMessage);
         socket.on('generalChat:message', handleGeneralMessage);
         socket.on('serviceSchedule:changed', handleServiceScheduleChanged);
         socket.on('documentation:changed', handleDocumentationChanged);
         socket.on('vehicleInspection:created', handleVehicleInspectionCreated);
+        socket.on('acknowledgement:created', handleAcknowledgementCreated);
         socket.on('shiftSwap:created', handleShiftSwapEvent);
         socket.on('shiftSwap:confirmed', handleShiftSwapEvent);
         socket.on('shiftSwap:approved', handleShiftSwapEvent);
@@ -798,6 +825,7 @@ export const ChatNotificationsProvider = ({ children }) => {
                 'vehicleInspection:created',
                 handleVehicleInspectionCreated
             );
+            socket.off('acknowledgement:created', handleAcknowledgementCreated);
             socket.off('shiftSwap:created', handleShiftSwapEvent);
             socket.off('shiftSwap:confirmed', handleShiftSwapEvent);
             socket.off('shiftSwap:approved', handleShiftSwapEvent);

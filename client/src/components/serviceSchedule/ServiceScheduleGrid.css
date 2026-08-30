@@ -639,6 +639,44 @@
         font-size: 0.68rem;
         padding: 4px 2px;
     }
+
+    .service-schedule-grid--compact-first .service-schedule-grid-head,
+    .service-schedule-grid--compact-first .service-schedule-grid-row,
+    .service-schedule-grid--compact-first .service-schedule-grid-footer {
+        grid-template-columns: fit-content(86px) repeat(var(--days), minmax(31px, 31px)) minmax(54px, 54px);
+        min-width: max-content;
+    }
+
+    .service-schedule-grid--compact-first.service-schedule-grid--hide-totals
+        .service-schedule-grid-head,
+    .service-schedule-grid--compact-first.service-schedule-grid--hide-totals
+        .service-schedule-grid-row,
+    .service-schedule-grid--compact-first.service-schedule-grid--hide-totals
+        .service-schedule-grid-footer {
+        grid-template-columns: fit-content(86px) repeat(var(--days), minmax(31px, 31px));
+    }
+
+    .service-schedule-grid--compact-first .service-schedule-grid-corner,
+    .service-schedule-grid--compact-first .service-schedule-grid-employee,
+    .service-schedule-grid--compact-first .service-schedule-grid-footer-label {
+        max-width: 86px;
+        min-width: 44px;
+        width: max-content;
+    }
+
+    .service-schedule-grid--compact-first .service-schedule-grid-employee {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .service-schedule-grid--compact-first
+        .service-schedule-grid-employee
+        > span:first-child {
+        overflow: visible;
+        overflow-wrap: anywhere;
+        text-overflow: clip;
+        white-space: normal;
+        word-break: break-word;
+    }
 }
 
 .service-schedule-grid-employee .service-schedule-grid-row-order {

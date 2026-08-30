@@ -160,6 +160,8 @@ const EmployeeScheduleComponent = () => {
                                 showUnassigned={false}
                                 showTotals={false}
                                 stickyFirstColumn
+                                compactFirstColumn
+                                firstColumnLabel='Servicio'
                             />
                         </>
                     ) : (

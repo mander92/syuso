@@ -1,6 +1,7 @@
 import { v4 as uuid } from 'uuid';
 
 import getPool from '../../db/getPool.js';
+import { getIO } from '../../sockets/io.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
 import { sendPushNotificationToUsersService } from '../push/sendPushNotificationService.js';
 
@@ -32,6 +33,54 @@ const insertRecipientEvent = async (pool, recipientId, eventType, meta = {}) => 
             meta.userAgent || null,
         ]
     );
+};
+
+const emitAcknowledgementCreated = (acknowledgement, recipientUserIds = []) => {
+    const io = getIO();
+    if (!io || !acknowledgement?.id) return;
+
+    const payload = {
+        id: acknowledgement.id,
+        acknowledgementId: acknowledgement.id,
+        subjectType: acknowledgement.subjectType,
+        subjectId: acknowledgement.subjectId || null,
+        title: acknowledgement.title || 'Acuse pendiente',
+        message:
+            acknowledgement.message ||
+            'Tienes una comunicacion pendiente de acuse.',
+        url: acknowledgement.url || '/account',
+        requiresAcceptance: Boolean(acknowledgement.requiresAcceptance),
+        createdAt: acknowledgement.createdAt || new Date().toISOString(),
+        notificationId: `acknowledgement-${acknowledgement.id}`,
+        section: 'acknowledgements',
+        routeLabel: 'Comunica. > Acuses',
+    };
+
+    normalizeUserIds(recipientUserIds).forEach((userId) => {
+        io.to(`user:${userId}`).emit('acknowledgement:created', payload);
+    });
+};
+
+const sendAcknowledgementPush = ({
+    acknowledgementId,
+    recipients,
+    title,
+    message = '',
+    url = '/account',
+}) => {
+    void sendPushNotificationToUsersService(recipients, {
+        title,
+        body: message || 'Tienes una comunicacion pendiente de acuse.',
+        url: url || '/account',
+        tag: `ack-${acknowledgementId}`,
+        ttl: 300,
+        urgency: 'high',
+    }).catch((error) => {
+        console.error('[push] acknowledgement notification failed', {
+            acknowledgementId,
+            message: error.message,
+        });
+    });
 };
 
 export const createAcknowledgementService = async ({
@@ -91,23 +140,23 @@ export const createAcknowledgementService = async ({
         await insertRecipientEvent(pool, recipientId, 'delivered');
     }
 
+    const acknowledgement = await getAcknowledgementByIdService(
+        acknowledgementId
+    );
+
+    emitAcknowledgementCreated(acknowledgement, recipients);
+
     if (push) {
-        void sendPushNotificationToUsersService(recipients, {
+        sendAcknowledgementPush({
+            acknowledgementId,
+            recipients,
             title: safeTitle,
-            body: message || 'Tienes una comunicacion pendiente de acuse.',
-            url: url || '/account',
-            tag: `ack-${acknowledgementId}`,
-            ttl: 300,
-            urgency: 'high',
-        }).catch((error) => {
-            console.error('[push] acknowledgement notification failed', {
-                acknowledgementId,
-                message: error.message,
-            });
+            message,
+            url,
         });
     }
 
-    return getAcknowledgementByIdService(acknowledgementId);
+    return acknowledgement;
 };
 
 export const createAcknowledgementOnceService = async (payload) => {
@@ -134,6 +183,7 @@ export const createAcknowledgementOnceService = async (payload) => {
     if (!existing.length) return createAcknowledgementService(payload);
 
     const acknowledgementId = existing[0].id;
+    const newRecipients = [];
     for (const userId of recipients) {
         const recipientId = uuid();
         const [result] = await pool.query(
@@ -147,10 +197,28 @@ export const createAcknowledgementOnceService = async (payload) => {
         );
         if (result.affectedRows > 0) {
             await insertRecipientEvent(pool, recipientId, 'delivered');
+            newRecipients.push(userId);
         }
     }
 
-    return getAcknowledgementByIdService(acknowledgementId);
+    const acknowledgement = await getAcknowledgementByIdService(
+        acknowledgementId
+    );
+
+    if (newRecipients.length) {
+        emitAcknowledgementCreated(acknowledgement, newRecipients);
+        if (payload.push !== false) {
+            sendAcknowledgementPush({
+                acknowledgementId,
+                recipients: newRecipients,
+                title: acknowledgement.title,
+                message: acknowledgement.message,
+                url: acknowledgement.url,
+            });
+        }
+    }
+
+    return acknowledgement;
 };
 
 export const listAcknowledgementsAuditService = async ({

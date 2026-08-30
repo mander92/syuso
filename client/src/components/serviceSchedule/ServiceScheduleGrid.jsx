@@ -118,6 +118,8 @@ const ServiceScheduleGrid = ({
     showAgreementHours = false,
     showTotals = true,
     stickyFirstColumn = false,
+    compactFirstColumn = false,
+    firstColumnLabel = 'Empleado',
 }) => {
     const [draggedShiftId, setDraggedShiftId] = useState(null);
     const [collapsedRows, setCollapsedRows] = useState(() => new Set());
@@ -305,10 +307,14 @@ const ServiceScheduleGrid = ({
                 showTotals ? '' : 'service-schedule-grid--hide-totals'
             } ${
                 stickyFirstColumn ? 'service-schedule-grid--sticky-first' : ''
+            } ${
+                compactFirstColumn ? 'service-schedule-grid--compact-first' : ''
             }`}
         >
             <div className='service-schedule-grid-head' style={gridStyle}>
-                <div className='service-schedule-grid-corner'>Empleado</div>
+                <div className='service-schedule-grid-corner'>
+                    {firstColumnLabel}
+                </div>
                 {days.map((day) => {
                     const dateObj = new Date(year, monthIndex, day);
                     const dateKey = toDateKey(year, monthIndex, day);
