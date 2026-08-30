@@ -643,7 +643,7 @@
     .service-schedule-grid--compact-first .service-schedule-grid-head,
     .service-schedule-grid--compact-first .service-schedule-grid-row,
     .service-schedule-grid--compact-first .service-schedule-grid-footer {
-        grid-template-columns: fit-content(86px) repeat(var(--days), minmax(31px, 31px)) minmax(54px, 54px);
+        grid-template-columns: 86px repeat(var(--days), minmax(31px, 31px)) minmax(54px, 54px);
         min-width: max-content;
     }
 
@@ -653,15 +653,15 @@
         .service-schedule-grid-row,
     .service-schedule-grid--compact-first.service-schedule-grid--hide-totals
         .service-schedule-grid-footer {
-        grid-template-columns: fit-content(86px) repeat(var(--days), minmax(31px, 31px));
+        grid-template-columns: 86px repeat(var(--days), minmax(31px, 31px));
     }
 
     .service-schedule-grid--compact-first .service-schedule-grid-corner,
     .service-schedule-grid--compact-first .service-schedule-grid-employee,
     .service-schedule-grid--compact-first .service-schedule-grid-footer-label {
         max-width: 86px;
-        min-width: 44px;
-        width: max-content;
+        min-width: 86px;
+        width: 86px;
     }
 
     .service-schedule-grid--compact-first .service-schedule-grid-employee {
