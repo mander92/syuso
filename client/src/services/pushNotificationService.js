@@ -1,4 +1,29 @@
 const { VITE_API_URL } = import.meta.env;
+const PUSH_ACTIVE_CACHE_PREFIX = 'syusoPushActiveSubscription';
+
+const getPushActiveCacheKey = (userId) =>
+    `${PUSH_ACTIVE_CACHE_PREFIX}:${userId || 'current'}`;
+
+export const hasCachedActivePushSubscription = (userId) => {
+    try {
+        return Boolean(localStorage.getItem(getPushActiveCacheKey(userId)));
+    } catch {
+        return false;
+    }
+};
+
+export const setCachedActivePushSubscription = (userId, subscription) => {
+    try {
+        const key = getPushActiveCacheKey(userId);
+        if (subscription?.endpoint) {
+            localStorage.setItem(key, subscription.endpoint);
+        } else {
+            localStorage.removeItem(key);
+        }
+    } catch {
+        // Browsers can block storage in private contexts. Push still works without cache.
+    }
+};
 
 const readJsonBody = async (res) => {
     const text = await res.text();

@@ -35,6 +35,7 @@ import DataProcessingNotice from '../dataProcessingNotice/DataProcessingNotice.j
 import { useChatNotifications } from '../../context/ChatNotificationsContext.jsx';
 import PushNotificationsPanel from '../pushNotifications/PushNotificationsPanel.jsx';
 import AcknowledgementsComponent from '../acknowledgements/AcknowledgementsComponent.jsx';
+import { hasCachedActivePushSubscription } from '../../services/pushNotificationService.js';
 
 const formatAlertDate = (value) => {
     if (!value) return '';
@@ -233,6 +234,15 @@ const DashboardComponent = () => {
     const isAdminLike = userRole === 'admin' || userRole === 'sudo';
     const isEmployeeLike = userRole === 'employee' || userRole === 'empleado';
     const isClient = userRole === 'client';
+
+    useEffect(() => {
+        if (!user?.id) {
+            setPushReady(false);
+            return;
+        }
+        setPushReady(hasCachedActivePushSubscription(user.id));
+    }, [user?.id]);
+
     const allowedDashboardSections = useMemo(() => {
         if (!user || userRole === 'sudo') return null;
         const permissions = parseDashboardPermissions(user.dashboardPermissions);
@@ -1133,6 +1143,7 @@ const DashboardComponent = () => {
                         <PushNotificationsPanel
                             compact
                             required
+                            userId={user.id}
                             onReadyChange={setPushReady}
                         />
                     ) : (
@@ -1140,6 +1151,7 @@ const DashboardComponent = () => {
                             {user ? (
                                 <PushNotificationsPanel
                                     compact
+                                    userId={user.id}
                                     onReadyChange={setPushReady}
                                 />
                             ) : null}

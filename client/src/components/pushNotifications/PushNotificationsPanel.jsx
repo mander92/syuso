@@ -15,9 +15,11 @@ import {
     fetchPushConfig,
     fetchPushSubscriptions,
     getCurrentPushSubscriptionJson,
+    hasCachedActivePushSubscription,
     registerCurrentDeviceForPush,
     sendCurrentDeviceTestPushNotification,
     sendTestPushNotification,
+    setCachedActivePushSubscription,
 } from '../../services/pushNotificationService.js';
 import './PushNotificationsPanel.css';
 
@@ -67,6 +69,7 @@ const PushNotificationsPanel = ({
     compact = false,
     required = false,
     onReadyChange,
+    userId = '',
 }) => {
     const { authToken } = useContext(AuthContext);
     const [environment, setEnvironment] = useState(detectPushEnvironment);
@@ -74,6 +77,10 @@ const PushNotificationsPanel = ({
     const [currentSubscription, setCurrentSubscription] = useState(null);
     const [subscriptions, setSubscriptions] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [hasCheckedInitialState, setHasCheckedInitialState] = useState(false);
+    const [hasCachedActive, setHasCachedActive] = useState(() =>
+        hasCachedActivePushSubscription(userId)
+    );
     const [showIosGuide, setShowIosGuide] = useState(required);
     const [dismissed, setDismissed] = useState(() => {
         if (!compact) return false;
@@ -98,9 +105,15 @@ const PushNotificationsPanel = ({
         if (environment.needsInstallation) return 'iosInstall';
         if (environment.permission === 'denied') return 'denied';
         if (currentBackendSubscription) return 'active';
+        if (hasCachedActive && !hasCheckedInitialState) return 'active';
         if (!environment.supportsPush) return 'unsupported';
         return 'missing';
-    }, [currentBackendSubscription, environment]);
+    }, [
+        currentBackendSubscription,
+        environment,
+        hasCachedActive,
+        hasCheckedInitialState,
+    ]);
 
     const iosInstallSteps = getIosInstallSteps(environment.browserName);
     const isInstalledIosPending =
@@ -109,6 +122,11 @@ const PushNotificationsPanel = ({
     useEffect(() => {
         onReadyChange?.(status === 'active');
     }, [onReadyChange, status]);
+
+    useEffect(() => {
+        setHasCachedActive(hasCachedActivePushSubscription(userId));
+        setHasCheckedInitialState(false);
+    }, [userId]);
 
     const loadPushState = async ({ silent = false } = {}) => {
         if (!authToken) return;
@@ -122,22 +140,37 @@ const PushNotificationsPanel = ({
             ]);
             setConfig(nextConfig);
             setSubscriptions(nextSubscriptions || []);
+            let browserSubscription = null;
             if (nextEnvironment.supportsPush) {
-                const browserSubscription = await getCurrentPushSubscriptionJson();
+                browserSubscription = await getCurrentPushSubscriptionJson();
                 setCurrentSubscription(browserSubscription);
             } else {
                 setCurrentSubscription(null);
             }
+            const hasActiveBrowserSubscription = Boolean(
+                browserSubscription?.endpoint &&
+                    (nextSubscriptions || []).some(
+                        (item) =>
+                            item.enabled &&
+                            item.endpoint === browserSubscription.endpoint
+                    )
+            );
+            setCachedActivePushSubscription(
+                userId,
+                hasActiveBrowserSubscription ? browserSubscription : null
+            );
+            setHasCachedActive(hasActiveBrowserSubscription);
         } catch (error) {
             if (!silent) toast.error(error.message);
         } finally {
+            setHasCheckedInitialState(true);
             if (!silent) setLoading(false);
         }
     };
 
     useEffect(() => {
         loadPushState({ silent: true });
-    }, [authToken]);
+    }, [authToken, userId]);
 
     const handleActivate = async () => {
         try {
@@ -148,7 +181,11 @@ const PushNotificationsPanel = ({
             });
             setSubscriptions(data.subscriptions || []);
             setEnvironment(detectPushEnvironment());
-            setCurrentSubscription(await getCurrentPushSubscriptionJson());
+            const browserSubscription = await getCurrentPushSubscriptionJson();
+            setCurrentSubscription(browserSubscription);
+            setCachedActivePushSubscription(userId, browserSubscription);
+            setHasCachedActive(Boolean(browserSubscription?.endpoint));
+            setHasCheckedInitialState(true);
             localStorage.removeItem('syusoPushReminderDismissedAt');
             toast.success('Notificaciones activadas');
         } catch (error) {
@@ -167,6 +204,17 @@ const PushNotificationsPanel = ({
                 subscriptionId,
             });
             setSubscriptions(data || []);
+            const stillActive = (data || []).some(
+                (item) =>
+                    item.enabled &&
+                    currentSubscription?.endpoint &&
+                    item.endpoint === currentSubscription.endpoint
+            );
+            setCachedActivePushSubscription(
+                userId,
+                stillActive ? currentSubscription : null
+            );
+            setHasCachedActive(stillActive);
             toast.success('Notificaciones desactivadas en ese dispositivo');
         } catch (error) {
             toast.error(error.message);
@@ -183,6 +231,17 @@ const PushNotificationsPanel = ({
                 subscriptionId,
             });
             setSubscriptions(data || []);
+            const stillActive = (data || []).some(
+                (item) =>
+                    item.enabled &&
+                    currentSubscription?.endpoint &&
+                    item.endpoint === currentSubscription.endpoint
+            );
+            setCachedActivePushSubscription(
+                userId,
+                stillActive ? currentSubscription : null
+            );
+            setHasCachedActive(stillActive);
             toast.success('Dispositivo eliminado');
         } catch (error) {
             toast.error(error.message);
@@ -239,6 +298,7 @@ const PushNotificationsPanel = ({
         toast.success('Aplicacion detectada. Ya puedes activar los avisos.');
     };
 
+    if (!hasCheckedInitialState && status === 'missing') return null;
     if (compact && !required && (dismissed || status === 'active')) return null;
 
     return (

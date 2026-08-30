@@ -231,7 +231,7 @@ const ProfileComponent = () => {
 
                 {/* Tarjeta de contraseña + eliminar cuenta */}
                 <div className='profile-side'>
-                    <PushNotificationsPanel />
+                    <PushNotificationsPanel userId={userId} />
 
                     <form
                         className='profile-card'
