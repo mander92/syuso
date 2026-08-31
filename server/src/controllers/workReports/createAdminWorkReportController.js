@@ -53,6 +53,8 @@ const normalizeDateTime = (value) => {
     return `${datePart}T${cleanTime}`;
 };
 
+const toSqlDateTime = (value) => (value ? String(value).replace('T', ' ') : null);
+
 const parseInspectionData = (value) => {
     if (!value) return {};
     if (typeof value === 'object') return value;
@@ -77,10 +79,12 @@ const createAdminWorkReportController = async (req, res, next) => {
         });
         if (error) generateErrorUtil(error.message, 400);
 
+        const { id: userId, role } = req.userLogged;
+
         await ensureServiceDelegationAccessService(
             value.serviceId,
-            req.userLogged.id,
-            req.userLogged.role
+            userId,
+            role
         );
 
         const pool = await getPool();
@@ -106,13 +110,31 @@ const createAdminWorkReportController = async (req, res, next) => {
         );
         if (!service) generateErrorUtil('Servicio no encontrado', 404);
 
+        const incidentStart = normalizeDateTime(value.incidentStart);
+        const incidentEnd = normalizeDateTime(value.incidentEnd);
         const shiftRecordId = uuid();
         await pool.query(
             `
-            INSERT INTO shiftRecords (id, employeeId, serviceId)
-            VALUES (?, ?, ?)
+            INSERT INTO shiftRecords (
+                id,
+                employeeId,
+                serviceId,
+                clockIn,
+                realClockIn,
+                clockOut,
+                realClockOut
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             `,
-            [shiftRecordId, value.employeeId, value.serviceId]
+            [
+                shiftRecordId,
+                value.employeeId,
+                value.serviceId,
+                toSqlDateTime(incidentStart),
+                toSqlDateTime(incidentStart),
+                toSqlDateTime(incidentEnd),
+                toSqlDateTime(incidentEnd),
+            ]
         );
 
         await createShiftRecordAuditLogService({
@@ -128,6 +150,10 @@ const createAdminWorkReportController = async (req, res, next) => {
                 id: shiftRecordId,
                 employeeId: value.employeeId,
                 serviceId: value.serviceId,
+                clockIn: incidentStart,
+                clockOut: incidentEnd,
+                realClockIn: incidentStart,
+                realClockOut: incidentEnd,
             },
             req,
         });
@@ -140,8 +166,6 @@ const createAdminWorkReportController = async (req, res, next) => {
             value.location ||
             `${service.address || ''}${service.city ? `, ${service.city}` : ''}`.trim() ||
             'Servicio';
-        const incidentStart = normalizeDateTime(value.incidentStart);
-        const incidentEnd = normalizeDateTime(value.incidentEnd);
         const isInspection = value.reportType === 'inspection';
         const inspectionData = value.inspectionData || {};
         const inspectionDescription =
@@ -163,6 +187,7 @@ const createAdminWorkReportController = async (req, res, next) => {
             incidentFiles: {},
             inspectionFiles: isInspection ? req.files || {} : {},
             skipVehicleInspection: true,
+            allowClosedShiftRecord: true,
             actor: {
                 userId,
                 role,

@@ -710,6 +710,7 @@ const createWorkReportService = async ({
     reportData,
     inspectionFiles = {},
     skipVehicleInspection = false,
+    allowClosedShiftRecord = false,
     actor = {},
 }) => {
     const pool = await getPool();
@@ -741,7 +742,7 @@ const createWorkReportService = async ({
         generateErrorUtil('Turno invalido', 403);
     }
 
-    if (shift.clockOut) {
+    if (shift.clockOut && !allowClosedShiftRecord) {
         generateErrorUtil('El turno ya esta cerrado', 409);
     }
 
