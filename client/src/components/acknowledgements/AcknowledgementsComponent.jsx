@@ -49,6 +49,9 @@ const AcknowledgementsComponent = () => {
     const [auditRows, setAuditRows] = useState([]);
     const [employees, setEmployees] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [openedAcknowledgements, setOpenedAcknowledgements] = useState(
+        () => new Set()
+    );
     const [auditFilters, setAuditFilters] = useState({
         subjectType: '',
         status: '',
@@ -129,9 +132,21 @@ const AcknowledgementsComponent = () => {
     const handleSeen = async (acknowledgementId) => {
         try {
             await markAcknowledgementSeen(authToken, acknowledgementId);
+            setOpenedAcknowledgements((prev) => {
+                const next = new Set(prev);
+                next.add(acknowledgementId);
+                return next;
+            });
             await loadMine();
         } catch (error) {
             toast.error(error.message);
+        }
+    };
+
+    const handleView = async (item) => {
+        await handleSeen(item.id);
+        if (item.url && item.subjectType !== 'communication') {
+            window.location.href = item.url;
         }
     };
 
@@ -195,43 +210,66 @@ const AcknowledgementsComponent = () => {
                         <p>Cargando...</p>
                     ) : pendingMine.length ? (
                         <div className='acknowledgements__cards'>
-                            {pendingMine.map((item) => (
-                                <article
-                                    key={item.recipientId}
-                                    className='acknowledgement-card'
-                                >
-                                    <div>
-                                        <span>
-                                            {subjectLabels[item.subjectType] ||
-                                                item.subjectType}
-                                        </span>
-                                        <h4>{item.title}</h4>
-                                        <p>{item.message}</p>
-                                    </div>
-                                    <small>
-                                        Enviado: {formatDate(item.createdAt)}
-                                    </small>
-                                    <div className='acknowledgement-card__actions'>
-                                        {item.url ? (
+                            {pendingMine.map((item) => {
+                                const isCommunication =
+                                    item.subjectType === 'communication';
+                                const isOpened =
+                                    Boolean(item.seenAt) ||
+                                    openedAcknowledgements.has(item.id);
+                                const canShowMessage =
+                                    !isCommunication || isOpened;
+                                const canAccept =
+                                    !isCommunication || isOpened;
+
+                                return (
+                                    <article
+                                        key={item.recipientId}
+                                        className='acknowledgement-card'
+                                    >
+                                        <div>
+                                            <span>
+                                                {subjectLabels[
+                                                    item.subjectType
+                                                ] || item.subjectType}
+                                            </span>
+                                            <h4>{item.title}</h4>
+                                            {canShowMessage ? (
+                                                <p>
+                                                    {item.message ||
+                                                        'Sin mensaje adicional.'}
+                                                </p>
+                                            ) : (
+                                                <p className='acknowledgement-card__hidden-message'>
+                                                    Comunicacion pendiente de abrir.
+                                                </p>
+                                            )}
+                                        </div>
+                                        <small>
+                                            Enviado: {formatDate(item.createdAt)}
+                                        </small>
+                                        <div className='acknowledgement-card__actions'>
                                             <button
                                                 type='button'
-                                                onClick={async () => {
-                                                    await handleSeen(item.id);
-                                                    window.location.href = item.url;
-                                                }}
+                                                onClick={() => handleView(item)}
                                             >
                                                 Ver
                                             </button>
-                                        ) : null}
-                                        <button
-                                            type='button'
-                                            onClick={() => handleAccept(item.id)}
-                                        >
-                                            Aceptar acuse
-                                        </button>
-                                    </div>
-                                </article>
-                            ))}
+                                            <button
+                                                type='button'
+                                                onClick={() => handleAccept(item.id)}
+                                                disabled={!canAccept}
+                                                title={
+                                                    canAccept
+                                                        ? undefined
+                                                        : 'Primero abre la comunicacion'
+                                                }
+                                            >
+                                                Aceptar acuse
+                                            </button>
+                                        </div>
+                                    </article>
+                                );
+                            })}
                         </div>
                     ) : (
                         <p>No tienes acuses pendientes.</p>
@@ -388,21 +426,31 @@ const AcknowledgementsComponent = () => {
                                           : 'Pendiente';
                                     return (
                                         <tr key={row.recipientId}>
-                                            <td>{formatDate(row.createdAt)}</td>
-                                            <td>
+                                            <td data-label='Fecha'>
+                                                {formatDate(row.createdAt)}
+                                            </td>
+                                            <td data-label='Tipo'>
                                                 {subjectLabels[
                                                     row.subjectType
                                                 ] || row.subjectType}
                                             </td>
-                                            <td>{row.title}</td>
-                                            <td>
+                                            <td data-label='Asunto'>
+                                                {row.title}
+                                            </td>
+                                            <td data-label='Trabajador'>
                                                 {employeeName}
                                                 <small>{row.email}</small>
                                             </td>
-                                            <td>{status}</td>
-                                            <td>{formatDate(row.seenAt)}</td>
-                                            <td>{formatDate(row.acceptedAt)}</td>
-                                            <td>{row.lastIp || '-'}</td>
+                                            <td data-label='Estado'>{status}</td>
+                                            <td data-label='Visto'>
+                                                {formatDate(row.seenAt)}
+                                            </td>
+                                            <td data-label='Aceptado'>
+                                                {formatDate(row.acceptedAt)}
+                                            </td>
+                                            <td data-label='IP'>
+                                                {row.lastIp || '-'}
+                                            </td>
                                         </tr>
                                     );
                                 })}

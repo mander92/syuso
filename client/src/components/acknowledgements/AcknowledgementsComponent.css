@@ -2,6 +2,7 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    min-width: 0;
     width: 100%;
 }
 
@@ -82,6 +83,7 @@
     border-radius: 8px;
     display: grid;
     gap: 0.65rem;
+    min-width: 0;
     padding: 0.85rem;
 }
 
@@ -102,6 +104,14 @@
     font-size: 0.92rem;
     line-height: 1.4;
     overflow-wrap: anywhere;
+}
+
+.acknowledgement-card__hidden-message {
+    background: #f3f6fa;
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
+    color: #50617a;
+    padding: 0.65rem;
 }
 
 .acknowledgement-card small,
@@ -132,6 +142,11 @@
     cursor: pointer;
     font-weight: 800;
     padding: 0.55rem 0.9rem;
+}
+
+.acknowledgements button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
 }
 
 .acknowledgements__form label {
@@ -168,10 +183,21 @@
     display: flex;
     flex-direction: row;
     gap: 0.5rem;
+    min-width: 0;
 }
 
 .acknowledgements__recipients input {
+    flex: 0 0 auto;
     width: auto;
+}
+
+.acknowledgements__recipients span {
+    min-width: 0;
+}
+
+.acknowledgements__recipients strong,
+.acknowledgements__recipients small {
+    overflow-wrap: anywhere;
 }
 
 .acknowledgements__table-wrap {
@@ -200,6 +226,10 @@
 }
 
 @media (max-width: 720px) {
+    .acknowledgements {
+        gap: 0.75rem;
+    }
+
     .acknowledgements__header,
     .acknowledgements__audit-header,
     .acknowledgement-card__actions {
@@ -207,9 +237,115 @@
         flex-direction: column;
     }
 
+    .acknowledgements__header,
+    .acknowledgements__panel {
+        border-radius: 8px;
+        padding: 0.85rem;
+    }
+
+    .acknowledgements__header {
+        gap: 0.75rem;
+    }
+
+    .acknowledgements__header h2 {
+        font-size: 1.2rem;
+        line-height: 1.15;
+    }
+
+    .acknowledgements__header span {
+        align-self: flex-start;
+        font-size: 0.85rem;
+    }
+
+    .acknowledgement-card {
+        padding: 0.75rem;
+    }
+
+    .acknowledgement-card h4 {
+        font-size: 0.96rem;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+    }
+
+    .acknowledgement-card p {
+        font-size: 0.88rem;
+    }
+
+    .acknowledgement-card__actions {
+        gap: 0.45rem;
+    }
+
+    .acknowledgement-card__actions button,
+    .acknowledgements__form > button {
+        justify-content: center;
+        min-height: 42px;
+        width: 100%;
+    }
+
     .acknowledgements__audit-header div {
         align-items: stretch;
         flex-direction: column;
         width: 100%;
+    }
+
+    .acknowledgements__recipients {
+        max-height: 220px;
+    }
+
+    .acknowledgements__table-wrap {
+        overflow: visible;
+    }
+
+    .acknowledgements__table {
+        border-collapse: separate;
+        border-spacing: 0 0.7rem;
+        min-width: 0;
+    }
+
+    .acknowledgements__table thead {
+        display: none;
+    }
+
+    .acknowledgements__table,
+    .acknowledgements__table tbody,
+    .acknowledgements__table tr,
+    .acknowledgements__table td {
+        display: block;
+        width: 100%;
+    }
+
+    .acknowledgements__table tr {
+        background: #ffffff;
+        border: 1px solid #dbe3ef;
+        border-radius: 8px;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+        overflow: hidden;
+    }
+
+    .acknowledgements__table td {
+        align-items: flex-start;
+        border-bottom: 1px solid #edf2f7;
+        box-sizing: border-box;
+        display: grid;
+        gap: 0.35rem;
+        grid-template-columns: minmax(84px, 0.38fr) minmax(0, 1fr);
+        padding: 0.55rem 0.65rem;
+        overflow-wrap: anywhere;
+    }
+
+    .acknowledgements__table td::before {
+        color: #50617a;
+        content: attr(data-label);
+        font-size: 0.72rem;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    .acknowledgements__table td:last-child {
+        border-bottom: none;
+    }
+
+    .acknowledgements__table small {
+        margin-top: 0.15rem;
     }
 }

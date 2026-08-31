@@ -17,6 +17,12 @@ const normalizeUserIds = (userIds = []) => [
     ...new Set([].concat(userIds || []).filter(Boolean)),
 ];
 
+const getNotificationBody = (acknowledgement = {}) =>
+    acknowledgement.subjectType === 'communication'
+        ? 'Tienes una comunicacion pendiente de acuse.'
+        : acknowledgement.message ||
+          'Tienes una comunicacion pendiente de acuse.';
+
 const insertRecipientEvent = async (pool, recipientId, eventType, meta = {}) => {
     await pool.query(
         `
@@ -45,9 +51,7 @@ const emitAcknowledgementCreated = (acknowledgement, recipientUserIds = []) => {
         subjectType: acknowledgement.subjectType,
         subjectId: acknowledgement.subjectId || null,
         title: acknowledgement.title || 'Acuse pendiente',
-        message:
-            acknowledgement.message ||
-            'Tienes una comunicacion pendiente de acuse.',
+        message: getNotificationBody(acknowledgement),
         url: acknowledgement.url || '/account',
         requiresAcceptance: Boolean(acknowledgement.requiresAcceptance),
         createdAt: acknowledgement.createdAt || new Date().toISOString(),
@@ -151,7 +155,10 @@ export const createAcknowledgementService = async ({
             acknowledgementId,
             recipients,
             title: safeTitle,
-            message,
+            message:
+                subjectType === 'communication'
+                    ? 'Tienes una comunicacion pendiente de acuse.'
+                    : message,
             url,
         });
     }
@@ -212,7 +219,7 @@ export const createAcknowledgementOnceService = async (payload) => {
                 acknowledgementId,
                 recipients: newRecipients,
                 title: acknowledgement.title,
-                message: acknowledgement.message,
+                message: getNotificationBody(acknowledgement),
                 url: acknowledgement.url,
             });
         }
@@ -270,7 +277,13 @@ export const listAcknowledgementsAuditService = async ({
             a.subjectType,
             a.subjectId,
             a.title,
-            a.message,
+            CASE
+                WHEN a.subjectType = 'communication'
+                 AND ar.seenAt IS NULL
+                 AND ar.acceptedAt IS NULL
+                THEN NULL
+                ELSE a.message
+            END AS message,
             a.url,
             a.requiresAcceptance,
             a.createdAt,
@@ -310,7 +323,13 @@ export const listMyAcknowledgementsService = async (userId) => {
             a.subjectType,
             a.subjectId,
             a.title,
-            a.message,
+            CASE
+                WHEN a.subjectType = 'communication'
+                 AND ar.seenAt IS NULL
+                 AND ar.acceptedAt IS NULL
+                THEN NULL
+                ELSE a.message
+            END AS message,
             a.url,
             a.requiresAcceptance,
             a.createdAt,
