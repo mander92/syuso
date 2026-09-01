@@ -3591,7 +3591,7 @@ const ScheduleComponent = () => {
                                     </label>
                                 </>
                             )}
-                            <label>
+                            <label className='service-schedule-modal-field--full'>
                                 Trabajador
                                 <input
                                     type='search'
@@ -3667,6 +3667,9 @@ const ScheduleComponent = () => {
                                                                 {employee.assignedToService
                                                                     ? 'Asignado'
                                                                     : 'Misma delegacion'}
+                                                                {' · Descanso '}
+                                                                {employee.minRestHours || 12}
+                                                                h
                                                             </small>
                                                         </button>
                                                     );

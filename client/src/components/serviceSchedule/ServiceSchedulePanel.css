@@ -658,6 +658,120 @@
     justify-content: flex-end;
 }
 
+@media (max-width: 720px) {
+    .service-schedule-modal-overlay {
+        align-items: flex-end;
+        padding: 8px;
+    }
+
+    .service-schedule-modal-overlay--shift-editor {
+        padding-bottom: max(8px, env(safe-area-inset-bottom));
+    }
+
+    .service-schedule-modal {
+        border-radius: 14px 14px 0 0;
+        gap: 10px;
+        max-height: calc(100dvh - 16px);
+        overflow-y: auto;
+        padding: 12px;
+        width: 100%;
+    }
+
+    .service-schedule-modal-header {
+        align-items: flex-start;
+        gap: 8px;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #ffffff;
+        padding-bottom: 6px;
+    }
+
+    .service-schedule-modal-header h3 {
+        font-size: 1rem;
+        line-height: 1.15;
+    }
+
+    .service-schedule-modal-header p {
+        font-size: 0.78rem;
+        line-height: 1.25;
+    }
+
+    .service-schedule-modal-close {
+        flex: 0 0 34px;
+        height: 34px;
+        width: 34px;
+    }
+
+    .service-schedule-modal-grid {
+        gap: 8px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .service-schedule-modal-grid label {
+        font-size: 0.78rem;
+        gap: 4px;
+        min-width: 0;
+    }
+
+    .service-schedule-modal-grid label:first-child,
+    .service-schedule-modal-grid label:nth-last-child(1),
+    .service-schedule-modal-grid .service-schedule-modal-field--full {
+        grid-column: 1 / -1;
+    }
+
+    .service-schedule-modal-grid input,
+    .service-schedule-modal-grid select {
+        box-sizing: border-box;
+        font-size: 0.85rem;
+        min-width: 0;
+        padding: 7px 8px;
+        width: 100%;
+    }
+
+    .service-schedule-employee-suggestions {
+        gap: 6px;
+        padding: 8px;
+    }
+
+    .service-schedule-employee-suggestions__title {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .service-schedule-employee-suggestions__list {
+        display: grid;
+        gap: 6px;
+        grid-template-columns: 1fr;
+        max-height: 150px;
+        overflow-y: auto;
+    }
+
+    .service-schedule-employee-suggestions__chip {
+        min-width: 0;
+        padding: 7px 8px;
+        width: 100%;
+    }
+
+    .service-schedule-modal-actions {
+        background: #ffffff;
+        bottom: 0;
+        display: grid;
+        gap: 8px;
+        grid-template-columns: 1fr;
+        padding-top: 6px;
+        position: sticky;
+        z-index: 2;
+    }
+
+    .service-schedule-modal-actions button {
+        justify-content: center;
+        min-height: 40px;
+        width: 100%;
+    }
+}
+
 .shift-overlap-modal {
     position: fixed;
     inset: 0;
