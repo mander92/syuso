@@ -161,14 +161,15 @@ const createPdf = async ({ rows, summary, month }) => {
 
     const drawHeader = () => {
         let x = doc.page.margins.left;
+        const headerY = doc.y;
         doc.font('Helvetica-Bold').fontSize(8).fillColor('#0f172a');
         columns.forEach(([label, width]) => {
-            doc.text(label, x, doc.y, { width });
+            doc.text(label, x, headerY, { width, height: 12 });
             x += width;
         });
-        doc.moveDown(0.6);
+        doc.y = headerY + 14;
         doc.moveTo(doc.page.margins.left, doc.y).lineTo(560, doc.y).stroke('#cbd5e1');
-        doc.moveDown(0.4);
+        doc.y += 8;
     };
 
     drawHeader();
@@ -188,15 +189,17 @@ const createPdf = async ({ rows, summary, month }) => {
             row.differenceLabel,
         ];
         let x = doc.page.margins.left;
+        const rowY = doc.y;
+        const rowHeight = 30;
         doc.font('Helvetica').fontSize(7).fillColor('#0f172a');
         values.forEach((value, index) => {
-            doc.text(String(value || '-'), x, doc.y, {
+            doc.text(String(value || '-'), x, rowY, {
                 width: columns[index][1],
-                height: 24,
+                height: rowHeight,
             });
             x += columns[index][1];
         });
-        doc.moveDown(1.5);
+        doc.y = rowY + rowHeight + 6;
     });
 
     doc.end();
