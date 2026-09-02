@@ -33,7 +33,7 @@ const dashboardPermissionGroups = [
             { id: 'contracts', label: 'Servicios' },
             { id: 'schedules', label: 'Cuadrantes' },
             { id: 'shifts', label: 'Turnos' },
-            { id: 'timeRecords', label: 'Registro horario' },
+            { id: 'timeRecords', label: 'Registro horario / Mi registro horario' },
             { id: 'shiftAudit', label: 'Auditoria fichajes' },
             { id: 'shiftSwaps', label: 'Cambios de turno' },
             { id: 'employeeRequests', label: 'Peticiones' },
@@ -47,7 +47,7 @@ const dashboardPermissionGroups = [
             { id: 'clients', label: 'Clientes' },
             { id: 'warehouse', label: 'Almacen' },
             { id: 'vehicles', label: 'Vehiculos' },
-            { id: 'payrolls', label: 'Nominas' },
+            { id: 'payrolls', label: 'Nominas / Mis nominas' },
             { id: 'salaries', label: 'Sueldos' },
             { id: 'billing', label: 'Facturacion' },
         ],
@@ -64,6 +64,8 @@ const dashboardPermissionGroups = [
         title: 'Gestion',
         options: [
             { id: 'users', label: 'Permisos de usuarios' },
+            { id: 'dataProcessing', label: 'Tratamiento datos', locked: true },
+            { id: 'profile', label: 'Mi perfil', locked: true },
             { id: 'cleanup', label: 'Limpieza' },
             { id: 'cv', label: 'CV' },
         ],
@@ -73,7 +75,7 @@ const dashboardPermissionGroups = [
         options: [
             { id: 'services', label: 'Mis servicios / servicios activos' },
             { id: 'schedule', label: 'Mi cuadrante' },
-            { id: 'timeRecords', label: 'Mi registro horario' },
+            { id: 'documentations', label: 'Mi documentacion' },
         ],
     },
 ];
@@ -119,6 +121,8 @@ const defaultDashboardPermissionsByRole = {
     ],
     client: ['contracts', 'services'],
 };
+
+const alwaysAvailableDashboardPermissions = ['profile', 'dataProcessing'];
 
 const parseDashboardPermissions = (value) => {
     if (Array.isArray(value)) return value;
@@ -657,6 +661,8 @@ const AdminUsersSection = () => {
     // Crear usuario nuevo (ADMIN)
     // ===============================
     const handleDashboardPermissionToggle = (target, permissionId) => {
+        if (alwaysAvailableDashboardPermissions.includes(permissionId)) return;
+
         const setter =
             target === 'new' ? setNewUser : setEditingUser;
 
@@ -676,7 +682,10 @@ const AdminUsersSection = () => {
     };
 
     const renderDashboardPermissionGroups = (target, permissions) => {
-        const selectedPermissions = parseDashboardPermissions(permissions);
+        const selectedPermissions = new Set([
+            ...parseDashboardPermissions(permissions),
+            ...alwaysAvailableDashboardPermissions,
+        ]);
 
         return dashboardPermissionGroups.map((group) => (
             <div
@@ -694,9 +703,8 @@ const AdminUsersSection = () => {
                         >
                             <input
                                 type='checkbox'
-                                checked={selectedPermissions.includes(
-                                    option.id
-                                )}
+                                checked={selectedPermissions.has(option.id)}
+                                disabled={option.locked}
                                 onChange={() =>
                                     handleDashboardPermissionToggle(
                                         target,
@@ -1353,9 +1361,10 @@ const AdminUsersSection = () => {
                                         )}
                                     </div>
                                     <p className='admin-users-permissions-note'>
-                                        Mi perfil siempre queda disponible. Los
-                                        permisos solo muestran u ocultan
-                                        secciones compatibles con el rol.
+                                        Mi perfil y Tratamiento datos siempre
+                                        quedan disponibles. Los permisos solo
+                                        muestran u ocultan secciones compatibles
+                                        con el rol.
                                     </p>
                                 </div>
                             )}
@@ -1836,7 +1845,7 @@ const AdminUsersSection = () => {
                                                                                     )}
                                                                                 </div>
                                                                                 <p className='admin-users-permissions-note'>
-                                                                                    Mi perfil siempre queda disponible. Los permisos solo muestran u ocultan secciones compatibles con el rol.
+                                                                                    Mi perfil y Tratamiento datos siempre quedan disponibles. Los permisos solo muestran u ocultan secciones compatibles con el rol.
                                                                                 </p>
                                                                             </div>
                                                                         )}
