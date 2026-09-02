@@ -2,6 +2,19 @@ import listTimeRecordReportService from '../../services/timeRecords/listTimeReco
 import selectAdminDelegationNamesService from '../../services/delegations/selectAdminDelegationNamesService.js';
 import selectDelegationByIdService from '../../services/delegations/selectDelegationByIdService.js';
 import generateErrorUtil from '../../utils/generateErrorUtil.js';
+import selectUserByIdService from '../../services/users/selectUserByIdService.js';
+
+const parseDashboardPermissions = (value) => {
+    if (value === null || value === undefined || value === '') return null;
+    if (Array.isArray(value)) return value;
+    if (typeof value !== 'string') return null;
+    try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+};
 
 const listTimeRecordReportController = async (req, res, next) => {
     try {
@@ -21,6 +34,16 @@ const listTimeRecordReportController = async (req, res, next) => {
 
         if (!isAdmin && !isEmployee) {
             generateErrorUtil('Acceso denegado', 403);
+        }
+
+        if (normalizedRole !== 'sudo') {
+            const currentUser = await selectUserByIdService(userId);
+            const permissions = parseDashboardPermissions(
+                currentUser?.dashboardPermissions
+            );
+            if (permissions !== null && !permissions.includes('timeRecords')) {
+                generateErrorUtil('No tienes permiso para ver el registro horario', 403);
+            }
         }
         let allowedDelegations = [];
 
