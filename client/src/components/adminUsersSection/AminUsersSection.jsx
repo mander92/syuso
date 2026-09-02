@@ -33,6 +33,8 @@ const dashboardPermissionGroups = [
             { id: 'contracts', label: 'Servicios' },
             { id: 'schedules', label: 'Cuadrantes' },
             { id: 'shifts', label: 'Turnos' },
+            { id: 'timeRecords', label: 'Registro horario' },
+            { id: 'shiftAudit', label: 'Auditoria fichajes' },
             { id: 'shiftSwaps', label: 'Cambios de turno' },
             { id: 'employeeRequests', label: 'Peticiones' },
             { id: 'workReports', label: 'Partes de trabajo' },
@@ -71,6 +73,7 @@ const dashboardPermissionGroups = [
         options: [
             { id: 'services', label: 'Mis servicios / servicios activos' },
             { id: 'schedule', label: 'Mi cuadrante' },
+            { id: 'timeRecords', label: 'Mi registro horario' },
         ],
     },
 ];
@@ -85,6 +88,8 @@ const defaultDashboardPermissionsByRole = {
         'contracts',
         'schedules',
         'shifts',
+        'timeRecords',
+        'shiftAudit',
         'shiftSwaps',
         'employeeRequests',
         'chats',
@@ -103,6 +108,7 @@ const defaultDashboardPermissionsByRole = {
     employee: [
         'services',
         'schedule',
+        'timeRecords',
         'shiftSwaps',
         'employeeRequests',
         'documentations',

@@ -248,6 +248,28 @@ export const fetchShiftRecordAuditLogs = async (
     return body.data;
 };
 
+export const fetchTimeRecordReport = async (
+    searchParamsToString,
+    authToken
+) => {
+    const res = await fetch(
+        `${VITE_API_URL}/shiftRecords/time-report?${searchParamsToString}`,
+        {
+            headers: {
+                Authorization: authToken,
+            },
+        }
+    );
+
+    const body = await res.json();
+
+    if (body.status === 'error') {
+        throw new Error(body.message);
+    }
+
+    return body.data;
+};
+
 export const fetchCreateAdminWorkReport = async (authToken, payload) => {
     const isFormData = payload instanceof FormData;
     const res = await fetch(`${VITE_API_URL}/workReports/admin`, {

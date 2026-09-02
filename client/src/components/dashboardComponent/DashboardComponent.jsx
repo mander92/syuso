@@ -17,6 +17,7 @@ import ScheduleComponent from '../adminScheduleSection/ScheduleComponent.jsx';
 import ShiftComponent from '../adminShiftSection/ShiftComponent.jsx';
 import WorkReportsComponent from '../adminWorkReportsSection/WorkReportsComponent.jsx';
 import ShiftRecordAuditComponent from '../shiftRecordAudit/ShiftRecordAuditComponent.jsx';
+import TimeRecordReportComponent from '../timeRecords/TimeRecordReportComponent.jsx';
 import AdminCleanupSection from '../adminCleanupSection/AdminCleanupSection.jsx';
 import AdminCvSection from '../adminCvSection/AdminCvSection.jsx';
 import ShiftSwapsComponent from '../shiftSwaps/ShiftSwapsComponent.jsx';
@@ -67,6 +68,7 @@ const operativeSectionIds = [
     'contracts',
     'schedules',
     'shifts',
+    'timeRecords',
     'shiftAudit',
     'shiftSwaps',
     'employeeRequests',
@@ -275,6 +277,7 @@ const DashboardComponent = () => {
                 { id: 'contracts', label: 'Servicios' },
                 { id: 'schedules', label: 'Cuadrantes' },
                 { id: 'shifts', label: 'Turnos' },
+                { id: 'timeRecords', label: 'Registro horario' },
                 { id: 'shiftAudit', label: 'Auditoria fichajes' },
                 { id: 'shiftSwaps', label: 'Cambios de turno' },
                 { id: 'employeeRequests', label: 'Peticiones' },
@@ -314,6 +317,7 @@ const DashboardComponent = () => {
             roleSections = [
                 { id: 'services', label: 'Mis servicios' },
                 { id: 'schedule', label: 'Mi cuadrante' },
+                { id: 'timeRecords', label: 'Mi registro horario' },
                 { id: 'shiftSwaps', label: 'Cambios de turno' },
                 { id: 'employeeRequests', label: 'Peticiones' },
                 { id: 'documentations', label: 'Mi documentacion' },
@@ -328,6 +332,7 @@ const DashboardComponent = () => {
             roleSections = [
                 { id: 'services', label: 'Mis servicios' },
                 { id: 'schedule', label: 'Mi cuadrante' },
+                { id: 'timeRecords', label: 'Mi registro horario' },
                 { id: 'shiftSwaps', label: 'Cambios de turno' },
                 { id: 'employeeRequests', label: 'Peticiones' },
                { id: 'documentations', label: 'Mi documentacion' },
@@ -591,7 +596,14 @@ const DashboardComponent = () => {
                 id: 'operative',
                 label: 'Operativa',
                 icon: FaBriefcase,
-                ids: ['services', 'contracts', 'schedule', 'shiftSwaps', 'employeeRequests'],
+                ids: [
+                    'services',
+                    'contracts',
+                    'schedule',
+                    'timeRecords',
+                    'shiftSwaps',
+                    'employeeRequests',
+                ],
             }),
             buildGroup({
                 id: 'administration',
@@ -857,6 +869,12 @@ const DashboardComponent = () => {
                 return <ShiftComponent />;
             case 'shiftAudit':
                 return <ShiftRecordAuditComponent />;
+            case 'timeRecords':
+                return (
+                    <TimeRecordReportComponent
+                        mode={isAdminLike ? 'admin' : 'employee'}
+                    />
+                );
             case 'schedules':
                 return <ScheduleComponent />;
 

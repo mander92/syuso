@@ -1,0 +1,198 @@
+.time-record-report {
+    box-sizing: border-box;
+    display: grid;
+    gap: 16px;
+    min-width: 0;
+    width: 100%;
+}
+
+.time-record-report__header {
+    align-items: flex-start;
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+}
+
+.time-record-report__header h2,
+.time-record-report__legal h3 {
+    color: #0f172a;
+    margin: 0;
+}
+
+.time-record-report__header p,
+.time-record-report__legal p {
+    color: #475569;
+    font-size: 0.92rem;
+    line-height: 1.45;
+    margin: 6px 0 0;
+}
+
+.time-record-report__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.time-record-report button {
+    background: #0f172a;
+    border: 0;
+    border-radius: 999px;
+    color: #ffffff;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.86rem;
+    font-weight: 800;
+    padding: 8px 14px;
+}
+
+.time-record-report button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.time-record-report__filters {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    padding: 14px;
+}
+
+.time-record-report__filters label {
+    color: #334155;
+    display: grid;
+    font-size: 0.82rem;
+    font-weight: 800;
+    gap: 5px;
+}
+
+.time-record-report__filters input {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    color: #0f172a;
+    min-width: 0;
+    padding: 8px 10px;
+}
+
+.time-record-report__summary {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.time-record-report__summary article,
+.time-record-report__legal {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 14px;
+}
+
+.time-record-report__summary span {
+    color: #64748b;
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 800;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
+
+.time-record-report__summary strong {
+    color: #0f172a;
+    font-size: 1.4rem;
+}
+
+.time-record-report__table-wrap {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: auto;
+}
+
+.time-record-report__table {
+    border-collapse: collapse;
+    min-width: 980px;
+    width: 100%;
+}
+
+.time-record-report__table th,
+.time-record-report__table td {
+    border-bottom: 1px solid #e2e8f0;
+    color: #0f172a;
+    font-size: 0.82rem;
+    padding: 10px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.time-record-report__table th {
+    background: #f8fafc;
+    font-weight: 900;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.time-record-report__table td span {
+    color: #64748b;
+    display: block;
+    font-size: 0.76rem;
+    margin-top: 3px;
+}
+
+.time-record-status {
+    border-radius: 999px;
+    display: inline-block;
+    font-weight: 900;
+    padding: 5px 9px;
+}
+
+.time-record-status--ok {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.time-record-status--warning {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.time-record-status--issue {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.time-record-report__maps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.time-record-report__maps a {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 999px;
+    color: #1e3a8a;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 5px 8px;
+    text-decoration: none;
+}
+
+@media (max-width: 720px) {
+    .time-record-report__header {
+        display: grid;
+    }
+
+    .time-record-report__actions,
+    .time-record-report button {
+        width: 100%;
+    }
+
+    .time-record-report__table-wrap {
+        margin-inline: -4px;
+    }
+}

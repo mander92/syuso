@@ -12,6 +12,7 @@ import downloadWorkReportsZipController from '../controllers/workReports/downloa
 import downloadWorkReportPdfController from '../controllers/workReports/downloadWorkReportPdfController.js';
 import deleteWorkReportsController from '../controllers/workReports/deleteWorkReportsController.js';
 import createAdminWorkReportController from '../controllers/workReports/createAdminWorkReportController.js';
+import listTimeRecordReportController from '../controllers/timeRecords/listTimeRecordReportController.js';
 
 import {
     newShiftRecordController,
@@ -41,6 +42,12 @@ router.get(
     authUser,
     isAdmin,
     listShiftRecordAuditLogsController
+);
+
+router.get(
+    '/shiftRecords/time-report',
+    authUser,
+    listTimeRecordReportController
 );
 
 router.get(
