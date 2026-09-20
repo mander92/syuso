@@ -81,7 +81,7 @@ const sendMail = async (
         return true;
     } catch (e) {
         console.log('===== mail NO enviado =====');
-        console.error(e?.response?.body || e);
+        console.error(e?.body || e?.response?.body || e);
         if (options.throwOnError) throw e;
         return false;
     }

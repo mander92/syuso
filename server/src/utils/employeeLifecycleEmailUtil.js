@@ -61,9 +61,18 @@ const renderDetailsList = (items) =>
         .join('');
 
 const getMailErrorMessage = (error) => {
-    const body = error?.response?.body;
+    const rawBody = error?.body ?? error?.response?.body ?? error?.response?.data;
+    let body = rawBody;
+    if (typeof rawBody === 'string') {
+        try {
+            body = JSON.parse(rawBody);
+        } catch {
+            body = rawBody;
+        }
+    }
     if (body?.message) return body.message;
     if (body?.code) return body.code;
+    if (typeof body === 'string' && body.trim()) return body;
     if (error?.message) return error.message;
     return 'error desconocido';
 };
@@ -191,10 +200,11 @@ export const sendEmployeeLifecycleEmail = async ({
     const failedDetails = [];
     for (const email of recipients) {
         try {
-            await sendMail(employeeName, email, subject, body, attachments, {
+            const sent = await sendMail(employeeName, email, subject, body, attachments, {
                 cc: ccRecipients,
                 throwOnError: true,
             });
+            if (!sent) throw new Error('El servicio de correo no esta configurado');
         } catch (error) {
             failed.push(email);
             failedDetails.push({
