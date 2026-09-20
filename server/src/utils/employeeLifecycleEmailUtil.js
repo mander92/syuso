@@ -77,6 +77,33 @@ const getMailErrorMessage = (error) => {
     return 'error desconocido';
 };
 
+// Base64 increases the payload by roughly a third; leave room for message and API overhead.
+const maxAttachmentBytesPerMail = 12 * 1024 * 1024;
+
+const groupAttachments = (attachments) => {
+    const groups = [[]];
+    let groupBytes = 0;
+
+    for (const attachment of attachments) {
+        const bytes = attachment.path
+            ? fs.statSync(attachment.path).size
+            : Buffer.byteLength(attachment.content || '', 'base64');
+        if (bytes > maxAttachmentBytesPerMail) {
+            throw new Error(
+                `El archivo ${attachment.filename || attachment.name || 'adjunto'} supera el tamano permitido para un correo. Reduce su tamano antes de enviarlo.`
+            );
+        }
+        if (groupBytes + bytes > maxAttachmentBytesPerMail) {
+            groups.push([]);
+            groupBytes = 0;
+        }
+        groups[groups.length - 1].push(attachment);
+        groupBytes += bytes;
+    }
+
+    return groups;
+};
+
 const addAttachmentIfExists = (attachments, relativePath, filename) => {
     if (!relativePath) return;
     const filePath = getEmployeeDocumentationFilePath(relativePath);
@@ -198,13 +225,40 @@ export const sendEmployeeLifecycleEmail = async ({
 
     const failed = [];
     const failedDetails = [];
+    let attachmentGroups;
+    try {
+        attachmentGroups = groupAttachments(attachments);
+    } catch (error) {
+        return {
+            recipients,
+            ccRecipients,
+            failed: recipients,
+            failedDetails: recipients.map((email) => ({
+                email,
+                reason: getMailErrorMessage(error),
+            })),
+        };
+    }
     for (const email of recipients) {
         try {
-            const sent = await sendMail(employeeName, email, subject, body, attachments, {
-                cc: ccRecipients,
-                throwOnError: true,
-            });
-            if (!sent) throw new Error('El servicio de correo no esta configurado');
+            for (const [index, group] of attachmentGroups.entries()) {
+                const part = attachmentGroups.length > 1
+                    ? ` (parte ${index + 1}/${attachmentGroups.length})`
+                    : '';
+                try {
+                    const sent = await sendMail(
+                        employeeName,
+                        email,
+                        `${subject}${part}`,
+                        body,
+                        group,
+                        { cc: ccRecipients, throwOnError: true }
+                    );
+                    if (!sent) throw new Error('El servicio de correo no esta configurado');
+                } catch (error) {
+                    throw new Error(`${part.trim() || 'Correo'}: ${getMailErrorMessage(error)}`);
+                }
+            }
         } catch (error) {
             failed.push(email);
             failedDetails.push({
