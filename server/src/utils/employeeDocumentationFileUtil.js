@@ -23,7 +23,37 @@ const allowedSignatureDocumentMimeTypes = new Map([
     ['image/jpeg', 'jpg'],
     ['image/png', 'png'],
     ['image/webp', 'webp'],
+    ['image/heic', 'heic'],
+    ['image/heic-sequence', 'heic'],
+    ['image/heif', 'heif'],
+    ['image/heif-sequence', 'heif'],
 ]);
+
+const allowedDocumentationExtensions = new Set([
+    'pdf',
+    'png',
+    'jpg',
+    'jpeg',
+    'webp',
+    'heic',
+    'heif',
+]);
+
+const getUploadedFileExtension = (file, extensionByMime) => {
+    const mimeExtension = extensionByMime.get(file?.mimetype);
+    if (mimeExtension) return mimeExtension;
+
+    if (file?.mimetype && file.mimetype !== 'application/octet-stream') {
+        return null;
+    }
+
+    const fileExtension = path
+        .extname(file?.name || '')
+        .slice(1)
+        .toLowerCase();
+    if (!allowedDocumentationExtensions.has(fileExtension)) return null;
+    return fileExtension === 'jpeg' ? 'jpg' : fileExtension;
+};
 
 const ensureDir = async (dir) => {
     await fs.mkdir(dir, { recursive: true });
@@ -36,15 +66,17 @@ export const saveEmployeeDocumentationFile = async (file, userId, field) => {
 
     if (!file) return null;
 
-    const extensionByMime = {
-        'application/pdf': 'pdf',
-        'image/png': 'png',
-        'image/jpeg': 'jpg',
-        'image/webp': 'webp',
-        'image/heic': 'heic',
-        'image/heif': 'heif',
-    };
-    const extension = extensionByMime[file.mimetype];
+    const extensionByMime = new Map([
+        ['application/pdf', 'pdf'],
+        ['image/png', 'png'],
+        ['image/jpeg', 'jpg'],
+        ['image/webp', 'webp'],
+        ['image/heic', 'heic'],
+        ['image/heic-sequence', 'heic'],
+        ['image/heif', 'heif'],
+        ['image/heif-sequence', 'heif'],
+    ]);
+    const extension = getUploadedFileExtension(file, extensionByMime);
 
     if (!extension) {
         generateErrorUtil(
@@ -81,7 +113,10 @@ export const getEmployeeDocumentationFilePath = (relativePath) => {
 export const saveEmployeeSignatureDocumentFile = async (file, employeeId) => {
     if (!file) return null;
 
-    const extension = allowedSignatureDocumentMimeTypes.get(file.mimetype);
+    const extension = getUploadedFileExtension(
+        file,
+        allowedSignatureDocumentMimeTypes
+    );
     if (!extension) {
         generateErrorUtil('El documento debe ser PDF, DOC, DOCX o imagen', 400);
     }

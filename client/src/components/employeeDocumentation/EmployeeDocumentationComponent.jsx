@@ -3095,7 +3095,7 @@ const EmployeeDocumentationComponent = ({
                                             <>
                                                 <input
                                                     type='file'
-                                                    accept='.pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png,image/webp'
+                                                    accept='.pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.heic,.heif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png,image/webp,image/heic,image/heif'
                                                     onChange={(event) =>
                                                         setSignedDocumentFiles(
                                                             (prev) => ({
@@ -3236,7 +3236,7 @@ const EmployeeDocumentationComponent = ({
                                     <label>Archivo</label>
                                     <input
                                         type='file'
-                                        accept='.pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png,image/webp'
+                                        accept='.pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.heic,.heif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png,image/webp,image/heic,image/heif'
                                         onChange={(event) =>
                                             setSignatureDocumentFile(
                                                 event.target.files?.[0] || null
