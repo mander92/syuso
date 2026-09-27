@@ -74,7 +74,7 @@ const calculateShiftHours = (startTime, endTime) => {
     const startTotal = startHours * 60 + startMinutes;
     const endTotal = endHours * 60 + endMinutes;
     const diffMinutes =
-        endTotal >= startTotal
+        endTotal > startTotal
             ? endTotal - startTotal
             : endTotal + 24 * 60 - startTotal;
     return Math.round((diffMinutes / 60) * 100) / 100;
@@ -977,12 +977,6 @@ const ServiceSchedulePanel = ({
                         scheduleDate: target.scheduleDate,
                         startTime: copiedGridEntry.startTime,
                         endTime: copiedGridEntry.endTime,
-                        hours:
-                            copiedGridEntry.hours ||
-                            calculateShiftHours(
-                                copiedGridEntry.startTime,
-                                copiedGridEntry.endTime
-                            ),
                         employeeId: target.employeeId || null,
                         shiftTypeId: copiedGridEntry.shiftTypeId || null,
                         allowOverlap,
@@ -1115,12 +1109,6 @@ const ServiceSchedulePanel = ({
                     scheduleDate: selectedShift.scheduleDate,
                     startTime: selectedShift.startTime,
                     endTime: selectedShift.endTime,
-                    hours:
-                        selectedShift.hours ||
-                        calculateShiftHours(
-                            selectedShift.startTime,
-                            selectedShift.endTime
-                        ),
                     employeeId: resolvedEmployeeId || null,
                     shiftTypeId: selectedShift.shiftTypeId || null,
                 };
@@ -1164,7 +1152,6 @@ const ServiceSchedulePanel = ({
                     scheduleDate: selectedShift.scheduleDate,
                     startTime: selectedShift.startTime,
                     endTime: selectedShift.endTime,
-                    hours: selectedShift.hours,
                     employeeId: resolvedEmployeeId || null,
                     shiftTypeId: selectedShift.shiftTypeId || null,
                 };
@@ -2466,6 +2453,10 @@ const ServiceSchedulePanel = ({
                                                     ...prev,
                                                     startTime:
                                                         event.target.value,
+                                                    hours: calculateShiftHours(
+                                                        event.target.value,
+                                                        prev.endTime
+                                                    ),
                                                 }))
                                             }
                                         />
@@ -2479,6 +2470,10 @@ const ServiceSchedulePanel = ({
                                                 setSelectedShift((prev) => ({
                                                     ...prev,
                                                     endTime: event.target.value,
+                                                    hours: calculateShiftHours(
+                                                        prev.startTime,
+                                                        event.target.value
+                                                    ),
                                                 }))
                                             }
                                         />
@@ -2488,13 +2483,11 @@ const ServiceSchedulePanel = ({
                                         <input
                                             type='number'
                                             step='0.25'
-                                            value={selectedShift.hours ?? ''}
-                                            onChange={(event) =>
-                                                setSelectedShift((prev) => ({
-                                                    ...prev,
-                                                    hours: event.target.value,
-                                                }))
-                                            }
+                                            value={calculateShiftHours(
+                                                selectedShift.startTime,
+                                                selectedShift.endTime
+                                            )}
+                                            readOnly
                                         />
                                     </label>
                                 </>

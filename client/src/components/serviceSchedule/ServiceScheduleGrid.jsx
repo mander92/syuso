@@ -90,6 +90,19 @@ const formatHours = (value) => {
     return number.toFixed(2);
 };
 
+const calculateShiftHours = (startTime, endTime) => {
+    if (!startTime || !endTime) return 0;
+    const [startHours, startMinutes] = String(startTime).split(':').map(Number);
+    const [endHours, endMinutes] = String(endTime).split(':').map(Number);
+    if ([startHours, startMinutes, endHours, endMinutes].some(Number.isNaN)) {
+        return 0;
+    }
+    const start = startHours * 60 + startMinutes;
+    const end = endHours * 60 + endMinutes;
+    const minutes = end > start ? end - start : end + 24 * 60 - start;
+    return Math.round((minutes / 60) * 100) / 100;
+};
+
 const ServiceScheduleGrid = ({
     month,
     shifts,
@@ -213,7 +226,11 @@ const ServiceScheduleGrid = ({
         (shifts || []).forEach((shift) => {
             const key = shift.employeeId || 'unassigned';
             if (!totals.has(key)) return;
-            totals.set(key, totals.get(key) + (Number(shift.hours) || 0));
+            totals.set(
+                key,
+                totals.get(key) +
+                    calculateShiftHours(shift.startTime, shift.endTime)
+            );
         });
         return totals;
     }, [rows, shifts]);

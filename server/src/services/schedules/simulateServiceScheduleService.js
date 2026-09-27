@@ -100,6 +100,7 @@ const simulateServiceScheduleService = async (serviceId, monthParam) => {
 
     let shifts = serviceShifts.map((shift) => ({
         ...shift,
+        hours: calculateShiftHours(shift.startTime, shift.endTime),
         scheduleDate: toDateKey(shift.scheduleDate),
         isNew: false,
     }));
@@ -235,7 +236,8 @@ const simulateServiceScheduleService = async (serviceId, monthParam) => {
         if (row.serviceId !== serviceId) {
             assignedHours.set(
                 row.employeeId,
-                (assignedHours.get(row.employeeId) || 0) + Number(row.hours || 0)
+                (assignedHours.get(row.employeeId) || 0) +
+                    calculateShiftHours(row.startTime, row.endTime)
             );
             if (!otherServiceDates.has(row.employeeId)) {
                 otherServiceDates.set(row.employeeId, new Set());

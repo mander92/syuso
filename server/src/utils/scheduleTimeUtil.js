@@ -24,15 +24,18 @@ export const getMadridDateTimeParts = (date = new Date()) => {
 };
 
 export const calculateShiftHours = (startTime, endTime) => {
-    const [startH, startM, startS = '0'] = startTime.split(':');
-    const [endH, endM, endS = '0'] = endTime.split(':');
+    if (!startTime || !endTime) return 0;
+    const [startH, startM, startS = '0'] = String(startTime).split(':');
+    const [endH, endM, endS = '0'] = String(endTime).split(':');
+    const timeParts = [startH, startM, startS, endH, endM, endS].map(Number);
+    if (timeParts.some((part) => !Number.isFinite(part))) return 0;
     const startSeconds =
         Number(startH) * 3600 + Number(startM) * 60 + Number(startS);
     const endSeconds =
         Number(endH) * 3600 + Number(endM) * 60 + Number(endS);
 
     let diffSeconds = endSeconds - startSeconds;
-    if (diffSeconds < 0) diffSeconds += 24 * 3600;
+    if (diffSeconds <= 0) diffSeconds += 24 * 3600;
 
     const hours = diffSeconds / 3600;
     return Math.round(hours * 100) / 100;

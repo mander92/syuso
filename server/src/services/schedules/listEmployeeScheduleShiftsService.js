@@ -1,6 +1,7 @@
 import getPool from '../../db/getPool.js';
 import path from 'path';
 import createExcelUtil from '../../utils/createExcelUtil.js';
+import { calculateShiftHours } from '../../utils/scheduleTimeUtil.js';
 
 const listEmployeeScheduleShiftsService = async (
     employeeId,
@@ -55,9 +56,12 @@ const listEmployeeScheduleShiftsService = async (
         params
     );
 
-    if (!generateExcel) {
-        return rows;
-    }
+    const normalizedRows = rows.map((row) => {
+        const hours = calculateShiftHours(row.startTime, row.endTime);
+        return { ...row, hours, realHours: hours };
+    });
+
+    if (!generateExcel) return normalizedRows;
 
     const columns = [
         { header: 'Servicio', key: 'serviceName', width: 28 },
@@ -74,7 +78,7 @@ const listEmployeeScheduleShiftsService = async (
     ];
 
     const filePath = await createExcelUtil(
-        rows,
+        normalizedRows,
         columns,
         'employeeSchedule.xlsx'
     );

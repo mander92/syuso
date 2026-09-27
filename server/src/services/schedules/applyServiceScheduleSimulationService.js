@@ -10,10 +10,7 @@ const normalizeShift = (shift) => ({
     scheduleDate: shift.scheduleDate,
     startTime: shift.startTime,
     endTime: shift.endTime,
-    hours:
-        shift.hours != null
-            ? Number(shift.hours)
-            : calculateShiftHours(shift.startTime, shift.endTime),
+    hours: calculateShiftHours(shift.startTime, shift.endTime),
     employeeId: shift.employeeId || null,
     shiftTypeId: shift.shiftTypeId || null,
     isNew: Boolean(shift.isNew),

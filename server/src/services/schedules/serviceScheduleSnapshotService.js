@@ -1,4 +1,11 @@
 import { v4 as uuid } from 'uuid';
+import { calculateShiftHours } from '../../utils/scheduleTimeUtil.js';
+
+const withCalculatedHours = (shift) => ({
+    ...shift,
+    hours: calculateShiftHours(shift.startTime, shift.endTime),
+    realHours: calculateShiftHours(shift.startTime, shift.endTime),
+});
 
 const normalizeSnapshotPayload = (payload) => {
     if (!payload) return { shifts: [] };
@@ -57,7 +64,7 @@ const selectScheduleRows = async (pool, serviceId, month, deletedClause) => {
         params
     );
 
-    return rows;
+    return rows.map(withCalculatedHours);
 };
 
 export const listActiveScheduleRows = (pool, serviceId, month) =>
@@ -84,7 +91,9 @@ export const listScheduleSnapshotRows = async (pool, serviceId, month) => {
     if (!rows.length) return [];
 
     const payload = normalizeSnapshotPayload(rows[0].payload);
-    return Array.isArray(payload.shifts) ? payload.shifts : [];
+    return Array.isArray(payload.shifts)
+        ? payload.shifts.map(withCalculatedHours)
+        : [];
 };
 
 export const saveServiceScheduleSnapshot = async (

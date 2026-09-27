@@ -687,7 +687,14 @@ const calculateSalarySettlements = async ({
             s.province AS serviceDelegation,
             s.hourRuleType,
             COUNT(*) AS shiftCount,
-            COALESCE(SUM(CASE WHEN COALESCE(ss.realHours, 0) > 0 THEN ss.realHours ELSE ss.hours END), 0) AS totalHours,
+            COALESCE(SUM(ROUND(
+                CASE
+                    WHEN TIME_TO_SEC(ss.endTime) <= TIME_TO_SEC(ss.startTime)
+                        THEN (TIME_TO_SEC(ss.endTime) + 86400 - TIME_TO_SEC(ss.startTime)) / 3600
+                    ELSE (TIME_TO_SEC(ss.endTime) - TIME_TO_SEC(ss.startTime)) / 3600
+                END,
+                2
+            )), 0) AS totalHours,
             COALESCE(SUM(ss.nightHours), 0) AS nightHours,
             COALESCE(SUM(ss.holidayHours), 0) AS holidayHours
         FROM serviceScheduleShifts ss
@@ -710,7 +717,14 @@ const calculateSalarySettlements = async ({
             ss.scheduleDate,
             ss.startTime,
             ss.endTime,
-            COALESCE(CASE WHEN COALESCE(ss.realHours, 0) > 0 THEN ss.realHours ELSE ss.hours END, 0) AS hours,
+            ROUND(
+                CASE
+                    WHEN TIME_TO_SEC(ss.endTime) <= TIME_TO_SEC(ss.startTime)
+                        THEN (TIME_TO_SEC(ss.endTime) + 86400 - TIME_TO_SEC(ss.startTime)) / 3600
+                    ELSE (TIME_TO_SEC(ss.endTime) - TIME_TO_SEC(ss.startTime)) / 3600
+                END,
+                2
+            ) AS hours,
             COALESCE(ss.nightHours, 0) AS nightHours,
             COALESCE(ss.holidayHours, 0) AS holidayHours,
             s.name AS serviceName,

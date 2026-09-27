@@ -125,10 +125,14 @@ const listBillingRecordsService = async ({
             s.billingConcept,
             CONCAT_WS(' ', u.firstName, u.lastName) AS clientName,
             u.email AS clientEmail,
-            COALESCE(SUM(CASE
-                WHEN COALESCE(ss.realHours, 0) > 0 THEN ss.realHours
-                ELSE COALESCE(ss.hours, 0)
-            END), 0) AS totalScheduledHours
+            COALESCE(SUM(ROUND(
+                CASE
+                    WHEN TIME_TO_SEC(ss.endTime) <= TIME_TO_SEC(ss.startTime)
+                        THEN (TIME_TO_SEC(ss.endTime) + 86400 - TIME_TO_SEC(ss.startTime)) / 3600
+                    ELSE (TIME_TO_SEC(ss.endTime) - TIME_TO_SEC(ss.startTime)) / 3600
+                END,
+                2
+            )), 0) AS totalScheduledHours
         FROM services s
         LEFT JOIN users u ON u.id = s.clientId
         INNER JOIN serviceScheduleShifts ss

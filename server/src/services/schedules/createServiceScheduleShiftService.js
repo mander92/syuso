@@ -13,7 +13,6 @@ const createServiceScheduleShiftService = async (
     scheduleDate,
     startTime,
     endTime,
-    hours,
     employeeId,
     shiftTypeId,
     createdBy,
@@ -27,10 +26,7 @@ const createServiceScheduleShiftService = async (
         startTime,
         endTime,
     });
-    const resolvedHours =
-        hours !== undefined && hours !== null && hours !== ''
-            ? Number(hours)
-            : breakdown.hours;
+    const resolvedHours = breakdown.hours;
 
     await validateEmployeeShiftOverlapsService(
         pool,

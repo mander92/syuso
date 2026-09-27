@@ -87,7 +87,7 @@ const calculateShiftHours = (startTime, endTime) => {
     const startTotal = startHours * 60 + startMinutes;
     const endTotal = endHours * 60 + endMinutes;
     const diffMinutes =
-        endTotal >= startTotal
+        endTotal > startTotal
             ? endTotal - startTotal
             : endTotal + 24 * 60 - startTotal;
     return Math.round((diffMinutes / 60) * 100) / 100;
@@ -468,7 +468,10 @@ const ScheduleComponent = () => {
                                 if (shift.employeeId) {
                                     employeeSet.add(shift.employeeId);
                                 }
-                                totalHours += Number(shift.hours) || 0;
+                                totalHours += calculateShiftHours(
+                                    shift.startTime,
+                                    shift.endTime
+                                );
                             });
 
                             if (!scheduleServiceFilter && totalHours <= 0) {
@@ -1131,7 +1134,6 @@ const ScheduleComponent = () => {
                 scheduleDate: selectedGeneratedShift.scheduleDate,
                 startTime: selectedGeneratedShift.startTime,
                 endTime: selectedGeneratedShift.endTime,
-                hours: selectedGeneratedShift.hours,
                 employeeId: resolvedEmployeeId || null,
                 shiftTypeId: selectedGeneratedShift.shiftTypeId || null,
             };
@@ -1180,7 +1182,6 @@ const ScheduleComponent = () => {
                 ).slice(0, 10),
                 startTime: selectedGeneratedShift.startTime,
                 endTime: selectedGeneratedShift.endTime,
-                hours: selectedGeneratedShift.hours,
                 employeeId: resolvedEmployeeId || null,
                 shiftTypeId: selectedGeneratedShift.shiftTypeId || null,
             });
@@ -1192,7 +1193,10 @@ const ScheduleComponent = () => {
             scheduleDate: selectedGeneratedShift.scheduleDate,
             startTime: selectedGeneratedShift.startTime,
             endTime: selectedGeneratedShift.endTime,
-            hours: selectedGeneratedShift.hours,
+            hours: calculateShiftHours(
+                selectedGeneratedShift.startTime,
+                selectedGeneratedShift.endTime
+            ),
             employeeId: resolvedEmployeeId || null,
         });
         toast.success('Turno actualizado en previsualizacion');
@@ -1959,7 +1963,9 @@ const ScheduleComponent = () => {
             .map((employee) => {
                 const shifts = employeeMap.get(employee.id) || [];
                 const totalHours = shifts.reduce(
-                    (acc, shift) => acc + (Number(shift.hours) || 0),
+                    (acc, shift) =>
+                        acc +
+                        calculateShiftHours(shift.startTime, shift.endTime),
                     0
                 );
                 const totalNightHours = shifts.reduce(
@@ -3578,15 +3584,11 @@ const ScheduleComponent = () => {
                                             type='number'
                                             step='0.25'
                                             min='0'
-                                            value={
-                                                selectedGeneratedShift.hours || ''
-                                            }
-                                            onChange={(event) =>
-                                                handleGeneratedShiftFieldChange(
-                                                    'hours',
-                                                    event.target.value
-                                                )
-                                            }
+                                            value={calculateShiftHours(
+                                                selectedGeneratedShift.startTime,
+                                                selectedGeneratedShift.endTime
+                                            )}
+                                            readOnly
                                         />
                                     </label>
                                 </>
@@ -3877,7 +3879,10 @@ const ScheduleComponent = () => {
                                         totalHours: serviceShifts.reduce(
                                             (acc, shift) =>
                                                 acc +
-                                                (Number(shift.hours) || 0),
+                                                calculateShiftHours(
+                                                    shift.startTime,
+                                                    shift.endTime
+                                                ),
                                             0
                                         ),
                                         nightHours: serviceShifts.reduce(

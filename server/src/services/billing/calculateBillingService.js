@@ -48,10 +48,14 @@ const calculateBillingService = async ({
 
     const [totals] = await pool.query(
         `
-        SELECT COALESCE(SUM(CASE
-            WHEN COALESCE(realHours, 0) > 0 THEN realHours
-            ELSE COALESCE(hours, 0)
-        END), 0) AS totalHours
+        SELECT COALESCE(SUM(ROUND(
+            CASE
+                WHEN TIME_TO_SEC(endTime) <= TIME_TO_SEC(startTime)
+                    THEN (TIME_TO_SEC(endTime) + 86400 - TIME_TO_SEC(startTime)) / 3600
+                ELSE (TIME_TO_SEC(endTime) - TIME_TO_SEC(startTime)) / 3600
+            END,
+            2
+        )), 0) AS totalHours
         FROM serviceScheduleShifts
         WHERE serviceId = ?
           AND deletedAt IS NULL

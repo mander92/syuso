@@ -37,10 +37,7 @@ const updateServiceScheduleShiftService = async (
         startTime: resolvedStart,
         endTime: resolvedEnd,
     });
-    const resolvedHours =
-        updates.hours !== undefined && updates.hours !== null && updates.hours !== ''
-            ? Number(updates.hours)
-            : breakdown.hours;
+    const resolvedHours = breakdown.hours;
     const resolvedEmployeeId =
         updates.employeeId !== undefined ? updates.employeeId : current.employeeId;
     const resolvedShiftTypeId =
