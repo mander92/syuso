@@ -88,17 +88,24 @@ const groupAttachments = (attachments) => {
         const bytes = attachment.path
             ? fs.statSync(attachment.path).size
             : Buffer.byteLength(attachment.content || '', 'base64');
+        const attachmentName =
+            attachment.filename || attachment.name || attachment.path || '';
+        const isHeic = /\.(heic|heif)$/i.test(attachmentName);
+        const estimatedMailBytes = isHeic ? bytes * 3 : bytes;
         if (bytes > maxAttachmentBytesPerMail) {
             throw new Error(
                 `El archivo ${attachment.filename || attachment.name || 'adjunto'} supera el tamano permitido para un correo. Reduce su tamano antes de enviarlo.`
             );
         }
-        if (groupBytes + bytes > maxAttachmentBytesPerMail) {
+        if (
+            groups[groups.length - 1].length &&
+            groupBytes + estimatedMailBytes > maxAttachmentBytesPerMail
+        ) {
             groups.push([]);
             groupBytes = 0;
         }
         groups[groups.length - 1].push(attachment);
-        groupBytes += bytes;
+        groupBytes += estimatedMailBytes;
     }
 
     return groups;

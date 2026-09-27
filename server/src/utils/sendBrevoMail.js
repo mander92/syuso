@@ -1,6 +1,7 @@
 import brevo from '@getbrevo/brevo';
 import fs from 'fs';
 import path from 'path';
+import convertHeic from 'heic-convert';
 import { BREVO_API_KEY, SMTP_EMAIL } from '../../env.js';
 
 const normalizeEmails = (emails) =>
@@ -10,6 +11,40 @@ const normalizeEmails = (emails) =>
               .split(/[\s,;]+/)
               .map((email) => email.trim())
               .filter(Boolean);
+
+const prepareAttachment = async (attachment) => {
+    const attachmentName =
+        attachment.filename ||
+        attachment.name ||
+        (attachment.path ? path.basename(attachment.path) : 'adjunto');
+    const extension = path.extname(attachmentName).toLowerCase();
+    const fileBuffer = attachment.path
+        ? fs.readFileSync(attachment.path)
+        : Buffer.from(attachment.content || '', 'base64');
+
+    if (extension === '.heic' || extension === '.heif') {
+        try {
+            const jpegBuffer = await convertHeic({
+                buffer: fileBuffer,
+                format: 'JPEG',
+                quality: 0.9,
+            });
+            return {
+                name: `${path.basename(attachmentName, extension)}.jpg`,
+                content: Buffer.from(jpegBuffer).toString('base64'),
+            };
+        } catch {
+            throw new Error(
+                `No se pudo convertir el archivo HEIC ${attachmentName} a JPG`
+            );
+        }
+    }
+
+    return {
+        name: attachmentName,
+        content: fileBuffer.toString('base64'),
+    };
+};
 
 const sendMail = async (
     name,
@@ -55,24 +90,9 @@ const sendMail = async (
         };
 
         if (attachments.length > 0) {
-            // Soportar tanto { filename, path } como { name, content }
-            const parsedAttachments = attachments.map((att) => {
-                // Si viene con path, lo leemos y convertimos aqui
-                if (att.path) {
-                    const fileBuffer = fs.readFileSync(att.path);
-                    const base64 = fileBuffer.toString('base64');
-
-                    return {
-                        name: att.filename || path.basename(att.path),
-                        content: base64,
-                    };
-                }
-
-                // Si ya viene como { name, content }, lo dejamos igual
-                return att;
-            });
-
-            sendSmtpEmail.attachment = parsedAttachments;
+            sendSmtpEmail.attachment = await Promise.all(
+                attachments.map(prepareAttachment)
+            );
         }
 
         await apiInstance.sendTransacEmail(sendSmtpEmail);
