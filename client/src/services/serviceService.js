@@ -1,5 +1,40 @@
 const { VITE_API_URL } = import.meta.env;
 
+const calculateScheduleShiftHours = (startTime, endTime) => {
+    if (!startTime || !endTime) return 0;
+    const [startHours, startMinutes, startSeconds = 0] = String(startTime)
+        .split(':')
+        .map(Number);
+    const [endHours, endMinutes, endSeconds = 0] = String(endTime)
+        .split(':')
+        .map(Number);
+    const parts = [
+        startHours,
+        startMinutes,
+        startSeconds,
+        endHours,
+        endMinutes,
+        endSeconds,
+    ];
+    if (parts.some((part) => !Number.isFinite(part))) return 0;
+
+    const start = startHours * 3600 + startMinutes * 60 + startSeconds;
+    const end = endHours * 3600 + endMinutes * 60 + endSeconds;
+    const seconds = end > start ? end - start : end + 86400 - start;
+    return Math.round((seconds / 3600) * 100) / 100;
+};
+
+const normalizeScheduleShifts = (data) =>
+    Array.isArray(data)
+        ? data.map((shift) => ({
+              ...shift,
+              hours: calculateScheduleShiftHours(
+                  shift.startTime,
+                  shift.endTime
+              ),
+          }))
+        : data;
+
 export const fetchNewServiceServices = async (
     authToken,
     typeOfServiceId,
@@ -645,7 +680,7 @@ export const fetchServiceScheduleShifts = async (
         throw new Error(body.message);
     }
 
-    return body.data;
+    return normalizeScheduleShifts(body.data);
 };
 
 export const fetchAvailableScheduleEmployees = async (
@@ -1074,5 +1109,5 @@ export const fetchEmployeeScheduleShifts = async (
         throw new Error(body.message);
     }
 
-    return body.data;
+    return generateExcel ? body.data : normalizeScheduleShifts(body.data);
 };
