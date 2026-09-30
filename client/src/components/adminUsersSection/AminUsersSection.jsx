@@ -868,10 +868,21 @@ const AdminUsersSection = () => {
     };
 
     const handleDeleteDelegation = async (delegationId) => {
-        if (!window.confirm('?Eliminar esta delegacion?')) return;
+        if (
+            !window.confirm(
+                '¿Eliminar esta delegación? Los usuarios asignados quedarán sin esa delegación.'
+            )
+        )
+            return;
         try {
-            await deleteDelegation(authToken, delegationId);
-            await loadDelegations();
+            const result = await deleteDelegation(authToken, delegationId);
+            await Promise.all([loadDelegations(), loadUsers()]);
+            const unassigned = Number(result?.data?.unassignedUsers) || 0;
+            if (unassigned > 0) {
+                alert(
+                    `Delegación eliminada. ${unassigned} usuario(s) desasignado(s).`
+                );
+            }
         } catch (error) {
             console.error(error);
             alert(error.message || 'Error eliminando delegacion');

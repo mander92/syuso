@@ -4,11 +4,12 @@ const deleteDelegationController = async (req, res, next) => {
     try {
         const { delegationId } = req.params;
 
-        await deleteDelegationService(delegationId);
+        const data = await deleteDelegationService(delegationId);
 
         res.send({
             status: 'ok',
             message: 'Delegacion eliminada',
+            data,
         });
     } catch (error) {
         next(error);

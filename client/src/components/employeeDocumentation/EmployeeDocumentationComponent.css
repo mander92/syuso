@@ -138,6 +138,7 @@
 }
 
 .employee-documentation--draft-modal > .employee-documentation-layout {
+    align-items: stretch;
     background: #ffffff;
     border-radius: 0.85rem;
     box-sizing: border-box;
@@ -146,11 +147,21 @@
     inset: 1.5rem;
     margin: auto;
     max-width: 1180px;
-    overflow: auto;
+    height: calc(100dvh - 3rem);
+    max-height: calc(100dvh - 3rem);
+    overflow: hidden;
     padding: 1rem;
     position: fixed;
     width: calc(100dvw - 3rem);
     z-index: 1001;
+}
+
+.employee-documentation--draft-modal .employee-documentation-list,
+.employee-documentation--draft-modal .employee-documentation-form {
+    max-height: none;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .employee-documentation-draft-modal-close {
@@ -330,6 +341,9 @@
 }
 
 .employee-documentation-form--modal {
+    max-height: calc(100dvh - 4rem);
+    overflow-x: hidden;
+    overflow-y: auto;
     max-width: 1040px;
     width: min(100%, 1040px);
 }
@@ -688,6 +702,7 @@
         gap: 0.75rem;
         grid-template-columns: 1fr;
         inset: 0;
+        height: 100dvh;
         max-height: 100dvh;
         max-width: 100dvw;
         overflow-x: hidden;
@@ -698,10 +713,12 @@
 
     .employee-documentation--draft-modal .employee-documentation-list {
         box-sizing: border-box;
-        max-height: 32dvh;
+        max-height: 38dvh;
         min-height: 0;
         max-width: 100%;
         overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
     }
 
     .employee-documentation--draft-modal .employee-documentation-list button {
@@ -767,6 +784,10 @@
 
     .employee-documentation-modal {
         padding: 0.75rem;
+    }
+
+    .employee-documentation-form--modal {
+        max-height: calc(100dvh - 1.5rem);
     }
 
     .employee-documentation-modal-header {

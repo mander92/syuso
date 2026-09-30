@@ -19,22 +19,6 @@ const deleteDelegationService = async (delegationId) => {
 
     const delegationName = rows[0].name;
 
-    const [[adminUsage]] = await pool.query(
-        `
-        SELECT COUNT(*) AS total
-        FROM adminDelegations
-        WHERE delegationId = ?
-        `,
-        [delegationId]
-    );
-
-    if (adminUsage?.total) {
-        generateErrorUtil(
-            'No se puede eliminar: hay admins asignados',
-            409
-        );
-    }
-
     const [[serviceUsage]] = await pool.query(
         `
         SELECT COUNT(*) AS total
@@ -51,13 +35,31 @@ const deleteDelegationService = async (delegationId) => {
         );
     }
 
-    await pool.query(
-        `
-        DELETE FROM delegations
-        WHERE id = ?
-        `,
-        [delegationId]
-    );
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+        const [assignmentResult] = await connection.query(
+            `
+            DELETE FROM adminDelegations
+            WHERE delegationId = ?
+            `,
+            [delegationId]
+        );
+        await connection.query(
+            `
+            DELETE FROM delegations
+            WHERE id = ?
+            `,
+            [delegationId]
+        );
+        await connection.commit();
+        return { unassignedUsers: assignmentResult.affectedRows || 0 };
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
+    }
 };
 
 export default deleteDelegationService;
