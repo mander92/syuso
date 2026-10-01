@@ -35,16 +35,19 @@ const importServiceScheduleExcelController = async (req, res, next) => {
         if (error) generateErrorUtil(error.message, 400);
 
         const file = req.files?.file || req.files?.schedule || req.files?.excel;
-        if (!file) generateErrorUtil('Archivo Excel requerido', 400);
+        if (!file) generateErrorUtil('Archivo de cuadrante requerido', 400);
 
         const data = await importServiceScheduleExcelService({
             serviceId: req.params.serviceId,
             filePath: file.tempFilePath,
+            fileName: file.name,
+            mimeType: file.mimetype,
             month: value.month,
             apply: toBoolean(value.apply),
             replace: toBoolean(value.replace),
             allowOverlap: toBoolean(value.allowOverlap),
             employeeMappings: parseMappings(req.body?.employeeMappings),
+            scheduleCodeMappings: parseMappings(req.body?.scheduleCodeMappings),
             createdBy: req.userLogged.id,
         });
 

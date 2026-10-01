@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import sharp from 'sharp';
 import { v4 as uuid } from 'uuid';
 
 import getPool from '../../db/getPool.js';
@@ -120,6 +121,29 @@ const normalizeTimeKey = (value) => {
     return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 };
 
+const normalizeImportTime = (value) => {
+    const match = String(value || '')
+        .trim()
+        .match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+    if (!match) return '';
+
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    const seconds = Number(match[3] || 0);
+    if (
+        hours < 0 ||
+        hours > 23 ||
+        minutes < 0 ||
+        minutes > 59 ||
+        seconds < 0 ||
+        seconds > 59
+    ) {
+        return '';
+    }
+
+    return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+};
+
 const getCellPlainValue = (cell) => {
     const value = cell?.value;
     if (value && typeof value === 'object' && 'result' in value) {
@@ -153,6 +177,11 @@ const getExcelTime = (cell) => {
 const buildDateString = (month, day) => {
     const [year, monthValue] = month.split('-').map(Number);
     return `${year}-${pad(monthValue)}-${pad(day)}`;
+};
+
+const getDaysInMonth = (month) => {
+    const [year, monthValue] = month.split('-').map(Number);
+    return new Date(year, monthValue, 0).getDate();
 };
 
 const getCellText = (worksheet, rowNumber, colNumber) =>
@@ -213,6 +242,14 @@ const buildShiftKey = (shift) =>
         normalizeTimeKey(shift.endTime),
     ].join('|');
 
+const buildAbsenceKey = (absence) =>
+    [
+        absence.employeeId || '',
+        normalizeDateKey(absence.startDate),
+        normalizeDateKey(absence.endDate),
+        absence.type || '',
+    ].join('|');
+
 const dedupeShifts = (shifts) => {
     const seen = new Set();
     const unique = [];
@@ -227,6 +264,25 @@ const dedupeShifts = (shifts) => {
 
         seen.add(key);
         unique.push(shift);
+    });
+
+    return { unique, duplicates };
+};
+
+const dedupeAbsences = (absences) => {
+    const seen = new Set();
+    const unique = [];
+    const duplicates = [];
+
+    absences.forEach((absence) => {
+        const key = buildAbsenceKey(absence);
+        if (seen.has(key)) {
+            duplicates.push(absence);
+            return;
+        }
+
+        seen.add(key);
+        unique.push(absence);
     });
 
     return { unique, duplicates };
@@ -262,6 +318,41 @@ const filterExistingDuplicateShifts = async (pool, serviceId, month, shifts) => 
     return { shifts: filtered, skipped };
 };
 
+const filterExistingDuplicateAbsences = async (pool, month, absences) => {
+    if (!absences.length) return { absences, skipped: 0 };
+
+    const employeeIds = [...new Set(absences.map((absence) => absence.employeeId))];
+    const placeholders = employeeIds.map(() => '?').join(',');
+    const [year, monthValue] = month.split('-').map(Number);
+    const monthStart = `${year}-${pad(monthValue)}-01`;
+    const monthEnd = `${year}-${pad(monthValue)}-${pad(getDaysInMonth(month))}`;
+
+    const [existingRows] = await pool.query(
+        `
+        SELECT employeeId, startDate, endDate, type
+        FROM employeeAbsences
+        WHERE employeeId IN (${placeholders})
+          AND startDate <= ?
+          AND endDate >= ?
+        `,
+        [...employeeIds, monthEnd, monthStart]
+    );
+
+    const existingKeys = new Set(existingRows.map(buildAbsenceKey));
+    const filtered = [];
+    let skipped = 0;
+
+    absences.forEach((absence) => {
+        if (existingKeys.has(buildAbsenceKey(absence))) {
+            skipped += 1;
+            return;
+        }
+        filtered.push(absence);
+    });
+
+    return { absences: filtered, skipped };
+};
+
 const loadEmployees = async (pool) => {
     const [rows] = await pool.query(
         `
@@ -282,6 +373,135 @@ const loadEmployees = async (pool) => {
             normalizedName: normalizeName(fullName),
         };
     });
+};
+
+const isImageFile = ({ filePath = '', fileName = '', mimeType = '' } = {}) =>
+    String(mimeType).startsWith('image/') ||
+    /\.(jpe?g|png|webp|tiff?|avif)$/i.test(String(fileName || filePath));
+
+const groupPositions = (positions, gap = 2) => {
+    const groups = [];
+    positions.forEach((position) => {
+        const current = groups[groups.length - 1];
+        if (current && position - current.end <= gap) {
+            current.end = position;
+            return;
+        }
+        groups.push({ start: position, end: position });
+    });
+    return groups.map((group) => Math.round((group.start + group.end) / 2));
+};
+
+const median = (values) => {
+    if (!values.length) return 0;
+    const sorted = [...values].sort((a, b) => a - b);
+    return sorted[Math.floor(sorted.length / 2)];
+};
+
+const findRegularLineRun = (lines, expectedCount) => {
+    let best = null;
+
+    for (let start = 0; start < lines.length - 1; start += 1) {
+        const spacings = [];
+        const run = [lines[start]];
+
+        for (let index = start + 1; index < lines.length; index += 1) {
+            const spacing = lines[index] - lines[index - 1];
+            const reference = median(spacings) || spacing;
+            if (spacing >= 14 && spacing <= 45 && Math.abs(spacing - reference) <= 4) {
+                run.push(lines[index]);
+                spacings.push(spacing);
+            } else if (run.length >= expectedCount) {
+                break;
+            } else {
+                run.length = 0;
+                break;
+            }
+        }
+
+        if (!run.length) continue;
+        if (!best || run.length > best.length) best = run;
+        if (run.length >= expectedCount) break;
+    }
+
+    if (!best || best.length < 8) {
+        generateErrorUtil('No se pudo detectar la rejilla del cuadrante', 400);
+    }
+
+    return best;
+};
+
+const getImageVector = (data, info, centerX, centerY, radius = 8) => {
+    const vector = [];
+    let darkPixels = 0;
+
+    for (let y = -radius; y <= radius; y += 1) {
+        for (let x = -radius; x <= radius; x += 1) {
+            const px = Math.round(centerX + x);
+            const py = Math.round(centerY + y);
+            const value =
+                px >= 0 && px < info.width && py >= 0 && py < info.height
+                    ? data[py * info.width + px]
+                    : 255;
+            const dark = value < 120 ? 1 : 0;
+            darkPixels += dark;
+            vector.push(dark);
+        }
+    }
+
+    return { vector, darkPixels };
+};
+
+const vectorDistance = (left, right) =>
+    left.reduce((sum, value, index) => sum + (value === right[index] ? 0 : 1), 0);
+
+const renderCodePrototype = async (code, size = 17) => {
+    const safeCode = String(code || '')
+        .replace(/[<>&'"]/g, '')
+        .slice(0, 3);
+    const fontSize = safeCode.length > 1 ? 10 : 13;
+    const svg = `
+        <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
+            <rect width="${size}" height="${size}" fill="white"/>
+            <text x="${size / 2}" y="${size - 4}" text-anchor="middle"
+                font-family="Arial, Helvetica, sans-serif"
+                font-size="${fontSize}" font-weight="700" fill="black">${safeCode}</text>
+        </svg>
+    `;
+    const { data: rendered } = await sharp(Buffer.from(svg))
+        .greyscale()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+
+    return [...rendered].map((value) => (value < 140 ? 1 : 0));
+};
+
+const buildImageCodeClassifier = async (data, info, codeMappings) => {
+    const prototypes = {};
+
+    await Promise.all(
+        Object.keys(codeMappings).map(async (code) => {
+            prototypes[code] = await renderCodePrototype(code);
+        })
+    );
+
+    return (centerX, centerY) => {
+        const sample = getImageVector(data, info, centerX, centerY);
+        if (sample.darkPixels < 12) return '';
+
+        let bestCode = '';
+        let bestDistance = Number.MAX_SAFE_INTEGER;
+
+        Object.entries(prototypes).forEach(([code, prototype]) => {
+            const distance = vectorDistance(sample.vector, prototype);
+            if (distance < bestDistance) {
+                bestCode = code;
+                bestDistance = distance;
+            }
+        });
+
+        return bestDistance <= 130 ? bestCode : '';
+    };
 };
 
 const findEmployee = (employees, excelName) => {
@@ -310,6 +530,263 @@ const findEmployee = (employees, excelName) => {
     if (second && best.score - second.score < 0.12) return null;
 
     return best.employee;
+};
+
+const resolveEmployeeForImportRow = (employees, sourceName, employeeMappings) => {
+    const mappedEmployeeId =
+        employeeMappings[sourceName] || employeeMappings[normalizeName(sourceName)];
+    const mappedEmployee = mappedEmployeeId
+        ? employees.find((employee) => employee.id === mappedEmployeeId)
+        : null;
+
+    return mappedEmployee || findEmployee(employees, sourceName);
+};
+
+const registerUnmatched = (unmatchedMap, employees, sourceName, count = 1) => {
+    const current = unmatchedMap.get(sourceName) || {
+        excelName: sourceName,
+        shiftCount: 0,
+        suggestions: sourceName.startsWith('Fila ')
+            ? []
+            : suggestEmployees(employees, sourceName),
+    };
+    current.shiftCount += count;
+    unmatchedMap.set(sourceName, current);
+};
+
+const normalizeImageCodeMappings = (value = {}) => {
+    const normalized = {};
+
+    Object.entries(value || {}).forEach(([rawCode, rawConfig]) => {
+        const code = String(rawCode || '')
+            .trim()
+            .toUpperCase();
+        if (!code) return;
+
+        const config = rawConfig || {};
+        const type = String(config.type || '').trim();
+
+        if (type === 'shift') {
+            const startTime = normalizeImportTime(config.startTime);
+            const endTime = normalizeImportTime(config.endTime);
+            if (!startTime || !endTime) return;
+            normalized[code] = {
+                type: 'shift',
+                startTime,
+                endTime,
+                label: config.label || `Turno ${code}`,
+            };
+            return;
+        }
+
+        if (type === 'absence') {
+            const absenceType = ['vacation', 'off', 'available', 'sick'].includes(
+                config.absenceType
+            )
+                ? config.absenceType
+                : 'vacation';
+            normalized[code] = {
+                type: 'absence',
+                absenceType,
+                notes:
+                    config.notes ||
+                    `Importado desde cuadrante de imagen (${code})`,
+                label: config.label || `Ausencia ${code}`,
+            };
+        }
+    });
+
+    return normalized;
+};
+
+const buildCodeLegend = (codeMappings) =>
+    Object.fromEntries(
+        Object.entries(codeMappings).map(([code, config]) => {
+            if (config.type === 'shift') {
+                return [
+                    code,
+                    `${config.label || `Turno ${code}`} ${config.startTime.slice(
+                        0,
+                        5
+                    )}-${config.endTime.slice(0, 5)}`,
+                ];
+            }
+
+            return [code, config.label || config.absenceType || 'Ausencia'];
+        })
+    );
+
+const parseImageSchedule = async ({
+    filePath,
+    month,
+    employees,
+    employeeMappings = {},
+    scheduleCodeMappings = {},
+}) => {
+    const codeMappings = normalizeImageCodeMappings(scheduleCodeMappings);
+    if (!Object.keys(codeMappings).length) {
+        generateErrorUtil(
+            'Indica que significa cada letra del cuadrante antes de importarlo',
+            400
+        );
+    }
+
+    const { data, info } = await sharp(filePath)
+        .greyscale()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+
+    const darkAt = (x, y) => data[y * info.width + x] < 100;
+    const verticalCandidates = [];
+    const yStart = Math.floor(info.height * 0.2);
+    const yEnd = Math.floor(info.height * 0.98);
+
+    for (let x = 0; x < info.width; x += 1) {
+        let score = 0;
+        for (let y = yStart; y < yEnd; y += 1) {
+            if (darkAt(x, y)) score += 1;
+        }
+        if (score > (yEnd - yStart) * 0.35) verticalCandidates.push(x);
+    }
+
+    const allVerticalLines = groupPositions(verticalCandidates);
+    const dayColumnLines = findRegularLineRun(allVerticalLines, 32).slice(0, 32);
+    const left = dayColumnLines[0];
+    const right = dayColumnLines[dayColumnLines.length - 1];
+
+    const horizontalCandidates = [];
+    for (let y = 0; y < info.height; y += 1) {
+        let score = 0;
+        for (let x = left; x <= right; x += 1) {
+            if (darkAt(x, y)) score += 1;
+        }
+        if (score > (right - left) * 0.55) horizontalCandidates.push(y);
+    }
+
+    const rowLines = groupPositions(horizontalCandidates);
+    if (rowLines.length < 5) {
+        generateErrorUtil('No se pudieron detectar las filas del cuadrante', 400);
+    }
+
+    const classifyCode = await buildImageCodeClassifier(
+        data,
+        info,
+        codeMappings
+    );
+    const monthDays = getDaysInMonth(month);
+    const dayCount = Math.min(monthDays, dayColumnLines.length - 1);
+    const shifts = [];
+    const absences = [];
+    const employeeRows = [];
+    const unknownEmployees = new Set();
+    const unmatchedMap = new Map();
+
+    for (let rowIndex = 0; rowIndex < rowLines.length - 4; rowIndex += 1) {
+        const top = rowLines[rowIndex + 3];
+        const bottom = rowLines[rowIndex + 4];
+        const centerY = (top + bottom) / 2;
+        const excelName = `Fila ${rowIndex + 1}`;
+        const employee = resolveEmployeeForImportRow(
+            employees,
+            excelName,
+            employeeMappings
+        );
+        let rowEntryCount = 0;
+        const rowShifts = [];
+        const rowAbsences = [];
+
+        for (let day = 1; day <= dayCount; day += 1) {
+            const centerX = (dayColumnLines[day - 1] + dayColumnLines[day]) / 2;
+            const code = classifyCode(centerX, centerY);
+            if (!code) continue;
+
+            const scheduleDate = buildDateString(month, day);
+            const codeConfig = codeMappings[code];
+            if (!codeConfig) continue;
+
+            if (codeConfig.type === 'shift') {
+                rowEntryCount += 1;
+                rowShifts.push({
+                    employee,
+                    excelName,
+                    code,
+                    scheduleDate,
+                    startTime: codeConfig.startTime,
+                    endTime: codeConfig.endTime,
+                });
+            } else if (codeConfig.type === 'absence') {
+                rowEntryCount += 1;
+                rowAbsences.push({
+                    employee,
+                    excelName,
+                    code,
+                    startDate: scheduleDate,
+                    endDate: scheduleDate,
+                    type: codeConfig.absenceType,
+                    notes: codeConfig.notes,
+                });
+            }
+        }
+
+        if (!rowEntryCount) continue;
+
+        employeeRows.push({
+            row: rowIndex + 1,
+            excelName,
+            employeeId: employee?.id || null,
+            employeeName: employee?.fullName || null,
+        });
+
+        if (!employee) {
+            unknownEmployees.add(excelName);
+            registerUnmatched(unmatchedMap, employees, excelName, rowEntryCount);
+            continue;
+        }
+
+        rowShifts.forEach((item) => {
+            shifts.push({
+                employeeId: employee.id,
+                employeeName: employee.fullName,
+                excelName: item.excelName,
+                sourceCode: item.code,
+                scheduleDate: item.scheduleDate,
+                startTime: item.startTime,
+                endTime: item.endTime,
+                hours: calculateShiftHours(item.startTime, item.endTime),
+            });
+        });
+
+        rowAbsences.forEach((item) => {
+            absences.push({
+                employeeId: employee.id,
+                employeeName: employee.fullName,
+                excelName: item.excelName,
+                sourceCode: item.code,
+                startDate: item.startDate,
+                endDate: item.endDate,
+                type: item.type,
+                notes: item.notes,
+            });
+        });
+    }
+
+    const { unique: uniqueShifts, duplicates } = dedupeShifts(shifts);
+
+    return {
+        worksheetName: 'Imagen',
+        serviceName: '',
+        month,
+        sourceType: 'image',
+        codeLegend: buildCodeLegend(codeMappings),
+        employeeRows,
+        unknownEmployees: [...unknownEmployees],
+        unmatchedEmployees: [...unmatchedMap.values()],
+        shifts: uniqueShifts,
+        absences,
+        shiftCount: uniqueShifts.length,
+        absenceCount: absences.length,
+        duplicateShiftCount: duplicates.length,
+    };
 };
 
 const parseWorkbook = async ({ filePath, month, employees, employeeMappings = {} }) => {
@@ -402,7 +879,9 @@ const parseWorkbook = async ({ filePath, month, employees, employeeMappings = {}
         unknownEmployees: [...unknownEmployees],
         unmatchedEmployees: [...unmatchedMap.values()],
         shifts: uniqueShifts,
+        absences: [],
         shiftCount: uniqueShifts.length,
+        absenceCount: 0,
         duplicateShiftCount: duplicates.length,
     };
 };
@@ -410,10 +889,13 @@ const parseWorkbook = async ({ filePath, month, employees, employeeMappings = {}
 const importServiceScheduleExcelService = async ({
     serviceId,
     filePath,
+    fileName = '',
+    mimeType = '',
     month,
     apply = false,
     replace = true,
     employeeMappings = {},
+    scheduleCodeMappings = {},
     createdBy,
     allowOverlap = false,
 }) => {
@@ -424,12 +906,20 @@ const importServiceScheduleExcelService = async ({
 
     const pool = await getPool();
     const employees = await loadEmployees(pool);
-    const preview = await parseWorkbook({
-        filePath,
-        month,
-        employees,
-        employeeMappings,
-    });
+    const preview = isImageFile({ filePath, fileName, mimeType })
+        ? await parseImageSchedule({
+              filePath,
+              month,
+              employees,
+              employeeMappings,
+              scheduleCodeMappings,
+          })
+        : await parseWorkbook({
+              filePath,
+              month,
+              employees,
+              employeeMappings,
+          });
 
     if (!apply) {
         return {
@@ -454,6 +944,14 @@ const importServiceScheduleExcelService = async ({
               preview.shifts
           );
     const shiftsToInsert = existingFilter.shifts;
+    const { unique: uniqueAbsences, duplicates: duplicateAbsences } =
+        dedupeAbsences(preview.absences || []);
+    const absenceFilter = await filterExistingDuplicateAbsences(
+        pool,
+        month,
+        uniqueAbsences
+    );
+    const absencesToInsert = absenceFilter.absences;
 
     const breakdowns = await calculateShiftHourBreakdowns(
         pool,
@@ -524,6 +1022,25 @@ const importServiceScheduleExcelService = async ({
             );
         }
 
+        for (const absence of absencesToInsert) {
+            await conn.query(
+                `
+                INSERT INTO employeeAbsences
+                    (id, employeeId, startDate, endDate, type, notes, createdBy)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                `,
+                [
+                    uuid(),
+                    absence.employeeId,
+                    absence.startDate,
+                    absence.endDate,
+                    absence.type,
+                    absence.notes || null,
+                    createdBy,
+                ]
+            );
+        }
+
         await conn.commit();
     } catch (error) {
         await conn.rollback();
@@ -537,10 +1054,14 @@ const importServiceScheduleExcelService = async ({
     return {
         ...preview,
         shifts: shiftsToInsert,
+        absences: absencesToInsert,
         shiftCount: shiftsToInsert.length,
+        absenceCount: absencesToInsert.length,
         applied: true,
         replaced: replace,
         skippedExistingShiftCount: existingFilter.skipped,
+        skippedExistingAbsenceCount: absenceFilter.skipped,
+        duplicateAbsenceCount: duplicateAbsences.length,
     };
 };
 

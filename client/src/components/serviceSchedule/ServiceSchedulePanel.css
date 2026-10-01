@@ -310,6 +310,38 @@
     max-width: 100%;
 }
 
+.service-schedule-import-codes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+}
+
+.service-schedule-import-code {
+    display: grid;
+    grid-template-columns:
+        minmax(54px, 0.7fr) minmax(96px, 1fr) minmax(96px, 1fr)
+        minmax(96px, 1fr) auto;
+    gap: 6px;
+    align-items: center;
+    min-width: 360px;
+    flex: 1;
+}
+
+.service-schedule-import-code strong {
+    color: #0f172a;
+    font-size: 0.95rem;
+}
+
+.service-schedule-import-code input,
+.service-schedule-import-code select {
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 7px 8px;
+    background: #ffffff;
+    min-width: 0;
+}
+
 .service-schedule-import-replace {
     display: inline-flex;
     align-items: center;
@@ -1569,6 +1601,7 @@
     }
 
     .service-schedule-import-match,
+    .service-schedule-import-code,
     .service-schedule-new-grid,
     .service-schedule-type-row {
         grid-template-columns: 1fr;

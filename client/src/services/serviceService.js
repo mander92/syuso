@@ -927,6 +927,7 @@ export const importServiceScheduleExcel = async (
         apply = false,
         replace = true,
         employeeMappings = {},
+        scheduleCodeMappings = {},
         allowOverlap = false,
     } = {}
 ) => {
@@ -938,6 +939,7 @@ export const importServiceScheduleExcel = async (
     const formData = new FormData();
     formData.append('file', file);
     formData.append('employeeMappings', JSON.stringify(employeeMappings));
+    formData.append('scheduleCodeMappings', JSON.stringify(scheduleCodeMappings));
 
     const res = await fetch(
         `${VITE_API_URL}/services/${serviceId}/schedule/import-excel?${params.toString()}`,

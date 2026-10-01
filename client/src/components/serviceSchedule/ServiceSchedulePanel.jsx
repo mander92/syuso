@@ -137,6 +137,33 @@ const normalizeText = (value) =>
         .trim()
         .toLowerCase();
 
+const defaultScheduleCodeMappings = {
+    D: {
+        type: 'shift',
+        label: 'Turno D',
+        startTime: '08:00',
+        endTime: '16:00',
+    },
+    N: {
+        type: 'shift',
+        label: 'Turno N',
+        startTime: '22:00',
+        endTime: '06:00',
+    },
+    V: {
+        type: 'absence',
+        label: 'Vacaciones',
+        absenceType: 'vacation',
+    },
+};
+
+const createDefaultScheduleCodeMapping = (code = '') => ({
+    type: 'shift',
+    label: code ? `Turno ${code}` : 'Turno',
+    startTime: '08:00',
+    endTime: '16:00',
+});
+
 const ServiceSchedulePanel = ({
     serviceId,
     authToken,
@@ -189,6 +216,9 @@ const ServiceSchedulePanel = ({
     const [isApplyingImport, setIsApplyingImport] = useState(false);
     const [replaceImportedMonth, setReplaceImportedMonth] = useState(true);
     const [employeeImportMappings, setEmployeeImportMappings] = useState({});
+    const [scheduleCodeMappings, setScheduleCodeMappings] = useState(
+        defaultScheduleCodeMappings
+    );
     const [serviceInfo, setServiceInfo] = useState(null);
     const [holidays, setHolidays] = useState([]);
     const [holidayDraft, setHolidayDraft] = useState({
@@ -337,6 +367,86 @@ const ServiceSchedulePanel = ({
         );
     };
 
+    const updateScheduleCodeMapping = (code, field, value) => {
+        setScheduleCodeMappings((prev) => ({
+            ...prev,
+            [code]:
+                field === 'type' && value === 'absence'
+                    ? {
+                          ...prev[code],
+                          type: value,
+                          absenceType: prev[code]?.absenceType || 'vacation',
+                      }
+                    : field === 'type' && value === 'shift'
+                      ? {
+                            ...prev[code],
+                            type: value,
+                            startTime: prev[code]?.startTime || '08:00',
+                            endTime: prev[code]?.endTime || '16:00',
+                        }
+                      : {
+                            ...prev[code],
+                            [field]: value,
+                        },
+        }));
+        setScheduleImportPreview(null);
+    };
+
+    const updateScheduleCodeKey = (currentCode, nextCode) => {
+        const normalizedCode = String(nextCode || '')
+            .trim()
+            .toUpperCase()
+            .slice(0, 3);
+        if (!normalizedCode) return;
+
+        setScheduleCodeMappings((prev) => {
+            if (normalizedCode !== currentCode && prev[normalizedCode]) {
+                return prev;
+            }
+
+            const next = {};
+            Object.entries(prev).forEach(([code, config]) => {
+                if (code === currentCode) {
+                    next[normalizedCode] = {
+                        ...config,
+                        label:
+                            config.label === `Turno ${currentCode}` ||
+                            config.label === currentCode
+                                ? `Turno ${normalizedCode}`
+                                : config.label,
+                    };
+                } else {
+                    next[code] = config;
+                }
+            });
+            return next;
+        });
+        setScheduleImportPreview(null);
+    };
+
+    const addScheduleCodeMapping = () => {
+        setScheduleCodeMappings((prev) => {
+            const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const nextCode =
+                [...alphabet].find((letter) => !prev[letter]) ||
+                `C${Object.keys(prev).length + 1}`;
+            return {
+                ...prev,
+                [nextCode]: createDefaultScheduleCodeMapping(nextCode),
+            };
+        });
+        setScheduleImportPreview(null);
+    };
+
+    const removeScheduleCodeMapping = (code) => {
+        setScheduleCodeMappings((prev) => {
+            const entries = Object.entries(prev).filter(([key]) => key !== code);
+            if (!entries.length) return prev;
+            return Object.fromEntries(entries);
+        });
+        setScheduleImportPreview(null);
+    };
+
     useEffect(() => {
         const loadAvailableShiftEmployees = async () => {
             const shift = selectedShift;
@@ -405,20 +515,23 @@ const ServiceSchedulePanel = ({
 
     const importPreviewEmployees = useMemo(() => {
         const map = new Map();
-        (scheduleImportPreview?.shifts || []).forEach((shift) => {
-            if (!shift.employeeId || map.has(shift.employeeId)) return;
+        [
+            ...(scheduleImportPreview?.shifts || []),
+            ...(scheduleImportPreview?.absences || []),
+        ].forEach((item) => {
+            if (!item.employeeId || map.has(item.employeeId)) return;
             const fallback = employees.find(
-                (employee) => employee.id === shift.employeeId
+                (employee) => employee.id === item.employeeId
             );
-            map.set(shift.employeeId, {
-                id: shift.employeeId,
+            map.set(item.employeeId, {
+                id: item.employeeId,
                 firstName:
                     fallback?.firstName ||
-                    String(shift.employeeName || '').split(' ')[0] ||
+                    String(item.employeeName || '').split(' ')[0] ||
                     '',
                 lastName:
                     fallback?.lastName ||
-                    String(shift.employeeName || '')
+                    String(item.employeeName || '')
                         .split(' ')
                         .slice(1)
                         .join(' '),
@@ -426,6 +539,21 @@ const ServiceSchedulePanel = ({
         });
         return [...map.values()];
     }, [employees, scheduleImportPreview]);
+
+    const importPreviewAbsencesByEmployee = useMemo(() => {
+        const map = {};
+        (scheduleImportPreview?.absences || []).forEach((absence, index) => {
+            if (!absence.employeeId) return;
+            if (!map[absence.employeeId]) map[absence.employeeId] = [];
+            map[absence.employeeId].push({
+                ...absence,
+                id:
+                    absence.id ||
+                    `import-${absence.employeeId}-${absence.startDate}-${index}`,
+            });
+        });
+        return map;
+    }, [scheduleImportPreview]);
 
     const shiftTypeOptions = useMemo(() => {
         return shiftTypes.map((type) => ({
@@ -1325,7 +1453,7 @@ const ServiceSchedulePanel = ({
 
     const handleExcelPreview = async () => {
         if (!scheduleImportFile) {
-            toast.error('Selecciona un archivo Excel.');
+            toast.error('Selecciona un archivo de cuadrante.');
             return;
         }
 
@@ -1340,6 +1468,7 @@ const ServiceSchedulePanel = ({
                     apply: false,
                     replace: replaceImportedMonth,
                     employeeMappings: employeeImportMappings,
+                    scheduleCodeMappings,
                 }
             );
             setScheduleImportPreview(data);
@@ -1350,9 +1479,9 @@ const ServiceSchedulePanel = ({
                 if (suggestion) nextMappings[item.excelName] = suggestion.id;
             });
             setEmployeeImportMappings(nextMappings);
-            toast.success('Excel leido correctamente');
+            toast.success('Cuadrante leido correctamente');
         } catch (error) {
-            toast.error(error.message || 'No se pudo leer el Excel');
+            toast.error(error.message || 'No se pudo leer el cuadrante');
         } finally {
             setIsPreviewingImport(false);
         }
@@ -1360,7 +1489,7 @@ const ServiceSchedulePanel = ({
 
     const handleExcelApply = async () => {
         if (!scheduleImportFile) {
-            toast.error('Selecciona un archivo Excel.');
+            toast.error('Selecciona un archivo de cuadrante.');
             return;
         }
 
@@ -1383,6 +1512,7 @@ const ServiceSchedulePanel = ({
                         apply: true,
                         replace: replaceImportedMonth,
                         employeeMappings: employeeImportMappings,
+                        scheduleCodeMappings,
                         allowOverlap,
                     }
                 );
@@ -1400,7 +1530,7 @@ const ServiceSchedulePanel = ({
                 await onServiceUpdate();
             }
         } catch (error) {
-            toast.error(error.message || 'No se pudo importar el Excel');
+            toast.error(error.message || 'No se pudo importar el cuadrante');
         } finally {
             setIsApplyingImport(false);
         }
@@ -1720,23 +1850,127 @@ const ServiceSchedulePanel = ({
             <div className='service-schedule-section service-schedule-section--import'>
                 <div className='service-schedule-section-header'>
                     <div>
-                        <h3>Importar Excel</h3>
+                        <h3>Importar cuadrante</h3>
                         <p>
-                            Sube un cuadrante con formato SYUSO para convertirlo
-                            en turnos del mes seleccionado.
+                            Sube un Excel o imagen con formato SYUSO para
+                            convertirlo en turnos del mes seleccionado.
                         </p>
                     </div>
                 </div>
                 <div className='service-schedule-import'>
                     <input
                         type='file'
-                        accept='.xlsx'
+                        accept='.xlsx,.jpg,.jpeg,.png,.webp'
                         onChange={(event) => {
                             setScheduleImportFile(event.target.files?.[0] || null);
                             setScheduleImportPreview(null);
                             setEmployeeImportMappings({});
                         }}
                     />
+                    <div className='service-schedule-import-codes'>
+                        {Object.entries(scheduleCodeMappings).map(
+                            ([code, config]) => (
+                                <div
+                                    className='service-schedule-import-code'
+                                    key={code}
+                                >
+                                    <input
+                                        type='text'
+                                        value={code}
+                                        maxLength={3}
+                                        aria-label='Codigo del cuadrante'
+                                        onChange={(event) =>
+                                            updateScheduleCodeKey(
+                                                code,
+                                                event.target.value
+                                            )
+                                        }
+                                    />
+                                    <select
+                                        value={config.type}
+                                        onChange={(event) =>
+                                            updateScheduleCodeMapping(
+                                                code,
+                                                'type',
+                                                event.target.value
+                                            )
+                                        }
+                                    >
+                                        <option value='shift'>Turno</option>
+                                        <option value='absence'>Ausencia</option>
+                                    </select>
+                                    {config.type === 'shift' ? (
+                                        <>
+                                            <input
+                                                type='time'
+                                                value={config.startTime}
+                                                onChange={(event) =>
+                                                    updateScheduleCodeMapping(
+                                                        code,
+                                                        'startTime',
+                                                        event.target.value
+                                                    )
+                                                }
+                                            />
+                                            <input
+                                                type='time'
+                                                value={config.endTime}
+                                                onChange={(event) =>
+                                                    updateScheduleCodeMapping(
+                                                        code,
+                                                        'endTime',
+                                                        event.target.value
+                                                    )
+                                                }
+                                            />
+                                        </>
+                                    ) : (
+                                        <select
+                                            value={
+                                                config.absenceType || 'vacation'
+                                            }
+                                            onChange={(event) =>
+                                                updateScheduleCodeMapping(
+                                                    code,
+                                                    'absenceType',
+                                                    event.target.value
+                                                )
+                                            }
+                                        >
+                                            <option value='vacation'>
+                                                Vacaciones
+                                            </option>
+                                            <option value='off'>Libre</option>
+                                            <option value='sick'>Baja</option>
+                                            <option value='available'>
+                                                Disponible
+                                            </option>
+                                        </select>
+                                    )}
+                                    <button
+                                        type='button'
+                                        className='service-schedule-row-delete'
+                                        onClick={() =>
+                                            removeScheduleCodeMapping(code)
+                                        }
+                                        disabled={
+                                            Object.keys(scheduleCodeMappings)
+                                                .length <= 1
+                                        }
+                                    >
+                                        Quitar
+                                    </button>
+                                </div>
+                            )
+                        )}
+                        <button
+                            type='button'
+                            className='service-schedule-simulate-btn service-schedule-simulate-btn--ghost'
+                            onClick={addScheduleCodeMapping}
+                        >
+                            Añadir codigo
+                        </button>
+                    </div>
                     <label className='service-schedule-import-replace'>
                         <input
                             type='checkbox'
@@ -1770,7 +2004,7 @@ const ServiceSchedulePanel = ({
                                     )
                             }
                         >
-                            {isApplyingImport ? 'Importando...' : 'Aplicar Excel'}
+                            {isApplyingImport ? 'Importando...' : 'Aplicar'}
                         </button>
                     </div>
                 </div>
@@ -1780,10 +2014,17 @@ const ServiceSchedulePanel = ({
                             <strong>
                                 {scheduleImportPreview.shiftCount} turnos
                                 detectados
+                                {scheduleImportPreview.absenceCount ? (
+                                    <>
+                                        {' '}
+                                        · {scheduleImportPreview.absenceCount}{' '}
+                                        vacaciones
+                                    </>
+                                ) : null}
                             </strong>
                             <span>
-                                Hoja: {scheduleImportPreview.worksheetName} ·
-                                Servicio Excel:{' '}
+                                Origen: {scheduleImportPreview.worksheetName} ·
+                                Servicio:{' '}
                                 {scheduleImportPreview.serviceName || '—'}
                                 {scheduleImportPreview.duplicateShiftCount ? (
                                     <>
@@ -1817,7 +2058,7 @@ const ServiceSchedulePanel = ({
                         </div>
                         {scheduleImportPreview.unmatchedEmployees?.length ? (
                             <div className='service-schedule-import-warning'>
-                                <strong>Asigna estos nombres del Excel:</strong>
+                                <strong>Asigna estos nombres del archivo:</strong>
                                 {scheduleImportPreview.unmatchedEmployees.map(
                                     (item) => (
                                         <label
@@ -1825,7 +2066,7 @@ const ServiceSchedulePanel = ({
                                             key={item.excelName}
                                         >
                                             <span>
-                                                En el Excel pone:{' '}
+                                                En el archivo pone:{' '}
                                                 <strong>{item.excelName}</strong>{' '}
                                                 · {item.shiftCount} turnos
                                             </span>
@@ -1901,7 +2142,8 @@ const ServiceSchedulePanel = ({
                                 Trabajadores emparejados correctamente.
                             </span>
                         )}
-                        {scheduleImportPreview.shifts?.length ? (
+                        {scheduleImportPreview.shifts?.length ||
+                        scheduleImportPreview.absences?.length ? (
                             showImportGridPreview ? (
                                 <ServiceScheduleGrid
                                     month={month}
@@ -1912,7 +2154,7 @@ const ServiceSchedulePanel = ({
                                         })
                                     )}
                                     employees={importPreviewEmployees}
-                                    absencesByEmployee={{}}
+                                    absencesByEmployee={importPreviewAbsencesByEmployee}
                                     holidaysByDate={holidaysByDate}
                                     readOnly
                                     showUnassigned={false}
