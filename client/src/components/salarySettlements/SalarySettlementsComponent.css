@@ -382,6 +382,140 @@
     white-space: nowrap;
 }
 
+.salary-view-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin: 0.25rem 0 1rem;
+}
+
+.salary-view-tabs button.is-active {
+    background: #0f172a;
+    color: #ffffff;
+}
+
+.salary-calendar-card {
+    display: grid;
+    gap: 1rem;
+}
+
+.salary-calendar-check {
+    align-items: center;
+    display: flex;
+    gap: 0.45rem;
+}
+
+.salary-calendar-toolbar {
+    align-items: end;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    padding: 0.75rem;
+}
+
+.salary-calendar-toolbar > span {
+    align-self: center;
+    font-weight: 800;
+    margin-right: auto;
+}
+
+.salary-calendar-toolbar label {
+    display: grid;
+    font-size: 0.78rem;
+    font-weight: 800;
+    gap: 0.2rem;
+}
+
+.salary-calendar-toolbar input,
+.salary-calendar-toolbar select {
+    min-width: 110px;
+}
+
+.salary-calendar-scroll {
+    overflow-x: auto;
+}
+
+.salary-calendar-grid {
+    display: grid;
+    gap: 0.35rem;
+    grid-template-columns: repeat(7, minmax(145px, 1fr));
+    min-width: 1080px;
+}
+
+.salary-calendar-weekday {
+    background: #0f172a;
+    border-radius: 7px;
+    color: #ffffff;
+    padding: 0.45rem;
+    text-align: center;
+}
+
+.salary-calendar-day {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    min-height: 145px;
+    padding: 0.4rem;
+}
+
+.salary-calendar-day.is-weekend {
+    background: #fff7ed;
+}
+
+.salary-calendar-day__head {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.35rem;
+}
+
+.salary-calendar-shift {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 7px;
+    display: grid;
+    gap: 0.1rem;
+    grid-template-columns: auto 1fr;
+    margin-bottom: 0.3rem;
+    padding: 0.35rem;
+}
+
+.salary-calendar-shift.is-paid {
+    background: #ecfdf5;
+    border-color: #86efac;
+}
+
+.salary-calendar-shift input {
+    grid-row: 1 / 5;
+}
+
+.salary-calendar-shift span,
+.salary-calendar-shift small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.salary-calendar-shift span {
+    font-size: 0.78rem;
+    font-weight: 900;
+}
+
+.salary-calendar-shift small {
+    font-size: 0.7rem;
+}
+
+.salary-calendar-absence {
+    background: #fef3c7;
+    border-radius: 5px;
+    color: #92400e;
+    display: block;
+    font-weight: 800;
+    padding: 0.25rem;
+}
+
 @media (max-width: 720px) {
     .salary-settlements {
         padding: 0.75rem;
@@ -439,5 +573,11 @@
 
     .salary-service-calendar__day small {
         font-size: 0.58rem;
+    }
+
+    .salary-view-tabs,
+    .salary-calendar-toolbar {
+        align-items: stretch;
+        display: grid;
     }
 }

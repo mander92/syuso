@@ -19,7 +19,7 @@ const initDb = async () => {
 
         await pool.query(
             `
-            DROP TABLE IF EXISTS vehicleInspections, vehicleFuelLogs, serviceVehicles, vehicles, serviceNfcTagLogs, workReportIncidentPhotos, workReportPhotos, workReportIncidents, workReportDrafts, workReports, warehouseMovements, salaryPaidServiceHours, salaryAbsencePayments, salarySettlementAdjustments, salaryServiceRates, payrolls, payrollImports, acknowledgementEvents, acknowledgementRecipients, acknowledgements, employeeRequests, shiftSwapRequests, generalChatMessages, generalChatReads, generalChatMembers, generalChats, serviceChatMessages, serviceChatReads, serviceScheduleShiftAlerts, serviceScheduleSnapshots, shiftRecordCorrectionRequests, serviceScheduleShifts, serviceScheduleTemplates, serviceShiftTypes, holidays, employeeAbsences, employeeRules, personsAssigned, serviceNfcTags, shiftRecordAuditLogs, shiftRecords, adminDelegations, delegations, services, clientDocumentationDraftTokens, clientDocumentationDrafts, clientDocumentations, employeeDocumentationDraftTokens, employeeDocumentationDrafts, employeeSignatureDocuments, employeeDocumentations, typeOfServices, pushSubscriptions, users, addresses, consulting_requests, job_applications
+            DROP TABLE IF EXISTS vehicleInspections, vehicleFuelLogs, serviceVehicles, vehicles, serviceNfcTagLogs, workReportIncidentPhotos, workReportPhotos, workReportIncidents, workReportDrafts, workReports, warehouseMovements, salaryShiftEntries, salaryPaidServiceHours, salaryAbsencePayments, salarySettlementAdjustments, salaryServiceRates, payrolls, payrollImports, acknowledgementEvents, acknowledgementRecipients, acknowledgements, employeeRequests, shiftSwapRequests, generalChatMessages, generalChatReads, generalChatMembers, generalChats, serviceChatMessages, serviceChatReads, serviceScheduleShiftAlerts, serviceScheduleSnapshots, shiftRecordCorrectionRequests, serviceScheduleShifts, serviceScheduleTemplates, serviceShiftTypes, holidays, employeeAbsences, employeeRules, personsAssigned, serviceNfcTags, shiftRecordAuditLogs, shiftRecords, adminDelegations, delegations, services, clientDocumentationDraftTokens, clientDocumentationDrafts, clientDocumentations, employeeDocumentationDraftTokens, employeeDocumentationDrafts, employeeSignatureDocuments, employeeDocumentations, typeOfServices, pushSubscriptions, users, addresses, consulting_requests, job_applications
             `
         );
 
@@ -1217,6 +1217,25 @@ const initDb = async () => {
                 INDEX idx_salary_absence_employee_month (employeeId, settlementMonth),
                 FOREIGN KEY (employeeId) REFERENCES users(id) ON DELETE CASCADE,
                 FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE SET NULL);
+            `
+        );
+
+        await pool.query(
+            `
+            CREATE TABLE IF NOT EXISTS salaryShiftEntries (
+                id CHAR(36) PRIMARY KEY NOT NULL,
+                employeeId CHAR(36) NOT NULL,
+                shiftId CHAR(36) NOT NULL,
+                hourlyRate DECIMAL(12,2) NULL,
+                amountType ENUM('gross','net') NOT NULL DEFAULT 'gross',
+                paidHours DECIMAL(8,2) NULL,
+                modifiedBy CHAR(36) NULL,
+                modifiedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY uniq_salary_shift_entry (employeeId, shiftId),
+                INDEX idx_salary_shift_entry_shift (shiftId),
+                FOREIGN KEY (employeeId) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (shiftId) REFERENCES serviceScheduleShifts(id) ON DELETE CASCADE,
+                FOREIGN KEY (modifiedBy) REFERENCES users(id) ON DELETE SET NULL);
             `
         );
 

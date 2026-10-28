@@ -9,8 +9,10 @@ import {
     saveSalaryAbsencePayment,
     saveSalaryPaidServiceHours,
     saveSalaryRate,
+    saveSalaryShiftEntries,
 } from '../../services/salarySettlementService.js';
 import SalaryRateModal, { emptyRateForm } from './SalaryRateModal.jsx';
+import SalaryInteractiveCalendar from './SalaryInteractiveCalendar.jsx';
 import './SalarySettlementsComponent.css';
 
 const getCurrentMonth = () => new Date().toISOString().slice(0, 7);
@@ -107,6 +109,7 @@ const SalarySettlementsComponent = () => {
     const [paidHoursForm, setPaidHoursForm] = useState(emptyPaidHoursForm);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [viewMode, setViewMode] = useState('summary');
 
     const employeeOptions = useMemo(
         () =>
@@ -326,6 +329,21 @@ const SalarySettlementsComponent = () => {
             toast.success('Horas pagadas actualizadas');
         } catch (error) {
             toast.error(error.message || 'No se pudieron guardar las horas pagadas');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleApplyShiftEntries = async (payload) => {
+        setSaving(true);
+        try {
+            await saveSalaryShiftEntries(authToken, payload);
+            await loadData();
+            toast.success('Turnos actualizados');
+            return true;
+        } catch (error) {
+            toast.error(error.message || 'No se pudieron actualizar los turnos');
+            return false;
         } finally {
             setSaving(false);
         }
@@ -566,6 +584,24 @@ const SalarySettlementsComponent = () => {
                 </div>
             </section>
 
+            <div className='salary-view-tabs'>
+                <button
+                    type='button'
+                    className={viewMode === 'summary' ? 'is-active' : ''}
+                    onClick={() => setViewMode('summary')}
+                >
+                    Resumen y ajustes
+                </button>
+                <button
+                    type='button'
+                    className={viewMode === 'calendar' ? 'is-active' : ''}
+                    onClick={() => setViewMode('calendar')}
+                >
+                    Cuadrante unificado
+                </button>
+            </div>
+
+            {viewMode === 'summary' ? (
             <div className='salary-settlements__list'>
                 {(data.employees || []).map((employee) => (
                     <article key={employee.employeeId} className='salary-card'>
@@ -986,6 +1022,22 @@ const SalarySettlementsComponent = () => {
                     </p>
                 ) : null}
             </div>
+            ) : (
+                <div className='salary-settlements__list'>
+                    {(data.employees || []).map((employee) => (
+                        <SalaryInteractiveCalendar
+                            key={employee.employeeId}
+                            month={filters.month}
+                            employee={employee}
+                            busy={saving || loading}
+                            onApply={handleApplyShiftEntries}
+                        />
+                    ))}
+                    {!data.employees?.length ? (
+                        <p className='salary-empty'>No hay cuadrantes para este mes.</p>
+                    ) : null}
+                </div>
+            )}
             <SalaryRateModal
                 open={isRateModalOpen}
                 title='Tarifa guardada'

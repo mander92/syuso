@@ -24,6 +24,32 @@ const toNumber = (value) => {
 
 const roundMoney = (value) => Number((toNumber(value)).toFixed(2));
 
+const allocateSalaryPayments = (calendar, entries, legacyHours = 0) => {
+    const entryMap = new Map(entries.map((entry) => [entry.shiftId, entry]));
+    let remaining = Math.max(0, toNumber(legacyHours));
+
+    return calendar.map((shift) => {
+        const entry = entryMap.get(shift.id);
+        const hours = toNumber(shift.hours);
+        const hasExplicitPayment = entry?.paidHours !== null && entry?.paidHours !== undefined;
+        const paidHours = Math.min(
+            hours,
+            Math.max(0, hasExplicitPayment ? toNumber(entry.paidHours) : remaining)
+        );
+        if (!hasExplicitPayment) remaining = Math.max(0, remaining - paidHours);
+
+        return {
+            ...shift,
+            paidHours: roundMoney(paidHours),
+            hourlyRate:
+                entry?.hourlyRate === null || entry?.hourlyRate === undefined
+                    ? null
+                    : toNumber(entry.hourlyRate),
+            amountType: entry?.amountType || 'gross',
+        };
+    });
+};
+
 const getRateKey = (serviceId, employeeId = '') => `${serviceId}:${employeeId || ''}`;
 
 const SECURITY_AGREEMENT = {
@@ -495,6 +521,18 @@ const upsertSalaryRate = async ({ userId, payload }) => {
 const upsertSalaryPaidServiceHours = async ({ userId, payload }) => {
     const pool = await getPool();
     const hours = toNumber(payload.hours);
+    const { start, end } = getMonthRange(payload.settlementMonth);
+
+    await pool.query(
+        `
+        UPDATE salaryShiftEntries sse
+        INNER JOIN serviceScheduleShifts ss ON ss.id = sse.shiftId
+        SET sse.paidHours = NULL, sse.modifiedBy = ?
+        WHERE sse.employeeId = ? AND ss.serviceId = ?
+          AND ss.scheduleDate BETWEEN ? AND ?
+        `,
+        [userId, payload.employeeId, payload.serviceId, start, end]
+    );
 
     const [existing] = await pool.query(
         `
@@ -540,6 +578,148 @@ const upsertSalaryPaidServiceHours = async ({ userId, payload }) => {
         ]
     );
     return id;
+};
+
+const upsertSalaryShiftEntries = async ({ viewerId, viewerRole, payload }) => {
+    const pool = await getPool();
+    const connection = await pool.getConnection();
+    const { start, end } = getMonthRange(payload.settlementMonth);
+
+    try {
+        await connection.beginTransaction();
+        const values = [payload.employeeId, start, end, ...payload.shiftIds];
+        const filters = [
+            'ss.employeeId = ?',
+            'ss.scheduleDate BETWEEN ? AND ?',
+            'ss.deletedAt IS NULL',
+            `ss.id IN (${payload.shiftIds.map(() => '?').join(', ')})`,
+        ];
+
+        if (viewerRole === 'admin') {
+            const delegations = await getViewerDelegations({ viewerId, viewerRole });
+            if (!delegations.length) generateErrorUtil('No tienes delegaciones asignadas', 403);
+            filters.push(
+                `(u.city IN (${delegations.map(() => '?').join(', ')}) OR s.province IN (${delegations.map(() => '?').join(', ')}))`
+            );
+            values.push(...delegations, ...delegations);
+        }
+
+        const [selected] = await connection.query(
+            `
+            SELECT ss.id, ss.employeeId, ss.serviceId, ss.scheduleDate,
+                   ss.startTime, ss.endTime,
+                   ROUND(CASE
+                       WHEN TIME_TO_SEC(ss.endTime) <= TIME_TO_SEC(ss.startTime)
+                           THEN (TIME_TO_SEC(ss.endTime) + 86400 - TIME_TO_SEC(ss.startTime)) / 3600
+                       ELSE (TIME_TO_SEC(ss.endTime) - TIME_TO_SEC(ss.startTime)) / 3600
+                   END, 2) AS hours
+            FROM serviceScheduleShifts ss
+            INNER JOIN users u ON u.id = ss.employeeId
+            INNER JOIN services s ON s.id = ss.serviceId
+            WHERE ${filters.join(' AND ')}
+            FOR UPDATE
+            `,
+            values
+        );
+
+        if (selected.length !== payload.shiftIds.length) {
+            generateErrorUtil('Alguno de los turnos ya no esta disponible', 409);
+        }
+
+        const serviceIds = [...new Set(selected.map((shift) => shift.serviceId))];
+        if (payload.action === 'paid' || payload.action === 'pending') {
+            for (const serviceId of serviceIds) {
+                const [serviceShifts] = await connection.query(
+                    `
+                    SELECT ss.id, ss.employeeId, ss.serviceId, ss.scheduleDate,
+                           ss.startTime, ss.endTime,
+                           ROUND(CASE
+                               WHEN TIME_TO_SEC(ss.endTime) <= TIME_TO_SEC(ss.startTime)
+                                   THEN (TIME_TO_SEC(ss.endTime) + 86400 - TIME_TO_SEC(ss.startTime)) / 3600
+                               ELSE (TIME_TO_SEC(ss.endTime) - TIME_TO_SEC(ss.startTime)) / 3600
+                           END, 2) AS hours
+                    FROM serviceScheduleShifts ss
+                    WHERE ss.employeeId = ? AND ss.serviceId = ?
+                      AND ss.scheduleDate BETWEEN ? AND ? AND ss.deletedAt IS NULL
+                    ORDER BY ss.scheduleDate, ss.startTime
+                    FOR UPDATE
+                    `,
+                    [payload.employeeId, serviceId, start, end]
+                );
+                const [entries] = await connection.query(
+                    `SELECT * FROM salaryShiftEntries
+                     WHERE employeeId = ? AND shiftId IN (${serviceShifts.map(() => '?').join(', ')})
+                     FOR UPDATE`,
+                    [payload.employeeId, ...serviceShifts.map((shift) => shift.id)]
+                );
+                const [legacyRows] = await connection.query(
+                    `SELECT hours FROM salaryPaidServiceHours
+                     WHERE employeeId = ? AND serviceId = ? AND settlementMonth = ?
+                       AND deletedAt IS NULL FOR UPDATE`,
+                    [payload.employeeId, serviceId, payload.settlementMonth]
+                );
+                const allocated = allocateSalaryPayments(
+                    serviceShifts,
+                    entries,
+                    legacyRows[0]?.hours || 0
+                );
+
+                for (const shift of allocated) {
+                    const paidHours = payload.shiftIds.includes(shift.id)
+                        ? payload.action === 'paid'
+                            ? toNumber(shift.hours)
+                            : 0
+                        : shift.paidHours;
+                    await connection.query(
+                        `
+                        INSERT INTO salaryShiftEntries (
+                            id, employeeId, shiftId, paidHours, modifiedBy
+                        ) VALUES (?, ?, ?, ?, ?)
+                        ON DUPLICATE KEY UPDATE
+                            paidHours = VALUES(paidHours), modifiedBy = VALUES(modifiedBy)
+                        `,
+                        [uuid(), payload.employeeId, shift.id, paidHours, viewerId]
+                    );
+                }
+
+                await connection.query(
+                    `UPDATE salaryPaidServiceHours SET hours = 0, modifiedAt = CURRENT_TIMESTAMP
+                     WHERE employeeId = ? AND serviceId = ? AND settlementMonth = ?
+                       AND deletedAt IS NULL`,
+                    [payload.employeeId, serviceId, payload.settlementMonth]
+                );
+            }
+        } else {
+            for (const shift of selected) {
+                await connection.query(
+                    `
+                    INSERT INTO salaryShiftEntries (
+                        id, employeeId, shiftId, hourlyRate, amountType, modifiedBy
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                    ON DUPLICATE KEY UPDATE
+                        hourlyRate = VALUES(hourlyRate), amountType = VALUES(amountType),
+                        modifiedBy = VALUES(modifiedBy)
+                    `,
+                    [
+                        uuid(),
+                        payload.employeeId,
+                        shift.id,
+                        payload.action === 'reset-rate' ? null : payload.hourlyRate,
+                        payload.amountType || 'gross',
+                        viewerId,
+                    ]
+                );
+            }
+        }
+
+        await connection.commit();
+        return { saved: true, shifts: selected.length };
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
+    }
 };
 
 const createSalaryAdjustment = async ({ userId, payload }) => {
@@ -712,6 +892,7 @@ const calculateSalarySettlements = async ({
     const [calendarRows] = await pool.query(
         `
         SELECT
+            ss.id,
             ss.employeeId,
             ss.serviceId,
             ss.scheduleDate,
@@ -876,23 +1057,18 @@ const calculateSalarySettlements = async ({
         paidHourValues
     );
 
+    const calendarShiftIds = calendarRows.map((row) => row.id);
+    const [shiftEntries] = calendarShiftIds.length
+        ? await pool.query(
+              `SELECT * FROM salaryShiftEntries
+               WHERE shiftId IN (${calendarShiftIds.map(() => '?').join(', ')})`,
+              calendarShiftIds
+          )
+        : [[]];
+
     const agreementDefaults = getAgreementDefaults(month);
     const employeeMonthHours = shiftRows.reduce((acc, row) => {
         acc.set(row.employeeId, toNumber(acc.get(row.employeeId)) + toNumber(row.totalHours));
-        return acc;
-    }, new Map());
-    const employeeCalendar = calendarRows.reduce((acc, row) => {
-        if (!acc.has(row.employeeId)) acc.set(row.employeeId, []);
-        acc.get(row.employeeId).push({
-            date: row.scheduleDate,
-            serviceId: row.serviceId,
-            serviceName: row.serviceName || row.serviceType || '',
-            startTime: row.startTime,
-            endTime: row.endTime,
-            hours: toNumber(row.hours),
-            nightHours: toNumber(row.nightHours),
-            holidayHours: toNumber(row.holidayHours),
-        });
         return acc;
     }, new Map());
     const absencePaymentMap = absencePayments.reduce((acc, row) => {
@@ -910,6 +1086,36 @@ const calculateSalarySettlements = async ({
         });
         return acc;
     }, new Map());
+    const calendarGroups = calendarRows.reduce((acc, row) => {
+        const key = `${row.employeeId}:${row.serviceId}`;
+        if (!acc.has(key)) acc.set(key, []);
+        acc.get(key).push({
+            id: row.id,
+            employeeId: row.employeeId,
+            date: getDateKey(row.scheduleDate),
+            serviceId: row.serviceId,
+            serviceName: row.serviceName || row.serviceType || '',
+            startTime: String(row.startTime || '').slice(0, 5),
+            endTime: String(row.endTime || '').slice(0, 5),
+            overnight: String(row.endTime || '') <= String(row.startTime || ''),
+            hours: toNumber(row.hours),
+            nightHours: toNumber(row.nightHours),
+            holidayHours: toNumber(row.holidayHours),
+        });
+        return acc;
+    }, new Map());
+    const employeeCalendar = new Map();
+    calendarGroups.forEach((shifts, key) => {
+        const [groupEmployeeId] = key.split(':');
+        const allocated = allocateSalaryPayments(
+            shifts,
+            shiftEntries.filter((entry) => entry.employeeId === groupEmployeeId),
+            paidHourMap.get(key)?.hours || 0
+        );
+        if (!employeeCalendar.has(groupEmployeeId)) employeeCalendar.set(groupEmployeeId, []);
+        employeeCalendar.get(groupEmployeeId).push(...allocated);
+        calendarGroups.set(key, allocated);
+    });
 
     const employeeMap = new Map();
     const ensureEmployee = (row) => {
@@ -950,7 +1156,13 @@ const calculateSalarySettlements = async ({
         const nightHours = toNumber(row.nightHours);
         const holidayHours = toNumber(row.holidayHours);
         const paidRecord = paidHourMap.get(`${row.employeeId}:${row.serviceId}`);
-        const paidHours = Math.min(toNumber(paidRecord?.hours), totalHours);
+        const serviceCalendar = calendarGroups.get(`${row.employeeId}:${row.serviceId}`) || [];
+        const paidHours = serviceCalendar.length
+            ? Math.min(
+                  serviceCalendar.reduce((sum, shift) => sum + toNumber(shift.paidHours), 0),
+                  totalHours
+              )
+            : Math.min(toNumber(paidRecord?.hours), totalHours);
         const payableHours = Math.max(totalHours - paidHours, 0);
         const rawBaseHours = Math.max(totalHours - nightHours - holidayHours, 0);
         const employeeTotalHours = toNumber(employeeMonthHours.get(row.employeeId));
@@ -968,7 +1180,67 @@ const calculateSalarySettlements = async ({
                 : rawBaseHours;
         const fullRow = { ...row, baseHours, extraHours, totalHours };
         const enrichedRow = scaleRowHours(fullRow, payableHours);
-        const payment = calculateLinePayment({ row: enrichedRow, rate, month });
+        const customShifts = serviceCalendar.filter((shift) => shift.hourlyRate !== null);
+        let payment;
+        if (customShifts.length) {
+            const standardShifts = serviceCalendar.filter((shift) => shift.hourlyRate === null);
+            const sumShiftValue = (items, key) =>
+                items.reduce((sum, shift) => sum + toNumber(shift[key]), 0);
+            const standardTotalHours = sumShiftValue(standardShifts, 'hours');
+            const standardPaidHours = sumShiftValue(standardShifts, 'paidHours');
+            const standardNightHours = sumShiftValue(standardShifts, 'nightHours');
+            const standardHolidayHours = sumShiftValue(standardShifts, 'holidayHours');
+            const standardExtraHours =
+                employeeTotalHours > 0
+                    ? roundMoney((employeeExtraHours * standardTotalHours) / employeeTotalHours)
+                    : 0;
+            const standardBaseHours = Math.max(
+                standardTotalHours - standardNightHours - standardHolidayHours - standardExtraHours,
+                0
+            );
+            const standardRow = scaleRowHours(
+                {
+                    ...row,
+                    totalHours: standardTotalHours,
+                    baseHours: standardBaseHours,
+                    nightHours: standardNightHours,
+                    holidayHours: standardHolidayHours,
+                    extraHours: standardExtraHours,
+                },
+                Math.max(standardTotalHours - standardPaidHours, 0)
+            );
+            const standardRate =
+                rate.payMode === 'fixed' && totalHours > 0
+                    ? { ...rate, fixedAmount: rate.fixedAmount * (standardTotalHours / totalHours) }
+                    : rate;
+            const standardPayment = calculateLinePayment({
+                row: standardRow,
+                rate: standardRate,
+                month,
+            });
+            let grossAmount = toNumber(standardPayment.grossAmount);
+            let netAmount = toNumber(standardPayment.netAmount);
+            if (standardPayment.grossAmount === undefined && standardPayment.netAmount === undefined) {
+                if (standardPayment.amountType === 'net') netAmount += standardPayment.amount;
+                else grossAmount += standardPayment.amount;
+            }
+            customShifts.forEach((shift) => {
+                const customAmount =
+                    Math.max(toNumber(shift.hours) - toNumber(shift.paidHours), 0) *
+                    toNumber(shift.hourlyRate);
+                if (shift.amountType === 'net') netAmount += customAmount;
+                else grossAmount += customAmount;
+            });
+            payment = {
+                amount: roundMoney(grossAmount + netAmount),
+                amountType: netAmount > 0 && grossAmount === 0 ? 'net' : 'gross',
+                grossAmount: roundMoney(grossAmount),
+                netAmount: roundMoney(netAmount),
+                tierBreakdown: standardPayment.tierBreakdown || [],
+            };
+        } else {
+            payment = calculateLinePayment({ row: enrichedRow, rate, month });
+        }
         const amount = payment.amount;
         const amountType = payment.amountType;
 
@@ -980,7 +1252,14 @@ const calculateSalarySettlements = async ({
         employee.nightHours += enrichedRow.nightHours;
         employee.holidayHours += enrichedRow.holidayHours;
         employee.extraHours += enrichedRow.extraHours;
-        if (!rate.id) employee.missingRates += 1;
+        const hasUnratedPayableShifts = serviceCalendar.length
+            ? serviceCalendar.some(
+                  (shift) =>
+                      shift.hourlyRate === null &&
+                      toNumber(shift.hours) > toNumber(shift.paidHours)
+              )
+            : payableHours > 0;
+        if (!rate.id && hasUnratedPayableShifts) employee.missingRates += 1;
         if (payment.grossAmount !== undefined || payment.netAmount !== undefined) {
             employee.grossAmount += toNumber(payment.grossAmount);
             employee.netAmount += toNumber(payment.netAmount);
@@ -1283,4 +1562,5 @@ export {
     upsertSalaryAbsencePayment,
     upsertSalaryPaidServiceHours,
     upsertSalaryRate,
+    upsertSalaryShiftEntries,
 };

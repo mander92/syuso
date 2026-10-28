@@ -8,6 +8,7 @@ import createSalaryAdjustmentController from '../controllers/salarySettlements/c
 import deleteSalaryAdjustmentController from '../controllers/salarySettlements/deleteSalaryAdjustmentController.js';
 import upsertSalaryAbsencePaymentController from '../controllers/salarySettlements/upsertSalaryAbsencePaymentController.js';
 import upsertSalaryPaidServiceHoursController from '../controllers/salarySettlements/upsertSalaryPaidServiceHoursController.js';
+import upsertSalaryShiftEntriesController from '../controllers/salarySettlements/upsertSalaryShiftEntriesController.js';
 
 const router = express.Router();
 
@@ -36,6 +37,12 @@ router.put(
     authUser,
     isAdmin,
     upsertSalaryPaidServiceHoursController
+);
+router.put(
+    '/salary-settlements/shift-entries',
+    authUser,
+    isAdmin,
+    upsertSalaryShiftEntriesController
 );
 
 export default router;
